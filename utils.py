@@ -1,7 +1,7 @@
 import discord
 import random
 
-DEFAULT_PREFIX = 'py'
+DEFAULT_PREFIX = ';'
 
 
 def random_color():
