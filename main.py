@@ -6,8 +6,6 @@ from bot import Managing_bot
 from commands import *
 
 load_dotenv()
-# discord application's private token
-DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
 # presence and server members intent enabled under BOT
@@ -26,6 +24,11 @@ async def on_ready():
         status = discord.Status.idle
         await client.change_presence(status=status, activity=activity)
         print("Activity set to", activity)
+
+
+@client.event
+async def on_error(event, *args, **kwargs):
+    print(event)
 
 
 @client.event

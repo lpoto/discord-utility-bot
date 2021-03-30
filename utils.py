@@ -1,7 +1,13 @@
+import os
+from dotenv import load_dotenv
 import discord
 import random
 
-DEFAULT_PREFIX = ';'
+load_dotenv()
+# default prefix key used before commands
+DEFAULT_PREFIX = os.getenv('DEFAULT_PREFIX')
+# discord application's private token
+DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 
 
 def random_color():
@@ -13,8 +19,7 @@ async def message_react(msg, reaction):
         await msg.add_reaction(reaction)
         return True
     except Exception as error:
-        if str(error.code) != '10008':
-            print('Error (utils.py -> reaction_add()):\n', error)
+        send_error(msg, error, 'utils.py -> message_react()')
         return False
 
 
@@ -28,8 +33,7 @@ async def message_delete(msg, time, txt=None):
         await msg.delete(delay=time)
         return True
     except Exception as error:
-        if str(error.code) != '10008':
-            print('Error (utils.py -> message_delete()):\n', error)
+        send_error(msg, error, 'utils.py -> message_delete()')
         return False
 
 
@@ -38,16 +42,22 @@ async def message_edit(msg, text, embed=None):
         await msg.edit(content=text, embed=embed)
         return True
     except Exception as error:
-        if str(error.code) != '10008':
-            print('Error (utils.py -> message_edit()):\n', error)
+        send_error(msg, error, 'utils.py -> message_edit()')
         return False
 
 
-async def send_error(msg, error, origin):
-    if msg is not None:
-        txt = 'Something went wrong!'
-        await message_delete(msg, 3, txt)
-    print('Error ({}):\n{}'.format(origin, error))
+async def send_error(msg, error, origin, send=True):
+    try:
+        if msg is not None:
+            if hasattr(error, 'code') and str(error.code) == '50001':
+                await msg.channel.send('Missing permissions!')
+            elif (hasattr(error, 'code') and str(error.code) != '10008' or
+                    not hasattr(error, 'code')):
+                txt = 'Something went wrong!'
+                await message_delete(msg, 5, txt)
+                print('Error ({}):\n{}'.format(origin, error))
+    except Exception as err:
+        print('Error -> (utils.py -> send_error())' + str(err))
 
 
 async def get_prefix(msg):
@@ -71,7 +81,7 @@ async def get_prefix(msg):
             return DEFAULT_PREFIX
         return x[1]
     except Exception as error:
-        await send_error(None, error, 'utils.py -> get_prefix()')
+        await send_error(msg, error, 'utils.py -> get_prefix()')
         return DEFAULT_PREFIX
 
 

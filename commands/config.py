@@ -82,7 +82,7 @@ class Config(Command):
                 return
             await message_edit(prefix_msg, '`PREFIX`\n{}'.format(new_prefix))
             await msg.channel.send(
-                'Prefix changed to [{}].'.format(new_prefix))
+                '`Prefix` changed to `{}`.'.format(new_prefix))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_prefix()')
 
@@ -99,13 +99,13 @@ class Config(Command):
                 return
             roles_msg = self.find_option(msg, settings, '`ROLES CHANNEL`')
             if roles_msg is None:
-                txt = 'No prefix option in config chanel.'
+                txt = 'No roleschannel option in config chanel.'
                 await message_delete(msg, 5, txt)
                 return
             await message_edit(
                 roles_msg, '`ROLES CHANNEL`\n{}'.format(new_channel))
             await msg.channel.send(
-                'Roles channel changed to [{}].'.format(new_channel))
+                '`Roles channel` changed to `{}`.'.format(new_channel))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_roleschannel()')
 

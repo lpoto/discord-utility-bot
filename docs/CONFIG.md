@@ -17,6 +17,7 @@
 * Create `.env` file in project's root directory and add:
 ```
 	DISCORD_TOKEN="<your-discord-client-token>"
+	DEFAULT_PREFIX="<prefix-key>"
 ```
 
 ## Running the bot

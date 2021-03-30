@@ -37,51 +37,58 @@ class Managing_bot:
     async def clear_msg_queue(self, ignore_running):
         # recursively clear the message que to avoid
         # multiple instances of commands
-        if ((not self.clearing_messages or ignore_running) and
-                len(self.msg_queue) > 0):
-            try:
-                self.clearing_messages = True
-                el = self.msg_queue.pop(0)
-                msg = el[0]
-                args = msg.content.split()
-                first_word = el[1]
-                cmd = Managing_bot.commands[first_word]
+        try:
+            if ((not self.clearing_messages or ignore_running) and
+                    len(self.msg_queue) > 0):
+                try:
+                    self.clearing_messages = True
+                    el = self.msg_queue.pop(0)
+                    msg = el[0]
+                    args = msg.content.split()
+                    first_word = el[1]
+                    cmd = Managing_bot.commands[first_word]
 
-                # if 2nd word is help send additional info
-                # about the command
-                if len(args) > 1 and args[1] == 'help':
-                    if not dict(iter(
-                        msg.guild.me.permissions_in(
-                            msg.channel)))['send_messages']:
-                        return
-                    new_msg = await msg.channel.send(
-                        await self.create_additional_help(
-                            cmd.command_info(), msg))
-                    await message_react(new_msg, emojis['waste_basket'])
-                else:
-                    # else execute the command
-                    # check if valid channel, permissions,...
-                    if await self.check_if_valid(cmd, msg):
-                        await cmd.execute_command(msg)
-                await self.clear_msg_queue(True)
-            except Exception as error:
-                await send_error(msg, error, 'bot.py -> clear_msg_queue()')
-        else:
-            self.clearing_messages = False
+                    # if 2nd word is help send additional info
+                    # about the command
+                    if len(args) > 1 and args[1] == 'help':
+                        if not dict(iter(
+                            msg.guild.me.permissions_in(
+                                msg.channel)))['send_messages']:
+                            return
+                        new_msg = await msg.channel.send(
+                            await self.create_additional_help(
+                                cmd.command_info(), msg)
+                            )
+                        await message_react(new_msg, emojis['waste_basket'])
+                    else:
+                        # else execute the command
+                        # check if valid channel, permissions,...
+                        if await self.check_if_valid(cmd, msg):
+                            await cmd.execute_command(msg)
+                    await self.clear_msg_queue(True)
+                except Exception as error:
+                    await send_error(msg, error, 'bot.py -> clear_msg_queue()')
+            else:
+                self.clearing_messages = False
+        except Exception as err:
+            await send_error(msg, error, 'bot.py -> clear_msg_queue()')
 
     async def create_additional_help(self, info, msg):
-        txt = ('```Help: {}``````\n{}\n\n{}``````' +
-               '\nRequired permissions:\n* Bot: [{}]').format(
-            info[0], info[1], info[2], ', '.join(info[3]))
-        roles = await get_required_roles(msg, info[0])
-        if roles is None:
-            txt += "\n* User: [{}]\n\nAllowed channels: [{}]```".format(
-                ', '.join(info[4]), ', '.join(info[5]))
-        else:
-            txt += ('\n\nRoles that can use the command: [{}]\n\n' +
-                    'Allowed channels: [{}]```').format(
-                ', '.join(roles), ', '.join(info[5]))
-        return txt
+        try:
+            txt = ('```Help: {}``````\n{}\n\n{}``````' +
+                   '\nRequired permissions:\n* Bot: [{}]').format(
+                info[0], info[1], info[2], ', '.join(info[3]))
+            roles = await get_required_roles(msg, info[0])
+            if roles is None:
+                txt += "\n* User: [{}]\n\nAllowed channels: [{}]```".format(
+                    ', '.join(info[4]), ', '.join(info[5]))
+            else:
+                txt += ('\n\nRoles that can use the command: [{}]\n\n' +
+                        'Allowed channels: [{}]```').format(
+                    ', '.join(roles), ', '.join(info[5]))
+            return txt
+        except Exception as err:
+            await send_error(msg, err, 'bot.py -> create_additional_help()')
 
     async def push_raw_queue(self, payload, reaction_type):
         # push raw reaction info to queue only if

@@ -46,6 +46,13 @@ class Server_info(Command):
             value=owner,
             inline=False
         )
+        roles_channel = await get_roleschannel(msg)
+        if roles_channel is not None:
+            embed_var.add_field(
+                name='Roles channel',
+                value=roles_channel.name,
+                inline=False
+            )
         if msg.guild.rules_channel:
             embed_var.add_field(
                 name='Rules channel',
