@@ -24,6 +24,7 @@ class Config(Command):
             channel = discord.utils.get(
                 msg.guild.channels,
                 name='bot-config')
+
             # if init, if bot-config text channel does not exist
             # and bot has manage_channels perms,
             # create a private channel
@@ -43,6 +44,7 @@ class Config(Command):
             prefix = None
             roleschannel = None
             commands = None
+
             # else edit configurations
             if args[1] == 'prefix':
                 await self.set_prefix(msg, settings, args[2])
@@ -114,15 +116,10 @@ class Config(Command):
                 await message_delete(msg, 5, txt)
                 return
             if new_roles != 'remove':
-                roles = []
                 guild_roles = [i.name for i in msg.guild.roles]
-                for i in new_roles.split(','):
-                    i = i.strip()
-                    if i not in guild_roles:
-                        txt = 'Invalid role: {}'.format(i)
-                        await message_delete(msg, 5, txt)
-                        return
-                    roles.append(i)
+                roles = await self.valid_roles(msg, new_roles, guild_roles)
+                if roles is None:
+                    return
             roles_message = self.find_option(msg, settings, '`COMMANDS`')
             if roles_message is None:
                 txt = 'No commands option in config channel.'
@@ -136,40 +133,62 @@ class Config(Command):
                 content.append('{}, {}'.format(
                     '`{}`'.format(cmd),
                     ', '.join(roles)))
+                await message_edit(roles_message, '\n'.join(content))
+                await msg.channel.send(
+                    'Roles for `{}` changed to `{}`'
+                    .format(cmd, ', '.join(roles)))
             else:
                 for i in content:
                     if i.startswith('`{}`'.format(cmd)):
                         content.remove(i)
                 if len(content) == 1:
                     content.append('/')
-            content = '\n'.join(content)
-            await message_edit(roles_message, content)
-            await msg.channel.send('Required roles for `{}` changed to `{}`'
-                                   .format(cmd, ', '.join(roles)))
+                await msg.channel.send(
+                    'Removed roles for `{}`'
+                    .format(cmd))
+                await message_edit(roles_message, '\n'.join(content))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_command()')
 
+    async def valid_roles(self, msg, new_roles, guild_roles):
+        try:
+            roles = []
+            for i in new_roles.split(','):
+                i = i.strip().lower()
+                x = list(map(str.lower, guild_roles))
+                if i not in x:
+                    txt = 'Invalid role: {}'.format(i)
+                    await message_delete(msg, 5, txt)
+                    return None
+                roles.append(guild_roles[x.index(i)])
+            return roles
+        except Exception as err:
+            await send_error(msg, err, 'config.py -> valid_roles()')
+
     async def init_config(self, msg, channel):
-        bot_perms = dict(iter(
-            msg.guild.me.guild_permissions))
-        if channel is None:
-            if not bot_perms['manage_channels']:
-                txt = 'I need manage_channels permission!'
-                await message_delete(msg, 5, txt)
-                return
-            overwrites = {
-                msg.guild.default_role: discord.PermissionOverwrite(
-                    view_channel=False),
-                msg.guild.me: discord.PermissionOverwrite(
-                    view_channel=True)
-            }
-            channel = await msg.guild.create_text_channel(
-                'bot-config',
-                overwrites=overwrites)
-        await channel.send('`COMMANDS`\n/')
-        await channel.send('`PREFIX`\n{}'.format(DEFAULT_PREFIX))
-        await channel.send('`ROLES CHANNEL`\n/')
-        new_msg = await msg.channel.send('Created default config!')
+        try:
+            bot_perms = dict(iter(
+                msg.guild.me.guild_permissions))
+            if channel is None:
+                if not bot_perms['manage_channels']:
+                    txt = 'I need manage_channels permission!'
+                    await message_delete(msg, 5, txt)
+                    return
+                overwrites = {
+                    msg.guild.default_role: discord.PermissionOverwrite(
+                        view_channel=False),
+                    msg.guild.me: discord.PermissionOverwrite(
+                        view_channel=True)
+                }
+                channel = await msg.guild.create_text_channel(
+                    'bot-config',
+                    overwrites=overwrites)
+            await channel.send('`COMMANDS`\n/')
+            await channel.send('`PREFIX`\n{}'.format(DEFAULT_PREFIX))
+            await channel.send('`ROLES CHANNEL`\n/')
+            new_msg = await msg.channel.send('Created default config!')
+        except Exception as err:
+            await send_error(msg, err, 'config.py -> init_config()')
 
     def additional_info(self):
         return "{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
