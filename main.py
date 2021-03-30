@@ -6,9 +6,14 @@ from bot import Managing_bot
 from commands import *
 
 load_dotenv()
+# discord application's private token
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+# enable all intents to get member info etc.
+# application on the discord dev website needs to have
+# presence and server members intent enabled under BOT
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
+
 managing_bot = Managing_bot(client)
 
 
@@ -32,9 +37,13 @@ async def on_message(msg):
         if msg.author.id == client.user.id:
             return
         bot_perms = dict(iter(msg.guild.me.permissions_in(msg.channel)))
+        # allow calling help with default prefix, even if a different
+        # prefix is set
         if msg.content == "{}help".format(DEFAULT_PREFIX):
             await managing_bot.push_msg_queue(msg, 'help')
             return
+        # if server has prefix set in it's config, use that prefix,
+        # else use default prefix
         prefix = await get_prefix(msg)
         first_word = msg.content.split()
         if first_word is None or len(first_word) < 1:

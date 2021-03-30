@@ -6,13 +6,13 @@ A discord bot written in python, intended for managing smaller discord servers.
 ## features
 
 * Adding and removing roles with reactions,
-* hosting polls (not yet),
+* hosting polls (TODO),
 * clearing chat,
 * providing server and user info,
 * customizable settings
-	- see `;config help` in discord channel
+	- see `-config help` in discord channel
 
-For more information type `;help` in discord channel, after adding the bot.
+For more information type `-help` in discord channel, after adding the bot.
 
 ## using the code
 
