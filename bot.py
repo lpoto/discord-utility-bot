@@ -55,8 +55,8 @@ class Managing_bot:
                             msg.channel)))['send_messages']:
                         return
                     new_msg = await msg.channel.send(
-                        self.create_additional_help(
-                            cmd.command_info()))
+                        await self.create_additional_help(
+                            cmd.command_info(), msg))
                     await message_react(new_msg, emojis['waste_basket'])
                 else:
                     # else execute the command
@@ -69,12 +69,19 @@ class Managing_bot:
         else:
             self.clearing_messages = False
 
-    def create_additional_help(self, info):
-        return ('```Help: {}``````\n{}\n\n{}``````' +
-                '\nRequired permissions:\n* Bot: [{}]\n* User: [{}]\n' +
-                '\nAllowed channels: [{}]```').format(
-                    info[0], info[1], info[2], ', '.join(info[3]),
-                    ', '.join(info[4]), ', '.join(info[5]))
+    async def create_additional_help(self, info, msg):
+        txt = ('```Help: {}``````\n{}\n\n{}``````' +
+               '\nRequired permissions:\n* Bot: [{}]').format(
+            info[0], info[1], info[2], ', '.join(info[3]))
+        roles = await get_required_roles(msg, info[0])
+        if roles is None:
+            txt += "\n* User: [{}]\n\nAllowed channels: [{}]```".format(
+                ', '.join(info[4]), ', '.join(info[5]))
+        else:
+            txt += ('\n\nRoles that can use the command: [{}]\n\n' +
+                    'Allowed channels: [{}]```').format(
+                ', '.join(roles), ', '.join(info[5]))
+        return txt
 
     async def push_raw_queue(self, payload, reaction_type):
         # push raw reaction info to queue only if
