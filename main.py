@@ -45,9 +45,9 @@ async def on_message(msg):
         if msg.content == "{}help".format(DEFAULT_PREFIX):
             await managing_bot.push_msg_queue(msg, 'help')
             return
+        prefix = await get_prefix(msg, False)
         # if server has prefix set in it's config, use that prefix,
         # else use default prefix
-        prefix = await get_prefix(msg)
         first_word = msg.content.split()
         if first_word is None or len(first_word) < 1:
             return

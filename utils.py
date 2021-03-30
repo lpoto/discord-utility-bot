@@ -50,7 +50,10 @@ async def send_error(msg, error, origin, send=True):
     try:
         if msg is not None:
             if hasattr(error, 'code') and str(error.code) == '50001':
-                await msg.channel.send('Missing permissions!')
+                await msg.channel.send('Missing access to a channel.')
+            elif hasattr(error, 'code') and str(error.code) == '50013':
+                txt = 'I am missing the required permissions!'
+                await message_delete(msg, 5, txt)
             elif (hasattr(error, 'code') and str(error.code) != '10008' or
                     not hasattr(error, 'code')):
                 txt = 'Something went wrong!'
@@ -60,7 +63,7 @@ async def send_error(msg, error, origin, send=True):
         print('Error -> (utils.py -> send_error())' + str(err))
 
 
-async def get_prefix(msg):
+async def get_prefix(msg, throwerr=True):
     try:
         channel = discord.utils.get(
             msg.guild.channels,
@@ -81,7 +84,11 @@ async def get_prefix(msg):
             return DEFAULT_PREFIX
         return x[1]
     except Exception as error:
-        await send_error(msg, error, 'utils.py -> get_prefix()')
+        if not(hasattr(error, 'code') and str(error.code) == '50001'):
+            await send_error(msg, error, 'utils.py -> get_prefix()')
+        elif (hasattr(error, 'code') and str(error.code) == '50001'
+                and throwerr):
+            await msg.channel.send('Missing access to config channel!')
         return DEFAULT_PREFIX
 
 
@@ -111,7 +118,10 @@ async def get_roleschannel(msg):
             return None
         return roleschannel
     except Exception as error:
-        await send_error(None, error, 'utils.py -> get_roleschannel()')
+        if hasattr(error, 'code') and str(error.code) == '50001':
+            await msg.channel.send('Missing access to config channel!')
+        else:
+            await send_error(None, error, 'utils.py -> get_roleschannel()')
         return None
 
 
@@ -139,7 +149,10 @@ async def get_required_roles(msg, command):
                 return i.split(', ')[1:]
         return None
     except Exception as error:
-        await send_error(None, error, 'utils.py -> get_required_roles()')
+        if hasattr(error, 'code') and str(error.code) == '50001':
+            await msg.channel.send('Missing access to config channel!')
+        else:
+            await send_error(None, error, 'utils.py -> get_required_roles()')
         return None
 
 emojis = {

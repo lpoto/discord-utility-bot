@@ -47,8 +47,8 @@ class Command:
         # send info about all the commands,
         # classes extending default Command will
         # override this method
-        prefix = await get_prefix(msg)
         commands = Managing_bot.return_commands()
+        prefix = await get_prefix(msg)
         embed_var = discord.Embed(
             title='Help',
             description='current prefix: [{}]'.format(prefix),

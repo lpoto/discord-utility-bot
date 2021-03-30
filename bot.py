@@ -58,7 +58,7 @@ class Managing_bot:
                         new_msg = await msg.channel.send(
                             await self.create_additional_help(
                                 cmd.command_info(), msg)
-                            )
+                        )
                         await message_react(new_msg, emojis['waste_basket'])
                     else:
                         # else execute the command
@@ -148,28 +148,28 @@ class Managing_bot:
                     await message_delete(msg, 5, txt)
                 return False
 
-            # if user is not administrator check for required permissions
+            # check for required permissions
             # and roles
-            user_perms = dict(iter(
-                msg.author.permissions_in(msg.channel)))
-            if not user_perms['administrator']:
-                return await self.check_permissions(command, msg, user_perms)
-            return True
+            return await self.check_permissions(command, msg)
         except Exception as err:
             await send_error(msg, err, 'bot.py -> check_if_valid()')
 
-    async def check_permissions(self, command, msg, user_perms):
+    async def check_permissions(self, command, msg):
         try:
+            user_perms = dict(iter(
+                msg.author.permissions_in(msg.channel)))
             bot_perms = dict(iter(
                 msg.guild.me.permissions_in(msg.channel)))
             # check if bot has all the required permissions in the channel
             for perm in command.bot_permissions:
                 if not bot_perms[perm]:
                     if bot_perms['send_messages']:
-                        txt = 'I do not have the required permissions!'
+                        txt = ('I need `{}` permission to use this command.'
+                               .format(perm))
                         await message_delete(msg, 5, txt)
                     return False
-
+            if user_perms['administrator']:
+                return True
             # if command has required roles set up, override default
             # required permissions
             required_roles = await get_required_roles(msg, command.name)
@@ -178,13 +178,16 @@ class Managing_bot:
                 for i in required_roles:
                     if i in user_roles:
                         return True
+                txt = ('This command can be used by the following roles:\n{}'
+                       .format(', '.join(required_roles)))
                 return False
 
             # check if user has all the required permissions
             for perm in command.user_permissions:
                 if not user_perms[perm]:
                     if bot_perms['send_messages']:
-                        txt = 'You do not have the required permissions!'
+                        txt = ('You need `{} permission to use this command!`'
+                               .format(perm))
                         await message_delete(msg, 5, txt)
                     return False
             return True
