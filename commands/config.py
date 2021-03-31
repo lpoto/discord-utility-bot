@@ -1,6 +1,6 @@
 import discord
 from command import Command
-from bot import Managing_bot
+from bot import managing_bot
 from utils import *
 
 
@@ -17,7 +17,8 @@ class Config(Command):
                 txt = 'No arguments provided.'
                 await message_delete(msg, 5, txt)
                 return
-            if args[1] not in ['init', 'prefix', 'command', 'roleschannel']:
+            if args[1] not in [
+                    'init', 'prefix', 'command', 'roleschannel', 'hello']:
                 txt = 'Invalid arguments.'
                 await message_delete(msg, 5, txt)
                 return
@@ -40,10 +41,11 @@ class Config(Command):
                 txt = 'There is no config channel.'
                 await message_delete(msg, 5, txt)
                 return
-            settings = await channel.history(limit=3).flatten()
+            settings = await channel.history(limit=4).flatten()
             prefix = None
             roleschannel = None
             commands = None
+            hello = None
 
             # else edit configurations
             if args[1] == 'prefix':
@@ -51,6 +53,9 @@ class Config(Command):
                 return
             if args[1] == 'roleschannel':
                 await self.set_roleschannel(msg, settings, args[2])
+                return
+            if args[1] == 'hello':
+                await self.set_hello(msg, settings, msg.content)
                 return
             if args[1] == 'command':
                 if len(args) < 4:
@@ -111,7 +116,7 @@ class Config(Command):
 
     async def set_command(self, msg, settings, cmd, new_roles):
         try:
-            if cmd not in Managing_bot.commands:
+            if cmd not in managing_bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
                 return
@@ -165,6 +170,24 @@ class Config(Command):
         except Exception as err:
             await send_error(msg, err, 'config.py -> valid_roles()')
 
+    async def set_hello(self, msg, settings, content):
+        try:
+            new_txt = ' '.join(content.split()[2:])
+            if len(new_txt) < 1:
+                return
+            txt_msg = self.find_option(msg, settings, '`HELLO`')
+            if txt_msg is None:
+                return
+            if new_txt == 'remove':
+                await message_edit(txt_msg, '`HELLO`')
+                return
+            await message_edit(
+                txt_msg, '`HELLO`\n{}'.format(new_txt))
+            await msg.channel.send(
+                '`Hello text` changed to `{}`.'.format(new_txt))
+        except Exception as err:
+            await send_error(msg, err, 'config.py -> set_help()')
+
     async def init_config(self, msg, channel):
         try:
             bot_perms = dict(iter(
@@ -183,6 +206,7 @@ class Config(Command):
                 channel = await msg.guild.create_text_channel(
                     'bot-config',
                     overwrites=overwrites)
+            await channel.send('`HELLO`')
             await channel.send('`COMMANDS`\n/')
             await channel.send('`PREFIX`\n{}'.format(DEFAULT_PREFIX))
             await channel.send('`ROLES CHANNEL`\n/')
@@ -191,7 +215,7 @@ class Config(Command):
             await send_error(msg, err, 'config.py -> init_config()')
 
     def additional_info(self):
-        return "{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
+        return "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
             '* Config required "bot-config" text channel.',
             '    - create it with "config init" (if the bot does not have ' +
             '"manage_channels" , manually create the channel first),',
@@ -203,7 +227,9 @@ class Config(Command):
             '* "config command <command-name> <roles-seperated-with-comma>" ' +
             '-> sets which roles can use the command,',
             '* "config command <command-name> remove" -> ' +
-            'removes roles for the command.'
+            'removes roles for the command.',
+            '* "config hello <hello-text> -> Send hello text on member join"',
+            '* "config hello remove" -> remove hello text'
         )
 
 

@@ -79,7 +79,7 @@ async def get_prefix(msg, throwerr=True):
             name='bot-config')
         if channel is None:
             return DEFAULT_PREFIX
-        settings = await channel.history(limit=3).flatten()
+        settings = await channel.history(limit=4).flatten()
         prefix_msg = None
         for m in settings:
             if (m.author.id == msg.guild.me.id and
@@ -101,6 +101,31 @@ async def get_prefix(msg, throwerr=True):
         return DEFAULT_PREFIX
 
 
+async def get_hello(server):
+    try:
+        channel = discord.utils.get(
+                server.channels,
+                name='bot-config')
+        settings = await channel.history(limit=4).flatten()
+        if channel is None:
+            return None
+        txt_msg = None
+        for m in settings:
+            if (m.author.id == server.me.id and
+                    m.content.startswith('`HELLO`')):
+                txt_msg = m
+                break
+        if txt_msg is None:
+            return None
+        txt = txt_msg.content.split('\n')
+        if len(txt) != 2:
+            return None
+        return txt[1]
+    except Exception as error:
+        await send_error(None, error, 'utils.py -> get_hello()')
+        return None
+
+
 async def get_roleschannel(msg):
     try:
         channel = discord.utils.get(
@@ -108,7 +133,7 @@ async def get_roleschannel(msg):
             name='bot-config')
         if channel is None:
             return None
-        settings = await channel.history(limit=3).flatten()
+        settings = await channel.history(limit=4).flatten()
         roles_msg = None
         for m in settings:
             if (m.author.id == msg.guild.me.id and
@@ -141,7 +166,7 @@ async def get_required_roles(msg, command):
             name='bot-config')
         if channel is None:
             return None
-        settings = await channel.history(limit=3).flatten()
+        settings = await channel.history(limit=4).flatten()
         roles_msg = None
         for m in settings:
             if (m.author.id == msg.guild.me.id and

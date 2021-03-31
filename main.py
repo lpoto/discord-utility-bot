@@ -70,4 +70,16 @@ async def on_raw_reaction_remove(payload):
         return
     await managing_bot.push_raw_queue(payload, 'remove')
 
+
+@client.event
+async def on_member_join(member):
+    server = member.guild
+    default_channel = server.system_channel
+    hello = await get_hello(server)
+    if hello is None:
+        return
+    msg = '{} {}'.format(member.mention, hello)
+    await default_channel.send(msg)
+
+
 client.run(DISCORD_TOKEN)

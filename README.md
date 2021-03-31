@@ -9,6 +9,7 @@ A discord bot written in python, intended for managing smaller discord servers.
 * hosting polls,
 * clearing chat,
 * providing server and user info,
+* optional customizable welcome text,
 * customizable settings
 	- see `-config help` in discord channel
 
