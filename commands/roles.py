@@ -37,8 +37,7 @@ class Roles(Command):
 
     async def on_raw_reaction(self, msg, payload):
         try:
-            if (payload.emoji.name != emojis['white_circle'] or
-                    msg.author.id != msg.guild.me.id):
+            if payload.emoji.name != emojis['white_circle']:
                 return
             roles_channel = await get_roleschannel(msg)
             if roles_channel is None or msg.channel.id != roles_channel.id:

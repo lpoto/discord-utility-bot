@@ -3,7 +3,12 @@ from dotenv import load_dotenv
 import discord
 import random
 
+# enable all intents to get member info etc.
+# application on the discord dev website needs to have
+# presence and server members intent enabled under BOT
 load_dotenv()
+intents = discord.Intents.all()
+client = discord.Client(intents=intents)
 # default prefix key used before commands
 DEFAULT_PREFIX = os.getenv('DEFAULT_PREFIX')
 # discord application's private token
@@ -19,7 +24,7 @@ async def message_react(msg, reaction):
         await msg.add_reaction(reaction)
         return True
     except Exception as error:
-        send_error(msg, error, 'utils.py -> message_react()')
+        await send_error(msg, error, 'utils.py -> message_react()')
         return False
 
 
@@ -33,7 +38,8 @@ async def message_delete(msg, time, txt=None):
         await msg.delete(delay=time)
         return True
     except Exception as error:
-        send_error(msg, error, 'utils.py -> message_delete()')
+        if (hasattr(error, 'code')) and str(error.code) != '10008':
+            print('Error -> (utils.py -> message_delete())' + str(err))
         return False
 
 
@@ -42,23 +48,26 @@ async def message_edit(msg, text, embed=None):
         await msg.edit(content=text, embed=embed)
         return True
     except Exception as error:
-        send_error(msg, error, 'utils.py -> message_edit()')
+        await send_error(msg, error, 'utils.py -> message_edit()')
         return False
 
 
 async def send_error(msg, error, origin, send=True):
     try:
-        if msg is not None:
-            if hasattr(error, 'code') and str(error.code) == '50001':
-                await msg.channel.send('Missing access to a channel.')
-            elif hasattr(error, 'code') and str(error.code) == '50013':
-                txt = 'I am missing the required permissions!'
-                await message_delete(msg, 5, txt)
-            elif (hasattr(error, 'code') and str(error.code) != '10008' or
-                    not hasattr(error, 'code')):
+        if (hasattr(error, 'code') and str(error.code) == '50001'
+                and msg is not None):
+            await msg.channel.send('Missing access to a channel.')
+        elif (hasattr(error, 'code') and str(error.code) == '50013'
+                and msg is not None):
+            txt = 'I am missing the required permissions!'
+            await message_delete(msg, 5, txt)
+        elif (hasattr(error, 'code') and
+                str(error.code) not in ['10008', '50001', '50013'] or
+                not hasattr(error, 'code')):
+            if msg is not None:
                 txt = 'Something went wrong!'
                 await message_delete(msg, 5, txt)
-                print('Error ({}):\n{}'.format(origin, error))
+            print('Error ({}):\n{}'.format(origin, error))
     except Exception as err:
         print('Error -> (utils.py -> send_error())' + str(err))
 

@@ -3,30 +3,30 @@ from utils import *
 
 
 class Managing_bot:
-    # dictionary containing all command objects as
-    # values and their names as keys
-    commands = {}
-
     def __init__(self, client):
-        self.client = client
-        self.default_prefix = DEFAULT_PREFIX
         self.msg_queue = []
         self.raw_queue = []
         self.clearing_messages = False
         self.clearing_raw_reactions = False
+        # dictionary containing all command objects as
+        # values and their names as keys
+        self.commands = {}
+        # lists containing objects with special methods
+        # that need to be processed seperately
+        self.on_raw_reactions = []
+        self.on_message = []
 
-    @classmethod
-    def add_command(cls, command):
+    def add_command(self, command):
         # add a command object to commands dictionary
         # this is called when initializing a
         # Command object
-        cls.commands[command.name] = command
-
-    @classmethod
-    def return_commands(cls):
-        # returns the dictionary with all the
-        # created Command objects
-        return cls.commands
+        self.commands[command.name] = command
+        # if commands have on raw reaction or on message
+        # methods, add them to list
+        if hasattr(command, 'on_raw_reaction'):
+            self.on_raw_reactions.append(command)
+        if hasattr(command, 'on_message'):
+            self.on_message.append(command)
 
     async def push_msg_queue(self, msg, first_word):
         # push msgs that match command format to
@@ -46,20 +46,20 @@ class Managing_bot:
                     msg = el[0]
                     args = msg.content.split()
                     first_word = el[1]
-                    cmd = Managing_bot.commands[first_word]
+                    cmd = self.commands[first_word]
 
                     # if 2nd word is help send additional info
                     # about the command
                     if len(args) > 1 and args[1] == 'help':
-                        if not dict(iter(
+                        if dict(iter(
                             msg.guild.me.permissions_in(
                                 msg.channel)))['send_messages']:
-                            return
-                        new_msg = await msg.channel.send(
-                            await self.create_additional_help(
-                                cmd.command_info(), msg)
-                        )
-                        await message_react(new_msg, emojis['waste_basket'])
+                            new_msg = await msg.channel.send(
+                                await self.create_additional_help(
+                                    cmd.command_info(), msg)
+                            )
+                            await message_react(
+                                new_msg, emojis['waste_basket'])
                     else:
                         # else execute the command
                         # check if valid channel, permissions,...
@@ -68,6 +68,7 @@ class Managing_bot:
                     await self.clear_msg_queue(True)
                 except Exception as error:
                     await send_error(msg, error, 'bot.py -> clear_msg_queue()')
+                    await self.clear_msg_queue(True)
             else:
                 self.clearing_messages = False
         except Exception as err:
@@ -89,55 +90,6 @@ class Managing_bot:
             return txt
         except Exception as err:
             await send_error(msg, err, 'bot.py -> create_additional_help()')
-
-    async def push_raw_queue(self, payload, reaction_type):
-        # push raw reaction info to queue only if
-        # its emoji is in utils.emojis dictionary
-        if payload.emoji.name in emojis.values():
-            self.raw_queue.append((payload, reaction_type))
-        await self.clear_raw_queue(False)
-
-    async def clear_raw_queue(self, ignore_running):
-        # recursively clear raw reaction events one by one
-        if ((not self.clearing_raw_reactions or ignore_running) and
-                len(self.raw_queue) > 0):
-            try:
-                # get reaction message and channel
-                # from payload gotten from raw event
-                self.clearing_raw_reactions = True
-                el = self.raw_queue.pop(0)
-                payload = el[0]
-                reaction_type = el[1]
-                guild = None
-                for i in self.client.guilds:
-                    if i.id == payload.guild_id:
-                        guild = i
-                channel = None
-                for i in guild.channels:
-                    if i.id == payload.channel_id:
-                        channel = i
-                msg = await channel.fetch_message(payload.message_id)
-
-                # if wastebin reaction and bot is msg author
-                # and message is not pinned and message has an
-                # embed or starts with help, delete it
-                if (reaction_type == 'add' and
-                    payload.emoji.name == emojis['waste_basket'] and
-                        not msg.pinned and
-                    (len(msg.embeds) > 0 or
-                     msg.content.startswith('```Help: ')) and
-                        msg.author.id == msg.guild.me.id):
-                    edit_txt = 'Message has been deleted.'
-                    await message_edit(msg, edit_txt)
-                    await message_delete(msg, 3)
-                elif payload.emoji.name != emojis['waste_basket']:
-                    for i in Managing_bot.commands.values():
-                        await i.on_raw_reaction(msg, payload)
-                await self.clear_raw_queue(True)
-            except Exception as error:
-                await send_error(msg, error, 'bot.py -> clear_raw_queue()')
-        else:
-            self.clearing_raw_reactions = False
 
     async def check_if_valid(self, command, msg):
         try:
@@ -193,3 +145,57 @@ class Managing_bot:
             return True
         except Exception as err:
             await send_error(msg, err, 'bot.py -> check_permissions()')
+
+    async def push_raw_queue(self, payload, reaction_type):
+        # push raw reaction info to queue only if
+        # its emoji is in utils.emojis dictionary
+        if payload.emoji.name in emojis.values():
+            self.raw_queue.append((payload, reaction_type))
+        await self.clear_raw_queue(False)
+
+    async def clear_raw_queue(self, ignore_running):
+        # recursively clear raw reaction events one by one
+        if ((not self.clearing_raw_reactions or ignore_running) and
+                len(self.raw_queue) > 0):
+            try:
+                # get reaction message and channel
+                # from payload gotten from raw event
+                self.clearing_raw_reactions = True
+                el = self.raw_queue.pop(0)
+                payload = el[0]
+                reaction_type = el[1]
+                guild = discord.utils.get(
+                    client.guilds,
+                    id=payload.guild_id)
+                if guild is None:
+                    return
+                channel = discord.utils.get(
+                        guild.channels,
+                        id=payload.channel_id)
+                if channel is None:
+                    return
+                msg = await channel.fetch_message(payload.message_id)
+
+                # if wastebin reaction and bot is msg author
+                # and message is not pinned and message has an
+                # embed or starts with help, delete it
+                if (reaction_type == 'add' and
+                    payload.emoji.name == emojis['waste_basket'] and
+                        not msg.pinned and
+                    (len(msg.embeds) > 0 or
+                     msg.content.startswith('```Help: ')) and
+                        msg.author.id == msg.guild.me.id):
+                    edit_txt = 'Message has been deleted.'
+                    await message_edit(msg, edit_txt)
+                    await message_delete(msg, 3)
+                elif payload.emoji.name != emojis['waste_basket']:
+                    for i in self.on_raw_reactions:
+                        await i.on_raw_reaction(msg, payload)
+                await self.clear_raw_queue(True)
+            except Exception as error:
+                await send_error(msg, error, 'bot.py -> clear_raw_queue()')
+        else:
+            self.clearing_raw_reactions = False
+
+
+managing_bot = Managing_bot(client)

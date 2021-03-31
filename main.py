@@ -1,18 +1,10 @@
 import discord
 import os
+import re
 from utils import *
 from dotenv import load_dotenv
-from bot import Managing_bot
+from bot import managing_bot
 from commands import *
-
-load_dotenv()
-# enable all intents to get member info etc.
-# application on the discord dev website needs to have
-# presence and server members intent enabled under BOT
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
-
-managing_bot = Managing_bot(client)
 
 
 @client.event
@@ -24,11 +16,6 @@ async def on_ready():
         status = discord.Status.idle
         await client.change_presence(status=status, activity=activity)
         print("Activity set to", activity)
-
-
-@client.event
-async def on_error(event, *args, **kwargs):
-    print(event)
 
 
 @client.event
@@ -53,8 +40,13 @@ async def on_message(msg):
             return
         first_word = first_word[0][len(prefix):]
         if (msg.content[:len(prefix)] == prefix and
-                first_word in Managing_bot.return_commands().keys()):
+                first_word in managing_bot.commands.keys()):
             await managing_bot.push_msg_queue(msg, first_word)
+            return
+        # for all objects in on_message list, execute
+        # those objects' on_message method
+        for i in managing_bot.on_message:
+            await i.on_message(msg)
     except Exception as err:
         await send_error(msg, err, 'main.py -> on_message()')
 
@@ -64,7 +56,8 @@ async def on_raw_reaction_add(payload):
     # listen for raw reaction events, so we can listen to
     # reactions on messages created before bot was online
     if (payload.user_id == client.user.id or
-            payload.guild_id is None):
+            payload.guild_id is None or
+            payload.emoji.name not in emojis.values()):
         return
     await managing_bot.push_raw_queue(payload, 'add')
 
@@ -72,7 +65,8 @@ async def on_raw_reaction_add(payload):
 @client.event
 async def on_raw_reaction_remove(payload):
     if (payload.user_id == client.user.id or
-            payload.guild_id is None):
+            payload.guild_id is None or
+            payload.emoji.name not in emojis.values()):
         return
     await managing_bot.push_raw_queue(payload, 'remove')
 

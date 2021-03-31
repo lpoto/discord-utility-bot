@@ -1,5 +1,5 @@
 import discord
-from bot import Managing_bot
+from bot import managing_bot
 from utils import *
 
 
@@ -27,7 +27,7 @@ class Command:
     def add_command(self):
         # adds object to commands dictionary
         # in Managing_bot
-        Managing_bot.add_command(self)
+        managing_bot.add_command(self)
 
     def command_info(self):
         # detailed information about
@@ -47,27 +47,27 @@ class Command:
         # send info about all the commands,
         # classes extending default Command will
         # override this method
-        commands = Managing_bot.return_commands()
-        prefix = await get_prefix(msg)
-        embed_var = discord.Embed(
-            title='Help',
-            description='current prefix: [{}]'.format(prefix),
-            color=random_color())
-        footer = '"{}command help" for details about the command.'.format(
-                prefix)
-        embed_var.set_footer(text=footer)
-        for k, v in commands.items():
-            if k == 'help':
-                continue
-            embed_var.add_field(
-                name=k,
-                value=v.description,
-                inline=False)
-        new_msg = await msg.channel.send(embed=embed_var)
-        await message_react(new_msg, emojis['waste_basket'])
-
-    async def on_raw_reaction(self, msg, payload):
-        pass
+        try:
+            commands = managing_bot.commands
+            prefix = await get_prefix(msg)
+            embed_var = discord.Embed(
+                title='Help',
+                description='current prefix: [{}]'.format(prefix),
+                color=random_color())
+            footer = '"{}command help" for details about the command.'.format(
+                    prefix)
+            embed_var.set_footer(text=footer)
+            for k, v in commands.items():
+                if k == 'help':
+                    continue
+                embed_var.add_field(
+                    name=k,
+                    value=v.description,
+                    inline=False)
+            new_msg = await msg.channel.send(embed=embed_var)
+            await message_react(new_msg, emojis['waste_basket'])
+        except Exception as err:
+            await send_error(msg, err, 'command.py -> execute_command()')
 
 
 Command()
