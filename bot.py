@@ -120,7 +120,6 @@ class Managing_bot:
                                .format(perm))
                         await message_delete(msg, 5, txt)
                     return False
-            print(await get_required_roles(msg, command.name))
             if user_perms['administrator']:
                 return True
             # if command has required roles set up, override default
