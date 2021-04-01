@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import discord
 import random
-from database import Mysql
+from database import DB
 
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
@@ -14,7 +14,7 @@ client = discord.Client(intents=intents)
 DEFAULT_PREFIX = os.getenv('DEFAULT_PREFIX')
 # discord application's private token
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-database = Mysql()
+database = DB()
 
 
 def get_database_info():
