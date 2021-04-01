@@ -102,6 +102,14 @@ class Config(Command):
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
                 return
+            if len(cmd) > 50:
+                txt = 'Role name too longs!'
+                await message_delete(msg, 5, txt)
+                return
+            if new_roles != 'help' and len(new_roles) > 90:
+                txt = 'Too many roles!'
+                await message_delete(msg, 5, txt)
+                return
             if new_roles == 'remove':
                 query = ("DELETE FROM commands WHERE guild_id = '{}' AND " +
                          "command = '{}'").format(

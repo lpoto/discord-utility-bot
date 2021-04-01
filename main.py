@@ -41,12 +41,12 @@ async def on_message(msg):
             return
         first_word = first_word[0][len(prefix):]
         if (msg.content[:len(prefix)] == prefix and
-                first_word in managing_bot.commands.keys()):
+                first_word in managing_bot.commands):
             await managing_bot.push_msg_queue(msg, first_word)
             return
-        # for all objects in on_message list, execute
-        # those objects' on_message method
-        if first_word in managing_bot.commands:
+            # for all objects in on_message list, execute
+            # those objects' on_message method
+        for i in managing_bot.on_message:
             await i.on_message(msg)
     except Exception as err:
         await send_error(msg, err, 'main.py -> on_message()')
