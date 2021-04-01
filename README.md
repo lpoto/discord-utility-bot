@@ -9,9 +9,11 @@ A discord bot written in python, intended for managing smaller discord servers.
 * hosting polls,
 * clearing chat,
 * providing server and user info,
-* optional customizable welcome text,
-* customizable settings
-	- see `-config help` in discord channel
+* Customizable: 
+	- prefix,
+	- role managing channel,
+	- which roles can use a command,
+	- optional welcome text
 
 For more information type `-help` in discord channel, after adding the bot.
 

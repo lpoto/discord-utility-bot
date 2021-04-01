@@ -12,50 +12,33 @@ class Config(Command):
 
     async def execute_command(self, msg):
         try:
+            if not database.connected:
+                txt = 'This command requires database connection!'
+                await message_delete(msg, 5, txt)
+                return
             args = msg.content.split()
             if len(args) < 2:
                 txt = 'No arguments provided.'
                 await message_delete(msg, 5, txt)
                 return
             if args[1] not in [
-                    'init', 'prefix', 'command', 'roleschannel', 'hello']:
+                    'prefix', 'command', 'roleschannel', 'welcome']:
                 txt = 'Invalid arguments.'
                 await message_delete(msg, 5, txt)
-                return
-            channel = discord.utils.get(
-                msg.guild.channels,
-                name='bot-config')
-
-            # if init, if bot-config text channel does not exist
-            # and bot has manage_channels perms,
-            # create a private channel
-            # Add default settings to the channel
-            if args[1] == 'init':
-                await self.init_config(msg, channel)
                 return
             if len(args) < 3:
                 txt = 'No argument to option: `{}`.'.format(args[1])
                 await message_delete(msg, 5, txt)
                 return
-            if channel is None:
-                txt = 'There is no config channel.'
-                await message_delete(msg, 5, txt)
-                return
-            settings = await channel.history(limit=4).flatten()
-            prefix = None
-            roleschannel = None
-            commands = None
-            hello = None
-
             # else edit configurations
             if args[1] == 'prefix':
-                await self.set_prefix(msg, settings, args[2])
+                await self.set_prefix(msg, args[2])
                 return
             if args[1] == 'roleschannel':
-                await self.set_roleschannel(msg, settings, args[2])
+                await self.set_roleschannel(msg, args[2])
                 return
-            if args[1] == 'hello':
-                await self.set_hello(msg, settings, msg.content)
+            if args[1] == 'welcome':
+                await self.set_welcome(msg, msg.content)
                 return
             if args[1] == 'command':
                 if len(args) < 4:
@@ -64,94 +47,89 @@ class Config(Command):
                     return
                 await self.set_command(
                     msg,
-                    settings,
                     args[2],
                     ' '.join(msg.content.split()[3:]))
                 return
         except Exception as err:
             await send_error(msg, err, 'config.py -> execute_command()')
 
-    def find_option(self, msg, settings, name):
-        for m in settings:
-            if (m.author.id == msg.guild.me.id and
-                    m.content.startswith(name)):
-                return m
-        return None
-
-    async def set_prefix(self, msg, settings, new_prefix):
+    async def set_prefix(self, msg, new_prefix):
         try:
-            prefix_msg = self.find_option(msg, settings, '`PREFIX`')
-            if prefix_msg is None:
-                txt = 'No prefix option in config chanel'
+            if len(new_prefix) > 5:
+                txt = 'Prefix cannot be longer than 5 signs!'
                 await message_delete(msg, 5, txt)
                 return
-            await message_edit(prefix_msg, '`PREFIX`\n{}'.format(new_prefix))
+            await self.edit_sql(
+                "SELECT * FROM prefix WHERE guild_id = '{}'".format(
+                    msg.guild.id),
+                ("INSERT INTO prefix (guild_id, prefix) VALUES " +
+                 "('{}', '{}')").format(
+                    msg.guild.id, new_prefix),
+                "UPDATE prefix SET prefix = '{}'".format(
+                    new_prefix))
             await msg.channel.send(
                 '`Prefix` changed to `{}`.'.format(new_prefix))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_prefix()')
 
-    async def set_roleschannel(self, msg, settings, x):
+    async def set_roleschannel(self, msg, x):
         try:
             new_channel = None
             for chnl in msg.guild.channels:
                 if ((str(chnl.id) == x or x == chnl.name) and
                         str(chnl.type) == 'text'):
-                    new_channel = chnl.name
+                    new_channel = chnl
             if new_channel is None:
                 txt = 'Invalid channel.'
                 await message_delete(msg, 5, txt)
                 return
-            roles_msg = self.find_option(msg, settings, '`ROLES CHANNEL`')
-            if roles_msg is None:
-                txt = 'No roleschannel option in config chanel.'
-                await message_delete(msg, 5, txt)
-                return
-            await message_edit(
-                roles_msg, '`ROLES CHANNEL`\n{}'.format(new_channel))
+            await self.edit_sql(
+                "SELECT * FROM roleschannel WHERE guild_id = '{}'".format(
+                    msg.guild.id),
+                ("INSERT INTO roleschannel (guild_id, channel_id) VALUES " +
+                 "('{}', '{}')").format(
+                    msg.guild.id, new_channel.id),
+                "UPDATE roleschannel SET channel_id = '{}'".format(
+                    new_channel.id))
             await msg.channel.send(
-                '`Roles channel` changed to `{}`.'.format(new_channel))
+                '`Roles channel` changed to `{}`.'.format(new_channel.name))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_roleschannel()')
 
-    async def set_command(self, msg, settings, cmd, new_roles):
+    async def set_command(self, msg, cmd, new_roles):
         try:
             if cmd not in managing_bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
                 return
-            if new_roles != 'remove':
-                guild_roles = [i.name for i in msg.guild.roles]
-                roles = await self.valid_roles(msg, new_roles, guild_roles)
-                if roles is None:
-                    return
-            roles_message = self.find_option(msg, settings, '`COMMANDS`')
-            if roles_message is None:
-                txt = 'No commands option in config channel.'
-                await message_delete(msg, 5, txt)
-                return
-            content = roles_message.content.split('\n')
-            if new_roles != 'remove':
-                for i in content:
-                    if i == '/' or i.startswith('`{}`'.format(cmd)):
-                        content.remove(i)
-                content.append('{}, {}'.format(
-                    '`{}`'.format(cmd),
-                    ', '.join(roles)))
-                await message_edit(roles_message, '\n'.join(content))
-                await msg.channel.send(
-                    'Roles for `{}` changed to `{}`'
-                    .format(cmd, ', '.join(roles)))
-            else:
-                for i in content:
-                    if i.startswith('`{}`'.format(cmd)):
-                        content.remove(i)
-                if len(content) == 1:
-                    content.append('/')
+            if new_roles == 'remove':
+                query = ("DELETE FROM commands WHERE guild_id = '{}' AND " +
+                         "command = '{}'").format(
+                    msg.guild.id, cmd)
+                cursor = database.cnx.cursor(buffered=True)
+                cursor.execute(query)
+                database.cnx.commit()
+                cursor.close()
                 await msg.channel.send(
                     'Removed roles for `{}`'
                     .format(cmd))
-                await message_edit(roles_message, '\n'.join(content))
+                return
+            guild_roles = [i.name for i in msg.guild.roles]
+            roles = await self.valid_roles(msg, new_roles, guild_roles)
+            if roles is None:
+                return
+            await self.edit_sql(
+                ("SELECT * FROM commands WHERE guild_id = '{}' " +
+                 "AND command = '{}'").format(
+                    msg.guild.id, cmd),
+                ("INSERT INTO commands (guild_id, command, roles) VALUES " +
+                 "('{}', '{}', '{}')").format(
+                    msg.guild.id, cmd, '<;>'.join(roles)),
+                "UPDATE commands SET roles = '{}'".format(
+                    '<;>'.join(roles)))
+            await msg.channel.send(
+                'Roles for `{}` changed to `{}`'
+                .format(cmd, ', '.join(roles)))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_command()')
 
@@ -170,57 +148,47 @@ class Config(Command):
         except Exception as err:
             await send_error(msg, err, 'config.py -> valid_roles()')
 
-    async def set_hello(self, msg, settings, content):
+    async def set_welcome(self, msg, content):
         try:
             new_txt = ' '.join(content.split()[2:])
             if len(new_txt) < 1:
                 return
-            txt_msg = self.find_option(msg, settings, '`HELLO`')
-            if txt_msg is None:
-                return
             if new_txt == 'remove':
-                await message_edit(txt_msg, '`HELLO`')
+                query = "DELETE FROM welcome WHERE guild_id = '{}'".format(
+                        msg.guild.id)
+                cursor = database.cnx.cursor(buffered=True)
+                cursor.execute(query)
+                database.cnx.commit()
+                cursor.close()
+                await msg.channel.send(
+                    'Removed `Welcome text`.')
                 return
-            await message_edit(
-                txt_msg, '`HELLO`\n{}'.format(new_txt))
+            await self.edit_sql(
+                "SELECT * FROM welcome WHERE guild_id = '{}'".format(
+                    msg.guild.id),
+                ("INSERT INTO welcome (guild_id, welcome) VALUES " +
+                 "('{}', '{}')").format(
+                    msg.guild.id, new_txt),
+                "UPDATE roleschannel SET welcome = '{}'".format(
+                    new_txt))
             await msg.channel.send(
-                '`Hello text` changed to `{}`.'.format(new_txt))
+                '`Welcome text` changed to `{}`.'.format(new_txt))
         except Exception as err:
-            await send_error(msg, err, 'config.py -> set_help()')
+            await send_error(msg, err, 'config.py -> set_welcome()')
 
-    async def init_config(self, msg, channel):
-        try:
-            bot_perms = dict(iter(
-                msg.guild.me.guild_permissions))
-            if channel is None:
-                if not bot_perms['manage_channels']:
-                    txt = 'I need manage_channels permission!'
-                    await message_delete(msg, 5, txt)
-                    return
-                overwrites = {
-                    msg.guild.default_role: discord.PermissionOverwrite(
-                        view_channel=False),
-                    msg.guild.me: discord.PermissionOverwrite(
-                        view_channel=True)
-                }
-                channel = await msg.guild.create_text_channel(
-                    'bot-config',
-                    overwrites=overwrites)
-            await channel.send('`HELLO`')
-            await channel.send('`COMMANDS`\n/')
-            await channel.send('`PREFIX`\n{}'.format(DEFAULT_PREFIX))
-            await channel.send('`ROLES CHANNEL`\n/')
-            new_msg = await msg.channel.send('Created default config!')
-        except Exception as err:
-            await send_error(msg, err, 'config.py -> init_config()')
+    async def edit_sql(self, select, insert, update):
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(select)
+        fetched = cursor.fetchone()
+        if fetched is None:
+            cursor.execute(insert)
+        else:
+            cursor.execute(update)
+        cursor.close()
+        database.cnx.commit()
 
     def additional_info(self):
-        return "{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
-            '* Config required "bot-config" text channel.',
-            '    - create it with "config init" (if the bot does not have ' +
-            '"manage_channels" , manually create the channel first),',
-            '    - config channel should only be used by the bot, as it ' +
-            'will only read the last 3 messages in that channel,',
+        return "{}\n{}\n{}\n{}\n{}\n{}".format(
             '* "config prefix <key>" -> changes the key used before commands,',
             '* "config rolechannel <channel-name>" -> ' +
             'changes the channel used for managing roles,',
@@ -228,8 +196,9 @@ class Config(Command):
             '-> sets which roles can use the command,',
             '* "config command <command-name> remove" -> ' +
             'removes roles for the command.',
-            '* "config hello <hello-text> -> Send hello text on member join"',
-            '* "config hello remove" -> remove hello text'
+            '* "config welcome <welcome-text> -> ' +
+            'Send welcome text on member join"',
+            '* "config welcome remove" -> remove welcome text'
         )
 
 

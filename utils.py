@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import discord
 import random
+from database import Mysql
 
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
@@ -13,6 +14,19 @@ client = discord.Client(intents=intents)
 DEFAULT_PREFIX = os.getenv('DEFAULT_PREFIX')
 # discord application's private token
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+database = Mysql()
+
+
+def get_database_info():
+    info = {}
+    for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
+        info[i.lower()] = os.getenv(i)
+        if info[i.lower()] is None:
+            return None
+    x = os.getenv('PORT')
+    if x is not None:
+        info['port'] = int(x)
+    return info
 
 
 def random_color():
@@ -74,53 +88,35 @@ async def send_error(msg, error, origin, send=True):
 
 async def get_prefix(msg, throwerr=True):
     try:
-        channel = discord.utils.get(
-            msg.guild.channels,
-            name='bot-config')
-        if channel is None:
+        if not database.connected:
             return DEFAULT_PREFIX
-        settings = await channel.history(limit=4).flatten()
-        prefix_msg = None
-        for m in settings:
-            if (m.author.id == msg.guild.me.id and
-                    m.content.startswith('`PREFIX`')):
-                prefix_msg = m
-                break
-        if prefix_msg is None:
+        query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
+                msg.guild.id)
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(query)
+        fetched = cursor.fetchone()
+        if fetched is None:
             return DEFAULT_PREFIX
-        x = prefix_msg.content.split('\n')
-        if len(x) != 2:
-            return DEFAULT_PREFIX
-        return x[1]
+        return fetched[1]
+        cursor.close()
     except Exception as error:
-        if not(hasattr(error, 'code') and str(error.code) == '50001'):
-            await send_error(msg, error, 'utils.py -> get_prefix()')
-        elif (hasattr(error, 'code') and str(error.code) == '50001'
-                and throwerr):
-            await msg.channel.send('Missing access to config channel!')
+        await send_error(msg, error, 'utils.py -> get_prefix()')
         return DEFAULT_PREFIX
 
 
-async def get_hello(server):
+async def get_welcome(server):
     try:
-        channel = discord.utils.get(
-                server.channels,
-                name='bot-config')
-        settings = await channel.history(limit=4).flatten()
-        if channel is None:
+        if not database.connected:
             return None
-        txt_msg = None
-        for m in settings:
-            if (m.author.id == server.me.id and
-                    m.content.startswith('`HELLO`')):
-                txt_msg = m
-                break
-        if txt_msg is None:
+        query = "SELECT * FROM welcome WHERE guild_id = '{}'".format(
+                server.id)
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(query)
+        fetched = cursor.fetchone()
+        if fetched is None:
             return None
-        txt = txt_msg.content.split('\n')
-        if len(txt) != 2:
-            return None
-        return txt[1]
+        return fetched[1]
+        cursor.close()
     except Exception as error:
         await send_error(None, error, 'utils.py -> get_hello()')
         return None
@@ -128,65 +124,45 @@ async def get_hello(server):
 
 async def get_roleschannel(msg):
     try:
+        if not database.connected:
+            return None
+        query = "SELECT * FROM roleschannel WHERE guild_id = '{}'".format(
+                msg.guild.id)
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(query)
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return None
+        cursor.close()
         channel = discord.utils.get(
             msg.guild.channels,
-            name='bot-config')
+            id=int(fetched[1]))
         if channel is None:
             return None
-        settings = await channel.history(limit=4).flatten()
-        roles_msg = None
-        for m in settings:
-            if (m.author.id == msg.guild.me.id and
-                    m.content.startswith('`ROLES CHANNEL`')):
-                roles_msg = m
-                break
-        if roles_msg is None:
-            return None
-        x = roles_msg.content.split('\n')
-        if len(x) != 2 or x[1] == '/':
-            return None
-        roleschannel = discord.utils.get(
-            msg.guild.channels,
-            name=x[1])
-        if roleschannel is None:
-            return None
-        return roleschannel
+        return channel
     except Exception as error:
-        if hasattr(error, 'code') and str(error.code) == '50001':
-            await msg.channel.send('Missing access to config channel!')
-        else:
-            await send_error(None, error, 'utils.py -> get_roleschannel()')
+        await send_error(None, error, 'utils.py -> get_roleschannel()')
         return None
 
 
 async def get_required_roles(msg, command):
     try:
-        channel = discord.utils.get(
-            msg.guild.channels,
-            name='bot-config')
+        if not database.connected:
+            return None
+        query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
+                 "command = '{}'").format(
+            msg.guild.id, command)
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(query)
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return None
+        return fetched[2].split('<;>')
         if channel is None:
             return None
-        settings = await channel.history(limit=4).flatten()
-        roles_msg = None
-        for m in settings:
-            if (m.author.id == msg.guild.me.id and
-                    m.content.startswith('`COMMANDS`')):
-                roles_msg = m
-                break
-        if roles_msg is None:
-            return None
-        x = roles_msg.content.split('\n')
-        if len(x) < 2 or len(x) == 2 and x[1] == '/':
-            return None
-        for i in x:
-            if i.startswith('`{}`'.format(command)):
-                return i.split(', ')[1:]
-        return None
+        return channel
     except Exception as error:
-        if hasattr(error, 'code') and str(error.code) == '50001':
-            await msg.channel.send('Missing access to config channel!')
-        else:
-            await send_error(None, error, 'utils.py -> get_required_roles()')
+        await send_error(None, error, 'utils.py -> get_required_roles()')
         return None
 
 emojis = {

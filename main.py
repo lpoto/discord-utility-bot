@@ -2,7 +2,6 @@ import discord
 import os
 import re
 from utils import *
-from dotenv import load_dotenv
 from bot import managing_bot
 from commands import *
 
@@ -11,11 +10,13 @@ from commands import *
 async def on_ready():
     # on starting the bot, print tag and activity
     if client.user:
-        print('Logged in as', client.user)
+        print('Bot logged in!')
+        print('Client:',  client.user)
         activity = discord.Game(name=DEFAULT_PREFIX+'help', type=2)
         status = discord.Status.idle
         await client.change_presence(status=status, activity=activity)
-        print("Activity set to", activity)
+        print("Status:", activity)
+        database.connect_database(get_database_info())
 
 
 @client.event
@@ -29,7 +30,7 @@ async def on_message(msg):
         bot_perms = dict(iter(msg.guild.me.permissions_in(msg.channel)))
         # allow calling help with default prefix, even if a different
         # prefix is set
-        if msg.content == "{}help".format(DEFAULT_PREFIX):
+        if msg.content == "{prefix}help".format(prefix=DEFAULT_PREFIX):
             await managing_bot.push_msg_queue(msg, 'help')
             return
         prefix = await get_prefix(msg, False)
@@ -45,7 +46,7 @@ async def on_message(msg):
             return
         # for all objects in on_message list, execute
         # those objects' on_message method
-        for i in managing_bot.on_message:
+        if first_word in managing_bot.commands:
             await i.on_message(msg)
     except Exception as err:
         await send_error(msg, err, 'main.py -> on_message()')
@@ -75,7 +76,7 @@ async def on_raw_reaction_remove(payload):
 async def on_member_join(member):
     server = member.guild
     default_channel = server.system_channel
-    hello = await get_hello(server)
+    hello = await get_welcome(server)
     if hello is None:
         return
     msg = '{} {}'.format(member.mention, hello)
