@@ -1,7 +1,7 @@
 import mysql.connector
 
 
-class Mysql:
+class DB:
     def __init__(self):
         self.cnx = None
         self.connected = False
@@ -18,9 +18,11 @@ class Mysql:
             # check if all required tables exist, if not,
             # create them
             self.create_tables(info)
-        except Exception as err:
-            print('Database error:')
-            print(err)
+        except mysql.connector.Error as err:
+            if err.errno == 2006:
+                self.connect_database(info)
+                return
+            print('Database error:\n', err)
 
     def required_tables(self):
         return {
