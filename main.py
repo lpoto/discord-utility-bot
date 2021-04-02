@@ -27,7 +27,6 @@ async def on_message(msg):
     try:
         if msg.author.id == client.user.id:
             return
-        bot_perms = dict(iter(msg.guild.me.permissions_in(msg.channel)))
         # allow calling help with default prefix, even if a different
         # prefix is set
         if msg.content == "{prefix}help".format(prefix=DEFAULT_PREFIX):
