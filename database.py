@@ -19,6 +19,7 @@ class DB:
             # create them
             self.create_tables(info)
         except mysql.connector.Error as err:
+            self.connected = False
             if err.errno == 2006:
                 self.connect_database(info)
                 return

@@ -68,7 +68,10 @@ async def message_edit(msg, text, embed=None):
 
 async def send_error(msg, error, origin, send=True):
     try:
-        if (hasattr(error, 'code') and str(error.code) == '50001'
+        if (str(error) == 'MySQL Connection not available.'):
+            database.connected = False
+            database.connect_database(get_database_info())
+        elif (hasattr(error, 'code') and str(error.code) == '50001'
                 and msg is not None):
             await msg.channel.send('Missing access to a channel.')
         elif (hasattr(error, 'code') and str(error.code) == '50013'
@@ -78,9 +81,6 @@ async def send_error(msg, error, origin, send=True):
         elif (hasattr(error, 'code') and
                 str(error.code) not in ['10008', '50001', '50013'] or
                 not hasattr(error, 'code')):
-            if msg is not None:
-                txt = 'Something went wrong!'
-                await message_delete(msg, 5, txt)
             print('Error ({}):\n{}'.format(origin, error))
     except Exception as err:
         print('Error -> (utils.py -> send_error())' + str(err))
@@ -100,6 +100,10 @@ async def get_prefix(msg, throwerr=True):
         return fetched[1]
         cursor.close()
     except Exception as error:
+        if (str(error) == 'MySQL Connection not available.'):
+            database.connected = False
+            database.connect_database(get_database_info())
+            return
         await send_error(msg, error, 'utils.py -> get_prefix()')
         return DEFAULT_PREFIX
 
