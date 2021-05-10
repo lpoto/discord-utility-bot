@@ -1,6 +1,7 @@
 import discord
 from command import Command
 from utils import *
+import re
 
 
 class Clear_chat(Command):
@@ -12,7 +13,12 @@ class Clear_chat(Command):
 
     async def execute_command(self, msg):
         args = msg.content.split()
+        role_channel = await get_roleschannel(msg)
         try:
+            if role_channel is not None and msg.channel == role_channel:
+                txt = 'Cannot clear messages in this channel!'
+                await message_delete(msg, 5, txt)
+                return
             if len(args) < 2:
                 txt = 'How many messages do you want to delete?'
                 await message_delete(msg, 5, txt)
@@ -47,13 +53,15 @@ class Clear_chat(Command):
             await send_error(msg, err, 'clear.py -> execute_command()')
 
     def purge_filter(self, msg):
-        # dont clear pinned messages
-        return not msg.pinned
+        return (re.search('^```.*\nPOLL: ', msg.content) is None
+                and not msg.pinned)
 
     def additional_info(self):
-        return '{}\n{}'.format(
+        return '{}\n{}\n{}\n{}'.format(
             '* deleting messages older than 14 days takes longer.',
-            '* Pinned messages will not be deleted.')
+            '* Pinned messages will not be deleted.',
+            '* Messages in roles channel will not be deleted.',
+            '* Polls will not be deleted.')
 
 
 Clear_chat()

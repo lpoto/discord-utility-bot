@@ -1,6 +1,0 @@
-{
-	"python": {
-		"interpreter": "python3 ~/projects/discord-utility-bot/main.py",
-		"formater": "autopep8 %"
-	}
-}

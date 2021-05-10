@@ -7,7 +7,7 @@ class Roles(Command):
     def __init__(self):
         super().__init__('roles')
         self.description = 'Add or remove roles.'
-        self.bot_permissions = ['send_messages', 'manage_roles']
+        self.bot_ermissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['send_messages', 'manage_roles']
 
     async def execute_command(self, msg):
