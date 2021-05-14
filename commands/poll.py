@@ -73,7 +73,7 @@ class Poll(Command):
             if num + 1 >= len(emojis):
                 return self.fix_poll(msg, poll)
             responses[0] = responses[0].replace(responses[0][0], str(num + 1))
-            emoji = emojis[list(emojis.keys())[num]]
+            emoji = list(emojis.keys())[num]
             await message_react(poll, emoji)
             responses.append('\n{}(0) {}: '.format(emoji, response))
             txt = '```' + '``````'.join(responses) + '```'

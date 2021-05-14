@@ -55,7 +55,7 @@ class Command:
                 description='current prefix: [{}]'.format(prefix),
                 color=random_color())
             footer = '"{}command help" for details about the command.'.format(
-                    prefix)
+                prefix)
             embed_var.set_footer(text=footer)
             for k, v in commands.items():
                 if k == 'help':
@@ -65,7 +65,7 @@ class Command:
                     value=v.description,
                     inline=False)
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, emojis['waste_basket'])
+            await message_react(new_msg, list(emojis.keys())[-1])
         except Exception as err:
             await send_error(msg, err, 'command.py -> execute_command()')
 

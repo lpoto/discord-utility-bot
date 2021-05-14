@@ -16,19 +16,23 @@ class Server_info(Command):
                 return msg.reply('Invalid command!')
             embed_var = await self.create_embed(msg)
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, emojis['waste_basket'])
+            await message_react(new_msg, list(emojis.keys())[-1])
         except Exception as err:
             await send_error(msg, err, 'server.py -> execute_command()')
 
     async def create_embed(self, msg):
+        # build embed with server info
         embed_var = discord.Embed(
             title=msg.guild.name,
             description="Server information",
             color=random_color())
+        # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description
+        # add guild's icon to the embed
         if (msg.guild.icon_url):
             embed_var.set_thumbnail(url=msg.guild.icon_url)
+        # count total and online members
         embed_var.add_field(
             name='Total members',
             value=msg.guild.member_count,
@@ -40,6 +44,7 @@ class Server_info(Command):
             inline=False
         )
         owner = await msg.guild.fetch_member(str(msg.guild.owner_id))
+        # add owner
         if owner.nick:
             owner = '{nick}\n({user})' .format(nick=owner.nick, user=owner)
         embed_var.add_field(
@@ -47,6 +52,7 @@ class Server_info(Command):
             value=owner,
             inline=False
         )
+        # check for role-managing channel and rules channel
         roles_channel = await get_roleschannel(msg)
         if roles_channel is not None:
             embed_var.add_field(
@@ -60,6 +66,7 @@ class Server_info(Command):
                 value=msg.guild.rules_channel,
                 inline=False
             )
+        # check for afk channel
         if msg.guild.afk_channel:
             embed_var.add_field(
                 name='AFK channel',

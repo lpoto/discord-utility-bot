@@ -13,6 +13,9 @@ class User_info(Command):
         try:
             args = msg.content.split()
             user = msg.author
+            # if no user provided show info about the
+            # message author, else show info about the user
+            # whose name was provided
             if len(args) > 1:
                 args = (' '.join(args[1:])).lower()
                 for member in msg.guild.members:
@@ -22,41 +25,46 @@ class User_info(Command):
                         break
             embed_var = await self.create_embed(msg, user)
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, emojis['waste_basket'])
+            await message_react(new_msg, list(emojis.keys())[-1])
         except Exception as err:
             await send_error(msg, err, 'user.py -> execute_command()')
 
     async def create_embed(self, msg, user):
+        # build the embed with user info
         embed_var = discord.Embed(
             title=user.name,
             color=random_color())
+        # if user has nickname set up add nickname
+        # else only username
         if user.nick:
             embed_var.title = user.nick
             embed_var.description = str(user)
+        # add if user is bot
         if user.bot:
             embed_var.title += ' [bot]'
+        # add user's avatar picture to the embed
         if user.avatar_url:
             embed_var.set_thumbnail(url=user.avatar_url)
         embed_var.add_field(
-                name='Joined server',
-                value=str(user.joined_at).split()[0],
-                inline=False
-                )
+            name='Joined server',
+            value=str(user.joined_at).split()[0],
+            inline=False
+        )
         roles = 'everyone'
         for i in user.roles:
             if str(i.name) != '@everyone':
                 roles += ',\n' + str(i.name)
         embed_var.add_field(
-                name='Roles',
-                value=roles,
-                inline=False
-                )
+            name='Roles',
+            value=roles,
+            inline=False
+        )
         return embed_var
 
     def additional_info(self):
         return '{}\n{}'.format(
-                '* Add username or nickname to the command.',
-                '* Not adding anything will show your info.')
+            '* Add username or nickname to the command.',
+            '* Not adding anything will show your info.')
 
 
 User_info()

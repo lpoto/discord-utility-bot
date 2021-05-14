@@ -12,6 +12,7 @@ class Config(Command):
 
     async def execute_command(self, msg):
         try:
+            # check if database connected
             if not database.connected:
                 txt = 'This command requires database connection!'
                 await message_delete(msg, 5, txt)

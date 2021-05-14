@@ -15,6 +15,7 @@ class Clear_chat(Command):
         args = msg.content.split()
         role_channel = await get_roleschannel(msg)
         try:
+            # don't allow purging in role-managing channel
             if role_channel is not None and msg.channel == role_channel:
                 txt = 'Cannot clear messages in this channel!'
                 await message_delete(msg, 5, txt)
@@ -32,7 +33,11 @@ class Clear_chat(Command):
                 return
             else:
                 count = int(args[1])
-            if count >= 100:
+            # allow deleting only between 1 and 50 messages
+            # ... if messages are older than 14 days bot will have to delete
+            # messages one by one, so deleting large amounts of messages might
+            # take a while and cause problems
+            if count > 50:
                 txt = 'You cannot delete more than 50 messages at once!'
                 await message_delete(msg, 5, txt)
                 return
@@ -40,6 +45,7 @@ class Clear_chat(Command):
                 txt = 'You must delete at least 1 message!'
                 await message_delete(msg, 5, txt)
                 return
+            # purge the messages and send how many were actually deleted
             purged = len(await msg.channel.purge(
                 limit=count + 1,
                 check=self.purge_filter)) - 1
@@ -53,6 +59,7 @@ class Clear_chat(Command):
             await send_error(msg, err, 'clear.py -> execute_command()')
 
     def purge_filter(self, msg):
+        # don't delete pinned messages and polls
         return (re.search('^```.*\nPOLL: ', msg.content) is None
                 and not msg.pinned)
 

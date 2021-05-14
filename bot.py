@@ -59,7 +59,7 @@ class Managing_bot:
                                     cmd.command_info(), msg)
                             )
                             await message_react(
-                                new_msg, emojis['waste_basket'])
+                                new_msg, list(emojis.keys())[-1])
                     else:
                         # else execute the command
                         # check if valid channel, permissions,...
@@ -149,7 +149,7 @@ class Managing_bot:
     async def push_raw_queue(self, payload, reaction_type):
         # push raw reaction info to queue only if
         # its emoji is in utils.emojis dictionary
-        if payload.emoji.name in emojis.values():
+        if payload.emoji.name in emojis:
             self.raw_queue.append((payload, reaction_type))
         await self.clear_raw_queue(False)
 
@@ -170,17 +170,19 @@ class Managing_bot:
                 if guild is None:
                     return
                 channel = discord.utils.get(
-                        guild.channels,
-                        id=payload.channel_id)
+                    guild.channels,
+                    id=payload.channel_id)
                 if channel is None:
                     return
                 msg = await channel.fetch_message(payload.message_id)
-
+                # onnly listen for reactions on bot's messages
+                if msg.author.id != client.user.id:
+                    return
                 # if wastebin reaction and bot is msg author
                 # and message is not pinned and message has an
                 # embed or starts with help, delete it
                 if (reaction_type == 'add' and
-                    payload.emoji.name == emojis['waste_basket'] and
+                    payload.emoji.name == list(emojis.keys())[-1] and
                         not msg.pinned and
                     (len(msg.embeds) > 0 or
                      msg.content.startswith('```Help: ')) and
@@ -188,7 +190,7 @@ class Managing_bot:
                     edit_txt = 'Message has been deleted.'
                     await message_edit(msg, edit_txt)
                     await message_delete(msg, 3)
-                elif payload.emoji.name != emojis['waste_basket']:
+                elif payload.emoji.name != list(emojis.keys())[-1]:
                     for i in self.on_raw_reactions:
                         await i.on_raw_reaction(msg, payload)
                 await self.clear_raw_queue(True)
