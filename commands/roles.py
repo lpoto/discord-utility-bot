@@ -36,7 +36,7 @@ class Roles(Command):
             content = ''
             # add multiple roles at once, separated with ;
             roles = ' '.join(args[1:]).split(';')
-            if (len(roles) > len(emojis.keys())):
+            if (len(roles) + idx >= len(emojis.keys()) - 1):
                 txt = 'Cannot add that many at once!'
                 await message_delete(msg, 5, txt)
                 return

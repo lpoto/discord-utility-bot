@@ -193,8 +193,8 @@ class Config(Command):
             cursor.execute(insert)
         else:
             cursor.execute(update)
-        cursor.close()
         database.cnx.commit()
+        cursor.close()
 
     def additional_info(self):
         return "{}\n{}\n{}\n{}\n{}\n{}".format(
