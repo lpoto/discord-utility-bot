@@ -176,23 +176,22 @@ class Managing_bot:
                     return
                 msg = await channel.fetch_message(payload.message_id)
                 # onnly listen for reactions on bot's messages
-                if msg.author.id != client.user.id:
-                    return
-                # if wastebin reaction and bot is msg author
-                # and message is not pinned and message has an
-                # embed or starts with help, delete it
-                if (reaction_type == 'add' and
-                    payload.emoji.name == list(emojis.keys())[-1] and
-                        not msg.pinned and
-                    (len(msg.embeds) > 0 or
-                     msg.content.startswith('```Help: ')) and
-                        msg.author.id == msg.guild.me.id):
-                    edit_txt = 'Message has been deleted.'
-                    await message_edit(msg, edit_txt)
-                    await message_delete(msg, 3)
-                elif payload.emoji.name != list(emojis.keys())[-1]:
-                    for i in self.on_raw_reactions:
-                        await i.on_raw_reaction(msg, payload)
+                if msg.author.id == client.user.id:
+                    # if wastebin reaction and bot is msg author
+                    # and message is not pinned and message has an
+                    # embed or starts with help, delete it
+                    if (reaction_type == 'add' and
+                        payload.emoji.name == list(emojis.keys())[-1] and
+                            not msg.pinned and
+                        (len(msg.embeds) > 0 or
+                         msg.content.startswith('```Help: ')) and
+                            msg.author.id == msg.guild.me.id):
+                        edit_txt = 'Message has been deleted.'
+                        await message_edit(msg, edit_txt)
+                        await message_delete(msg, 3)
+                    elif payload.emoji.name != list(emojis.keys())[-1]:
+                        for i in self.on_raw_reactions:
+                            await i.on_raw_reaction(msg, payload)
                 await self.clear_raw_queue(True)
             except Exception as error:
                 await send_error(msg, error, 'bot.py -> clear_raw_queue()')

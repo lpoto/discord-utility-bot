@@ -98,6 +98,8 @@ class Roles(Command):
                 return
             # fetch user that reacted to the role message
             user = await msg.guild.fetch_member(payload.user_id)
+            if user is None:
+                return
             try:
                 if payload.event_type == 'REACTION_ADD':
                     await user.add_roles(role)

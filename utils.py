@@ -103,7 +103,7 @@ async def get_prefix(msg, throwerr=True):
         if (str(error) == 'MySQL Connection not available.'):
             database.connected = False
             database.connect_database(get_database_info())
-            return
+            return DEFAULT_PREFIX
         await send_error(msg, error, 'utils.py -> get_prefix()')
         return DEFAULT_PREFIX
 
