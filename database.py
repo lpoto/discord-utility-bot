@@ -53,8 +53,8 @@ class DB:
                 fetched = cursor.fetchone()
                 if fetched is None:
                     query = (
-                            "CREATE TABLE {} ({})".format(
-                                i, ', '.join(tables[i])))
+                        "CREATE TABLE {} ({})".format(
+                            i, ', '.join(tables[i])))
                     cursor.execute(query)
                     print('- Created {} table {}'.format(
                         info['database'], i))

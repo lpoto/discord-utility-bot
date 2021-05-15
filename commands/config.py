@@ -66,8 +66,9 @@ class Config(Command):
                 ("INSERT INTO prefix (guild_id, prefix) VALUES " +
                  "('{}', '{}')").format(
                     msg.guild.id, new_prefix),
-                "UPDATE prefix SET prefix = '{}'".format(
-                    new_prefix))
+                ("UPDATE prefix SET prefix = '{}' " +
+                    "WHERE guild_id = '{}'").format(
+                    new_prefix, msg.guild.id))
             await msg.channel.send(
                 '`Prefix` changed to `{}`.'.format(new_prefix))
         except Exception as err:
@@ -90,8 +91,9 @@ class Config(Command):
                 ("INSERT INTO roleschannel (guild_id, channel_id) VALUES " +
                  "('{}', '{}')").format(
                     msg.guild.id, new_channel.id),
-                "UPDATE roleschannel SET channel_id = '{}'".format(
-                    new_channel.id))
+                ("UPDATE roleschannel SET channel_id = '{}' " +
+                    "WHERE guild_id = '{}'").format(
+                    new_channel.id, msg.guild.id))
             await msg.channel.send(
                 '`Roles channel` changed to `{}`.'.format(new_channel.name))
         except Exception as err:
@@ -134,8 +136,9 @@ class Config(Command):
                 ("INSERT INTO commands (guild_id, command, roles) VALUES " +
                  "('{}', '{}', '{}')").format(
                     msg.guild.id, cmd, '<;>'.join(roles)),
-                "UPDATE commands SET roles = '{}'".format(
-                    '<;>'.join(roles)))
+                ("UPDATE commands SET roles = '{}' " +
+                    "WHERE guild_id = '{}'").format(
+                    '<;>'.join(roles, msg.guild.id)))
             await msg.channel.send(
                 'Roles for `{}` changed to `{}`'
                 .format(cmd, ', '.join(roles)))
@@ -178,8 +181,9 @@ class Config(Command):
                 ("INSERT INTO welcome (guild_id, welcome) VALUES " +
                  "('{}', '{}')").format(
                     msg.guild.id, new_txt),
-                "UPDATE roleschannel SET welcome = '{}'".format(
-                    new_txt))
+                ("UPDATE welcome SET welcome = '{} " +
+                    "WHERE guild_id = '{}'").format(
+                    new_txt, msg.guild.id))
             await msg.channel.send(
                 '`Welcome text` changed to `{}`.'.format(new_txt))
         except Exception as err:
