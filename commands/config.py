@@ -137,8 +137,8 @@ class Config(Command):
                  "('{}', '{}', '{}')").format(
                     msg.guild.id, cmd, '<;>'.join(roles)),
                 ("UPDATE commands SET roles = '{}' " +
-                    "WHERE guild_id = '{}'").format(
-                    '<;>'.join(roles, msg.guild.id)))
+                    "WHERE guild_id = '{}' AND command = '{}'").format(
+                    '<;>'.join(roles), msg.guild.id, cmd))
             await msg.channel.send(
                 'Roles for `{}` changed to `{}`'
                 .format(cmd, ', '.join(roles)))
