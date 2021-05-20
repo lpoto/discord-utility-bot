@@ -22,8 +22,11 @@ class Poll(Command):
         except Exception as err:
             await send_error(msg, err, 'poll.py -> execute_command()')
 
-    async def on_message(self, msg):
+    async def on_message(self, msg, managing_bot):
         try:
+            if not await managing_bot.check_if_valid(
+                    managing_bot.commands[self.name], msg):
+                return
             if msg.reference is None or not msg.reference.message_id:
                 return
             poll_message = await msg.channel.fetch_message(
@@ -127,7 +130,7 @@ class Poll(Command):
             txt = '```' + '``````'.join(responses) + '```'
             await message_edit(poll, txt)
             await poll.remove_reaction(
-                    emoji, client.user)
+                emoji, client.user)
             return poll
         except Exception as err:
             await send_error(msg, err, 'poll.py -> remove_response()')

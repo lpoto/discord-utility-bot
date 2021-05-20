@@ -46,7 +46,7 @@ async def on_message(msg):
             # for all objects in on_message list, execute
             # those objects' on_message method
         for i in managing_bot.on_message:
-            await i.on_message(msg)
+            await i.on_message(msg, managing_bot)
     except Exception as err:
         await send_error(msg, err, 'main.py -> on_message()')
 
