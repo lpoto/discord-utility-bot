@@ -13,9 +13,10 @@ class Poll(Command):
 
     async def execute_command(self, msg):
         try:
-            if re.search('(http)|(`)|( :)|(POLL)', msg.content):
+            if re.search('http|`|POLL|<@', msg.content):
                 txt = 'Invalid question!'
                 await message_delete(msg, 5, txt)
+                return
             poll_question = ' '.join(msg.content.split()[1:])
             await msg.channel.send('```0\nPOLL: ' + poll_question + '```')
         except Exception as err:
@@ -39,9 +40,10 @@ class Poll(Command):
         text = msg.content.split(';')
         response = text[i]
         try:
-            if re.search('(http)|(`)|( :)|(POLL)', response):
-                txt = 'Invalid question!'
+            if re.search('http|`|POLL|<@', msg.content):
+                txt = 'Invalid response!'
                 await message_delete(msg, 5, txt)
+                return
             else:
                 responses = poll.content[3:][:-3].split('``````')
                 if poll.content.startswith('```CSS'):
