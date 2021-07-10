@@ -17,6 +17,10 @@ class Poll(Command):
                 txt = 'Invalid question!'
                 await message_delete(msg, 5, txt)
                 return
+            if len(msg.conent.split() < 2):
+                txt = 'I need a question!'
+                await message_delete(msg, 5, txt)
+                return
             poll_question = ' '.join(msg.content.split()[1:])
             await msg.channel.send('```0\nPOLL: ' + poll_question + '```')
         except Exception as err:
