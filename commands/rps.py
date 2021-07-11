@@ -120,6 +120,9 @@ class Rps(Command):
             if game[0][1] == game[1][1]:
                 new_embed.description = '{} draws agains {}!'.format(
                     user_names[0], user_names[1])
+                await message_edit(msg, text='<@{}>, <@{}>'.format(
+                    game[0][0], game[1][0]), embed=new_embed)
+                return
             # get winner
             if ((game[0][1] == self.options[0] and
                  game[1][1] == self.options[2]) or
