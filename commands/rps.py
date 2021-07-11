@@ -144,7 +144,7 @@ class Rps(Command):
                 if user2.avatar_url:
                     new_embed.set_thumbnail(url=user2.avatar_url)
                 new_embed = await self.wins_to_database(
-                    user1.id, new_embed, user_names[0])
+                    user2.id, new_embed, user_names[1])
             await message_edit(msg, text='<@{}>, <@{}>'.format(
                 game[0][0], game[1][0]), embed=new_embed)
             del self.running_games[msg.id]
