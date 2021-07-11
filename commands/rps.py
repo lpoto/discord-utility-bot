@@ -163,7 +163,7 @@ class Rps(Command):
             count = 1
             if fetched is None:
                 cursor.execute(("INSERT INTO rps (user_id, wins) VALUES " +
-                                "('{}', 1)")).format(user_id)
+                                "('{}', 1)").format(user_id))
             else:
                 count = fetched[1] + 1
                 cursor.execute(("UPDATE rps SET wins = {} WHERE " +
