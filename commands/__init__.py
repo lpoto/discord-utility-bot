@@ -4,3 +4,4 @@ from commands.clear import Clear_chat
 from commands.config import Config
 from commands.roles import Roles
 from commands.poll import Poll
+from commands.rps import Rps

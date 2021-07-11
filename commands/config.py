@@ -181,7 +181,7 @@ class Config(Command):
                 ("INSERT INTO welcome (guild_id, welcome) VALUES " +
                  "('{}', '{}')").format(
                     msg.guild.id, new_txt),
-                ("UPDATE welcome SET welcome = '{} " +
+                ("UPDATE welcome SET welcome = '{}' " +
                     "WHERE guild_id = '{}'").format(
                     new_txt, msg.guild.id))
             await msg.channel.send(

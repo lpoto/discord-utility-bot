@@ -40,6 +40,9 @@ class DB:
             'welcome': [
                 'guild_id VARCHAR(18) NOT NULL',
                 'welcome VARCHAR(50) NOT NULL'],
+            'rps': [
+                'user_id VARCHAR(18) NOT NULL',
+                'wins INT UNSIGNED']
         }
 
     def create_tables(self, info):

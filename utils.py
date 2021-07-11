@@ -188,5 +188,8 @@ emojis = {
     u"\U0001F7EA": 'purple_square',
     u"\U0001F7EB": 'brown_square',
     u"\U00002B1B": 'black_square',
-    '🗑️': 'waste_basket',
+    '🪨': 'rock',
+    '🗞️': 'paper',
+    '✂️': 'scissors',
+    '🗑️': 'waste_basket'
 }

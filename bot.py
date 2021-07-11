@@ -15,6 +15,7 @@ class Managing_bot:
         # that need to be processed seperately
         self.on_raw_reactions = []
         self.on_message = []
+        self.on_dm_reactions = []
 
     def add_command(self, command):
         # add a command object to commands dictionary
@@ -27,6 +28,8 @@ class Managing_bot:
             self.on_raw_reactions.append(command)
         if hasattr(command, 'on_message'):
             self.on_message.append(command)
+        if hasattr(command, 'on_dm_reaction'):
+            self.on_dm_reactions.append(command)
 
     async def push_msg_queue(self, msg, first_word):
         # push msgs that match command format to
@@ -150,7 +153,11 @@ class Managing_bot:
         # push raw reaction info to queue only if
         # its emoji is in utils.emojis dictionary
         if payload.emoji.name in emojis:
-            self.raw_queue.append((payload, reaction_type))
+            # check if dm
+            if payload.guild_id is None:
+                self.raw_queue.append((payload, reaction_type, True))
+            else:
+                self.raw_queue.append((payload, reaction_type, False))
         await self.clear_raw_queue(False)
 
     async def clear_raw_queue(self, ignore_running):
@@ -164,16 +171,22 @@ class Managing_bot:
                 el = self.raw_queue.pop(0)
                 payload = el[0]
                 reaction_type = el[1]
+                dm = el[2]
+                # if reaction is from DM, run the on dm functions
+                if dm:
+                    for i in self.on_dm_reactions:
+                        await i.on_dm_reaction(payload)
+                    return await self.clear_raw_queue(True)
                 guild = discord.utils.get(
                     client.guilds,
                     id=payload.guild_id)
                 if guild is None:
-                    return
+                    return await self.clear_raw_queue(True)
                 channel = discord.utils.get(
                     guild.channels,
                     id=payload.channel_id)
                 if channel is None:
-                    return
+                    return self.clear_raw_queue(True)
                 msg = await channel.fetch_message(payload.message_id)
                 # onnly listen for reactions on bot's messages
                 if msg.author.id == client.user.id:

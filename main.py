@@ -56,7 +56,6 @@ async def on_raw_reaction_add(payload):
     # listen for raw reaction events, so we can listen to
     # reactions on messages created before bot was online
     if (payload.user_id == client.user.id or
-            payload.guild_id is None or
             payload.emoji.name not in emojis):
         return
     await managing_bot.push_raw_queue(payload, 'add')
