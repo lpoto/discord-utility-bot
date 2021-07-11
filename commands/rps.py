@@ -178,7 +178,7 @@ class Rps(Command):
             return embed
 
     def additional_info(self):
-        return '{}\n{}\n{}\n{}'.format(
+        return '{}\n{}\n{}'.format(
             '* Start the game with "rps", then react with your choice in DM.',
             '* Another user can join by reacting with one of three options.',
             '* A record of wins will be kept.')
