@@ -231,17 +231,19 @@ class Roles(Command):
         except Exception as err:
             await send_error(msg, err, 'roles.py -> remove_role_from_msg()')
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}\n{}\n{}'.format(
-            '* "roles ROLE-NAME" will send the name of the role to ' +
-            'role-managing channel (it must be defined with config command).',
+            ('* "{}roles ROLE-NAME" will send the name of the role to ' +
+             'role-managing channel (it must be defined with ' +
+             'config command).').format(prefix),
             '* Multiple roles can be added at once, separated with ";".',
             '* Reacting to that message with the same reaction that the ' +
             'bot reacted with, will give you that role (or remove it when ' +
             'removing the reaction).',
             '* Adding <msg_id> at the end of the command message will "' +
-            'add roles to the existing message, instead of sending another.'
-            '* "roles remove <index> <msg_id>" removes role from message.'
+            'add roles to the existing message, instead of sending another.',
+            ('* "{}roles remove <index> <msg_id>" ' +
+                'removes role from message.').format(prefix),
             '* This only works on existing roles that that bot is ' +
             'allowed to manage.')
 

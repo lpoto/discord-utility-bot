@@ -60,9 +60,11 @@ class Managing_bot:
                         if dict(iter(
                             msg.guild.me.permissions_in(
                                 msg.channel)))['send_messages']:
+                            prefix = await get_prefix(msg)
                             new_msg = await msg.channel.send(
                                 await self.create_additional_help(
-                                    cmd.command_info(), msg)
+                                    cmd.command_info(
+                                        prefix), msg, prefix)
                             )
                             await message_react(
                                 new_msg, list(emojis.keys())[-1])
@@ -80,11 +82,11 @@ class Managing_bot:
         except Exception as err:
             await send_error(msg, error, 'bot.py -> clear_msg_queue()')
 
-    async def create_additional_help(self, info, msg):
+    async def create_additional_help(self, info, msg, prefix):
         try:
-            txt = ('```Help: {}``````\n{}\n\n{}``````' +
+            txt = ('```Help: {}{}``````\n{}\n\n{}``````' +
                    '\nRequired permissions:\n* Bot: [{}]').format(
-                info[0], info[1], info[2], ', '.join(info[3]))
+                prefix, info[0], info[1], info[2], ', '.join(info[3]))
             roles = await get_required_roles(msg, info[0])
             if roles is None:
                 txt += "\n* User: [{}]\n\nAllowed channels: [{}]```".format(

@@ -187,9 +187,9 @@ class Poll(Command):
         except Exception as err:
             await send_error(None, err, 'poll.py -> clear_queue()')
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Initialize the poll with "poll <question>"',
+            'Initialize the poll with "{}poll <question>"'.format(prefix),
             "Add responses by replying to the poll.",
             'Multiple responses can be added at once, ' +
             'separated with semicolons (response1;response2;...).',

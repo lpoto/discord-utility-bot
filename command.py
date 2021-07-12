@@ -19,7 +19,7 @@ class Command:
         # Managing_bot's commands dictionary
         self.add_command()
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         # default additional info, overriden by
         # child classes' additional info
         return '* There is no additional information.'
@@ -29,13 +29,13 @@ class Command:
         # in Managing_bot
         managing_bot.add_command(self)
 
-    def command_info(self):
+    def command_info(self, prefix):
         # detailed information about
         # the command
         info = [
             self.name,
             self.description,
-            self.additional_info(),
+            self.additional_info(prefix),
             self.bot_permissions,
             self.user_permissions,
             self.channel_types

@@ -63,7 +63,7 @@ class Clear_chat(Command):
         return (re.search('^```.*\nPOLL: ', msg.content) is None
                 and not msg.pinned)
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(
             '* deleting messages older than 14 days takes longer.',
             '* Pinned messages will not be deleted.',

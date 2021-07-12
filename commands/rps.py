@@ -177,9 +177,10 @@ class Rps(Command):
             await send_error(None, err, 'rps.py -> wins_to_databse()')
             return embed
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return '{}\n{}\n{}'.format(
-            '* Start the game with "rps", then react with your choice in DM.',
+            ('* Start the game with "{}rps", then react ' +
+             'with your choice in DM.').format(prefix),
             '* Another user can join by reacting with one of three options.',
             '* A record of wins will be kept.')
 

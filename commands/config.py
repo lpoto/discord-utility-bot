@@ -190,28 +190,34 @@ class Config(Command):
             await send_error(msg, err, 'config.py -> set_welcome()')
 
     async def edit_sql(self, select, insert, update):
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(select)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            cursor.execute(insert)
-        else:
-            cursor.execute(update)
-        database.cnx.commit()
-        cursor.close()
+        try:
+            cursor = database.cnx.cursor(buffered=True)
+            cursor.execute(select)
+            fetched = cursor.fetchone()
+            if fetched is None:
+                cursor.execute(insert)
+            else:
+                cursor.execute(update)
+            database.cnx.commit()
+            cursor.close()
+        except Exception as err:
+            await send_error(None, err, 'config.py -> edit_sql()')
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return "{}\n{}\n{}\n{}\n{}\n{}".format(
-            '* "config prefix <key>" -> changes the key used before commands,',
-            '* "config rolechannel <channel-name>" -> ' +
-            'changes the channel used for managing roles,',
-            '* "config command <command-name> <roles-seperated-with-comma>" ' +
-            '-> sets which roles can use the command,',
-            '* "config command <command-name> remove" -> ' +
-            'removes roles for the command.',
-            '* "config welcome <welcome-text> -> ' +
-            'Send welcome text on member join"',
-            '* "config welcome remove" -> remove welcome text'
+            ('* "{}config prefix <key>" -> changes the key used ' +
+             'before commands,').format(prefix),
+            ('* "{}config rolechannel <channel-name>" -> ' +
+             'changes the channel used for managing roles,').format(prefix),
+            ('* "{}config command <command-name> <roles-seperated-' +
+                'with-comma>" -> sets which roles ' +
+                'can use the command,').format(prefix),
+            ('* "{}config command <command-name> remove" -> ' +
+             'removes roles for the command.').format(prefix),
+            ('* "{}config welcome <welcome-text> -> ' +
+             'Send welcome text on member join"').format(prefix),
+            ('* "{}config welcome remove" -> remove welcome text').format(
+                prefix)
         )
 
 
