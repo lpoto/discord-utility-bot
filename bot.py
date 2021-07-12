@@ -32,10 +32,13 @@ class Managing_bot:
             self.on_dm_reactions.append(command)
 
     async def push_msg_queue(self, msg, first_word):
-        # push msgs that match command format to
-        # the queue to be proccesed one by one
-        self.msg_queue.append((msg, first_word))
-        await self.clear_msg_queue(False)
+        try:
+            # push msgs that match command format to
+            # the queue to be proccesed one by one
+            self.msg_queue.append((msg, first_word))
+            await self.clear_msg_queue(False)
+        except Exception as err:
+            await send_error(msg, err, 'bot.py -> push_msg_queue()')
 
     async def clear_msg_queue(self, ignore_running):
         # recursively clear the message que to avoid
@@ -148,6 +151,7 @@ class Managing_bot:
             return True
         except Exception as err:
             await send_error(msg, err, 'bot.py -> check_permissions()')
+            return False
 
     async def push_raw_queue(self, payload, reaction_type):
         # push raw reaction info to queue only if
