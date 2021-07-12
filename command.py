@@ -61,7 +61,7 @@ class Command:
                 if k == 'help':
                     continue
                 embed_var.add_field(
-                    name=k,
+                    name='{}{}'.format(prefix, k),
                     value=v.description,
                     inline=False)
             new_msg = await msg.channel.send(embed=embed_var)

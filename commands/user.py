@@ -86,7 +86,7 @@ class User_info(Command):
             await send_error(None, err, 'user.py -> add_rps_wins()')
             return embed
 
-    def additional_info(self):
+    def additional_info(self, prefix):
         return '{}\n{}'.format(
             '* Add username or nickname to the command.',
             '* Not adding anything will show your info.')
