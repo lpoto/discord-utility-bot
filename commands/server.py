@@ -75,7 +75,57 @@ class Server_info(Command):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
+        embed_var = await self.get_welcome_text(embed_var, msg)
+        embed_var = await self.get_commands_config(embed_var, msg)
         return embed_var
+
+    async def get_welcome_text(self, embed, msg):
+        try:
+            if database.connected is False:
+                return embed
+            cursor = database.cnx.cursor(buffered=True)
+            cursor.execute(
+                    "SELECT * FROM welcome WHERE guild_id = '{}'".format(
+                        msg.guild.id))
+            fetched = cursor.fetchone()
+            if fetched is None:
+                return embed
+            embed.add_field(
+                    name='Welcome text',
+                    value=fetched[1],
+                    inline=False)
+            cursor.close()
+            return embed
+        except Exception as err:
+            await send_error(None, err, 'server.py -> get_welcome_text')
+            return embed
+
+    async def get_commands_config(self, embed, msg):
+        try:
+            if database.connected is False:
+                return embed
+            cursor = database.cnx.cursor(buffered=True)
+            cursor.execute(
+                    "SELECT * FROM commands WHERE guild_id = '{}'".format(
+                        msg.guild.id))
+            fetched = cursor.fetchall()
+            if fetched is None:
+                return embed
+            prefix = await get_prefix(msg)
+            txt = ''
+            for i in fetched:
+                if txt != '':
+                    txt += ',\n'
+                txt += '{}{}: {}'.format(
+                        prefix, i[1], ', '.join(i[2].split('<;>')))
+            embed.add_field(
+                    name='Commands config',
+                    value=txt,
+                    inline=False)
+            return embed
+        except Exception as err:
+            await send_error(None, err, 'server.py -> get_welcome_text')
+            return embed
 
     def get_online_members(self, msg):
         count = 0
