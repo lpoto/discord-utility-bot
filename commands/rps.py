@@ -196,13 +196,15 @@ class Rps(Command):
                 await message_delete(msg, 5, txt)
                 return
             embed_var = discord.Embed(
-                    title='Rock-Paper-Scissors Leaderboard',
-                    color=random_color())
+                title='Rock-Paper-Scissors Leaderboard',
+                color=random_color())
             for i in fetched:
                 user = msg.guild.get_member(int(i[0]))
+                if user is None:
+                    continue
                 name = user.name if not user.nick else user.nick
                 embed_var.add_field(
-                        name=name, value=i[1], inline=False)
+                    name=name, value=i[1], inline=False)
             await msg.channel.send(embed=embed_var)
         except Exception as err:
             await send_error(msg, err, 'rps.py -> show_leaderboard()')
