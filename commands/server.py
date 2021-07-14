@@ -45,6 +45,7 @@ class Server_info(Command):
         )
         owner = await msg.guild.fetch_member(str(msg.guild.owner_id))
         # add owner
+        # add both his nickname and username (if has nickname set up)
         if owner.nick:
             owner = '{nick}\n({user})' .format(nick=owner.nick, user=owner)
         embed_var.add_field(
@@ -52,14 +53,7 @@ class Server_info(Command):
             value=owner,
             inline=False
         )
-        # check for role-managing channel and rules channel
-        roles_channel = await get_roleschannel(msg)
-        if roles_channel is not None:
-            embed_var.add_field(
-                name='Roles channel',
-                value=roles_channel.name,
-                inline=False
-            )
+        # add rules channel info if it is set up
         if msg.guild.rules_channel:
             embed_var.add_field(
                 name='Rules channel',
@@ -75,7 +69,17 @@ class Server_info(Command):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
+        # check for role-managing channel from database
+        roles_channel = await get_roleschannel(msg)
+        if roles_channel is not None:
+            embed_var.add_field(
+                name='Roles channel',
+                value=roles_channel.name,
+                inline=False
+            )
+        # add welcome text if it is set up for the guild
         embed_var = await self.get_welcome_text(embed_var, msg)
+        # add which roles can use which command
         embed_var = await self.get_commands_config(embed_var, msg)
         return embed_var
 

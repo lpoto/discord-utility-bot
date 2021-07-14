@@ -50,6 +50,7 @@ class Roles(Command):
                     # reused. Indexes are separated with "a"
                     if existing_content is None:
                         existing_content = existing_msg.content.split('\n')
+                    # hidden text -> ```<hidden>\n
                     hidden_txt = existing_content[0][3:]
                     if hidden_txt != '':
                         hidden_txt = hidden_txt.split('a')
@@ -60,6 +61,8 @@ class Roles(Command):
                 content += '```\n{} {} ```'.format(
                     r_emojis[i], str(rl))
             # send the name of the roles to che role-managing channel
+            # if message id is added at the end, edit the existing message
+            # instead of sending a new one
             if existing_msg is None:
                 existing_msg = await role_channel.send(content)
                 await msg.channel.send('Added `{}` to `{}`.'.format(
@@ -134,6 +137,7 @@ class Roles(Command):
             await send_error(msg, err, 'roles.py -> on_raw_reaction()')
 
     def get_role(self, msg, rls, emoji):
+        # find the role in the message in the guild's roles
         rl_name = None
         if len(rls) == 1:
             if emoji != list(emojis.keys())[0]:
@@ -153,6 +157,7 @@ class Roles(Command):
         return None
 
     async def valid_role(self, pot_role, msg):
+        # check if role exists and if bot can add such a role
         try:
             role = None
             # search existing roles in server
@@ -197,6 +202,9 @@ class Roles(Command):
             await send_error(msg, err, 'roles.py -> valid_role()')
 
     async def remove_role_from_msg(self, msg, args, existing_msg):
+        # remove role from message that belongs to the given id
+        # save the removed reaction index in the hidden text,
+        # so it can be reused
         try:
             roles = existing_msg.content.split('\n')
             hidden_txt = roles[0][3:]
@@ -206,6 +214,7 @@ class Roles(Command):
                 await message_delete(msg, 5, txt)
                 return
             n = args[2]
+            # role can be removed by it's index in the message
             try:
                 n = int(n)
             except ValueError:
@@ -220,7 +229,8 @@ class Roles(Command):
                 return
             emoji = roles[n].split()[0]
             del roles[n]
-            await existing_msg.remove_reaction(emoji, client.user)
+            # remove the bot's reaction the belongs to the removed role
+            await message_remove_reaction(existing_msg, emoji, client.user)
             if hidden_txt != '':
                 hidden_txt = '{}a{}'.format(
                     hidden_txt, list(emojis.keys()).index(emoji))

@@ -6,8 +6,6 @@ class Managing_bot:
     def __init__(self, client):
         self.msg_queue = []
         self.raw_queue = []
-        self.clearing_messages = False
-        self.clearing_raw_reactions = False
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
@@ -36,50 +34,44 @@ class Managing_bot:
             # push msgs that match command format to
             # the queue to be proccesed one by one
             self.msg_queue.append((msg, first_word))
-            await self.clear_msg_queue(False)
+            await clear_queue(
+                queue_type="messages",
+                ignore_running=False,
+                queue=self.msg_queue,
+                function=self.msg_queue_function)
         except Exception as err:
             await send_error(msg, err, 'bot.py -> push_msg_queue()')
 
-    async def clear_msg_queue(self, ignore_running):
-        # recursively clear the message que to avoid
-        # multiple instances of commands
+    async def msg_queue_function(self, queue):
+        # function used when recursively clearing msg queue
+        # to avoid multiplce instances of the same command
         try:
-            if ((not self.clearing_messages or ignore_running) and
-                    len(self.msg_queue) > 0):
-                try:
-                    self.clearing_messages = True
-                    el = self.msg_queue.pop(0)
-                    msg = el[0]
-                    args = msg.content.split()
-                    first_word = el[1]
-                    cmd = self.commands[first_word]
-
-                    # if 2nd word is help send additional info
-                    # about the command
-                    if len(args) > 1 and args[1] == 'help':
-                        if dict(iter(
-                            msg.guild.me.permissions_in(
-                                msg.channel)))['send_messages']:
-                            prefix = await get_prefix(msg)
-                            new_msg = await msg.channel.send(
-                                await self.create_additional_help(
-                                    cmd.command_info(
-                                        prefix), msg, prefix)
-                            )
-                            await message_react(
-                                new_msg, list(emojis.keys())[-1])
-                    else:
-                        # else execute the command
-                        # check if valid channel, permissions,...
-                        if await self.check_if_valid(cmd, msg):
-                            await cmd.execute_command(msg)
-                    await self.clear_msg_queue(True)
-                except Exception as error:
-                    await send_error(msg, error, 'bot.py -> clear_msg_queue()')
+            el = queue.pop(0)
+            msg = el[0]
+            args = msg.content.split()
+            first_word = el[1]
+            cmd = self.commands[first_word]
+            # if 2nd word is help send additional info
+            # about the command
+            if len(args) > 1 and args[1] == 'help':
+                if dict(iter(
+                    msg.guild.me.permissions_in(
+                        msg.channel)))['send_messages']:
+                    prefix = await get_prefix(msg)
+                    new_msg = await msg.channel.send(
+                        await self.create_additional_help(
+                            cmd.command_info(
+                                prefix), msg, prefix)
+                    )
+                    await message_react(
+                        new_msg, list(emojis.keys())[-1])
             else:
-                self.clearing_messages = False
-        except Exception as err:
-            await send_error(msg, error, 'bot.py -> clear_msg_queue()')
+                # else execute the command
+                # check if valid channel, permissions,...
+                if await self.check_if_valid(cmd, msg):
+                    await cmd.execute_command(msg)
+        except Exception as error:
+            await send_error(msg, error, 'bot.py -> msg_queue_function()')
 
     async def create_additional_help(self, info, msg, prefix):
         try:
@@ -163,58 +155,59 @@ class Managing_bot:
                 self.raw_queue.append((payload, reaction_type, True))
             else:
                 self.raw_queue.append((payload, reaction_type, False))
-        await self.clear_raw_queue(False)
+        # recursively clear raw reactions queue to avoid too many or too
+        # few reactions
+        await clear_queue(
+            queue_type='raw_reactions',
+            ignore_running=False,
+            queue=self.raw_queue,
+            function=self.raw_reactions_queue_function)
 
-    async def clear_raw_queue(self, ignore_running):
-        # recursively clear raw reaction events one by one
-        if ((not self.clearing_raw_reactions or ignore_running) and
-                len(self.raw_queue) > 0):
-            try:
-                # get reaction message and channel
-                # from payload gotten from raw event
-                self.clearing_raw_reactions = True
-                el = self.raw_queue.pop(0)
-                payload = el[0]
-                reaction_type = el[1]
-                dm = el[2]
-                # if reaction is from DM, run the on dm functions
-                if dm:
-                    for i in self.on_dm_reactions:
-                        await i.on_dm_reaction(payload)
-                    return await self.clear_raw_queue(True)
-                guild = discord.utils.get(
-                    client.guilds,
-                    id=payload.guild_id)
-                if guild is None:
-                    return await self.clear_raw_queue(True)
-                channel = discord.utils.get(
-                    guild.channels,
-                    id=payload.channel_id)
-                if channel is None:
-                    return self.clear_raw_queue(True)
-                msg = await channel.fetch_message(payload.message_id)
-                # onnly listen for reactions on bot's messages
-                if msg.author.id == client.user.id:
-                    # if wastebin reaction and bot is msg author
-                    # and message is not pinned and message has an
-                    # embed or starts with help, delete it
-                    if (reaction_type == 'add' and
-                        payload.emoji.name == list(emojis.keys())[-1] and
-                            not msg.pinned and
-                        (len(msg.embeds) > 0 or
-                         msg.content.startswith('```Help: ')) and
-                            msg.author.id == msg.guild.me.id):
-                        edit_txt = 'Message has been deleted.'
-                        await message_edit(msg, edit_txt)
-                        await message_delete(msg, 3)
-                    elif payload.emoji.name != list(emojis.keys())[-1]:
-                        for i in self.on_raw_reactions:
-                            await i.on_raw_reaction(msg, payload)
-                await self.clear_raw_queue(True)
-            except Exception as error:
-                await send_error(msg, error, 'bot.py -> clear_raw_queue()')
-        else:
-            self.clearing_raw_reactions = False
+    async def raw_reactions_queue_function(self, queue):
+        # function used when recursively clearing raw reactions queue
+        try:
+            # get reaction message and channel
+            # from payload gotten from raw event
+            el = queue.pop(0)
+            payload = el[0]
+            reaction_type = el[1]
+            dm = el[2]
+            # if reaction is from DM, run the on dm functions
+            if dm:
+                for i in self.on_dm_reactions:
+                    await i.on_dm_reaction(payload)
+                return
+            guild = discord.utils.get(
+                client.guilds,
+                id=payload.guild_id)
+            if guild is None:
+                return
+            channel = discord.utils.get(
+                guild.channels,
+                id=payload.channel_id)
+            if channel is None:
+                return
+            msg = await channel.fetch_message(payload.message_id)
+            # onnly listen for reactions on bot's messages
+            if msg.author.id == client.user.id:
+                # if wastebin reaction and bot is msg author
+                # and message is not pinned and message has an
+                # embed or starts with help, delete it
+                if (reaction_type == 'add' and
+                    payload.emoji.name == list(emojis.keys())[-1] and
+                        not msg.pinned and
+                    (len(msg.embeds) > 0 or
+                     msg.content.startswith('```Help: ')) and
+                        msg.author.id == msg.guild.me.id):
+                    edit_txt = 'Message has been deleted.'
+                    await message_edit(msg, edit_txt)
+                    await message_delete(msg, 3)
+                elif payload.emoji.name != list(emojis.keys())[-1]:
+                    for i in self.on_raw_reactions:
+                        await i.on_raw_reaction(msg, payload)
+        except Exception as error:
+            await send_error(
+                    msg, error, 'bot.py -> raw_reactions_queue_function()')
 
 
 managing_bot = Managing_bot(client)

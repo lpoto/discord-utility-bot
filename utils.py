@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 import discord
 import random
 from database import DB
-
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
 # presence and server members intent enabled under BOT
@@ -18,6 +17,7 @@ database = DB()
 
 
 def get_database_info():
+    # get all the mysql data info from .env
     info = {}
     for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
         info[i.lower()] = os.getenv(i)
@@ -30,15 +30,27 @@ def get_database_info():
 
 
 def random_color():
+    # generate a random color (mostly for embeds)
     return int("%06x" % random.randint(0, 0xFFFFFF), 16)
 
 
 async def message_react(msg, reaction):
+    # add a reaction to the message and avoid unknown message
     try:
         await msg.add_reaction(reaction)
         return True
     except Exception as error:
         await send_error(msg, error, 'utils.py -> message_react()')
+        return False
+
+
+async def message_remove_reaction(msg, emoji, user):
+    # remove user's reaction from the message
+    try:
+        await msg.remove_reaction(emoji, user)
+        return True
+    except Exception as error:
+        await send_error(msg, error, 'utils.py -> message_remove_reaction()')
         return False
 
 
@@ -58,6 +70,7 @@ async def message_delete(msg, time, txt=None):
 
 
 async def message_edit(msg, text, embed=None):
+    # edit message while avoiding unknown message errors
     try:
         await msg.edit(content=text, embed=embed)
         return True
@@ -66,7 +79,34 @@ async def message_edit(msg, text, embed=None):
         return False
 
 
+# currently running queues
+running_queues = {}
+
+
+async def clear_queue(queue_type, ignore_running, queue, function):
+    # clear messages or reaction in queue to avoid
+    # multiple instances of same command or reactions
+    try:
+        if ((queue_type not in running_queues or
+             ignore_running) and len(queue) > 0):
+            if queue_type not in running_queues:
+                running_queues[queue_type] = True
+            await function(queue)
+            await clear_queue(queue_type, True, queue, function)
+        else:
+            if queue_type in running_queues:
+                del running_queues[queue_type]
+    except Exception as error:
+        await send_error(None, error, 'utils.py -> clear_queue()')
+        if queue_type in running_queues:
+            del running_queues[queue_type]
+
+
 async def send_error(msg, error, origin, send=True):
+    # 10008 -> unknown message (ignore this error, mostly when
+    # trying to delete or react to a deleted message)
+    # 50001 -> cannot acces a channel
+    # 50013 -> Missing permissions
     try:
         if (str(error) == 'MySQL Connection not available.'):
             database.connected = False
@@ -87,6 +127,7 @@ async def send_error(msg, error, origin, send=True):
 
 
 async def get_prefix(msg, throwerr=True):
+    # try to get prefix from database, return default database if unsuccessful
     try:
         if not database.connected:
             return DEFAULT_PREFIX
@@ -109,6 +150,7 @@ async def get_prefix(msg, throwerr=True):
 
 
 async def get_welcome(server):
+    # get guild's welcome text from database
     try:
         if not database.connected:
             return None
@@ -127,6 +169,7 @@ async def get_welcome(server):
 
 
 async def get_roleschannel(msg):
+    # get guild's role-managing channel from database, if it is set up
     try:
         if not database.connected:
             return None
@@ -150,6 +193,7 @@ async def get_roleschannel(msg):
 
 
 async def get_required_roles(msg, command):
+    # get which roles can use a command from database
     try:
         if not database.connected:
             return None
@@ -169,6 +213,7 @@ async def get_required_roles(msg, command):
         await send_error(None, error, 'utils.py -> get_required_roles()')
         return None
 
+# emojis used for polls, roles,...
 emojis = {
     u"\u26AA": 'white_circle',
     u"\U0001F534": 'red_circle',

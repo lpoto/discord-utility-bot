@@ -91,6 +91,8 @@ class Rps(Command):
             await send_error(None, err, 'rps.py -> on_dm_reaction()')
 
     async def on_raw_reaction(self, msg, payload):
+        # await for rock paper or scissors reaction on the running game
+        # and get the user and the winner from the reaction
         try:
             if (payload.emoji.name not in self.options or
                     payload.event_type != 'REACTION_ADD' or
@@ -208,6 +210,8 @@ class Rps(Command):
                 users.items(), key=lambda item: item[1], reverse=True)}
             i = 1
             for u, w in users.items():
+                if i > 10:
+                    break
                 name = u.name if not u.nick else u.nick
                 embed_var.add_field(
                     name='{}.  {}'.format(i, name), value=w, inline=False)

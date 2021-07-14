@@ -8,11 +8,12 @@ class Poll(Command):
     def __init__(self):
         super().__init__('poll')
         self.description = 'Create a poll to vote on.'
-        self.running = False
         self.react_queue = []
 
     async def execute_command(self, msg):
         try:
+            # don't allow links and `, @ ... signs to avoid
+            # breaking poll form
             if re.search('http|`|POLL|<@', msg.content):
                 txt = 'Invalid question!'
                 await message_delete(msg, 5, txt)
@@ -21,16 +22,20 @@ class Poll(Command):
                 txt = 'I need a question!'
                 await message_delete(msg, 5, txt)
                 return
+            # question  is added with the poll command "poll <question>"
             poll_question = ' '.join(msg.content.split()[1:])
             await msg.channel.send('```0\nPOLL: ' + poll_question + '```')
+            # created poll is edited by replying with responses
         except Exception as err:
             await send_error(msg, err, 'poll.py -> execute_command()')
 
     async def on_message(self, msg, managing_bot):
         try:
+            # check if command is valid (can be used in this channel...)
             if not await managing_bot.check_if_valid(
                     managing_bot.commands[self.name], msg):
                 return
+            # message must be a reply to a POLL message
             if msg.reference is None or not msg.reference.message_id:
                 return
             poll_message = await msg.channel.fetch_message(
@@ -39,19 +44,25 @@ class Poll(Command):
                     poll_message.author.id != client.user.id or
                     not re.search("^```.*\nPOLL: ", poll_message.content)):
                 return
+            # get replies from the message
             await self.get_poll_info(msg, poll_message, 0)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> on_message()')
 
     async def get_poll_info(self, msg, poll, i):
         try:
+            # there can be multiple replies in one message, split with ;
             text = msg.content.split(';')
             response = text[i]
+            # don't allow certain patterns that could break poll form
             if re.search('http|`|POLL|<@', msg.content):
                 txt = 'Invalid response!'
                 await message_delete(msg, 5, txt)
                 return
             else:
+                # if poll has ```apache at the start it is fixed, so
+                # no replies can be added or removed
+                #  if poll has ```CSS it is ended
                 responses = poll.content[3:][:-3].split('``````')
                 if poll.content.startswith('```CSS'):
                     pass
@@ -72,7 +83,6 @@ class Poll(Command):
                         return
                     if i < len(text) - 1:
                         await self.get_poll_info(msg, poll, i + 1)
-
         except Exception as err:
             await send_error(msg, err, 'poll.py -> get_poll_info()')
 
@@ -92,6 +102,7 @@ class Poll(Command):
             await send_error(msg, err, 'poll.py -> add_response()')
 
     async def fix_poll(self, msg, poll):
+        # if poll is fixed, no replies can be added or removed
         try:
             if re.search('^```.*\nPOLL: ', poll.content) is None:
                 return poll
@@ -105,6 +116,7 @@ class Poll(Command):
             await send_error(msg, err, 'poll.py -> fix_poll()')
 
     async def end_poll(self, msg, poll):
+        # if poll is ended, it cannot be edited anymore
         try:
             x = poll.content.split('\nPOLL: ')
             x[0] = '```CSS'
@@ -133,59 +145,58 @@ class Poll(Command):
             del responses[num]
             txt = '```' + '``````'.join(responses) + '```'
             await message_edit(poll, txt)
-            await poll.remove_reaction(
-                emoji, client.user)
+            # remove bot's reaction that belongs to the removed response
+            await message_remove_reaction(poll, emoji, client.user)
             return poll
         except Exception as err:
             await send_error(msg, err, 'poll.py -> remove_response()')
 
     async def on_raw_reaction(self, msg, payload):
+        # when a valid reaction is added or removed from the poll,
+        # edit the poll accordingly in queue
+        # so we don't lose or duplicate any responses
         try:
             if re.search('```.*\nPOLL: ', msg.content) is None:
                 return
             emoji = payload.emoji.name
             self.react_queue.append((msg, emoji))
-            await self.clear_queue(False)
+            # process reactions in queue
+            await clear_queue(
+                queue_type='poll_reactions',
+                ignore_running=False,
+                queue=self.react_queue,
+                function=self.queue_function)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> on_raw_reaction()')
 
-    async def clear_queue(self, ignore_running):
+    async def queue_function(self, queue):
+        # function to be used when processing poll reactions queue
         try:
-            if ((not self.running or ignore_running) and
-                    len(self.react_queue) > 0):
-                self.running = True
-                try:
-                    command = self.react_queue.pop(0)
-                    msg = command[0]
-                    emoji = command[1]
-                    responses = msg.content[3:][:-3].split('``````')
-                    index = -1
-                    for i in range(len(responses)):
-                        if responses[i].startswith('\n' + emoji):
-                            index = i
-                            break
-                    if index == -1:
-                        return await self.clear_queue(True)
-                    reacts = discord.utils.get(
-                        msg.reactions, emoji=emoji)
-                    reacts_count = 0
-                    if reacts:
-                        reacts_count = reacts.count
-                        if reacts.me:
-                            reacts_count -= 1
-                    x = responses[index].split(': ')[0].split(')')[1]
-                    x = '\n{}({}){}'.format(emoji, reacts_count, x)
-                    responses[index] = '{}: {}'.format(x, emoji * reacts_count)
-                    txt = '```' + '``````'.join(responses) + '```'
-                    await message_edit(msg, txt)
-                except Exception as err:
-                    await send_error(msg, err, 'poll.py -> clear_queue()')
-                finally:
-                    await self.clear_queue(True)
-            else:
-                self.running = False
+            command = queue.pop(0)
+            msg = command[0]
+            emoji = command[1]
+            responses = msg.content[3:][:-3].split('``````')
+            index = -1
+            for i in range(len(responses)):
+                if responses[i].startswith('\n' + emoji):
+                    index = i
+                    break
+            if index == -1:
+                return
+            reacts = discord.utils.get(
+                msg.reactions, emoji=emoji)
+            reacts_count = 0
+            if reacts:
+                reacts_count = reacts.count
+                if reacts.me:
+                    reacts_count -= 1
+            x = responses[index].split(': ')[0].split(')')[1]
+            x = '\n{}({}){}'.format(emoji, reacts_count, x)
+            responses[index] = '{}: {}'.format(x, emoji * reacts_count)
+            txt = '```' + '``````'.join(responses) + '```'
+            await message_edit(msg, txt)
         except Exception as err:
-            await send_error(None, err, 'poll.py -> clear_queue()')
+            await send_error(msg, err, 'poll.py -> queue_function()')
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
