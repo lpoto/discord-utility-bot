@@ -198,14 +198,22 @@ class Rps(Command):
             embed_var = discord.Embed(
                 title='Rock-Paper-Scissors Leaderboard',
                 color=random_color())
+            users = {}
             for i in fetched:
                 user = msg.guild.get_member(int(i[0]))
                 if user is None:
                     continue
-                name = user.name if not user.nick else user.nick
+                users[user] = i[1]
+            users = {k: v for k, v in sorted(
+                users.items(), key=lambda item: item[1])}
+            i = 1
+            for u, w in users.items():
+                name = u.name if not u.nick else u.nick
                 embed_var.add_field(
-                    name=name, value=i[1], inline=False)
-            await msg.channel.send(embed=embed_var)
+                    name='{}.  {}'.format(i, name), value=w, inline=False)
+                i += 1
+            new_msg = await msg.channel.send(embed=embed_var)
+            await message_react(new_msg, list(emojis.keys())[-1])
         except Exception as err:
             await send_error(msg, err, 'rps.py -> show_leaderboard()')
 
