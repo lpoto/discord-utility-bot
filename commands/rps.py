@@ -15,7 +15,7 @@ class Rps(Command):
         try:
             args = msg.content.split()
             # show leaderboard
-            if args[1] == 'leaderboard' or args[1] == 'lb':
+            if len(args) > 1 and (args[1] == 'leaderboard' or args[1] == 'lb'):
                 await self.show_leaderboard(msg)
                 return
             # send dm to the user who started the game and
@@ -186,7 +186,7 @@ class Rps(Command):
         try:
             if database.connected is False:
                 txt = 'No database connection.'
-                await message_delete()
+                await message_delete(msg, 5, txt)
                 return
             cursor = database.cnx.cursor(buffered=True)
             cursor.execute("SELECT * FROM rps")
@@ -208,11 +208,12 @@ class Rps(Command):
             await send_error(msg, err, 'rps.py -> show_leaderboard()')
 
     def additional_info(self, prefix):
-        return '{}\n{}\n{}'.format(
+        return '{}\n{}\n{}\n{}'.format(
             ('* Start the game with "{}rps", then react ' +
              'with your choice in DM.').format(prefix),
             '* Another user can join by reacting with one of three options.',
-            '* A record of wins will be kept.')
+            '* A record of wins will be kept.',
+            '* See leaderboard with "{}rps leaderboard"'.format(prefix))
 
 
 Rps()
