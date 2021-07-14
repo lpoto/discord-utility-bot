@@ -13,6 +13,11 @@ class Rps(Command):
 
     async def execute_command(self, msg):
         try:
+            args = msg.content.split()
+            # show leaderboard
+            if args[1] == 'leaderboard' or args[1] == 'lb':
+                await self.show_leaderboard(msg)
+                return
             # send dm to the user who started the game and
             # wait for him to react with one of the options
             dm = await msg.author.create_dm()
@@ -176,6 +181,31 @@ class Rps(Command):
         except Exception as err:
             await send_error(None, err, 'rps.py -> wins_to_databse()')
             return embed
+
+    async def show_leaderboard(self, msg):
+        try:
+            if database.connected is False:
+                txt = 'No database connection.'
+                await message_delete()
+                return
+            cursor = database.cnx.cursor(buffered=True)
+            cursor.execute("SELECT * FROM rps")
+            fetched = cursor.fetchall()
+            if fetched is None:
+                txt = 'No availible leaderboard.'
+                await message_delete(msg, 5, txt)
+                return
+            embed_var = discord.Embed(
+                    title='Rock-Paper-Scissors Leaderboard',
+                    color=random_color())
+            for i in fetched:
+                user = msg.guild.get_member(int(i[0]))
+                name = user.name if not user.nick else user.nick
+                embed_var.add_field(
+                        name=name, value=i[1], inline=False)
+            await msg.channel.send(embed=embed_var)
+        except Exception as err:
+            await send_error(msg, err, 'rps.py -> show_leaderboard()')
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}'.format(

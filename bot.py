@@ -76,7 +76,6 @@ class Managing_bot:
                     await self.clear_msg_queue(True)
                 except Exception as error:
                     await send_error(msg, error, 'bot.py -> clear_msg_queue()')
-                    await self.clear_msg_queue(True)
             else:
                 self.clearing_messages = False
         except Exception as err:
