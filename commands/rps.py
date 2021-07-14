@@ -205,7 +205,7 @@ class Rps(Command):
                     continue
                 users[user] = i[1]
             users = {k: v for k, v in sorted(
-                users.items(), key=lambda item: item[1])}
+                users.items(), key=lambda item: item[1], reverse=True)}
             i = 1
             for u, w in users.items():
                 name = u.name if not u.nick else u.nick
