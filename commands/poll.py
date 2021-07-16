@@ -74,6 +74,8 @@ class Poll(Command):
                     await self.fix_poll(msg, poll)
                 elif re.search('^remove .*$', response):
                     await self.remove_response(response, responses, msg, poll)
+                elif re.search('^question .*', response):
+                    await self.change_question(response, responses, msg, poll)
                 else:
                     poll = await self.add_response(
                         response, responses, msg, poll)
@@ -101,6 +103,17 @@ class Poll(Command):
             return poll
         except Exception as err:
             await send_error(msg, err, 'poll.py -> add_response()')
+
+    async def change_question(self, question, responses, msg, poll):
+        try:
+            question = question.replace('question ', '', 1)
+            responses[0] = (responses[0].split('POLL: '))
+            responses[0][1] = question
+            responses[0] = 'POLL: '.join(responses[0])
+            txt = '```' + '``````'.join(responses) + '```'
+            await message_edit(poll, txt)
+        except Exception as err:
+            await send_error(msg, err, 'poll.py -> change_question()')
 
     async def fix_poll(self, msg, poll):
         # if poll is fixed, no replies can be added or removed
@@ -200,8 +213,9 @@ class Poll(Command):
             await send_error(msg, err, 'poll.py -> queue_function()')
 
     def additional_info(self, prefix):
-        return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
+        return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
             'Initialize the poll with "{}poll <question>"'.format(prefix),
+            'Change question by replying "question <new_question>".',
             "Add responses by replying to the poll.",
             'Multiple responses can be added at once, ' +
             'separated with semicolons (response1;response2;...).',
