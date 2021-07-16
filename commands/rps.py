@@ -127,7 +127,8 @@ class Rps(Command):
             if game[0][1] == game[1][1]:
                 new_embed.description = '{} draws agains {}!'.format(
                     user_names[0], user_names[1])
-                await message_edit(msg=msg, embed=new_embed)
+                await message_edit(msg, text='<@{}>, <@{}>'.format(
+                    game[0][0], game[1][0]), embed=new_embed)
                 return
             # get winner
             if ((game[0][1] == self.options[0] and
@@ -151,7 +152,8 @@ class Rps(Command):
                     new_embed.set_thumbnail(url=user2.avatar_url)
                 new_embed = await self.wins_to_database(
                     user2.id, new_embed, user_names[1])
-            await message_edit(msg=msg, embed=new_embed)
+            await message_edit(msg, text='<@{}>, <@{}>'.format(
+                game[0][0], game[1][0]), embed=new_embed)
             del self.running_games[msg.id]
         except Exception as err:
             await send_error(msg, err, 'rps.py -> game_results()')
