@@ -91,7 +91,8 @@ class Poll(Command):
             num = int(poll.content.split('\nPOLL')[0].split('```')[1])
             if num + 1 >= len(emojis):
                 return self.fix_poll(msg, poll)
-            responses[0] = responses[0].replace(responses[0][0], str(num + 1))
+            responses[0] = responses[0].replace(
+                    responses[0][0], str(num + 1), 1)
             emoji = list(emojis.keys())[num]
             await message_react(poll, emoji)
             responses.append('\n{}(0) {}: '.format(emoji, response))
