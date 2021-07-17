@@ -1,6 +1,6 @@
 import discord
 from command import Command
-from bot import managing_bot
+from bot import bot
 from utils import *
 
 
@@ -101,7 +101,7 @@ class Config(Command):
 
     async def set_command(self, msg, cmd, new_roles):
         try:
-            if cmd not in managing_bot.commands:
+            if cmd not in bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
                 return

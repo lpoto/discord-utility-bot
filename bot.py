@@ -2,7 +2,8 @@ import discord
 from utils import *
 
 
-class Managing_bot:
+class Bot:
+
     def __init__(self, client):
         self.msg_queue = []
         self.raw_queue = []
@@ -64,7 +65,7 @@ class Managing_bot:
                                 prefix), msg, prefix)
                     )
                     await message_react(
-                        new_msg, list(emojis.keys())[-1])
+                        new_msg, waste_basket)
             else:
                 # else execute the command
                 # check if valid channel, permissions,...
@@ -147,9 +148,10 @@ class Managing_bot:
             return False
 
     async def push_raw_queue(self, payload, reaction_type):
-        # push raw reaction info to queue only if
-        # its emoji is in utils.emojis dictionary
-        if payload.emoji.name in emojis:
+        # push raw reactions that match emojis in utils.py into queue
+        if (payload.emoji.name in emojis or
+                payload.emoji.name in rps_emojis or
+                payload.emoji.name == waste_basket):
             # check if dm
             if payload.guild_id is None:
                 self.raw_queue.append((payload, reaction_type, True))
@@ -194,7 +196,7 @@ class Managing_bot:
                 # and message is not pinned and message has an
                 # embed or starts with help, delete it
                 if (reaction_type == 'add' and
-                    payload.emoji.name == list(emojis.keys())[-1] and
+                    payload.emoji.name == waste_basket and
                         not msg.pinned and
                     (len(msg.embeds) > 0 or
                      msg.content.startswith('```Help: ')) and
@@ -202,12 +204,12 @@ class Managing_bot:
                     edit_txt = 'Message has been deleted.'
                     await message_edit(msg, edit_txt)
                     await message_delete(msg, 3)
-                elif payload.emoji.name != list(emojis.keys())[-1]:
+                elif payload.emoji.name != waste_basket:
                     for i in self.on_raw_reactions:
                         await i.on_raw_reaction(msg, payload)
         except Exception as error:
             await send_error(
-                    msg, error, 'bot.py -> raw_reactions_queue_function()')
+                msg, error, 'bot.py -> raw_reactions_queue_function()')
 
 
-managing_bot = Managing_bot(client)
+bot = Bot(client)

@@ -1,5 +1,5 @@
 import discord
-from bot import managing_bot
+from bot import bot
 from utils import *
 
 
@@ -27,7 +27,7 @@ class Command:
     def add_command(self):
         # adds object to commands dictionary
         # in Managing_bot
-        managing_bot.add_command(self)
+        bot.add_command(self)
 
     def command_info(self, prefix):
         # detailed information about
@@ -48,7 +48,7 @@ class Command:
         # classes extending default Command will
         # override this method
         try:
-            commands = managing_bot.commands
+            commands = bot.commands
             prefix = await get_prefix(msg)
             embed_var = discord.Embed(
                 title='Help',
@@ -65,7 +65,7 @@ class Command:
                     value=v.description,
                     inline=False)
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, list(emojis.keys())[-1])
+            await message_react(new_msg, waste_basket)
         except Exception as err:
             await send_error(msg, err, 'command.py -> execute_command()')
 

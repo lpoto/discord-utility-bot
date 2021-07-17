@@ -30,7 +30,7 @@ class Roles(Command):
             content = ''
             # add multiple roles at once, separated with ;
             roles = ' '.join(args[1:]).split(';')
-            if (len(roles) + idx >= len(emojis.keys()) - 1):
+            if (len(roles) + idx >= len(emojis) - 1):
                 txt = 'Cannot add that many at once!'
                 await message_delete(msg, 5, txt)
                 return
@@ -43,7 +43,7 @@ class Roles(Command):
                 if rl is None:
                     return
                 roles[i] = str(rl)
-                r_emojis.append(list(emojis.keys())[i + idx])
+                r_emojis.append(emojis[i + idx])
                 if existing_msg is not None:
                     # if editing existing message, check for hidden text
                     # that containts indexes of removed emojis, that can be
@@ -54,7 +54,7 @@ class Roles(Command):
                     hidden_txt = existing_content[0][3:]
                     if hidden_txt != '':
                         hidden_txt = hidden_txt.split('a')
-                        r_emojis[i] = list(emojis.keys())[int(hidden_txt[0])]
+                        r_emojis[i] = emojis[int(hidden_txt[0])]
                         hidden_txt = 'a'.join(hidden_txt[1:])
                     existing_content[0] = '```{}'.format(hidden_txt)
                 # add emoji and role to the new content
@@ -140,7 +140,7 @@ class Roles(Command):
         # find the role in the message in the guild's roles
         rl_name = None
         if len(rls) == 1:
-            if emoji != list(emojis.keys())[0]:
+            if emoji != emojis[0]:
                 return None
             if rls[0].startswith(emoji):
                 rl_name = rls[0].replace(emoji, '', 1).strip()
@@ -217,14 +217,11 @@ class Roles(Command):
             # role can be removed by it's index in the message
             try:
                 n = int(n)
+                if 0 > n or n >= len(roles):
+                    raise ValueError
             except ValueError:
-                txt = ('You can only remove roles from message by their ' +
-                       'indexes in the message (starting with 0)')
-                await message_delete(msg, 5, txt)
-                return
-            if 0 > n or n >= len(roles):
-                txt = 'Indexes in the message go from 0 to {}'.format(
-                    len(roles) - 1)
+                txt = ('Roles can only be removed by indexes from ' +
+                       '`{}` to `{}`.').format(0, len(roles) - 1)
                 await message_delete(msg, 5, txt)
                 return
             emoji = roles[n].split()[0]
@@ -233,7 +230,7 @@ class Roles(Command):
             await message_remove_reaction(existing_msg, emoji, client.user)
             if hidden_txt != '':
                 hidden_txt = '{}a{}'.format(
-                    hidden_txt, list(emojis.keys()).index(emoji))
+                    hidden_txt, emojis.index(emoji))
             else:
                 hidden_txt = list(emojis.keys()).index(emoji)
             await message_edit(existing_msg, '```{}\n{}```'.format(

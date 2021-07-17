@@ -4,7 +4,6 @@ from command import Command
 
 
 class Rps(Command):
-    options = ['🪨', '🗞️', '✂️']
     running_games = {}
 
     def __init__(self):
@@ -27,7 +26,7 @@ class Rps(Command):
                 color=random_color())
             dm_embed.set_footer(text=msg.channel.id)
             dm_message = await dm.send(embed=dm_embed)
-            for i in self.options:
+            for i in rps_emojis:
                 await message_react(dm_message, i)
         except Exception as err:
             await send_error(msg, err, 'rps.py -> execute_command()')
@@ -38,7 +37,7 @@ class Rps(Command):
         # then send new embed to that channel and wait for another
         # opponent to join
         try:
-            if payload.emoji.name not in self.options:
+            if payload.emoji.name not in rps_emojis:
                 return
             dm_channel = client.get_channel(payload.channel_id)
             if dm_channel is None:
@@ -77,7 +76,7 @@ class Rps(Command):
                 new_embed.description = user.name
             new_embed.set_footer(
                 text='React with {}, {} or {} to join!'.format(
-                    self.options[0], self.options[1], self.options[2]))
+                    rps_emojis[0], rps_emojis[1], rps_emojis[2]))
             new_embed.description += ' is waiting for an opponent.'
             # add users profile picture to the embed
             if user.avatar_url:
@@ -85,7 +84,7 @@ class Rps(Command):
             new_msg = await channel.send(embed=new_embed)
             self.running_games[new_msg.id] = (
                 payload.user_id, payload.emoji.name)
-            for i in self.options:
+            for i in rps_emojis:
                 await message_react(new_msg, i)
         except Exception as err:
             await send_error(None, err, 'rps.py -> on_dm_reaction()')
@@ -94,7 +93,7 @@ class Rps(Command):
         # await for rock paper or scissors reaction on the running game
         # and get the user and the winner from the reaction
         try:
-            if (payload.emoji.name not in self.options or
+            if (payload.emoji.name not in rps_emojis or
                     payload.event_type != 'REACTION_ADD' or
                     msg.embeds == [] or msg.id not in self.running_games or
                     msg.embeds[0].title != 'Rock-Paper-Scissors!' or
@@ -127,16 +126,15 @@ class Rps(Command):
             if game[0][1] == game[1][1]:
                 new_embed.description = '{} draws agains {}!'.format(
                     user_names[0], user_names[1])
-                await message_edit(msg, text='<@{}>, <@{}>'.format(
-                    game[0][0], game[1][0]), embed=new_embed)
+                await message_edit(msg=msg, text=None, embed=new_embed)
                 return
             # get winner
-            if ((game[0][1] == self.options[0] and
-                 game[1][1] == self.options[2]) or
-                (game[0][1] == self.options[1] and
-                    game[1][1] == self.options[0]) or
-                    (game[0][1] == self.options[2] and
-                        game[1][1] == self.options[1])):
+            if ((game[0][1] == rps_emojis[0] and
+                 game[1][1] == rps_emojis[2]) or
+                (game[0][1] == rps_emojis[1] and
+                    game[1][1] == rps_emojis[0]) or
+                    (game[0][1] == rps_emojis[2] and
+                        game[1][1] == rps_emojis[1])):
                 new_embed.description = (
                     '{} wins against {} with {} against {}').format(
                     user_names[0], user_names[1], game[0][1], game[1][1])
@@ -152,8 +150,7 @@ class Rps(Command):
                     new_embed.set_thumbnail(url=user2.avatar_url)
                 new_embed = await self.wins_to_database(
                     user2.id, new_embed, user_names[1])
-            await message_edit(msg, text='<@{}>, <@{}>'.format(
-                game[0][0], game[1][0]), embed=new_embed)
+            await message_edit(msg=msg, text=None, embed=new_embed)
             del self.running_games[msg.id]
         except Exception as err:
             await send_error(msg, err, 'rps.py -> game_results()')
@@ -217,7 +214,7 @@ class Rps(Command):
                     name='{}.  {}'.format(i, name), value=w, inline=False)
                 i += 1
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, list(emojis.keys())[-1])
+            await message_react(new_msg, waste_basket)
         except Exception as err:
             await send_error(msg, err, 'rps.py -> show_leaderboard()')
 

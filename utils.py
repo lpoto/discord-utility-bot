@@ -214,27 +214,25 @@ async def get_required_roles(msg, command):
         return None
 
 # emojis used for polls, roles,...
-emojis = {
-    u"\u26AA": 'white_circle',
-    u"\U0001F534": 'red_circle',
-    u"\U0001F535": 'blue_circle',
-    u"\U0001F7E0": 'orange_circle',
-    u"\U0001F7E1": 'yellow_circle',
-    u"\U0001F7E2": 'green_circle',
-    u"\U0001F7E3": 'purple_circle',
-    u"\U0001F7E4": 'brown_circle',
-    u"\u26AB": 'black_circle',
-    u"\U00002B1C": 'white_square',
-    u"\U0001F7E5": 'red_square',
-    u"\U0001F7E6": 'blue_square',
-    u"\U0001F7E7": 'orange_square',
-    u"\U0001F7E8": 'yellow_square',
-    u"\U0001F7E9": 'green_square',
-    u"\U0001F7EA": 'purple_square',
-    u"\U0001F7EB": 'brown_square',
-    u"\U00002B1B": 'black_square',
-    '🪨': 'rock',
-    '🗞️': 'paper',
-    '✂️': 'scissors',
-    '🗑️': 'waste_basket'
-}
+rps_emojis = ['🪨', '🗞️', '✂️']
+waste_basket = '🗑️'
+emojis = [
+    u"\u26AA",
+    u"\U0001F534",
+    u"\U0001F535",
+    u"\U0001F7E0",
+    u"\U0001F7E1",
+    u"\U0001F7E2",
+    u"\U0001F7E3",
+    u"\U0001F7E4",
+    u"\u26AB",
+    u"\U00002B1C",
+    u"\U0001F7E5",
+    u"\U0001F7E6",
+    u"\U0001F7E7",
+    u"\U0001F7E8",
+    u"\U0001F7E9",
+    u"\U0001F7EA",
+    u"\U0001F7EB",
+    u"\U00002B1B",
+]

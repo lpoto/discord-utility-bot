@@ -16,7 +16,7 @@ class Server_info(Command):
                 return msg.reply('Invalid command!')
             embed_var = await self.create_embed(msg)
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, list(emojis.keys())[-1])
+            await message_react(new_msg, waste_basket)
         except Exception as err:
             await send_error(msg, err, 'server.py -> execute_command()')
 

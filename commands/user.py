@@ -27,7 +27,7 @@ class User_info(Command):
             if embed_var is None:
                 return
             new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, list(emojis.keys())[-1])
+            await message_react(new_msg, waste_basket)
         except Exception as err:
             await send_error(msg, err, 'user.py -> execute_command()')
 
