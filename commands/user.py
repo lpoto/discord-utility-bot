@@ -72,8 +72,9 @@ class User_info(Command):
             if database.connected is False:
                 return embed
             cursor = database.cnx.cursor(buffered=True)
-            cursor.execute("SELECT * FROM rps WHERE user_id = '{}'".format(
-                user.id))
+            cursor.execute(
+                    "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'" +
+                    " AND user_id = '{}'".format(msg.guild.id, user.id))
             fetched = cursor.fetchone()
             count = 0 if fetched is None else fetched[1]
             embed.add_field(

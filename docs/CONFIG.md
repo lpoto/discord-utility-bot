@@ -1,7 +1,7 @@
 ## Prerequisites
 
-* Python 3.9.2
-* pip 20.3.1
+* Python 3.9
+* pip 20.3
 
 ## Installation
 
@@ -34,4 +34,4 @@
 ## Running the bot
 Run the following command in your bot's root directory:
 
-	`python3 main.py`
+	`python main.py`

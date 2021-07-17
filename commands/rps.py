@@ -149,29 +149,34 @@ class Rps(Command):
                 if user2.avatar_url:
                     new_embed.set_thumbnail(url=user2.avatar_url)
                 new_embed = await self.wins_to_database(
-                    user2.id, new_embed, user_names[1])
+                    user2.id, new_embed, user_names[1], msg.guild.id)
             await message_edit(msg=msg, text=None, embed=new_embed)
             del self.running_games[msg.id]
         except Exception as err:
             await send_error(msg, err, 'rps.py -> game_results()')
 
-    async def wins_to_database(self, user_id, embed, user_name):
+    async def wins_to_database(self, user_id, embed, user_name, guild_id):
         # add a win for the user to the database and return total win count
         try:
             if database.connected is False:
                 return embed
             cursor = database.cnx.cursor(buffered=True)
-            cursor.execute("SELECT * FROM rps WHERE user_id = '{}'".format(
-                user_id))
+            cursor.execute((
+                "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}' AND" +
+                " user_id = '{}'").format(guild_id, user_id))
             fetched = cursor.fetchone()
             count = 1
             if fetched is None:
-                cursor.execute(("INSERT INTO rps (user_id, wins) VALUES " +
-                                "('{}', 1)").format(user_id))
+                cursor.execute(
+                    ("INSERT INTO rock_paper_scissors (guild_id, user_id, " +
+                     "wins) VALUES ('{}', '{}', 1)").format(
+                        guild_id, user_id))
             else:
                 count = fetched[1] + 1
-                cursor.execute(("UPDATE rps SET wins = {} WHERE " +
-                                "user_id = '{}'").format(count, user_id))
+                cursor.execute(
+                    ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
+                     "guild_id = '{}' and user_id = '{}'").format(
+                         count, user_id))
             database.cnx.commit()
             cursor.close()
             embed.set_footer(text='{} total wins: {}'.format(
@@ -188,7 +193,9 @@ class Rps(Command):
                 await message_delete(msg, 5, txt)
                 return
             cursor = database.cnx.cursor(buffered=True)
-            cursor.execute("SELECT * FROM rps")
+            cursor.execute(
+                "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'"
+                .format(msg.guild.id))
             fetched = cursor.fetchall()
             if fetched is None:
                 txt = 'No availible leaderboard.'
