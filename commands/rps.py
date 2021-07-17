@@ -172,7 +172,7 @@ class Rps(Command):
                      "wins) VALUES ('{}', '{}', 1)").format(
                         guild_id, user_id))
             else:
-                count = fetched[1] + 1
+                count = fetched[2] + 1
                 cursor.execute(
                     ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
                      "guild_id = '{}' and user_id = '{}'").format(
@@ -197,7 +197,7 @@ class Rps(Command):
                 "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'"
                 .format(msg.guild.id))
             fetched = cursor.fetchall()
-            if fetched is None:
+            if fetched is []:
                 txt = 'No availible leaderboard.'
                 await message_delete(msg, 5, txt)
                 return
@@ -206,10 +206,10 @@ class Rps(Command):
                 color=random_color())
             users = {}
             for i in fetched:
-                user = msg.guild.get_member(int(i[0]))
+                user = msg.guild.get_member(int(i[1]))
                 if user is None:
                     continue
-                users[user] = i[1]
+                users[user] = i[2]
             users = {k: v for k, v in sorted(
                 users.items(), key=lambda item: item[1], reverse=True)}
             i = 1
