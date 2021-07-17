@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import discord
+import sys
 import random
 from database import DB
 # enable all intents to get member info etc.
@@ -65,7 +66,7 @@ async def message_delete(msg, time, txt=None):
         return True
     except Exception as error:
         if (hasattr(error, 'code')) and str(error.code) != '10008':
-            print('Error -> (utils.py -> message_delete())' + str(err))
+            printf('Error -> (utils.py -> message_delete())' + str(err))
         return False
 
 
@@ -121,9 +122,9 @@ async def send_error(msg, error, origin, send=True):
         elif (hasattr(error, 'code') and
                 str(error.code) not in ['10008', '50001', '50013'] or
                 not hasattr(error, 'code')):
-            print('Error ({}):\n{}'.format(origin, error))
+            printf('Error ({}):\n{}'.format(origin, error))
     except Exception as err:
-        print('Error -> (utils.py -> send_error())' + str(err))
+        printf('Error -> (utils.py -> send_error())' + str(err))
 
 
 async def get_prefix(msg, throwerr=True):
@@ -212,6 +213,20 @@ async def get_required_roles(msg, command):
     except Exception as error:
         await send_error(None, error, 'utils.py -> get_required_roles()')
         return None
+
+
+def printff(txt, extra=None):
+    if extra is not None:
+        txt = '{} {}'.format(txt, extra)
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'a') as f:
+            default_stdout = sys.stdout
+            sys.stdout = f
+            printf(txt)
+            sys.stdout = default_stdout
+            return
+    printf(txt)
+
 
 # emojis used for polls, roles,...
 rps_emojis = ['🪨', '🗞️', '✂️']

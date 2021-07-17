@@ -10,14 +10,14 @@ from commands import *
 def client_events():
     @client.event
     async def on_ready():
-        # on starting the bot, print tag and activity
+        # on starting the bot, printf tag and activity
         if client.user:
-            print('Bot logged in!')
-            print('Client:',  client.user)
+            printf('Bot logged in!')
+            printf('Client:',  client.user)
             activity = discord.Game(name=DEFAULT_PREFIX+'help', type=2)
             status = discord.Status.idle
             await client.change_presence(status=status, activity=activity)
-            print("Status:", activity)
+            printf("Status:", activity)
             database.connect_database(get_database_info())
 
     @client.event
@@ -87,8 +87,8 @@ def reactions_client_events():
 # handle exit by reconnecting unless keyboard interrupt
 
 def exception_handler(loop, context):
-    print(context['message'])
-    print('\n')
+    printf(context['message'])
+    printf('\n')
 
 
 def handle_exit(client):
@@ -124,15 +124,15 @@ try:
         try:
             client.loop.run_until_complete(client.start(DISCORD_TOKEN))
         except SystemExit:
-            print("\nDisconnected")
+            printf("\nDisconnected")
             handle_exit(client)
         except KeyboardInterrupt:
             handle_exit(client)
             client.loop.close()
-            print("\nProgram ended")
+            printf("\nProgram ended")
             break
-        print("Reconnecting...\n")
+        printf("Reconnecting...\n")
         client = discord.Client(loop=client.loop)
 except Exception as err:
-    print('Error in main.py when starting the bot:\n')
-    print(err)
+    printf('Error in main.py when starting the bot:\n')
+    printf(err)

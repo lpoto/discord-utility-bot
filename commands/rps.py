@@ -141,7 +141,7 @@ class Rps(Command):
                 if user1.avatar_url:
                     new_embed.set_thumbnail(url=user1.avatar_url)
                 new_embed = await self.wins_to_database(
-                    user1.id, new_embed, user_names[0])
+                    user1.id, new_embed, user_names[0], msg.guild.id)
             else:
                 new_embed.description = (
                     '{} wins against {} with {} against {}').format(
@@ -176,7 +176,7 @@ class Rps(Command):
                 cursor.execute(
                     ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
                      "guild_id = '{}' and user_id = '{}'").format(
-                         count, user_id))
+                         count, guild_id, user_id))
             database.cnx.commit()
             cursor.close()
             embed.set_footer(text='{} total wins: {}'.format(

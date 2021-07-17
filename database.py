@@ -9,12 +9,12 @@ class DB:
     def connect_database(self, info):
         # if database is give, connect
         if info is None:
-            print('Database: None')
+            printf('Database: None')
             return
         try:
             self.cnx = mysql.connector.connect(**info)
             self.connected = True
-            print('Database: ' + info['database'])
+            printf('Database: ' + info['database'])
             # check if all required tables exist, if not,
             # create them
             self.create_tables(info)
@@ -23,7 +23,7 @@ class DB:
             if err.errno == 2006:
                 self.connect_database(info)
                 return
-            print('Database error:\n', err)
+            printf('Database error:\n', err)
 
     def required_tables(self):
         return {
@@ -60,9 +60,9 @@ class DB:
                         "CREATE TABLE {} ({})".format(
                             i, ', '.join(tables[i])))
                     cursor.execute(query)
-                    print('- Created {} table {}'.format(
+                    printf('- Created {} table {}'.format(
                         info['database'], i))
                 cursor.close()
         except Exception as err:
-            print('Error creating database tables:')
-            print(err)
+            printf('Error creating database tables:')
+            printf(err)
