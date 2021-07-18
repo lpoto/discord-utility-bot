@@ -17,7 +17,8 @@ class User_info(Command):
             # message author, else show info about the user
             # whose name was provided
             if len(args) > 1:
-                args = (' '.join(args[1:])).lower()
+                args = msg.content.replace(
+                        '{} '.format(args[0]), '', 1).lower()
                 for member in msg.guild.members:
                     if (args == str(member.name).lower() or
                             args == str(member.nick).lower()):

@@ -24,7 +24,8 @@ class Poll(Command):
                 await message_delete(msg, 5, txt)
                 return
             # question  is added with the poll command "poll <question>"
-            poll_question = ' '.join(msg.content.split()[1:])
+            poll_question = msg.content.replace('{} '.format(
+                msg.content.split()[0]), '', 1)
             await msg.channel.send('```\nPOLL: ' + poll_question + '```')
             # created poll is edited by replying with responses
         except Exception as err:

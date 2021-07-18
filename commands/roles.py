@@ -23,7 +23,7 @@ class Roles(Command):
             # are valid roles, and if they are, send them to the channel
             # and react with emojis (max 20)
             roles = []
-            x = ' '.join(args[1:]).split(';')
+            x = msg.content.replace('{} '.format(args[0]), '', 1)
             for i in range(len(x)):
                 rl = await self.valid_role(x[i], msg)
                 if rl is None:

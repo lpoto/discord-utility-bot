@@ -4,6 +4,8 @@ import asyncio
 from utils import *
 from bot import bot
 from commands import *
+
+
 def client_events():
     @client.event
     async def on_ready():

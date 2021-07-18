@@ -72,7 +72,8 @@ class Config(Command):
                     await message_delete(msg, 5, txt)
                     return
             cmd = args[2]
-            new_roles = ' '.join(args[3:])
+            new_roles = msg.content.remove(
+                    '{} {} '.format(args[0], args[1]), '', 1)
             if cmd not in bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
@@ -134,7 +135,8 @@ class Config(Command):
 
     async def set_welcome(self, msg, args):
         try:
-            new_txt = ' '.join(args[2:])
+            new_txt = msg.content.replace(
+                    '{} {} '.format(args[0], args[1]), '', 1)
             if len(new_txt) < 1:
                 return
             if new_txt == 'remove':
