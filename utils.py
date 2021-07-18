@@ -45,9 +45,15 @@ async def message_react(msg, reaction):
         return False
 
 
-async def message_remove_reaction(msg, emoji, user):
+async def message_remove_reaction(msg, emoji, user, clear_all=False):
     # remove user's reaction from the message
     try:
+        # if bot has manage_messages permissions and clear_all
+        # remove all reactions not just bot's reaction
+        if clear_all and has_permissions(
+                msg.guild.me, msg.channel, 'manage_messages') is True:
+            await msg.clear_reaction(emoji)
+            return True
         await msg.remove_reaction(emoji, user)
         return True
     except Exception as error:
@@ -104,12 +110,15 @@ async def clear_queue(queue_type, ignore_running, queue, function):
 
 
 def has_permissions(user, channel, perms):
-    if not isinstance(perms, list):
-        perms = [perms]
-    for i in perms:
-        if not dict(iter(user.permissions_in(channel)))[i]:
-            return i
-    return True
+    try:
+        if not isinstance(perms, list):
+            perms = [perms]
+        for i in perms:
+            if not dict(iter(user.permissions_in(channel)))[i]:
+                return i
+        return True
+    except Exception as err:
+        printf('Error (utils.py -> has_permissions())\n', err)
 
 
 async def send_error(msg, error, origin, send=True):

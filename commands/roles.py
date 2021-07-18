@@ -238,7 +238,7 @@ class Roles(Command):
             emoji = roles[n].split()[0]
             del roles[n]
             # remove the bot's reaction the belongs to the removed role
-            await message_remove_reaction(msg, emoji, client.user)
+            await message_remove_reaction(msg, emoji, client.user, True)
             if hidden_txt != '':
                 hidden_txt = '{}a{}'.format(
                     hidden_txt, emojis.index(emoji))

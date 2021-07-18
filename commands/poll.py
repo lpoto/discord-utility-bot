@@ -200,7 +200,8 @@ class Poll(Command):
             txt = '```' + '``````'.join(responses) + '```'
             await message_edit(poll, txt)
             # remove bot's reaction that belongs to the removed response
-            await message_remove_reaction(poll, emoji, client.user)
+            await message_remove_reaction(
+                    poll, emoji, client.user, clear_all=True)
             return True
         except Exception as err:
             await send_error(msg, err, 'poll.py -> remove_response()')
