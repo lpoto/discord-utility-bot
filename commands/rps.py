@@ -124,7 +124,7 @@ class Rps(Command):
                 user_names[1] = user2.nick
             # if same reactions -> draw
             if game[0][1] == game[1][1]:
-                new_embed.description = '{} draws agains {}!'.format(
+                new_embed.description = '{} draws against {}!'.format(
                     user_names[0], user_names[1])
                 await message_edit(msg=msg, text=None, embed=new_embed)
                 return

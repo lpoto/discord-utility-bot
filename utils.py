@@ -103,6 +103,15 @@ async def clear_queue(queue_type, ignore_running, queue, function):
             del running_queues[queue_type]
 
 
+def has_permissions(user, channel, perms):
+    if not isinstance(perms, list):
+        perms = [perms]
+    for i in perms:
+        if not dict(iter(user.permissions_in(channel)))[i]:
+            return i
+    return True
+
+
 async def send_error(msg, error, origin, send=True):
     # 10008 -> unknown message (ignore this error, mostly when
     # trying to delete or react to a deleted message)

@@ -12,14 +12,9 @@ class Clear_chat(Command):
         self.user_permissions = ['send_messages', 'manage_messages']
 
     async def execute_command(self, msg):
-        args = msg.content.split()
-        role_channel = await get_roleschannel(msg)
         try:
+            args = msg.content.split()
             # don't allow purging in role-managing channel
-            if role_channel is not None and msg.channel == role_channel:
-                txt = 'Cannot clear messages in this channel!'
-                await message_delete(msg, 5, txt)
-                return
             if len(args) < 2:
                 txt = 'How many messages do you want to delete?'
                 await message_delete(msg, 5, txt)
@@ -60,8 +55,9 @@ class Clear_chat(Command):
 
     def purge_filter(self, msg):
         # don't delete pinned messages and polls
-        return (re.search('^```.*\nPOLL: ', msg.content) is None
-                and not msg.pinned)
+        return not ((re.search('^```(.*\nPOLL:)|(roles)',
+                               msg.content) is not None and
+                     msg.author.id == client.user.id) or msg.pinned)
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(

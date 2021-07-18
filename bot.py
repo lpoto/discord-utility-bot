@@ -54,9 +54,7 @@ class Bot:
             # if 2nd word is help send additional info
             # about the command
             if len(args) > 1 and args[1] == 'help':
-                if dict(iter(
-                    msg.guild.me.permissions_in(
-                        msg.channel)))['send_messages']:
+                if has_permissions(msg.guild.me, msg.channel, 'send_messages'):
                     prefix = await get_prefix(msg)
                     new_msg = await msg.channel.send(
                         await self.create_additional_help(
@@ -107,19 +105,16 @@ class Bot:
 
     async def check_permissions(self, command, msg):
         try:
-            user_perms = dict(iter(
-                msg.author.permissions_in(msg.channel)))
-            bot_perms = dict(iter(
-                msg.guild.me.permissions_in(msg.channel)))
             # check if bot has all the required permissions in the channel
-            for perm in command.bot_permissions:
-                if not bot_perms[perm]:
-                    if bot_perms['send_messages']:
-                        txt = ('I need `{}` permission to use this command.'
-                               .format(perm))
-                        await message_delete(msg, 5, txt)
-                    return False
-            if user_perms['administrator']:
+            p = has_permissions(
+                msg.guild.me, msg.channel, command.bot_permissions)
+            if p is not True:
+                if has_permissions(msg.guild.me, msg.channel, 'send_messages'):
+                    txt = ('I need `{}` permission to use this command.'
+                           .format(p))
+                    await message_delete(msg, 5, txt)
+                return False
+            if has_permissions(msg.author, msg.channel, 'administrator'):
                 return True
             # if command has required roles set up, override default
             # required permissions
@@ -134,13 +129,14 @@ class Bot:
                 return False
 
             # check if user has all the required permissions
-            for perm in command.user_permissions:
-                if not user_perms[perm]:
-                    if bot_perms['send_messages']:
-                        txt = ('You need `{} permission to use this command!`'
-                               .format(perm))
-                        await message_delete(msg, 5, txt)
-                    return False
+            p = has_permissions(
+                msg.author, msg.channel, command.user_permissons)
+            if p is not True:
+                if has_permissions(msg.guild.me, msg.channel, 'send_messages'):
+                    txt = ('You need `{} permission to use this command!`'
+                           .format(p))
+                    await message_delete(msg, 5, txt)
+                return False
             return True
         except Exception as err:
             await send_error(msg, err, 'bot.py -> check_permissions()')

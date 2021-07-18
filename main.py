@@ -4,8 +4,6 @@ import asyncio
 from utils import *
 from bot import bot
 from commands import *
-
-
 def client_events():
     @client.event
     async def on_ready():
@@ -60,9 +58,7 @@ def client_events():
         server = member.guild
         default_channel = server.system_channel
         # check if bot has send_messages permissions in defaut channel
-        if not dict(iter(
-            server.me.permissions_in(
-                default_channel)))['send_messages']:
+        if not has_permissions(server.me, default_channel, 'send_messages'):
             return
         hello = await get_welcome(server)
         if hello is None:
