@@ -111,7 +111,7 @@ async def send_error(msg, error, origin, send=True):
     try:
         if (str(error) == 'MySQL Connection not available.'):
             database.connected = False
-            database.connect_database(get_database_info())
+            printf(database.connect_database(get_database_info()))
         elif (hasattr(error, 'code') and str(error.code) == '50001'
                 and msg is not None):
             await msg.channel.send('Missing access to a channel.')
@@ -128,7 +128,7 @@ async def send_error(msg, error, origin, send=True):
 
 
 async def get_prefix(msg, throwerr=True):
-    # try to get prefix from database, return default database if unsuccessful
+    # try to get prefix from database, return default prefix if unsuccessful
     try:
         if not database.connected:
             return DEFAULT_PREFIX
@@ -212,25 +212,6 @@ async def get_required_roles(msg, command):
         return channel
     except Exception as error:
         await send_error(None, error, 'utils.py -> get_required_roles()')
-        return None
-
-
-async def get_notifications(msg):
-    # should bot send notifications in default channel or not
-    try:
-        if not database.connected:
-            return False
-        query = "SELECT * FROM notifications WHERE guild_id = '{}'".format(
-            msg.guild.id)
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return True
-        return fetched[1] == 1
-    except Exception as error:
-        await send_error(None, error, 'utils.py -> get_notifications()')
-        return False
 
 
 def printf(txt, extra=None):
@@ -246,11 +227,15 @@ def printf(txt, extra=None):
     print(txt)
 
 
-# emojis used for polls, roles,...
-rps_emojis = ['🪨', '🗞️', '✂️']
-waste_basket = '🗑️'
+# emojis rock, paper, scissors
+rps_emojis = [u"\U0001FAA8", u"\U0001F5DE", u"\U00002702"]
+# waste basket emoji for deleting messages
+waste_basket = u"\U0001F5D1"
+
+# emojis for polls, roles,...
+# 20 reactions is maximum (error otherwise)
 emojis = [
-    u"\u26AA",
+    u"\U000026AA",
     u"\U0001F534",
     u"\U0001F535",
     u"\U0001F7E0",
@@ -258,7 +243,7 @@ emojis = [
     u"\U0001F7E2",
     u"\U0001F7E3",
     u"\U0001F7E4",
-    u"\u26AB",
+    u"\U000026AB",
     u"\U00002B1C",
     u"\U0001F7E5",
     u"\U0001F7E6",
@@ -268,4 +253,5 @@ emojis = [
     u"\U0001F7EA",
     u"\U0001F7EB",
     u"\U00002B1B",
-]
+    u"\U0001F536",
+    u"\U0001F537"]

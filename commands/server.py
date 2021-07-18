@@ -89,15 +89,15 @@ class Server_info(Command):
                 return embed
             cursor = database.cnx.cursor(buffered=True)
             cursor.execute(
-                    "SELECT * FROM welcome WHERE guild_id = '{}'".format(
-                        msg.guild.id))
+                "SELECT * FROM welcome WHERE guild_id = '{}'".format(
+                    msg.guild.id))
             fetched = cursor.fetchone()
             if fetched is None:
                 return embed
             embed.add_field(
-                    name='Welcome text',
-                    value=fetched[1],
-                    inline=False)
+                name='Welcome text',
+                value=fetched[1],
+                inline=False)
             cursor.close()
             return embed
         except Exception as err:
@@ -110,8 +110,8 @@ class Server_info(Command):
                 return embed
             cursor = database.cnx.cursor(buffered=True)
             cursor.execute(
-                    "SELECT * FROM commands WHERE guild_id = '{}'".format(
-                        msg.guild.id))
+                "SELECT * FROM commands WHERE guild_id = '{}'".format(
+                    msg.guild.id))
             fetched = cursor.fetchall()
             if fetched is None:
                 return embed
@@ -121,11 +121,11 @@ class Server_info(Command):
                 if txt != '':
                     txt += ',\n'
                 txt += '{}{}: {}'.format(
-                        prefix, i[1], ', '.join(i[2].split('<;>')))
+                    prefix, i[1], ', '.join(i[2].split('<;>')))
             embed.add_field(
-                    name='Commands config',
-                    value=txt,
-                    inline=False)
+                name='Commands config',
+                value=txt,
+                inline=False)
             return embed
         except Exception as err:
             await send_error(None, err, 'server.py -> get_welcome_text')
@@ -137,6 +137,16 @@ class Server_info(Command):
             if str(i.status) != 'offline':
                 count += 1
         return count
+
+    def additional_info(self, prefix):
+        return '{}\n{}\n{}\n{}\n{}\n{}\n{}'.format(
+            '* Total members and online members.',
+            "* Owner's name and nickname.",
+            '* Afk channel and timeout time (if set up).',
+            '* Rules channel (if set up).',
+            '* Role-managing channel (if set up).',
+            '* New member welcome text (if set up).',
+            '* Which roles can use which command (those that are set up).')
 
 
 Server_info()

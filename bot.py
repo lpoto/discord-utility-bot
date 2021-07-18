@@ -3,7 +3,6 @@ from utils import *
 
 
 class Bot:
-
     def __init__(self, client):
         self.msg_queue = []
         self.raw_queue = []

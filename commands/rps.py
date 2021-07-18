@@ -4,11 +4,10 @@ from command import Command
 
 
 class Rps(Command):
-    running_games = {}
-
     def __init__(self):
         super().__init__('rps')
         self.description = 'A game of rock-paper-scissors between two users.'
+        self.running_games = {}
 
     async def execute_command(self, msg):
         try:
@@ -187,6 +186,8 @@ class Rps(Command):
             return embed
 
     async def show_leaderboard(self, msg):
+        # show guild members that played rps in order
+        # best to worst
         try:
             if database.connected is False:
                 txt = 'No database connection.'

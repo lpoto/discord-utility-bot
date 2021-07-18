@@ -8,6 +8,7 @@ class Poll(Command):
     def __init__(self):
         super().__init__('poll')
         self.description = 'Create a poll to vote on.'
+        self.poll_info_queue = []
         self.react_queue = []
 
     async def execute_command(self, msg):
@@ -45,44 +46,64 @@ class Poll(Command):
                     not re.search("^```.*\nPOLL: ", poll_message.content)):
                 return
             # get replies from the message
-            await self.get_poll_info(msg, poll_message, 0)
+            for r in msg.content.split(';'):
+                self.poll_info_queue.append((r, poll_message, msg))
+            await clear_queue(
+                'poll_info_messages',
+                False,
+                self.poll_info_queue,
+                self.get_poll_info)
+            # await self.get_poll_info(msg, poll_message, 0, False)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> on_message()')
 
-    async def get_poll_info(self, msg, poll, i):
+    async def get_poll_info(self, queue):
+        # function used when clearing queue for adding responses,.. to a poll
         try:
             # there can be multiple replies in one message, split with ;
-            text = msg.content.split(';')
-            response = text[i]
+            info = queue.pop(0)
+            response = info[0]
+            poll = info[1]
+            msg = info[2]
+            # if max number of responses added, edit apache into hidden text
+            # when removing responses, apache will be edited out
+            # hidden text allows us to not spam max responses message in chat
+            max_responses = False
+            if poll.content.split('\n')[0] == '```apache':
+                max_responses = True
             # don't allow certain patterns that could break poll form
             if re.search('http|`|POLL|<@', msg.content):
                 txt = 'Invalid response!'
                 await message_delete(msg, 5, txt)
                 return
             else:
-                # if poll has ```apache at the start it is fixed, so
+                # if poll has ```yaml at the start it is fixed, so
                 # no replies can be added or removed
-                #  if poll has ```CSS it is ended
+                #  if poll has ```CSS it has been ended
                 responses = poll.content[3:][:-3].split('``````')
-                if len(responses) >= len(emojis):
-                    return await self.fix_poll(msg, poll)
-                if (poll.content.startswith('```CSS') or
-                        poll.content.startswith('```apache')):
-                    return
-                if re.search('^(poll)?end(poll)?|(stop)$', response):
-                    return await self.end_poll(msg, poll)
-                if re.search('^(poll)? ?fix ?(poll)?$', response):
-                    return await self.fix_poll(msg, poll)
-                if re.search('^remove .*$', response):
-                    return await self.remove_response(
+                if poll.content.startswith('```CSS'):
+                    pass
+                elif re.search('^ ?(poll)? ?end ?(poll)?|(stop)$', response):
+                    await self.end_poll(msg, poll)
+                elif poll.content.startswith('```yaml'):
+                    pass
+                elif re.search('^ ?(poll)? ?fix ?(poll)?$', response):
+                    await self.fix_poll(msg, poll)
+                elif re.search('^ ?remove .*$', response):
+                    await self.remove_response(
                         response, responses, msg, poll)
-                if re.search('^question .*', response):
-                    return await self.change_question(
+                elif re.search('^ ?question .*', response):
+                    await self.change_question(
                         response, responses, msg, poll)
-                poll = await self.add_response(
-                    response, responses, msg, poll)
-                if i < len(text) - 1:
-                    await self.get_poll_info(msg, poll, i + 1)
+                elif len(responses) > len(emojis) and not max_responses:
+                    poll_txt = poll.content.split('\n')
+                    poll_txt[0] = '```apache'
+                    await message_edit(poll, '\n'.join(poll_txt))
+                    txt = 'Maximum response count reached!'
+                    await message_delete(msg, 5, txt)
+                elif not max_responses:
+                    poll = await self.add_response(
+                        response, responses, msg, poll)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> get_poll_info()')
 
@@ -110,6 +131,7 @@ class Poll(Command):
             return poll
 
     async def change_question(self, question, responses, msg, poll):
+        # change the question of the poll
         try:
             question = question.replace('question ', '', 1)
             responses[0] = (responses[0].split('POLL: '))
@@ -126,7 +148,7 @@ class Poll(Command):
             if re.search('^```.*\nPOLL: ', poll.content) is None:
                 return poll
             x = poll.content.split('\nPOLL: ')
-            x[0] = '```apache'
+            x[0] = '```yaml'
             await message_edit(poll, '\nPOLL: '.join(x))
             txt = 'Poll has been `fixed`, you cannot add or remove responses.'
             await message_delete(msg, 5, txt)
@@ -157,14 +179,14 @@ class Poll(Command):
                 txt = ('Responses can only be removed by indexes ' +
                        'from `{}` to `{}`').format(0, len(responses) - 2)
                 await message_delete(msg, 5, txt)
-                return poll
+                return False
             emoji = responses[num].split('(')[0].replace('\n', '')
             del responses[num]
             responses[0] = responses[0].split('\n')
             # save indexes of removed emojis in hidden_txt so we can
             # reuse them when adding new responses
             hidden_txt = responses[0][0]
-            if hidden_txt == '':
+            if hidden_txt == '' or hidden_txt == 'apache':
                 hidden_txt = emojis.index(emoji)
             else:
                 hidden_txt = '{}a{}'.format(
@@ -174,9 +196,10 @@ class Poll(Command):
             await message_edit(poll, txt)
             # remove bot's reaction that belongs to the removed response
             await message_remove_reaction(poll, emoji, client.user)
-            return poll
+            return True
         except Exception as err:
             await send_error(msg, err, 'poll.py -> remove_response()')
+            return False
 
     async def on_raw_reaction(self, msg, payload):
         # when a valid reaction is added or removed from the poll,

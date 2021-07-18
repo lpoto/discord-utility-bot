@@ -1,6 +1,5 @@
 import discord
 import os
-import re
 import asyncio
 from utils import *
 from bot import bot
@@ -14,10 +13,12 @@ def client_events():
         if client.user:
             printf('Bot logged in!')
             printf('Client:',  client.user)
+            # show help command in bot's status message
             activity = discord.Game(name=DEFAULT_PREFIX+'help', type=2)
             status = discord.Status.idle
             await client.change_presence(status=status, activity=activity)
             printf("Status:", activity)
+            # try connecting mysql database
             printf(database.connect_database(get_database_info()))
 
     @client.event
@@ -53,8 +54,11 @@ def client_events():
 
     @client.event
     async def on_member_join(member):
+        # on member join, if server has welcome text set up
+        # in database, send welcome text to default channel
         server = member.guild
         default_channel = server.system_channel
+        # check if bot has send_messages permissions in defaut channel
         if not dict(iter(
             server.me.permissions_in(
                 default_channel)))['send_messages']:
@@ -91,6 +95,8 @@ def reactions_client_events():
 # handle exit by reconnecting unless keyboard interrupt
 
 def exception_handler(loop, context):
+    # handle task exceptions, print only
+    # exception message instead of whole exception info
     printf(context['message'])
     printf('\n')
 
@@ -125,6 +131,8 @@ try:
         # run all events in loop so they keep repeating
         client_events()
         reactions_client_events()
+        # try reconnecting on disconnect unless the exception was
+        # keyboard interrupt
         try:
             client.loop.run_until_complete(client.start(DISCORD_TOKEN))
         except SystemExit:

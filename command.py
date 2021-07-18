@@ -16,7 +16,7 @@ class Command:
         self.user_permissions = ['send_messages']
         self.channel_types = ['text']
         # on init add the created object to
-        # Managing_bot's commands dictionary
+        # Bot's commands dictionary
         self.add_command()
 
     def additional_info(self, prefix):
@@ -25,8 +25,7 @@ class Command:
         return '* There is no additional information.'
 
     def add_command(self):
-        # adds object to commands dictionary
-        # in Managing_bot
+        # adds object to commands dictionary in Bot
         bot.add_command(self)
 
     def command_info(self, prefix):
@@ -44,7 +43,7 @@ class Command:
 
     async def execute_command(self, msg):
         # by default the Command object will
-        # send info about all the commands,
+        # send info about all the commands...
         # classes extending default Command will
         # override this method
         try:

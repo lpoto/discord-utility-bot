@@ -23,8 +23,7 @@ class DB:
         except mysql.connector.Error as err:
             self.connected = False
             if err.errno == 2006:
-                self.connect_database(info)
-                return
+                return self.connect_database(info)
             return 'Database error:\n{}'.format(err)
 
     def required_tables(self):
