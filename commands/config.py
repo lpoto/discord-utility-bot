@@ -22,8 +22,13 @@ class Config(Command):
                 txt = 'No arguments provided.'
                 await message_delete(msg, 5, txt)
                 return
-            if args[1] not in [
-                    'prefix', 'command', 'roleschannel', 'welcome']:
+            opts = {
+                'prefix': self.set_prefix,
+                'command': self.set_command,
+                'roleschannel': self.set_roleschannel,
+                'welcome': self.set_welcome,
+            }
+            if args[1] not in list(opts.keys()):
                 txt = 'Invalid arguments.'
                 await message_delete(msg, 5, txt)
                 return
@@ -32,30 +37,16 @@ class Config(Command):
                 await message_delete(msg, 5, txt)
                 return
             # else edit configurations
-            if args[1] == 'prefix':
-                await self.set_prefix(msg, args[2])
-                return
-            if args[1] == 'roleschannel':
-                await self.set_roleschannel(msg, args[2])
-                return
-            if args[1] == 'welcome':
-                await self.set_welcome(msg, msg.content)
-                return
-            if args[1] == 'command':
-                if len(args) < 4:
-                    txt = 'Too few arguments.'
-                    await message_delete(msg, 5, txt)
-                    return
-                await self.set_command(
-                    msg,
-                    args[2],
-                    ' '.join(msg.content.split()[3:]))
-                return
+            await self.edit_config(opts[args[1]], msg, args)
         except Exception as err:
             await send_error(msg, err, 'config.py -> execute_command()')
 
-    async def set_prefix(self, msg, new_prefix):
+    async def edit_config(self, function, msg, args):
+        await function(msg, args)
+
+    async def set_prefix(self, msg, args):
         try:
+            new_prefix = args[2]
             if len(new_prefix) > 5:
                 txt = 'Prefix cannot be longer than 5 signs!'
                 await message_delete(msg, 5, txt)
@@ -74,8 +65,9 @@ class Config(Command):
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_prefix()')
 
-    async def set_roleschannel(self, msg, x):
+    async def set_roleschannel(self, msg, args):
         try:
+            x = args[2]
             new_channel = None
             for chnl in msg.guild.channels:
                 if ((str(chnl.id) == x or x == chnl.name) and
@@ -99,8 +91,15 @@ class Config(Command):
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_roleschannel()')
 
-    async def set_command(self, msg, cmd, new_roles):
+    async def set_command(self, msg, args):
         try:
+            if args[1] == 'command':
+                if len(args) < 4:
+                    txt = 'Too few arguments.'
+                    await message_delete(msg, 5, txt)
+                    return
+            cmd = args[2]
+            new_roles = ' '.join(args[3:])
             if cmd not in bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
@@ -160,9 +159,9 @@ class Config(Command):
         except Exception as err:
             await send_error(msg, err, 'config.py -> valid_roles()')
 
-    async def set_welcome(self, msg, content):
+    async def set_welcome(self, msg, args):
         try:
-            new_txt = ' '.join(content.split()[2:])
+            new_txt = ' '.join(args[2:])
             if len(new_txt) < 1:
                 return
             if new_txt == 'remove':
@@ -204,7 +203,7 @@ class Config(Command):
             await send_error(None, err, 'config.py -> edit_sql()')
 
     def additional_info(self, prefix):
-        return "{}\n{}\n{}\n{}\n{}\n{}".format(
+        return "{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
             ('* "{}config prefix <key>" -> changes the key used ' +
              'before commands,').format(prefix),
             ('* "{}config rolechannel <channel-name>" -> ' +
@@ -217,7 +216,11 @@ class Config(Command):
             ('* "{}config welcome <welcome-text> -> ' +
              'Send welcome text on member join"').format(prefix),
             ('* "{}config welcome remove" -> remove welcome text').format(
-                prefix)
+                prefix),
+            ('* "{}config notifications true/false" -> disable or ' +
+                'enable bot sending notifications in default channel such' +
+                ' as rock-paper-scissors milestones etc. (default: true)')
+            .format(prefix)
         )
 
 

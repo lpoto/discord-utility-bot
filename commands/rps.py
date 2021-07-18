@@ -141,7 +141,7 @@ class Rps(Command):
                 if user1.avatar_url:
                     new_embed.set_thumbnail(url=user1.avatar_url)
                 new_embed = await self.wins_to_database(
-                    user1.id, new_embed, user_names[0], msg.guild.id)
+                    msg, user1.id, new_embed, user_names[0], msg.guild.id)
             else:
                 new_embed.description = (
                     '{} wins against {} with {} against {}').format(
@@ -149,13 +149,13 @@ class Rps(Command):
                 if user2.avatar_url:
                     new_embed.set_thumbnail(url=user2.avatar_url)
                 new_embed = await self.wins_to_database(
-                    user2.id, new_embed, user_names[1], msg.guild.id)
+                    msg, user2.id, new_embed, user_names[1], msg.guild.id)
             await message_edit(msg=msg, text=None, embed=new_embed)
             del self.running_games[msg.id]
         except Exception as err:
             await send_error(msg, err, 'rps.py -> game_results()')
 
-    async def wins_to_database(self, user_id, embed, user_name, guild_id):
+    async def wins_to_database(self, msg, user_id, embed, user_name, guild_id):
         # add a win for the user to the database and return total win count
         try:
             if database.connected is False:

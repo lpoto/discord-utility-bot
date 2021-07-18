@@ -215,17 +215,35 @@ async def get_required_roles(msg, command):
         return None
 
 
-def printff(txt, extra=None):
+async def get_notifications(msg):
+    # should bot send notifications in default channel or not
+    try:
+        if not database.connected:
+            return False
+        query = "SELECT * FROM notifications WHERE guild_id = '{}'".format(
+            msg.guild.id)
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(query)
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return True
+        return fetched[1] == 1
+    except Exception as error:
+        await send_error(None, error, 'utils.py -> get_notifications()')
+        return False
+
+
+def printf(txt, extra=None):
     if extra is not None:
         txt = '{} {}'.format(txt, extra)
     if len(sys.argv) > 1:
         with open(sys.argv[1], 'a') as f:
             default_stdout = sys.stdout
             sys.stdout = f
-            printf(txt)
+            print(txt)
             sys.stdout = default_stdout
-            return
-    printf(txt)
+        return
+    print(txt)
 
 
 # emojis used for polls, roles,...

@@ -18,7 +18,7 @@ def client_events():
             status = discord.Status.idle
             await client.change_presence(status=status, activity=activity)
             printf("Status:", activity)
-            database.connect_database(get_database_info())
+            printf(database.connect_database(get_database_info()))
 
     @client.event
     async def on_message(msg):
@@ -55,6 +55,10 @@ def client_events():
     async def on_member_join(member):
         server = member.guild
         default_channel = server.system_channel
+        if not dict(iter(
+            server.me.permissions_in(
+                default_channel)))['send_messages']:
+            return
         hello = await get_welcome(server)
         if hello is None:
             return
