@@ -8,8 +8,8 @@ class Poll(Command):
     def __init__(self):
         super().__init__('poll')
         self.description = 'Create a poll to vote on.'
-        self.poll_info_queue = []
-        self.react_queue = []
+        self.poll_info_queues = {}
+        self.react_queues = {}
 
     async def execute_command(self, msg):
         try:
@@ -30,11 +30,11 @@ class Poll(Command):
         except Exception as err:
             await send_error(msg, err, 'poll.py -> execute_command()')
 
-    async def on_message(self, msg, managing_bot):
+    async def on_message(self, msg, bot):
         try:
             # check if command is valid (can be used in this channel...)
-            if not await managing_bot.check_if_valid(
-                    managing_bot.commands[self.name], msg):
+            if not await bot.check_if_valid(
+                    bot.commands[self.name], msg):
                 return
             # message must be a reply to a POLL message
             if msg.reference is None or not msg.reference.message_id:
@@ -46,13 +46,18 @@ class Poll(Command):
                     not re.search("^```.*\nPOLL: ", poll_message.content)):
                 return
             # get replies from the message
+            if poll_message.id not in self.poll_info_queues:
+                self.poll_info_queues[poll_message.id] = []
             for r in msg.content.split(';'):
-                self.poll_info_queue.append((r, poll_message, msg))
+                self.poll_info_queues[poll_message.id].append(
+                    (r, poll_message, msg))
             await clear_queue(
-                'poll_info_messages',
+                'poll_messages({})'.format(poll_message.id),
                 False,
-                self.poll_info_queue,
+                self.poll_info_queues[poll_message.id],
                 self.get_poll_info)
+            if self.poll_info_queues[poll_message.id] == []:
+                del self.poll_info_queues[poll_message.id]
             # await self.get_poll_info(msg, poll_message, 0, False)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> on_message()')
@@ -209,12 +214,14 @@ class Poll(Command):
             if re.search('```.*\nPOLL: ', msg.content) is None:
                 return
             emoji = payload.emoji.name
-            self.react_queue.append((msg, emoji))
+            if msg.id not in self.react_queues:
+                self.react_queues[msg.id] = []
+            self.react_queues[msg.id].append((msg, emoji))
             # process reactions in queue
             await clear_queue(
-                queue_type='poll_reactions',
+                queue_type='poll_reactions ({})'.format(msg.id),
                 ignore_running=False,
-                queue=self.react_queue,
+                queue=self.react_queues[msg.id],
                 function=self.queue_function)
         except Exception as err:
             await send_error(msg, err, 'poll.py -> on_raw_reaction()')

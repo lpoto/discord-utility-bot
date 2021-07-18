@@ -169,30 +169,6 @@ async def get_welcome(server):
         return None
 
 
-async def get_roleschannel(msg):
-    # get guild's role-managing channel from database, if it is set up
-    try:
-        if not database.connected:
-            return None
-        query = "SELECT * FROM roleschannel WHERE guild_id = '{}'".format(
-                msg.guild.id)
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return None
-        cursor.close()
-        channel = discord.utils.get(
-            msg.guild.channels,
-            id=int(fetched[1]))
-        if channel is None:
-            return None
-        return channel
-    except Exception as error:
-        await send_error(None, error, 'utils.py -> get_roleschannel()')
-        return None
-
-
 async def get_required_roles(msg, command):
     # get which roles can use a command from database
     try:
@@ -228,9 +204,9 @@ def printf(txt, extra=None):
 
 
 # emojis rock, paper, scissors
-rps_emojis = [u"\U0001FAA8", u"\U0001F5DE", u"\U00002702"]
+rps_emojis = [u"\U0001FAA8", u"\U0001F4C4", u"\U00002702\U0000FE0F"]
 # waste basket emoji for deleting messages
-waste_basket = u"\U0001F5D1"
+waste_basket = u"\U0001F5D1\U0000FE0F"
 
 # emojis for polls, roles,...
 # 20 reactions is maximum (error otherwise)

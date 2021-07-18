@@ -94,6 +94,7 @@ class Rps(Command):
         try:
             if (payload.emoji.name not in rps_emojis or
                     payload.event_type != 'REACTION_ADD' or
+                    payload.member.bot or
                     msg.embeds == [] or msg.id not in self.running_games or
                     msg.embeds[0].title != 'Rock-Paper-Scissors!' or
                     msg.content != '' or

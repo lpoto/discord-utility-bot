@@ -31,9 +31,6 @@ class DB:
             'prefix': [
                 'guild_id VARCHAR(18) NOT NULL',
                 'prefix VARCHAR(5) NOT NULL'],
-            'roleschannel': [
-                'guild_id VARCHAR(18) NOT NULL',
-                'channel_id VARCHAR(18) NOT NULL'],
             'commands': [
                 'guild_id VARCHAR(18) NOT NULL',
                 'command VARCHAR(30) NOT NULL',
@@ -44,7 +41,7 @@ class DB:
             'rock_paper_scissors': [
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'wins INT UNSIGNED']
+                'wins INT UNSIGNED'],
         }
 
     def create_tables(self, info):

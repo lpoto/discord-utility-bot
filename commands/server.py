@@ -69,14 +69,6 @@ class Server_info(Command):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
-        # check for role-managing channel from database
-        roles_channel = await get_roleschannel(msg)
-        if roles_channel is not None:
-            embed_var.add_field(
-                name='Roles channel',
-                value=roles_channel.name,
-                inline=False
-            )
         # add welcome text if it is set up for the guild
         embed_var = await self.get_welcome_text(embed_var, msg)
         # add which roles can use which command
@@ -144,7 +136,6 @@ class Server_info(Command):
             "* Owner's name and nickname.",
             '* Afk channel and timeout time (if set up).',
             '* Rules channel (if set up).',
-            '* Role-managing channel (if set up).',
             '* New member welcome text (if set up).',
             '* Which roles can use which command (those that are set up).')
 

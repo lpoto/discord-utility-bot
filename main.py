@@ -27,7 +27,8 @@ def client_events():
         # match any of the commands
         # if so push them to queue, to be processed one by one
         try:
-            if msg.author.id == client.user.id:
+            if (msg.author.id == client.user.id or
+                    str(msg.channel.type) != 'text'):
                 return
             # allow calling help with default prefix, even if a different
             # prefix is set

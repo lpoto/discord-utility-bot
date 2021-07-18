@@ -25,7 +25,6 @@ class Config(Command):
             opts = {
                 'prefix': self.set_prefix,
                 'command': self.set_command,
-                'roleschannel': self.set_roleschannel,
                 'welcome': self.set_welcome,
             }
             if args[1] not in list(opts.keys()):
@@ -64,32 +63,6 @@ class Config(Command):
                 '`Prefix` changed to `{}`.'.format(new_prefix))
         except Exception as err:
             await send_error(msg, err, 'config.py -> set_prefix()')
-
-    async def set_roleschannel(self, msg, args):
-        try:
-            x = args[2]
-            new_channel = None
-            for chnl in msg.guild.channels:
-                if ((str(chnl.id) == x or x == chnl.name) and
-                        str(chnl.type) == 'text'):
-                    new_channel = chnl
-            if new_channel is None:
-                txt = 'Invalid channel.'
-                await message_delete(msg, 5, txt)
-                return
-            await self.edit_sql(
-                "SELECT * FROM roleschannel WHERE guild_id = '{}'".format(
-                    msg.guild.id),
-                ("INSERT INTO roleschannel (guild_id, channel_id) VALUES " +
-                 "('{}', '{}')").format(
-                    msg.guild.id, new_channel.id),
-                ("UPDATE roleschannel SET channel_id = '{}' " +
-                    "WHERE guild_id = '{}'").format(
-                    new_channel.id, msg.guild.id))
-            await msg.channel.send(
-                '`Roles channel` changed to `{}`.'.format(new_channel.name))
-        except Exception as err:
-            await send_error(msg, err, 'config.py -> set_roleschannel()')
 
     async def set_command(self, msg, args):
         try:
@@ -203,11 +176,9 @@ class Config(Command):
             await send_error(None, err, 'config.py -> edit_sql()')
 
     def additional_info(self, prefix):
-        return "{}\n{}\n{}\n{}\n{}\n{}\n{}".format(
+        return "{}\n{}\n{}\n{}\n{}".format(
             ('* "{}config prefix <key>" -> changes the key used ' +
              'before commands,').format(prefix),
-            ('* "{}config rolechannel <channel-name>" -> ' +
-             'changes the channel used for managing roles,').format(prefix),
             ('* "{}config command <command-name> <roles-seperated-' +
                 'with-comma>" -> sets which roles ' +
                 'can use the command,').format(prefix),
@@ -216,11 +187,7 @@ class Config(Command):
             ('* "{}config welcome <welcome-text> -> ' +
              'Send welcome text on member join"').format(prefix),
             ('* "{}config welcome remove" -> remove welcome text').format(
-                prefix),
-            ('* "{}config notifications true/false" -> disable or ' +
-                'enable bot sending notifications in default channel such' +
-                ' as rock-paper-scissors milestones etc. (default: true)')
-            .format(prefix)
+                prefix)
         )
 
 
