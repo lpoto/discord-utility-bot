@@ -12,7 +12,6 @@ A discord bot written in python, intended for managing smaller discord servers.
 * hosting rock-paper-scissors games,
 * Customizable: 
 	- prefix,
-	- role managing channel,
 	- which roles can use a command,
 	- optional welcome text
 

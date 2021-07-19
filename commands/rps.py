@@ -102,6 +102,7 @@ class Rps(Command):
                 return
             game = [self.running_games[msg.id],
                     (payload.user_id, payload.emoji.name)]
+            del self.running_games[msg.id]
             # compare the chosen options and get the winner of the game
             await self.game_results(game, msg)
 
@@ -151,7 +152,6 @@ class Rps(Command):
                 new_embed = await self.wins_to_database(
                     msg, user2.id, new_embed, user_names[1], msg.guild.id)
             await message_edit(msg=msg, text=None, embed=new_embed)
-            del self.running_games[msg.id]
         except Exception as err:
             await send_error(msg, err, 'rps.py -> game_results()')
 
