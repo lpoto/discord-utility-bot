@@ -76,10 +76,11 @@ async def message_delete(msg, time, txt=None):
         return False
 
 
-async def message_edit(msg, text, embed=None):
+async def message_edit(msg, text=None, embed=None):
     # edit message while avoiding unknown message errors
     try:
-        await msg.edit(content=text, embed=embed)
+        await msg.edit(
+                content=msg.content if text is None else text, embed=embed)
         return True
     except Exception as error:
         await send_error(msg, error, 'utils.py -> message_edit()')
@@ -208,6 +209,30 @@ async def get_required_roles(msg, command):
         await send_error(None, error, 'utils.py -> get_required_roles()')
 
 
+async def roles_for_all_commands(msg):
+    try:
+        if not database.connected:
+            return None
+        cursor = database.cnx.cursor(buffered=True)
+        cursor.execute(
+            "SELECT * FROM commands WHERE guild_id = '{}'".format(
+                msg.guild.id))
+        fetched = cursor.fetchall()
+        if fetched is None:
+            return embed
+        prefix = await get_prefix(msg)
+        txt = ''
+        for i in range(len(fetched)):
+            txt += '{}{}: [{}]'.format(
+                prefix, fetched[i][1], ', '.join(fetched[i][2].split('<;>')))
+            if i < len(fetched) - 1:
+                txt += ',\n'
+        return txt
+    except Exception as err:
+        await send_error(None, err, 'utils.py -> roles_for_all_commands()')
+        return None
+
+
 def printf(txt, extra=None):
     if extra is not None:
         txt = '{} {}'.format(txt, extra)
@@ -249,3 +274,26 @@ emojis = [
     u"\U00002B1B",
     u"\U0001F536",
     u"\U0001F537"]
+# colors that match emoji colors by indexes
+colors = [
+        0xffffff,
+        0xc30202,
+        0x0099e1,
+        0xf75f1c,
+        0xf8c300,
+        0x008e44,
+        0xa652bb,
+        0xa5714e,
+        0x2f3136,
+        0xffffff,
+        0xc30202,
+        0x0099e1,
+        0xf75f1c,
+        0xf8c300,
+        0x008e44,
+        0xa652bb,
+        0xa5714e,
+        0x2f3136,
+        0xf75f1c,
+        0x0099e1,
+        ]

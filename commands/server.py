@@ -1,4 +1,5 @@
 import discord
+from bot import bot
 import re
 from command import Command
 from utils import *
@@ -14,18 +15,20 @@ class Server_info(Command):
             args = msg.content.split()
             if (len(args) > 1):
                 return msg.reply('Invalid command!')
-            embed_var = await self.create_embed(msg)
+            embed_var = await self.create_info_embed(msg)
             new_msg = await msg.channel.send(embed=embed_var)
+            await message_react(new_msg, emojis[list(
+                bot.commands.keys()).index('config')])
             await message_react(new_msg, waste_basket)
         except Exception as err:
             await send_error(msg, err, 'server.py -> execute_command()')
 
-    async def create_embed(self, msg):
+    async def create_info_embed(self, msg):
         # build embed with server info
         embed_var = discord.Embed(
             title=msg.guild.name,
             description="Server information",
-            color=random_color())
+            color=colors[list(bot.commands.keys()).index('server')])
         # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description
@@ -69,59 +72,27 @@ class Server_info(Command):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
-        # add welcome text if it is set up for the guild
-        embed_var = await self.get_welcome_text(embed_var, msg)
-        # add which roles can use which command
-        embed_var = await self.get_commands_config(embed_var, msg)
+        embed_var.set_footer(
+                text='React with {} to see server configurations.'.format(
+                    emojis[list(bot.commands.keys()).index('config')]))
         return embed_var
 
-    async def get_welcome_text(self, embed, msg):
+    async def on_raw_reaction(self, msg, payload):
         try:
-            if database.connected is False:
-                return embed
-            cursor = database.cnx.cursor(buffered=True)
-            cursor.execute(
-                "SELECT * FROM welcome WHERE guild_id = '{}'".format(
-                    msg.guild.id))
-            fetched = cursor.fetchone()
-            if fetched is None:
-                return embed
-            embed.add_field(
-                name='Welcome text',
-                value=fetched[1],
-                inline=False)
-            cursor.close()
-            return embed
+            if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
+                    payload.emoji.name != emojis[list(
+                        bot.commands.keys()).index('server')] or
+                    msg.embeds[0].title != msg.guild.name or
+                    msg.embeds[0].description != 'Server configurations'):
+                return
+            await message_edit(
+                    msg, embed=await self.create_info_embed(msg))
+            await message_remove_reaction(msg, waste_basket, msg.guild.me)
+            await message_react(msg, emojis[list(
+                bot.commands.keys()).index('config')])
+            await message_react(msg, waste_basket)
         except Exception as err:
-            await send_error(None, err, 'server.py -> get_welcome_text')
-            return embed
-
-    async def get_commands_config(self, embed, msg):
-        try:
-            if database.connected is False:
-                return embed
-            cursor = database.cnx.cursor(buffered=True)
-            cursor.execute(
-                "SELECT * FROM commands WHERE guild_id = '{}'".format(
-                    msg.guild.id))
-            fetched = cursor.fetchall()
-            if fetched is None:
-                return embed
-            prefix = await get_prefix(msg)
-            txt = ''
-            for i in fetched:
-                if txt != '':
-                    txt += ',\n'
-                txt += '{}{}: {}'.format(
-                    prefix, i[1], ', '.join(i[2].split('<;>')))
-            embed.add_field(
-                name='Commands config',
-                value=txt,
-                inline=False)
-            return embed
-        except Exception as err:
-            await send_error(None, err, 'server.py -> get_welcome_text')
-            return embed
+            await send_error(None, err, 'server.py -> on_raw_reaction()')
 
     def get_online_members(self, msg):
         count = 0
@@ -131,13 +102,11 @@ class Server_info(Command):
         return count
 
     def additional_info(self, prefix):
-        return '{}\n{}\n{}\n{}\n{}\n{}\n{}'.format(
+        return '* {}\n* {}\n* {}\n* {}'.format(
             '* Total members and online members.',
             "* Owner's name and nickname.",
             '* Afk channel and timeout time (if set up).',
-            '* Rules channel (if set up).',
-            '* New member welcome text (if set up).',
-            '* Which roles can use which command (those that are set up).')
+            '* Rules channel (if set up).')
 
 
 Server_info()

@@ -18,6 +18,14 @@ class Config(Command):
                 await message_delete(msg, 5, txt)
                 return
             args = msg.content.split()
+            if msg.content.replace('{}'.format(args[0]), '', 1) in [
+                    ' see', ' show', '']:
+                new_msg = await msg.channel.send(
+                    embed=await self.create_config_embed(msg))
+                await message_react(new_msg, emojis[list(
+                    bot.commands.keys()).index('server')])
+                await message_react(new_msg, waste_basket)
+                return
             if len(args) < 2:
                 txt = 'No arguments provided.'
                 await message_delete(msg, 5, txt)
@@ -42,6 +50,51 @@ class Config(Command):
 
     async def edit_config(self, function, msg, args):
         await function(msg, args)
+
+    async def create_config_embed(self, msg):
+        try:
+            embed_var = discord.Embed(
+                title=msg.guild.name,
+                description="Server configurations",
+                color=colors[list(bot.commands.keys()).index('config')])
+            embed_var.add_field(
+                name='Prefix',
+                value='[{}]'.format(await get_prefix(msg)),
+                inline=False)
+            wlcm = await get_welcome(msg)
+            embed_var.add_field(
+                name='Welcome_text',
+                value='None' if wlcm is None else wlcm,
+                inline=False)
+            cmds = await roles_for_all_commands(msg)
+            embed_var.add_field(
+                name='Roles that can use commands',
+                value='None' if cmds is None else cmds,
+                inline=False)
+            embed_var.set_footer(
+                text='React with {} to see server info.'.format(
+                    emojis[list(bot.commands.keys()).index('server')]))
+            return embed_var
+        except Exception as err:
+            await send_error(None, err, 'config.py -> create_config_embed()')
+            return None
+
+    async def on_raw_reaction(self, msg, payload):
+        try:
+            if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
+                    payload.emoji.name != emojis[list(
+                        bot.commands.keys()).index('config')] or
+                    msg.embeds[0].title != msg.guild.name or
+                    msg.embeds[0].description != 'Server information'):
+                return
+            await message_edit(
+                msg, embed=await self.create_config_embed(msg))
+            await message_remove_reaction(msg, waste_basket, msg.guild.me)
+            await message_react(msg, emojis[list(
+                bot.commands.keys()).index('server')])
+            await message_react(msg, waste_basket)
+        except Exception as err:
+            await send_error(None, err, 'config.py -> on_raw_reaction()')
 
     async def set_prefix(self, msg, args):
         try:
@@ -73,7 +126,7 @@ class Config(Command):
                     return
             cmd = args[2]
             new_roles = msg.content.remove(
-                    '{} {} '.format(args[0], args[1]), '', 1)
+                '{} {} '.format(args[0], args[1]), '', 1)
             if cmd not in bot.commands:
                 txt = 'Invalid command!'
                 await message_delete(msg, 5, txt)
@@ -136,7 +189,7 @@ class Config(Command):
     async def set_welcome(self, msg, args):
         try:
             new_txt = msg.content.replace(
-                    '{} {} '.format(args[0], args[1]), '', 1)
+                '{} {} '.format(args[0], args[1]), '', 1)
             if len(new_txt) < 1:
                 return
             if new_txt == 'remove':
@@ -178,17 +231,17 @@ class Config(Command):
             await send_error(None, err, 'config.py -> edit_sql()')
 
     def additional_info(self, prefix):
-        return "{}\n{}\n{}\n{}\n{}".format(
-            ('* "{}config prefix <key>" -> changes the key used ' +
-             'before commands,').format(prefix),
-            ('* "{}config command <command-name> <roles-seperated-' +
+        return "* {}\n* {}\n* {}\n* {}\n* {}".format(
+            ('"{}config prefix <key>" -> changes the key used ' +
+             'before commands.').format(prefix),
+            ('"{}config command <command-name> <roles-seperated-' +
                 'with-comma>" -> sets which roles ' +
-                'can use the command,').format(prefix),
-            ('* "{}config command <command-name> remove" -> ' +
+                'can use the command.').format(prefix),
+            ('"{}config command <command-name> remove" -> ' +
              'removes roles for the command.').format(prefix),
-            ('* "{}config welcome <welcome-text> -> ' +
+            ('"{}config welcome <welcome-text> -> ' +
              'Send welcome text on member join"').format(prefix),
-            ('* "{}config welcome remove" -> remove welcome text').format(
+            ('"{}config welcome remove" -> removes welcome text.').format(
                 prefix)
         )
 

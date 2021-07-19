@@ -57,7 +57,7 @@ class Bot:
                 if has_permissions(msg.guild.me, msg.channel, 'send_messages'):
                     prefix = await get_prefix(msg)
                     new_msg = await msg.channel.send(
-                        await self.create_additional_help(
+                        embed=await self.create_additional_help(
                             cmd.command_info(
                                 prefix), msg, prefix)
                     )
@@ -73,18 +73,35 @@ class Bot:
 
     async def create_additional_help(self, info, msg, prefix):
         try:
-            txt = ('```Help: {}{}``````\n{}\n\n{}``````' +
-                   '\nRequired permissions:\n* Bot: [{}]').format(
-                prefix, info[0], info[1], info[2], ', '.join(info[3]))
+            idx = list(bot.commands.keys()).index(info[0])
+            embed_var = discord.Embed(
+                title='Help: {}{}'.format(prefix, info[0]),
+                description=info[1],
+                color=colors[idx])
+            embed_var.add_field(
+                name='Additional info',
+                value=info[2],
+                inline=False)
+            embed_var.add_field(
+                name='Required permissions for bot',
+                value='[{}]'.format(', '.join(info[3])),
+                inline=False)
             roles = await get_required_roles(msg, info[0])
             if roles is None:
-                txt += "\n* User: [{}]\n\nAllowed channels: [{}]```".format(
-                    ', '.join(info[4]), ', '.join(info[5]))
+                embed_var.add_field(
+                    name='Required permissions for user',
+                    value='[{}]'.format(', '.join(info[4])),
+                    inline=False)
             else:
-                txt += ('\n\nRoles that can use the command: [{}]\n\n' +
-                        'Allowed channels: [{}]```').format(
-                    ', '.join(roles), ', '.join(info[5]))
-            return txt
+                embed_var.add_field(
+                    name='Roles that can use the command',
+                    value='[{}]'.format(', '.join(roles)),
+                    inline=False)
+            embed_var.add_field(
+                name='Allowed channel types',
+                value='[{}]'.format(', '.join(info[5])),
+                inline=False)
+            return embed_var
         except Exception as err:
             await send_error(msg, err, 'bot.py -> create_additional_help()')
 
@@ -186,22 +203,21 @@ class Bot:
                 return
             msg = await channel.fetch_message(payload.message_id)
             # onnly listen for reactions on bot's messages
-            if msg.author.id == client.user.id:
-                # if wastebin reaction and bot is msg author
-                # and message is not pinned and message has an
-                # embed or starts with help, delete it
-                if (reaction_type == 'add' and
-                    payload.emoji.name == waste_basket and
-                        not msg.pinned and
-                    (len(msg.embeds) > 0 or
-                     msg.content.startswith('```Help: ')) and
-                        msg.author.id == msg.guild.me.id):
-                    edit_txt = 'Message has been deleted.'
-                    await message_edit(msg, edit_txt)
-                    await message_delete(msg, 3)
-                elif payload.emoji.name != waste_basket:
-                    for i in self.on_raw_reactions:
-                        await i.on_raw_reaction(msg, payload)
+            if msg.author.id != client.user.id:
+                return
+            # if wastebin reaction and bot is msg author
+            # and message is not pinned and message has an
+            # embed or starts with help, delete it
+            if (reaction_type == 'add' and
+                payload.emoji.name == waste_basket and
+                    not msg.pinned and len(msg.embeds) > 0 and
+                    msg.author.id == msg.guild.me.id):
+                edit_txt = 'Message has been deleted.'
+                await message_edit(msg, edit_txt)
+                await message_delete(msg, 3)
+            elif payload.emoji.name != waste_basket:
+                for i in self.on_raw_reactions:
+                    await i.on_raw_reaction(msg, payload)
         except Exception as error:
             await send_error(
                 msg, error, 'bot.py -> raw_reactions_queue_function()')
