@@ -1,34 +1,30 @@
 import discord
-from bot import bot
-import re
 from command import Command
 from utils import *
 
 
 class Server_info(Command):
     def __init__(self):
-        super().__init__('server')
+        super().__init__(name='server')
         self.description = 'Get server information.'
 
     async def execute_command(self, msg):
-        try:
-            args = msg.content.split()
-            if (len(args) > 1):
-                return msg.reply('Invalid command!')
-            embed_var = await self.create_info_embed(msg)
-            new_msg = await msg.channel.send(embed=embed_var)
-            await message_react(new_msg, emojis[list(
-                bot.commands.keys()).index('config')])
-            await message_react(new_msg, waste_basket)
-        except Exception as err:
-            await send_error(msg, err, 'server.py -> execute_command()')
+        args = msg.content.split()
+        if (len(args) > 1):
+            return msg.reply('Invalid command!')
+        embed_var = await self.create_info_embed(msg)
+        await msg_send(
+            channel=msg.channel,
+            embed=embed_var,
+            reactions=[emojis[list(
+                self.bot.commands.keys()).index('config')], waste_basket])
 
     async def create_info_embed(self, msg):
         # build embed with server info
         embed_var = discord.Embed(
             title=msg.guild.name,
             description="Server information",
-            color=colors[list(bot.commands.keys()).index('server')])
+            color=colors[list(self.bot.commands.keys()).index('server')])
         # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description
@@ -73,26 +69,26 @@ class Server_info(Command):
                 inline=False
             )
         embed_var.set_footer(
-                text='React with {} to see server configurations.'.format(
-                    emojis[list(bot.commands.keys()).index('config')]))
+            text='React with {} to see server configurations.'.format(
+                emojis[list(self.bot.commands.keys()).index('config')]))
         return embed_var
 
     async def on_raw_reaction(self, msg, payload):
-        try:
-            if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
-                    payload.emoji.name != emojis[list(
-                        bot.commands.keys()).index('server')] or
-                    msg.embeds[0].title != msg.guild.name or
-                    msg.embeds[0].description != 'Server configurations'):
-                return
-            await message_edit(
-                    msg, embed=await self.create_info_embed(msg))
-            await message_remove_reaction(msg, waste_basket, msg.guild.me)
-            await message_react(msg, emojis[list(
-                bot.commands.keys()).index('config')])
-            await message_react(msg, waste_basket)
-        except Exception as err:
-            await send_error(None, err, 'server.py -> on_raw_reaction()')
+        if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
+                payload.emoji.name != emojis[list(
+                    self.bot.commands.keys()).index('server')] or
+                msg.embeds[0].title != msg.guild.name or
+                msg.embeds[0].description != 'Server configurations'):
+            return
+        await msg_reaction_remove(
+                msg=msg,
+                emoji=waste_basket,
+                member=msg.guild.me)
+        await msg_edit(
+            msg=msg,
+            embed=await self.create_info_embed(msg),
+            reactions=[emojis[list(
+                self.bot.commands.keys()).index('config')], waste_basket])
 
     def get_online_members(self, msg):
         count = 0
@@ -107,6 +103,3 @@ class Server_info(Command):
             "* Owner's name and nickname.",
             '* Afk channel and timeout time (if set up).',
             '* Rules channel (if set up).')
-
-
-Server_info()

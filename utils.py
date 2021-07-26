@@ -1,32 +1,27 @@
-import os
-from dotenv import load_dotenv
+from dotenv import dotenv_values
+from discord import Client
 import discord
 import sys
 import random
-from database import DB
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
 # presence and server members intent enabled under BOT
-load_dotenv()
-intents = discord.Intents.all()
-client = discord.Client(intents=intents)
+cfg = dotenv_values('.env')
 # default prefix key used before commands
-DEFAULT_PREFIX = os.getenv('DEFAULT_PREFIX')
+DEFAULT_PREFIX = cfg['DEFAULT_PREFIX']
 # discord application's private token
-DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-database = DB()
+DISCORD_TOKEN = cfg['DISCORD_TOKEN']
 
 
 def get_database_info():
     # get all the mysql data info from .env
     info = {}
     for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
-        info[i.lower()] = os.getenv(i)
-        if info[i.lower()] is None:
+        if i not in cfg:
             return None
-    x = os.getenv('PORT')
-    if x is not None:
-        info['port'] = int(x)
+        info[i.lower()] = cfg[i]
+    if 'PORT' in cfg:
+        info['port'] = int(cfg['PORT'])
     return info
 
 
@@ -35,56 +30,75 @@ def random_color():
     return int("%06x" % random.randint(0, 0xFFFFFF), 16)
 
 
-async def message_react(msg, reaction):
-    # add a reaction to the message and avoid unknown message
-    try:
-        await msg.add_reaction(reaction)
-        return True
-    except Exception as error:
-        await send_error(msg, error, 'utils.py -> message_react()')
-        return False
+async def msg_send(
+        channel,
+        text=None,
+        embed=None,
+        delete_after=None,
+        reactions=None):
+    if (str(channel.type) == 'text' and
+        has_permissions(
+            channel.guild.me, channel, 'send_messages') is not True):
+        return
+    msg = await channel.send(
+        content=text,
+        embed=embed,
+        delete_after=delete_after)
+    if reactions is not None:
+        if not isinstance(reactions, list):
+            reactions = [reactions]
+        for i in reactions:
+            await msg_react(msg, i)
+    return msg
 
 
-async def message_remove_reaction(msg, emoji, user, clear_all=False):
-    # remove user's reaction from the message
-    try:
-        # if bot has manage_messages permissions and clear_all
-        # remove all reactions not just bot's reaction
-        if clear_all and has_permissions(
-                msg.guild.me, msg.channel, 'manage_messages') is True:
+async def msg_edit(
+        msg,
+        text=None,
+        embed=None,
+        delete_after=None,
+        reactions=None):
+    await msg.edit(
+        content=text, embed=embed, delete_after=delete_after)
+    if reactions is not None:
+        if not isinstance(reactions, list):
+            reactions = [reactions]
+        for i in reactions:
+            await msg_react(msg=msg, emoji=i)
+    return msg
+
+
+async def msg_delete(msg, delay=None):
+    if (msg.author.id != msg.guild.me.id and
+        has_permissions(
+            msg.guild.me, msg.channel, 'send_messages') is not True):
+        return
+    await msg.delete(delay=delay)
+    return True
+
+
+async def msg_react(msg, emoji):
+    if (str(msg.channel.type) == 'text' and
+        has_permissions(
+            msg.guild.me, msg.channel, 'add_reactions') is not True):
+        return
+    await msg.add_reaction(emoji)
+    return True
+
+
+async def msg_reaction_remove(msg, emoji, member=None):
+    if member is None:
+        if (has_permissions(
+                msg.guild.me, msg.channel, 'manage_messages') is True):
             await msg.clear_reaction(emoji)
-            return True
-        await msg.remove_reaction(emoji, user)
-        return True
-    except Exception as error:
-        await send_error(msg, error, 'utils.py -> message_remove_reaction()')
-        return False
-
-
-async def message_delete(msg, time, txt=None):
-    # if txt is given, send text then delete
-    # sent message
-    # else delete the given message
-    try:
-        if txt is not None:
-            msg = await msg.channel.send(txt)
-        await msg.delete(delay=time)
-        return True
-    except Exception as error:
-        if (hasattr(error, 'code')) and str(error.code) != '10008':
-            printf('Error -> (utils.py -> message_delete())' + str(err))
-        return False
-
-
-async def message_edit(msg, text=None, embed=None):
-    # edit message while avoiding unknown message errors
-    try:
-        await msg.edit(
-                content=msg.content if text is None else text, embed=embed)
-        return True
-    except Exception as error:
-        await send_error(msg, error, 'utils.py -> message_edit()')
-        return False
+        else:
+            await msg.remove_reaction(emoji, msg.guild.me)
+        return
+    if (msg.guild.me.id != member.id and
+        has_permissions(
+            msg.guild.me, msg.channel, 'manage_messages') is not True):
+        return
+    await msg.remove_reaction(emoji, member)
 
 
 # currently running queues
@@ -94,143 +108,100 @@ running_queues = {}
 async def clear_queue(queue_type, ignore_running, queue, function):
     # clear messages or reaction in queue to avoid
     # multiple instances of same command or reactions
-    try:
-        if ((queue_type not in running_queues or
-             ignore_running) and len(queue) > 0):
-            if queue_type not in running_queues:
-                running_queues[queue_type] = True
-            await function(queue)
-            await clear_queue(queue_type, True, queue, function)
-        else:
-            if queue_type in running_queues:
-                del running_queues[queue_type]
-    except Exception as error:
-        await send_error(None, error, 'utils.py -> clear_queue()')
+    if ((queue_type not in running_queues or
+         ignore_running) and len(queue) > 0):
+        if queue_type not in running_queues:
+            running_queues[queue_type] = True
+        item = queue.popleft()
+        x = await function(item)
+        await clear_queue(queue_type, True, queue, function)
+    else:
         if queue_type in running_queues:
             del running_queues[queue_type]
 
 
 def has_permissions(user, channel, perms):
-    try:
-        if not isinstance(perms, list):
-            perms = [perms]
-        for i in perms:
-            if not dict(iter(user.permissions_in(channel)))[i]:
-                return i
-        return True
-    except Exception as err:
-        printf('Error (utils.py -> has_permissions())\n', err)
+    if not isinstance(perms, list):
+        perms = [perms]
+    for i in perms:
+        if not dict(iter(user.permissions_in(channel)))[i]:
+            return i
+    return True
 
 
-async def send_error(msg, error, origin, send=True):
-    # 10008 -> unknown message (ignore this error, mostly when
-    # trying to delete or react to a deleted message)
-    # 50001 -> cannot acces a channel
-    # 50013 -> Missing permissions
-    try:
-        if (str(error) == 'MySQL Connection not available.'):
-            database.connected = False
-            printf(database.connect_database(get_database_info()))
-        elif (hasattr(error, 'code') and str(error.code) == '50001'
-                and msg is not None):
-            await msg.channel.send('Missing access to a channel.')
-        elif (hasattr(error, 'code') and str(error.code) == '50013'
-                and msg is not None):
-            txt = 'I am missing the required permissions!'
-            await message_delete(msg, 5, txt)
-        elif (hasattr(error, 'code') and
-                str(error.code) not in ['10008', '50001', '50013'] or
-                not hasattr(error, 'code')):
-            printf('Error ({}):\n{}'.format(origin, error))
-    except Exception as err:
-        printf('Error -> (utils.py -> send_error())' + str(err))
-
-
-async def get_prefix(msg, throwerr=True):
+async def prefix_from_database(msg, database):
     # try to get prefix from database, return default prefix if unsuccessful
-    try:
-        if not database.connected:
-            return DEFAULT_PREFIX
-        query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
-                msg.guild.id)
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return DEFAULT_PREFIX
-        return fetched[1]
-        cursor.close()
-    except Exception as error:
-        if (str(error) == 'MySQL Connection not available.'):
-            database.connected = False
-            database.connect_database(get_database_info())
-            return DEFAULT_PREFIX
-        await send_error(msg, error, 'utils.py -> get_prefix()')
+    if not database.connected:
         return DEFAULT_PREFIX
+    query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
+        msg.guild.id)
+    cursor = database.cnx.cursor(buffered=True)
+    cursor.execute(query)
+    fetched = cursor.fetchone()
+    if fetched is None:
+        return DEFAULT_PREFIX
+    return fetched[1]
+    cursor.close()
 
 
-async def get_welcome(server):
+async def get_prefix(msg, database):
+    prefix = await prefix_from_database(msg, database)
+    if prefix is None:
+        return DEFAULT_PREFIX
+    return prefix
+
+
+async def get_welcome(server, database):
     # get guild's welcome text from database
-    try:
-        if not database.connected:
-            return None
-        query = "SELECT * FROM welcome WHERE guild_id = '{}'".format(
-                server.id)
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return None
-        return fetched[1]
-        cursor.close()
-    except Exception as error:
-        await send_error(None, error, 'utils.py -> get_hello()')
+    if not database.connected:
         return None
+    query = "SELECT * FROM welcome WHERE guild_id = '{}'".format(
+        server.id)
+    cursor = database.cnx.cursor(buffered=True)
+    cursor.execute(query)
+    fetched = cursor.fetchone()
+    if fetched is None:
+        return None
+    return fetched[1]
+    cursor.close()
 
 
-async def get_required_roles(msg, command):
+async def get_required_roles(msg, command, database):
     # get which roles can use a command from database
-    try:
-        if not database.connected:
-            return None
-        query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
-                 "command = '{}'").format(
-            msg.guild.id, command)
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return None
-        return fetched[2].split('<;>')
-        if channel is None:
-            return None
-        return channel
-    except Exception as error:
-        await send_error(None, error, 'utils.py -> get_required_roles()')
-
-
-async def roles_for_all_commands(msg):
-    try:
-        if not database.connected:
-            return None
-        cursor = database.cnx.cursor(buffered=True)
-        cursor.execute(
-            "SELECT * FROM commands WHERE guild_id = '{}'".format(
-                msg.guild.id))
-        fetched = cursor.fetchall()
-        if fetched is None:
-            return embed
-        prefix = await get_prefix(msg)
-        txt = ''
-        for i in range(len(fetched)):
-            txt += '{}{}: [{}]'.format(
-                prefix, fetched[i][1], ', '.join(fetched[i][2].split('<;>')))
-            if i < len(fetched) - 1:
-                txt += ',\n'
-        return txt
-    except Exception as err:
-        await send_error(None, err, 'utils.py -> roles_for_all_commands()')
+    if not database.connected:
         return None
+    query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
+             "command = '{}'").format(
+        msg.guild.id, command)
+    cursor = database.cnx.cursor(buffered=True)
+    cursor.execute(query)
+    fetched = cursor.fetchone()
+    if fetched is None:
+        return None
+    return fetched[2].split('<;>')
+    if channel is None:
+        return None
+    return channel
+
+
+async def roles_for_all_commands(msg, database):
+    if not database.connected:
+        return None
+    cursor = database.cnx.cursor(buffered=True)
+    cursor.execute(
+        "SELECT * FROM commands WHERE guild_id = '{}'".format(
+            msg.guild.id))
+    fetched = cursor.fetchall()
+    if fetched is None:
+        return embed
+    prefix = await get_prefix(msg, database)
+    txt = ''
+    for i in range(len(fetched)):
+        txt += '{}{}: [{}]'.format(
+            prefix, fetched[i][1], ', '.join(fetched[i][2].split('<;>')))
+        if i < len(fetched) - 1:
+            txt += ',\n'
+    return txt
 
 
 def printf(txt, extra=None):
@@ -250,7 +221,15 @@ def printf(txt, extra=None):
 rps_emojis = [u"\U0001FAA8", u"\U0001F4C4", u"\U00002702\U0000FE0F"]
 # waste basket emoji for deleting messages
 waste_basket = u"\U0001F5D1\U0000FE0F"
-
+# thumbs up emoji
+thumbs_up = u"\U0001F44D"
+number_emojis = [u"\U00000031\U0000FE0F\U000020E3",
+                 u"\U00000032\U0000FE0F\U000020E3",
+                 u"\U00000033\U0000FE0F\U000020E3",
+                 u"\U00000034\U0000FE0F\U000020E3",
+                 u"\U00000035\U0000FE0F\U000020E3",
+                 u"\U00000036\U0000FE0F\U000020E3",
+                 u"\U00000037\U0000FE0F\U000020E3"]
 # emojis for polls, roles,...
 # 20 reactions is maximum (error otherwise)
 emojis = [
@@ -276,24 +255,24 @@ emojis = [
     u"\U0001F537"]
 # colors that match emoji colors by indexes
 colors = [
-        0xffffff,
-        0xc30202,
-        0x0099e1,
-        0xf75f1c,
-        0xf8c300,
-        0x008e44,
-        0xa652bb,
-        0xa5714e,
-        0x2f3136,
-        0xffffff,
-        0xc30202,
-        0x0099e1,
-        0xf75f1c,
-        0xf8c300,
-        0x008e44,
-        0xa652bb,
-        0xa5714e,
-        0x2f3136,
-        0xf75f1c,
-        0x0099e1,
-        ]
+    0xffffff,
+    0xc30202,
+    0x0099e1,
+    0xf75f1c,
+    0xf8c300,
+    0x008e44,
+    0xa652bb,
+    0xa5714e,
+    0,
+    0xffffff,
+    0xc30202,
+    0x0099e1,
+    0xf75f1c,
+    0xf8c300,
+    0x008e44,
+    0xa652bb,
+    0xa5714e,
+    0,
+    0xf75f1c,
+    0x0099e1,
+]

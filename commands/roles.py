@@ -1,150 +1,131 @@
 import discord
+from collections import deque
 from command import Command
 from utils import *
 
 
 class Roles(Command):
     def __init__(self):
-        super().__init__('roles')
+        super().__init__(name='roles')
         self.description = 'Add or remove roles.'
-        self.bot_ermissions = ['send_messages', 'manage_roles']
+        self.bot_permissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['send_messages', 'manage_roles']
         self.roles_queue = {}
 
     async def execute_command(self, msg):
-        try:
-            args = msg.content.split()
-            if len(args) < 2:
-                txt = 'You need to provide a role!'
-                await message_delete(msg, 5, txt)
-                return
-            # check if added roles (one or multiple
-            # separated with ;)
-            # are valid roles, and if they are, send them to the channel
-            # and react with emojis (max 20)
-            roles = []
-            x = msg.content.replace('{} '.format(args[0]), '', 1)
-            for i in range(len(x)):
-                rl = await self.valid_role(x[i], msg)
-                if rl is None:
-                    continue
-                roles.append("\n{} {}".format(emojis[i], rl))
-                if len(roles) >= len(emojis):
-                    break
-            if roles == []:
-                return
-            # every role message should start with '```roles'
-            new_msg = await msg.channel.send('```roles{}```'.format(
-                '``````'.join(roles)))
-            for i in range(len(roles)):
-                await message_react(new_msg, emojis[i])
-        except Exception as err:
-            await send_error(msg, err, 'roles.py -> execute_command()')
+        args = msg.content.split()
+        if len(args) < 2:
+            await msg_send(
+                channel=msg.channel,
+                text='You need to provide a role!',
+                delete_after=5)
+            return
+        # check if added roles (one or multiple
+        # separated with ;)
+        # are valid roles, and if they are, send them to the channel
+        # and react with emojis (max 20)
+        roles = []
+        x = msg.content.replace('{} '.format(args[0]), '', 1).split(';')
+        for i in range(len(x)):
+            rl = await self.valid_role(x[i], msg)
+            if rl is None:
+                continue
+            roles.append("\n{} {}".format(emojis[i], rl))
+            if len(roles) >= len(emojis):
+                break
+        if roles == []:
+            return
+        # every role message should start with '```roles'
+        await msg_send(
+            channel=msg.channel,
+            text='```roles{}```'.format(
+                '``````'.join(roles)),
+            reactions=[emojis[i] for i in range(len(roles))])
 
-    async def on_message(self, msg, bot):
+    async def on_reply(self, msg, roles_message):
         # edit an existing message with roles by replying to it
         # replying a new role will add another role
         # replying remove <idx> will remove role with idx from message
         # multiple command at once separated by ';'
-        try:
-            if not await bot.check_if_valid(
-                    bot.commands[self.name], msg):
-                return
-            # message must be a reply to a roles message
-            if msg.reference is None or not msg.reference.message_id:
-                return
-            roles_message = await msg.channel.fetch_message(
-                msg.reference.message_id)
-            if (roles_message is None or
-                    roles_message.author.id != client.user.id or
-                    not roles_message.content.startswith('```roles')):
-                return
-            if roles_message.id not in []:
-                self.roles_queue[roles_message.id] = []
-            for i in msg.content.split(';'):
-                self.roles_queue[roles_message.id].append((
-                    i, roles_message))
-            # process the commands in a queue, to avoid multiple edits
-            # that might negate each other
-            await clear_queue(
-                'roles_messages({})'.format(roles_message.id),
-                False,
-                self.roles_queue[roles_message.id],
-                self.roles_existing_message)
-            if self.roles_queue[roles_message.id] == []:
-                del self.roles_queue[roles_message.id]
-        except Exception as err:
-            await send_error(None, err, 'roles.py -> on_message()')
+        if not roles_message.content.startswith('```roles'):
+            return
+        if roles_message.id not in self.roles_queue:
+            self.roles_queue[roles_message.id] = deque([])
+        for i in msg.content.split(';'):
+            self.roles_queue[roles_message.id].append((
+                i, roles_message))
+        # process the commands in a queue, to avoid multiple edits
+        # that might negate each other
+        await clear_queue(
+            'roles_messages-{}'.format(roles_message.id),
+            False,
+            self.roles_queue[roles_message.id],
+            self.roles_existing_message)
+        if (roles_message.id in self.roles_queue and
+                len(self.roles_queue[roles_message.id]) == 0):
+            del self.roles_queue[roles_message.id]
 
-    async def roles_existing_message(self, queue):
+    async def roles_existing_message(self, item):
         # function to process queue, editing existing message with roles
-        try:
-            info = queue.pop(0)
-            arg = info[0].strip()
-            msg = info[1]
-            # if arg starts with remove remove role with index args[1]
-            # from message, else add a new role to the message
-            if arg.startswith('remove '):
-                await self.remove_role_from_msg(msg, arg)
-                return
-            rl = await self.valid_role(arg, msg)
-            if rl is None:
-                txt = 'Role `{}` does not exist!'.format(arg)
-                await message_delete(msg, 3, txt)
-                return
-            x = msg.content[:-3].split('\n')
-            hidden_txt = x[0][8:]
-            roles = ('\n' + '\n'.join(x[1:])).split('``````')
-            if len(roles) >= len(emojis):
-                txt = 'There can be only `{}` roles in one message!'.format(
-                    len(emojis))
-                await message_delete(msg, 5, txt)
-                return
-            emoji = emojis[len(roles)]
-            # hidden txt (```roles<hidden_txt>\n) contains info
-            # about removed emojis so they can be reused
-            # emoji indexes separated with 'a'
-            if hidden_txt != '':
-                hidden_txt = hidden_txt.split('a')
-                emoji = emojis[int(hidden_txt[0])]
-                del hidden_txt[0]
-                hidden_txt = 'a'.join(hidden_txt)
-            roles.append('\n{} {}'.format(emoji, rl))
-            await message_edit(msg, '```roles{}```'.format(
-                '``````'.join(roles)))
-            await message_react(msg, emoji)
-        except Exception as err:
-            await send_error(None, err, 'roles.py -> roles_existing_msg()')
+        arg = item[0].strip()
+        msg = item[1]
+        # if arg starts with remove remove role with index args[1]
+        # from message, else add a new role to the message
+        if arg.startswith('remove '):
+            await self.remove_role_from_msg(msg, arg)
+            return
+        rl = await self.valid_role(arg, msg)
+        if rl is None:
+            await msg_send(
+                channel=msg.channel,
+                text='Role `{}` does not exist!'.format(arg),
+                delete_after=5)
+            return
+        x = msg.content[:-3].split('\n')
+        hidden_txt = x[0][8:]
+        roles = ('\n' + '\n'.join(x[1:])).split('``````')
+        if len(roles) >= len(emojis):
+            await msg_send(
+                channel=msg.channel,
+                text='There can be only `{}` roles in one message!'.format(
+                    len(emojis)),
+                delete_after=5)
+            return
+        emoji = emojis[len(roles)]
+        # hidden txt (```roles<hidden_txt>\n) contains info
+        # about removed emojis so they can be reused
+        # emoji indexes separated with 'a'
+        if hidden_txt != '':
+            hidden_txt = hidden_txt.split('a')
+            emoji = emojis[int(hidden_txt[0])]
+            del hidden_txt[0]
+            hidden_txt = 'a'.join(hidden_txt)
+        roles.append('\n{} {}'.format(emoji, rl))
+        await msg_edit(
+            msg=msg,
+            text='```roles{}```'.format('``````'.join(roles)),
+            reactions=emoji)
 
     async def on_raw_reaction(self, msg, payload):
         # listen for raw events and add or remove the role that matches
         # content of the roles message
-        try:
-            if (payload.emoji.name not in emojis or
-                    not msg.content.startswith('```roles')):
-                return
-            role = None
-            roles = (msg.content.replace('`', '')).replace(
-                'roles', '').strip().split('\n')
-            role = self.get_role(msg, roles, payload.emoji.name)
-            if role is None:
-                return
-            # fetch user that reacted to the role message
-            user = await msg.guild.fetch_member(payload.user_id)
-            if user is None:
-                return
-            try:
-                if payload.event_type == 'REACTION_ADD':
-                    await user.add_roles(role)
-                else:
-                    await user.remove_roles(role)
-            except Exception as err:
-                if str(err.code) != '50013':
-                    await send_error(
-                        msg, err,
-                        'roles.py -> execute_command() -> add/remove role')
-        except Exception as err:
-            await send_error(msg, err, 'roles.py -> on_raw_reaction()')
+        if (payload.emoji.name not in emojis or
+                not msg.content.startswith('```roles')):
+            return
+        role = None
+        roles = (msg.content.replace('`', '')).replace(
+            'roles', '').strip().split('\n')
+        role = self.get_role(msg, roles, payload.emoji.name)
+        if role is None:
+            return
+        # fetch user that reacted to the role message
+        user = await msg.guild.fetch_member(payload.user_id)
+        if user is None:
+            return
+        if payload.event_type == 'REACTION_ADD':
+            await user.add_roles(role)
+        else:
+            await user.remove_roles(role)
 
     def get_role(self, msg, roles, emoji):
         # find the role in the message in the guild's roles
@@ -168,86 +149,93 @@ class Roles(Command):
 
     async def valid_role(self, pot_role, msg):
         # check if role exists and if bot can add such a role
-        try:
-            role = None
-            # search existing roles in server
-            for i in range(len(msg.guild.roles)):
-                if msg.guild.roles[i].name.lower() == pot_role.lower():
-                    role = msg.guild.roles[i]
-                    break
-            if role is None:
-                txt = 'Role `{}` does not exist!'.format(pot_role)
-                await message_delete(msg, 5, txt)
-                return None
-            # don't sent default (@everyone) or integration roles
-            if role.is_integration() or role.is_default():
-                txt = 'Cannot add integration or default roles!'
-                await message_delete(msg, 5, txt)
-                return None
-            position = False
-            # don't allow roles higher than bot's highest role
-            for i in msg.guild.me.roles:
-                if i.position > role.position:
-                    position = True
-                    break
-            if not position:
-                txt = 'This roles has higher position than my highest role!'
-                await message_delete(msg, 5, txt)
-                return None
-            # roles with these permissions not allowed
-            not_allowed = [
-                'administrator', 'manage_guild',
-                'manage_channels', 'manage_messages',
-                'manage_nicknames', 'manage_webhooks',
-                'manage_roles', 'ban_members', 'kick_members',
-                'deafen_members', 'move_members'
-            ]
-            for i in not_allowed:
-                if dict(iter(role.permissions))[i]:
-                    txt = 'Cannot manage roles with `{}` permission.'.format(i)
-                    await message_delete(msg, 5, txt)
-                    return None
-            return role
-        except Exception as err:
-            await send_error(msg, err, 'roles.py -> valid_role()')
+        role = None
+        # search existing roles in server
+        for i in range(len(msg.guild.roles)):
+            if msg.guild.roles[i].name.lower() == pot_role.lower():
+                role = msg.guild.roles[i]
+                break
+        if role is None:
+            await msg_send(
+                channel=msg.channel,
+                text='Role `{}` does not exist!'.format(pot_role),
+                delete_after=5)
+            return
+        # don't sent default (@everyone) or integration roles
+        if role.is_integration() or role.is_default():
+            await msg_send(
+                channel=msg.channel,
+                text='Cannot add integration or default roles!',
+                delete_after=5)
+            return
+        position = False
+        # don't allow roles higher than bot's highest role
+        for i in msg.guild.me.roles:
+            if i.position > role.position:
+                position = True
+                break
+        if not position:
+            await msg_send(
+                channel=msg.channel,
+                text='This roles has higher position than my highest role!',
+                delete_after=5)
+            return
+        # roles with these permissions not allowed
+        not_allowed = [
+            'administrator', 'manage_guild',
+            'manage_channels', 'manage_messages',
+            'manage_nicknames', 'manage_webhooks',
+            'manage_roles', 'ban_members', 'kick_members',
+            'deafen_members', 'move_members'
+        ]
+        for i in not_allowed:
+            if dict(iter(role.permissions))[i]:
+                await msg_send(
+                    channel=msg.channel,
+                    text='Cannot manage roles with `{}` permission.'.format(i),
+                    delete_after=5)
+                return
+        return role
 
     async def remove_role_from_msg(self, msg, arg):
         # remove role from message
         # save the removed reaction index in the hidden text,
         # so it can be reused
+        args = arg.split()
+        x = msg.content[:-3].split('\n')
+        hidden_txt = x[0][8:]
+        roles = ('\n' + '\n'.join(x[1:])).split('``````')
+        if len(roles) == 1:
+            await msg_send(
+                channel=msg.channel,
+                text='Cannot remove the only role in the message!',
+                delete_after=5)
+            return
+        n = args[1]
+        # role can be removed by it's index in the message
         try:
-            args = arg.split()
-            x = msg.content[:-3].split('\n')
-            hidden_txt = x[0][8:]
-            roles = ('\n' + '\n'.join(x[1:])).split('``````')
-            if len(roles) == 1:
-                txt = 'Cannot remove the only role in the message!'
-                await message_delete(msg, 5, txt)
-                return
-            n = args[1]
-            # role can be removed by it's index in the message
-            try:
-                n = int(n)
-                if 0 > n or n >= len(roles):
-                    raise ValueError
-            except ValueError:
-                txt = ('Roles can only be removed by indexes from ' +
-                       '`{}` to `{}`.').format(0, len(roles) - 1)
-                await message_delete(msg, 5, txt)
-                return
-            emoji = roles[n].split()[0]
-            del roles[n]
-            # remove the bot's reaction the belongs to the removed role
-            await message_remove_reaction(msg, emoji, client.user, True)
-            if hidden_txt != '':
-                hidden_txt = '{}a{}'.format(
-                    hidden_txt, emojis.index(emoji))
-            else:
-                hidden_txt = emojis.index(emoji)
-            await message_edit(msg, '```roles{}{}```'.format(
-                hidden_txt,  '``````'.join(roles)))
-        except Exception as err:
-            await send_error(msg, err, 'roles.py -> remove_role_from_msg()')
+            n = int(n)
+            if 0 > n or n >= len(roles):
+                raise ValueError
+        except ValueError:
+            await msg_send(
+                channel=msg.channel,
+                text=('Roles can only be removed by indexes from ' +
+                      '`{}` to `{}`.').format(0, len(roles) - 1),
+                delete_after=5)
+            return
+        emoji = roles[n].split()[0]
+        del roles[n]
+        # remove the bot's reaction the belongs to the removed role
+        await msg_reaction_remove(msg=msg, emoji=emoji)
+        if hidden_txt != '':
+            hidden_txt = '{}a{}'.format(
+                hidden_txt, emojis.index(emoji))
+        else:
+            hidden_txt = emojis.index(emoji)
+        await msg_edit(
+            msg=msg,
+            text='```roles{}{}```'.format(hidden_txt,  '``````'.join(roles)))
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
@@ -261,8 +249,3 @@ class Roles(Command):
             'from the message.',
             'You can reply with multiple commands at once, separated ' +
             'with ";" ("role1;role2;remove 0;role3;...")')
-
-        pass
-
-
-Roles()

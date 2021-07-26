@@ -1,7 +1,7 @@
 ## Prerequisites
 
 * Python 3.9
-* pip 20.3
+* pip 20.x
 
 ## Installation
 
@@ -27,7 +27,7 @@
 	USER="user"
 	PASSWORD="your-database-password"
 ```
-	- You can also add port:
+* You can also add port:
 ```
 	PORT=your-database-port
 ```

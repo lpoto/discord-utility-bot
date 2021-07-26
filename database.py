@@ -42,6 +42,18 @@ class DB:
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
                 'wins INT UNSIGNED'],
+            'four_in_line': [
+                'guild_id VARCHAR(18) NOT NULL',
+                'user_id VARCHAR(18) NOT NULL',
+                'wins INT UNSIGNED'],
+            'four_in_line_records': [
+                'moves VARCHAR(43) NOT NULL'],
+            'events': [
+                'datetime VARCHAR(11) NOT NULL',
+                'channel_id VARCHAR(18) NOT NULL',
+                'event VARCHAR(100) NOT NULL',
+                'text VARCHAR(300) NOT NULL',
+                'tags VARCHAR(300) NOT NULL']
         }
 
     def create_tables(self, info):
