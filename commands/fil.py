@@ -1,10 +1,10 @@
 import discord
 from collections import defaultdict
-from utils import *
-from command import Command
+from utils import thumbs_up, emojis, random_color, number_emojis, waste_basket
+from commands.help import Help
 
 
-class Fil(Command):
+class Fil(Help):
     def __init__(self):
         super().__init__(name='fil')
         self.description = 'A game of 4 in a line between two users.'
@@ -24,8 +24,7 @@ class Fil(Command):
                          'React with {} to join!').format(name, thumbs_up),
             color=random_color())
         embed_var.set_footer(text=msg.author.id)
-        await msg_send(
-            channel=msg.channel, embed=embed_var, reactions=thumbs_up)
+        await msg.channel.send(embed=embed_var, reactions=thumbs_up)
 
     async def on_raw_reaction(self, msg, payload):
         # on added emoji if thumbs up join second user else if both users are
@@ -74,10 +73,9 @@ class Fil(Command):
             return
         info['grid_text'] = grid_text[0]
         embed_var = self.build_embed(info)
-        await msg_reaction_remove(
-            msg=msg, emoji=thumbs_up)
-        await msg_edit(
-            msg=msg,
+        await msg.remove_reaction(
+            emoji=thumbs_up)
+        await msg.edit(
             embed=embed_var,
             reactions=[number_emojis[i] for i in range(7)])
 
@@ -126,10 +124,10 @@ class Fil(Command):
             info['footer'] = '{}{}\nMoves: {}'.format(
                 info['user0']['id'], info['user1']['id'], info['moves'])
         embed_var = self.build_embed(info, msg.embeds[0].color)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
         # if has permissions, remove players' emojis for convenience
-        await msg_reaction_remove(
-            msg=msg, emoji=emoji, member=msg.guild.get_member(int(user_id)))
+        await msg.remove_reaction(
+            emoji=emoji, member=msg.guild.get_member(int(user_id)))
 
     def new_grid(self):
         # build a new empty grid for the game to be played on
@@ -258,8 +256,7 @@ class Fil(Command):
         # show guild members that played fil in order
         # best to worst
         if self.bot.database.connected is False:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No database connection.',
                 delete_after=5)
             return
@@ -269,8 +266,7 @@ class Fil(Command):
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is []:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No availible leaderboard.',
                 delete_after=5)
             return
@@ -293,13 +289,12 @@ class Fil(Command):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg_send(
-            channel=msg.channel, embed=embed_var, reactions=waste_basket)
+        await msg.channel.send(embed=embed_var, reactions=waste_basket)
 
     async def wins_to_database(self, msg, user_id, user_name, guild_id):
         # add a players win to database
         if self.bot.database.connected is False:
-            return embed
+            return ''
         cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute((
             "SELECT * FROM four_in_line WHERE guild_id = '{}' AND" +

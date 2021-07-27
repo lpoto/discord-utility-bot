@@ -1,9 +1,9 @@
 import discord
-from command import Command
-from utils import *
+from commands.help import Help
+from utils import emojis, waste_basket, colors
 
 
-class Server_info(Command):
+class Server_info(Help):
     def __init__(self):
         super().__init__(name='server')
         self.description = 'Get server information.'
@@ -13,8 +13,7 @@ class Server_info(Command):
         if (len(args) > 1):
             return msg.reply('Invalid command!')
         embed_var = await self.create_info_embed(msg)
-        await msg_send(
-            channel=msg.channel,
+        await msg.channel.send(
             embed=embed_var,
             reactions=[emojis[list(
                 self.bot.commands.keys()).index('config')], waste_basket])
@@ -80,12 +79,10 @@ class Server_info(Command):
                 msg.embeds[0].title != msg.guild.name or
                 msg.embeds[0].description != 'Server configurations'):
             return
-        await msg_reaction_remove(
-                msg=msg,
-                emoji=waste_basket,
-                member=msg.guild.me)
-        await msg_edit(
-            msg=msg,
+        await msg.remove_reaction(
+            emoji=waste_basket,
+            member=msg.guild.me)
+        await msg.edit(
             embed=await self.create_info_embed(msg),
             reactions=[emojis[list(
                 self.bot.commands.keys()).index('config')], waste_basket])

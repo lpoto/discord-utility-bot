@@ -1,28 +1,15 @@
-from dotenv import dotenv_values
-from discord import Client
+from dotenv import load_dotenv
+import os
+from collections import deque
 import discord
-import sys
 import random
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
 # presence and server members intent enabled under BOT
-cfg = dotenv_values('.env')
+
+load_dotenv()
 # default prefix key used before commands
-DEFAULT_PREFIX = cfg['DEFAULT_PREFIX']
-# discord application's private token
-DISCORD_TOKEN = cfg['DISCORD_TOKEN']
-
-
-def get_database_info():
-    # get all the mysql data info from .env
-    info = {}
-    for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
-        if i not in cfg:
-            return None
-        info[i.lower()] = cfg[i]
-    if 'PORT' in cfg:
-        info['port'] = int(cfg['PORT'])
-    return info
+DEFAULT_PREFIX = os.environ.get('DEFAULT_PREFIX')
 
 
 def random_color():
@@ -30,191 +17,171 @@ def random_color():
     return int("%06x" % random.randint(0, 0xFFFFFF), 16)
 
 
-async def msg_send(
-        channel,
-        text=None,
-        embed=None,
-        delete_after=None,
-        reactions=None):
-    if (str(channel.type) == 'text' and
-        has_permissions(
-            channel.guild.me, channel, 'send_messages') is not True):
-        return
-    msg = await channel.send(
-        content=text,
-        embed=embed,
-        delete_after=delete_after)
-    if reactions is not None:
-        if not isinstance(reactions, list):
-            reactions = [reactions]
-        for i in reactions:
-            await msg_react(msg, i)
-    return msg
+# wrapper for Message object to avoid erros when editing,
+# reacting,....
+class Message_wrapper(discord.Message):
+    def __init__(self, obj):
+        self._wrapped_msg = obj
+        self.channel = Channel_wrapper(
+            self._wrapped_msg.channel)
+        if str(self.channel.type) == 'text':
+            self.author = Member_wrapper(self.author)
+        self.additional_info = None
+        self.waiting_for = None
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
+        return getattr(self._wrapped_msg, attr)
+
+    async def edit(
+            self,
+            text=None,
+            embed=None,
+            delete_after=None,
+            reactions=None):
+        await self._wrapped_msg.edit(
+            content=text, embed=embed, delete_after=delete_after)
+        if reactions is not None:
+            if not isinstance(reactions, list):
+                reactions = [reactions]
+            for i in reactions:
+                await self.react(emoji=i)
+        return self
+
+    async def react(
+            self,
+            emoji):
+        if (str(self.channel.type) == 'text' and
+            not self.channel.permissions(
+                self.guild.me,
+                'add_reactions')):
+            return
+        await self._wrapped_msg.add_reaction(emoji)
+        return True
+
+    async def delete(self, delay=None):
+        if (self.author.id != self.guild.me.id and
+            not self.channel.permissions(
+                self.guild.me,
+                'send_messages')):
+            return
+        await self._wrapped_msg.delete(delay=delay)
+        del self
+        return True
+
+    async def remove_reaction(self, emoji, member=None):
+        if member is None:
+            if (self.channel.permissions(
+                    self.guild.me,
+                    'manage_messages')):
+                await self.clear_reaction(emoji)
+            else:
+                await self._wrapped_msg.remove_reaction(emoji, self.guild.me)
+            return
+        if (self.guild.me.id != member.id and
+                not self.channel.permissions(
+                    self.guild.me, 'manage_messages')):
+            return
+        await self._wrapped_msg.remove_reaction(emoji, member)
 
 
-async def msg_edit(
-        msg,
-        text=None,
-        embed=None,
-        delete_after=None,
-        reactions=None):
-    await msg.edit(
-        content=text, embed=embed, delete_after=delete_after)
-    if reactions is not None:
-        if not isinstance(reactions, list):
-            reactions = [reactions]
-        for i in reactions:
-            await msg_react(msg=msg, emoji=i)
-    return msg
+# wrapper for Channel object, to avoid errors when sending messages
+# and add extra functions
+class Channel_wrapper(object):
+    def __init__(self, chnl):
+        self._wrapped_chnl = chnl
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
+        return getattr(self._wrapped_chnl, attr)
+
+    async def send(
+            self,
+            text=None,
+            embed=None,
+            delete_after=None,
+            reactions=None):
+        if (str(self.type) == 'text' and
+            not self.permissions(
+                self.guild.me, 'send_messages')[0]):
+            return
+        msg = Message_wrapper(
+            await self._wrapped_chnl.send(
+                content=text,
+                embed=embed,
+                delete_after=delete_after))
+        if reactions is not None:
+            if not isinstance(reactions, list):
+                reactions = [reactions]
+            for i in reactions:
+                await msg.react(i)
+        return msg
+
+    async def fetch_message(self, msg_id):
+        return Message_wrapper(
+            await self._wrapped_chnl.fetch_message(
+                msg_id))
+
+    def permissions(self, member, perms):
+        if not isinstance(perms, list):
+            perms = [perms]
+        for i in perms:
+            if not dict(iter(member.permissions_in(self)))[i]:
+                return (False, i)
+        return (True, None)
 
 
-async def msg_delete(msg, delay=None):
-    if (msg.author.id != msg.guild.me.id and
-        has_permissions(
-            msg.guild.me, msg.channel, 'send_messages') is not True):
-        return
-    await msg.delete(delay=delay)
-    return True
+# wrapper for discord guild member object, wraps dm channel
+# when created
+class Member_wrapper(discord.Member):
+    def __init__(self, member):
+        self._wrapped_member = member
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
+        return getattr(self._wrapped_member, attr)
+
+    async def create_dm(self):
+        return Channel_wrapper(
+            await self._wrapped_member.create_dm())
+
+# create queues for different messages and process editing with reactions
+# and such functions in queue, to avoid duplicating or missing any
 
 
-async def msg_react(msg, emoji):
-    if (str(msg.channel.type) == 'text' and
-        has_permissions(
-            msg.guild.me, msg.channel, 'add_reactions') is not True):
-        return
-    await msg.add_reaction(emoji)
-    return True
+class Queue():
+    def __init__(self, bot):
+        self.bot = bot
+        self.queues = {}
 
+    async def add_to_queue(self, queue_id, item, function=None):
+        if queue_id not in self.queues:
+            self.queues[queue_id] = deque([])
+        self.queues[queue_id].append(item)
+        if function is not None:
+            await self.clear_queue(queue_id, function, False)
 
-async def msg_reaction_remove(msg, emoji, member=None):
-    if member is None:
-        if (has_permissions(
-                msg.guild.me, msg.channel, 'manage_messages') is True):
-            await msg.clear_reaction(emoji)
+    async def clear_queue(self, queue_id, function, ignore_running):
+        if queue_id not in self.queues:
+            return
+        # clear messages or reaction in queue to avoid
+        # multiple instances of same command or reactions
+        if ((queue_id in self.queues or
+             ignore_running) and len(self.queues[queue_id]) > 0):
+            item = self.queues[queue_id].popleft()
+            try:
+                await function(item)
+            except Exception as error:
+                await self.bot.client.on_error(error, None, None)
+            finally:
+                await self.clear_queue(queue_id, function, True)
         else:
-            await msg.remove_reaction(emoji, msg.guild.me)
-        return
-    if (msg.guild.me.id != member.id and
-        has_permissions(
-            msg.guild.me, msg.channel, 'manage_messages') is not True):
-        return
-    await msg.remove_reaction(emoji, member)
-
-
-# currently running queues
-running_queues = {}
-
-
-async def clear_queue(queue_type, ignore_running, queue, function):
-    # clear messages or reaction in queue to avoid
-    # multiple instances of same command or reactions
-    if ((queue_type not in running_queues or
-         ignore_running) and len(queue) > 0):
-        if queue_type not in running_queues:
-            running_queues[queue_type] = True
-        item = queue.popleft()
-        x = await function(item)
-        await clear_queue(queue_type, True, queue, function)
-    else:
-        if queue_type in running_queues:
-            del running_queues[queue_type]
-
-
-def has_permissions(user, channel, perms):
-    if not isinstance(perms, list):
-        perms = [perms]
-    for i in perms:
-        if not dict(iter(user.permissions_in(channel)))[i]:
-            return i
-    return True
-
-
-async def prefix_from_database(msg, database):
-    # try to get prefix from database, return default prefix if unsuccessful
-    if not database.connected:
-        return DEFAULT_PREFIX
-    query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
-        msg.guild.id)
-    cursor = database.cnx.cursor(buffered=True)
-    cursor.execute(query)
-    fetched = cursor.fetchone()
-    if fetched is None:
-        return DEFAULT_PREFIX
-    return fetched[1]
-    cursor.close()
-
-
-async def get_prefix(msg, database):
-    prefix = await prefix_from_database(msg, database)
-    if prefix is None:
-        return DEFAULT_PREFIX
-    return prefix
-
-
-async def get_welcome(server, database):
-    # get guild's welcome text from database
-    if not database.connected:
-        return None
-    query = "SELECT * FROM welcome WHERE guild_id = '{}'".format(
-        server.id)
-    cursor = database.cnx.cursor(buffered=True)
-    cursor.execute(query)
-    fetched = cursor.fetchone()
-    if fetched is None:
-        return None
-    return fetched[1]
-    cursor.close()
-
-
-async def get_required_roles(msg, command, database):
-    # get which roles can use a command from database
-    if not database.connected:
-        return None
-    query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
-             "command = '{}'").format(
-        msg.guild.id, command)
-    cursor = database.cnx.cursor(buffered=True)
-    cursor.execute(query)
-    fetched = cursor.fetchone()
-    if fetched is None:
-        return None
-    return fetched[2].split('<;>')
-    if channel is None:
-        return None
-    return channel
-
-
-async def roles_for_all_commands(msg, database):
-    if not database.connected:
-        return None
-    cursor = database.cnx.cursor(buffered=True)
-    cursor.execute(
-        "SELECT * FROM commands WHERE guild_id = '{}'".format(
-            msg.guild.id))
-    fetched = cursor.fetchall()
-    if fetched is None:
-        return embed
-    prefix = await get_prefix(msg, database)
-    txt = ''
-    for i in range(len(fetched)):
-        txt += '{}{}: [{}]'.format(
-            prefix, fetched[i][1], ', '.join(fetched[i][2].split('<;>')))
-        if i < len(fetched) - 1:
-            txt += ',\n'
-    return txt
-
-
-def printf(txt, extra=None):
-    if extra is not None:
-        txt = '{} {}'.format(txt, extra)
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], 'a') as f:
-            default_stdout = sys.stdout
-            sys.stdout = f
-            print(txt)
-            sys.stdout = default_stdout
-        return
-    print(txt)
+            if queue_id in self.queues and len(
+                    self.queues[queue_id]) == 0:
+                del self.queues[queue_id]
 
 
 # emojis rock, paper, scissors

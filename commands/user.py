@@ -1,9 +1,9 @@
 import discord
-from command import Command
-from utils import *
+from commands.help import Help
+from utils import waste_basket, random_color
 
 
-class User_info(Command):
+class User_info(Help):
     def __init__(self):
         super().__init__(name='user')
         self.description = 'Get information about the user.'
@@ -25,10 +25,9 @@ class User_info(Command):
         embed_var = await self.create_embed(msg, user)
         if embed_var is None:
             return
-        await msg_send(
-                channel=msg.channel,
-                embed=embed_var,
-                reactions=waste_basket)
+        await msg.channel.send(
+            embed=embed_var,
+            reactions=waste_basket)
 
     async def create_embed(self, msg, user):
         # build the embed with user info
@@ -54,9 +53,9 @@ class User_info(Command):
         rps_wins = await self.add_rps_wins(msg, user)
         if rps_wins is not None:
             embed_var.add_field(
-                    name=rps_wins[0],
-                    value=rps_wins[1],
-                    inline=False)
+                name=rps_wins[0],
+                value=rps_wins[1],
+                inline=False)
         roles = 'everyone'
         for i in user.roles:
             if str(i.name) != '@everyone':
@@ -73,8 +72,8 @@ class User_info(Command):
             return None
         cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute(
-            "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'" +
-            " AND user_id = '{}'".format(msg.guild.id, user.id))
+            ("SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'" +
+             " AND user_id = '{}'").format(msg.guild.id, user.id))
         fetched = cursor.fetchone()
         count = 0 if fetched is None else fetched[1]
         cursor.close()

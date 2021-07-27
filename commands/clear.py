@@ -1,10 +1,8 @@
-import discord
-from command import Command
-from utils import *
+from commands.help import Help
 import re
 
 
-class Clear_chat(Command):
+class Clear_chat(Help):
     def __init__(self):
         super().__init__(name='clear')
         self.description = 'Clear from 1 to 50 messages in chat.'
@@ -15,8 +13,7 @@ class Clear_chat(Command):
         args = msg.content.split()
         # don't allow purging in role-managing channel
         if len(args) < 2:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='How many messages do you want to delete?',
                     delete_after=5)
             return
@@ -24,8 +21,7 @@ class Clear_chat(Command):
         try:
             count = int(args[1])
         except Exception:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='Argument must be a number between 0 and 50!',
                     delete_after=5)
             return
@@ -36,14 +32,12 @@ class Clear_chat(Command):
         # messages one by one, so deleting large amounts of messages might
         # take a while and cause problems
         if count > 50:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='You cannot delete more than 50 messages at once!',
                     delete_after=5)
             return
         if count <= 0:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='You must delete at least 1 message!',
                     delete_after=5)
             return
@@ -52,21 +46,20 @@ class Clear_chat(Command):
             limit=count + 1,
             check=self.purge_filter)) - 1
         if purged < 1:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='Could not delete any messages.',
                     delete_after=5)
         else:
-            await msg_send(
-                    channel=msg.channel,
+            await msg.channel.send(
                     text='Deleted {count} messages.'.format(count=purged),
                     delete_after=5)
 
     def purge_filter(self, msg):
         # don't delete pinned messages and polls
-        return not ((re.search('^```(.*\nPOLL:)|(roles)',
-                               msg.content) is not None and
-                     msg.author.id == self.bot.client.user.id) or msg.pinned)
+        return not (msg.pinned or (
+            msg.author.id == self.bot.client.user.id and (
+                msg.content.startswith('```roles') or
+                re.search('```*.POLL', msg.content) is None)))
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(

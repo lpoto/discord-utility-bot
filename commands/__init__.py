@@ -1,4 +1,4 @@
-from command import Command
+from commands.help import Help
 from commands.server import Server_info
 from commands.user import User_info
 from commands.clear import Clear_chat

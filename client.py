@@ -1,0 +1,140 @@
+import discord
+import sys
+import traceback
+import utils as utils
+
+
+class My_client(discord.Client):
+    def __init__(self, *, loop=None, **options):
+        super().__init__(loop=loop, **options)
+        self.bot = None
+
+# wrap fetched channel objects
+    def get_channel(self, channel_id):
+        return utils.Channel_wrapper(
+            super().get_channel(int(channel_id)))
+
+# when client collects events from discord:
+# a method that matches the event will be triggered
+# -------------------- events --------------------
+
+    async def on_ready(self):
+        # on starting the self.bot, self.bot.print tag and activity
+        if self.user:
+            self.bot.print('Bot logged in!')
+            self.bot.print('Client:',  self.user)
+            # show help command in self.bot's status message
+            activity = discord.Game(name=utils.DEFAULT_PREFIX+'help', type=2)
+            status = discord.Status.idle
+            await self.change_presence(status=status, activity=activity)
+            self.bot.print("Status:", activity)
+            await self.bot.initialize(self)
+
+    async def on_error(self, error, *args, **kwargs):
+        ex_type, ex, tb = sys.exc_info()
+        x = traceback.extract_tb(tb)
+        # 10008 -> unknown message, can ignore as mostly
+        # when deleting or reacting to already deleted message
+        if 'error code: 10008' in str(ex):
+            return
+        self.bot.print('\nEXCEPTION ({})\n{}'.format(ex, 56*'-'))
+        for i in traceback.format_list(x):
+            if 'discord/self.py' not in i:
+                self.bot.print(i)
+
+    async def on_message(self, msg):
+        # check messages if they start with prefix and
+        # match any of the commands
+        # if so push them to queue, to be processed one by one
+        if msg.content == 'end':
+            raise SystemExit
+            return
+        if (msg.author.id == self.user.id or
+                str(msg.channel.type) != 'text' or
+                msg.content.split() is None or
+                len(msg.content.split()) < 1):
+            return
+        # wrapp message and override default functions to avoid errors
+        # and add additional functionality
+        msg = utils.Message_wrapper(msg)
+        if msg.reference is not None and msg.reference.message_id:
+            referenced_msg = await msg.channel.fetch_message(
+                msg.reference.message_id)
+            if referenced_msg is not None:
+                self.dispatch('reply', msg, referenced_msg)
+                return
+        # allow calling help with default prefix, even if a different
+        # prefix is set
+        if msg.content == "{prefix}help".format(prefix=utils.DEFAULT_PREFIX):
+            await self.bot.handle_message(msg, 'help', utils.DEFAULT_PREFIX)
+            return
+        # if server has prefix set in it's config, use that prefix,
+        # else use default prefix
+        prefix = await self.bot.database.get_prefix(msg)
+        cmd = msg.content.split()[0][len(prefix):]
+        if (msg.content[:len(prefix)] == prefix and
+                cmd in self.bot.commands):
+            await self.bot.handle_message(msg, cmd, prefix)
+            return
+
+    async def on_reply(self, msg, referenced_msg):
+        # custom event to handle commands that have on_reply
+        # functions that should be processed separately
+        if referenced_msg.author.id != self.user.id:
+            return
+        # iterate through those commands in linked list that
+        # have on_reply function
+        for i in self.bot.on_reply_commands:
+            if await self.bot.check_if_valid(i, msg):
+                await i.on_reply(msg, referenced_msg)
+
+    async def on_raw_reaction_add(self, payload):
+        # listen for raw reaction events, so we can listen to
+        # reactions on messages created before self.bot was online
+        if (payload.user_id == self.user.id or
+                (payload.emoji.name not in utils.emojis and
+                    payload.emoji.name not in utils.rps_emojis and
+                    payload.emoji.name not in utils.number_emojis and
+                    payload.emoji.name != utils.thumbs_up and
+                    payload.emoji.name != utils.waste_basket)):
+            return
+        if payload.guild_id:
+            await self.bot.handle_raw_reactions(
+                payload, payload.event_type, False)
+        else:
+            await self.bot.handle_raw_reactions(
+                payload, payload.event_type, True)
+
+    async def on_raw_reaction_remove(self, payload):
+        self.dispatch('raw_reaction_add', payload)
+
+    async def on_event_time(self, time, execute=True):
+        if execute:
+            if not self.user:
+                return
+            if 'event' not in self.bot.commands:
+                return
+            if time not in self.bot.commands['event'].events:
+                return
+            for f in self.bot.commands['event'].events[time]:
+                if 'args' in f:
+                    await f['function'](*f['args'])
+                else:
+                    await f['function']
+        await self.bot.commands['event'].remove_event(time)
+        await self.bot.commands['event'].start_timer()
+
+    async def on_member_join(self, member):
+        # on member join, if server has welcome text set up
+        # in database, send welcome text to default channel
+        server = member.guild
+        default_channel = utils.Channel_wrapper(server.system_channel)
+        # check if self.bot has send_messages permissions in defaut channel
+        if not default_channel.permissions(
+                server.me, 'send_messages')[0]:
+            return
+        hello = await self.bot.database.get_welcome(server)
+        if hello is None:
+            return
+        msg = '{} {}'.format(member.mention, hello)
+        await default_channel.send(msg)

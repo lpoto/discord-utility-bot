@@ -2,14 +2,14 @@ import discord
 import re
 from datetime import datetime
 from threading import Timer
-from command import Command
-from utils import *
+from commands.help import Help
+from utils import random_color, waste_basket
 
 # TODO -> remove event from channel
 #      -> show running events for the guild
 
 
-class Events(Command):
+class Events(Help):
     def __init__(self):
         super().__init__(name='event')
         self.description = 'Set up events for bot to send notifications.'
@@ -50,7 +50,6 @@ class Events(Command):
 
     async def add_event(self, times_functions, start=True):
         # times_function = {datetime: (function, args)}
-        cur_time = datetime.now().strftime("%d-%m,%H:%M")
         time = next(iter(times_functions))
         if time not in self.events:
             self.events[time] = []
@@ -83,8 +82,7 @@ class Events(Command):
     async def execute_command(self, msg):
         args = msg.content.split()
         if len(args) < 2:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Please add a name for the event!',
                 delete_after=5)
             return
@@ -106,7 +104,7 @@ class Events(Command):
                   'mandatory) reply "commit" to start the event.\n' +
                   'Example:\n"date 27. 7.; time 16:00; text Test text; "' +
                   'name new_name; tags test_tags; channel general; commit".'))
-        await msg_send(channel=msg.channel, embed=embed_var)
+        await msg.channel.send(embed=embed_var)
 
     async def on_reply(self, msg, referenced_msg):
         # on reply add options to created event
@@ -125,8 +123,7 @@ class Events(Command):
         for i in args:
             opt = (i.split()[0]).strip()
             if opt not in opts:
-                await msg_send(
-                    channel=msg.channel,
+                await msg.channel.send(
                     text='Invalid option `{}`.'.format(opt),
                     delete_after=5)
                 continue
@@ -135,8 +132,7 @@ class Events(Command):
 
     async def add_text(self, msg, args):
         if len(args) > 300:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Maximum 300 charaters!',
                 delete_after=5)
             return
@@ -144,7 +140,7 @@ class Events(Command):
         desc = embed_var.description.split('\n')
         desc[3] = 'text: {}'.format(args)
         embed_var.description = '\n'.join(desc)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def add_date(self, msg, args):
         date = await self.valid_date(msg, args)
@@ -154,7 +150,7 @@ class Events(Command):
         desc = embed_var.description.split('\n')
         desc[0] = 'date: {}'.format(date)
         embed_var.description = '\n'.join(desc)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def add_time(self, msg, args):
         time = await self.valid_time(msg, args)
@@ -164,12 +160,11 @@ class Events(Command):
         desc = embed_var.description.split('\n')
         desc[1] = 'time: {}'.format(time)
         embed_var.description = '\n'.join(desc)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def add_tags(self, msg, args):
         if len(args) > 300:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Maximum 300 characters!',
                 delete_after=5)
             return
@@ -177,7 +172,7 @@ class Events(Command):
         desc = embed_var.description.split('\n')
         desc[4] = 'tags: {}'.format(args)
         embed_var.description = '\n'.join(desc)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def add_channel(self, msg, args):
         channel_id = await self.valid_channel(msg, args)
@@ -187,24 +182,23 @@ class Events(Command):
         desc = embed_var.description.split('\n')
         desc[2] = 'channel: {}'.format(str(channel_id))
         embed_var.description = '\n'.join(desc)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def change_name(self, msg, args):
         if len(args) > 100:
-            await msg_send(
+            await msg.channel.send(
                 channel=msg.channel,
                 text='Maximum 100 characters in name!',
                 delete_after=5)
             return
         embed_var = msg.embeds[0]
         embed_var.title = 'Event: {}'.format(args)
-        await msg_edit(msg=msg, embed=embed_var)
+        await msg.edit(embed=embed_var)
 
     async def valid_time(self, msg, time):
         nums = [int(x) for x in re.findall(r'\d+', time)]
         if len(nums) != 2 or 0 > nums[0] > 23 or 0 > nums[1] > 23:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='`{}` is not a valid time!'.format(time),
                 delete_after=5)
             return
@@ -219,8 +213,7 @@ class Events(Command):
             (nums[1] == 2 and nums[0] > 28) or
             (nums[1] < 6 and nums[1] % 2 == 0 and nums[0] > 30) or
                 nums[1] > 6 and nums[1] % 2 != 0 and nums[0] > 30):
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='`{}` is not a valid date!'.format(date),
                 delete_after=5)
             return
@@ -234,8 +227,7 @@ class Events(Command):
             return
         ch = discord.utils.get(msg.guild.channels, name=channel)
         if ch is None or str(ch.type) == 'voice':
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='`{}` is not a valid text channel!'.format(channel),
                 delete_after=5)
             return
@@ -245,8 +237,7 @@ class Events(Command):
         embed_var = msg.embeds[0]
         info = embed_var.description.split('\n')
         if info[0] == 'date:' or info[1] == 'time:':
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Date and time need to be set!',
                 delete_after=5)
             return
@@ -262,7 +253,7 @@ class Events(Command):
         embed_var.title = embed_var.title.replace(
             'Event:', 'Event(commited):', 1)
         embed_var.set_footer(text='')
-        await msg_edit(msg=msg, embed=embed_var, reactions=waste_basket)
+        await msg.edit(embed=embed_var, reactions=waste_basket)
 
     async def send_event(self, channel_id, event, text, tags):
         # send scheduled event at the right time
@@ -274,7 +265,7 @@ class Events(Command):
             title=event,
             color=random_color(),
             description=text)
-        await msg_send(channel=channel, text=tags, embed=embed_var)
+        await channel.send(text=tags, embed=embed_var)
 
     async def schedule_event(self, event, start=True):
         # add a new event to the schedule

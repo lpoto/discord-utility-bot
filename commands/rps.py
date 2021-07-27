@@ -1,9 +1,9 @@
 import discord
-from utils import *
-from command import Command
+from utils import rps_emojis, random_color, waste_basket
+from commands.help import Help
 
 
-class Rps(Command):
+class Rps(Help):
     def __init__(self):
         super().__init__(name='rps')
         self.description = 'A game of rock-paper-scissors between two users.'
@@ -23,8 +23,7 @@ class Rps(Command):
             description='React with your weapon of choice!',
             color=random_color())
         dm_embed.set_footer(text=msg.channel.id)
-        await msg_send(
-            channel=dm,
+        await dm.send(
             embed=dm_embed,
             reactions=rps_emojis)
 
@@ -47,8 +46,7 @@ class Rps(Command):
         # edit chosen emoji to embed's title
         embed.title = 'Rock-Paper-Scissors!  ({})'.format(
             payload.emoji.name)
-        await msg_edit(
-            msg=reaction_msg,
+        await reaction_msg.edit(
             text=reaction_msg.content,
             embed=embed)
         # get channel id, message id from embed's footer
@@ -79,8 +77,7 @@ class Rps(Command):
         # add users profile picture to the embed
         if user.avatar_url:
             new_embed.set_thumbnail(url=user.avatar_url)
-        new_msg = await msg_send(
-            channel=channel,
+        new_msg = await channel.send(
             embed=new_embed,
             reactions=rps_emojis)
         self.running_games[new_msg.id] = (
@@ -120,7 +117,7 @@ class Rps(Command):
         if game[0][1] == game[1][1]:
             new_embed.description = '{} draws against {}!'.format(
                 user_names[0], user_names[1])
-            await msg_edit(msg=msg, embed=new_embed)
+            await msg.edit(embed=new_embed)
             return
         # get winner
         if ((game[0][1] == rps_emojis[0] and
@@ -146,7 +143,7 @@ class Rps(Command):
             txt = await self.wins_to_database(
                 msg, user2.id, user_names[1], msg.guild.id)
             new_embed.set_footer(text=txt)
-        await msg_edit(msg=msg, embed=new_embed)
+        await msg.edit(embed=new_embed)
 
     async def wins_to_database(self, msg, user_id, user_name, guild_id):
         # add a win for the user to the database and return total win count
@@ -178,8 +175,7 @@ class Rps(Command):
         # show guild members that played rps in order
         # best to worst
         if self.bot.database.connected is False:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No database connection.',
                 delete_after=5)
             return
@@ -189,8 +185,7 @@ class Rps(Command):
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is None or fetched is []:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No availible leaderboard.',
                 delete_after=5)
             return
@@ -213,8 +208,7 @@ class Rps(Command):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg_send(
-            channel=msg.channel,
+        await msg.channel.send(
             embed=embed_var,
             reactions=waste_basket)
 

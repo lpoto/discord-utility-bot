@@ -1,5 +1,8 @@
 import discord
-from utils import *
+import sys
+from utils import Channel_wrapper, waste_basket, colors, Queue
+from database import DB
+import commands as cmds
 
 
 class Bot:
@@ -7,12 +10,49 @@ class Bot:
         self.client = client
         self.database = None
         self.ready = False
+        self.queue = Queue(self)
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
         self.on_reply_commands = []
         self.on_raw_reaction_commands = []
         self.on_dm_reaction_commands = []
+
+    async def initialize(self, client):
+        self.client = client
+        # connect database
+        if self.database is None:
+            self.database = DB()
+        if not self.database.connected:
+            cn = self.database.connect_database()
+            if cn is not None:
+                self.print(cn)
+        self.print(self.database.show_connection())
+        # initialize all the commands
+        if not self.ready:
+            for C in list([cls for cls in cmds.__dict__.values()
+                           if isinstance(cls, type)]):
+                c = C()
+                c.bot = self
+                self.add_command(c)
+            # if event command is ready, start timing for the scheduled
+            # events
+            if 'event' in self.commands:
+                await self.commands['event'].events_from_database()
+                await self.commands['event'].start_timer()
+            self.ready = True
+
+    def print(self, text, extra=None):
+        if extra is not None:
+            text = '{} {}'.format(text, extra)
+        if len(sys.argv) > 1:
+            with open(sys.argv[1], 'a') as f:
+                default_stdout = sys.stdout
+                sys.stdout = f
+                print(text)
+                sys.stdout = default_stdout
+            return
+        print(text)
 
     def add_command(self, command):
         # add a command object to commands dictionary
@@ -34,7 +74,7 @@ class Bot:
         # if 2nd word is help send additional info
         # about the command
         if len(args) > 1 and args[1] == 'help':
-            await msg_send(
+            await msg.send(
                 channel=msg.channel,
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
@@ -57,9 +97,9 @@ class Bot:
             id=payload.guild_id)
         if guild is None:
             return
-        channel = discord.utils.get(
+        channel = Channel_wrapper(discord.utils.get(
             guild.channels,
-            id=payload.channel_id)
+            id=payload.channel_id))
         if channel is None:
             return
         msg = await channel.fetch_message(payload.message_id)
@@ -81,8 +121,7 @@ class Bot:
     async def waste_basket_delete(self, msg):
         if (not msg.pinned and len(msg.embeds) > 0 and
                 msg.author.id == msg.guild.me.id):
-            edit_txt = 'Message has been deleted.'
-            await msg_edit(
+            await msg.edit(
                 msg=msg,
                 text='Message has been deleted.',
                 delete_after=3)
@@ -90,7 +129,7 @@ class Bot:
     async def check_if_valid(self, command, msg):
         # check if command can be used in this type of channel
         if str(msg.channel.type) not in command.channel_types:
-            await msg_send(
+            await msg.send(
                 text='This command cannot be used in this channel type!',
                 delete_after=5)
             return False
@@ -100,26 +139,26 @@ class Bot:
 
     async def check_permissions(self, command, msg):
         # check if bot has all the required permissions in the channel
-        p = has_permissions(
-            msg.guild.me, msg.channel, command.bot_permissions)
-        if p is not True:
-            await msg_send(
+        p = msg.channel.permissions(
+            msg.guild.me, command.bot_permissions)
+        if not p[0]:
+            await msg.send(
                 text=('I need `{}` permission to use this command.'
-                      ).format(p),
+                      ).format(p[1]),
                 delete_after=5)
             return False
-        if has_permissions(msg.author, msg.channel, 'administrator'):
+        if msg.channel.permissions(msg.author, 'administrator')[0]:
             return True
         # if command has required roles set up, override default
         # required permissions
-        required_roles = await get_required_roles(
-            msg, command.name, self.database)
+        required_roles = await self.database.get_required_roles(
+            msg, command.name)
         user_roles = [i.name for i in msg.author.roles]
         if required_roles is not None:
             for i in required_roles:
                 if i in user_roles:
                     return True
-            await msg_send(
+            await msg.send(
                 text=(
                     'This command can be used by the following roles:\n{}'
                 ).format(', '.join(required_roles)),
@@ -127,10 +166,10 @@ class Bot:
             return False
 
         # check if user has all the required permissions
-        p = has_permissions(
-            msg.author, msg.channel, command.user_permissons)
-        if p is not True:
-            await msg_send(
+        p = msg.channel.permissions(
+            msg.author, command.user_permissons)
+        if not p[0]:
+            await msg.send(
                 text=(
                     'You need `{}` permission to use this command.'
                 ).format(p),
@@ -152,7 +191,7 @@ class Bot:
             name='Required permissions for bot',
             value='[{}]'.format(', '.join(info[3])),
             inline=False)
-        roles = await get_required_roles(msg, info[0], self.database)
+        roles = await self.database.get_required_roles(msg, info[0])
         if roles is None:
             embed_var.add_field(
                 name='Required permissions for user',

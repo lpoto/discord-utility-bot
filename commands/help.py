@@ -1,8 +1,8 @@
 import discord
-from utils import *
+from utils import emojis, waste_basket, colors
 
 
-class Command:
+class Help:
     def __init__(
             self,
             name='help',
@@ -50,7 +50,7 @@ class Command:
             if i != idx:
                 emjis.append(emojis[i])
         emjis += [emojis[idx], waste_basket]
-        await msg_send(channel=msg.channel, embed=embed_var, reactions=emjis)
+        await msg.channel.send(embed=embed_var, reactions=emjis)
 
     async def on_raw_reaction(self, msg, payload):
         if (payload.emoji.name not in emojis or len(msg.embeds) != 1 or
@@ -60,21 +60,21 @@ class Command:
         idx = emojis.index(payload.emoji.name)
         help_idx = list(self.bot.commands.keys()).index('help')
         if idx == help_idx:
-            await msg_edit(msg=msg, embed=await self.help_embed(
+            await msg.edit(embed=await self.help_embed(
                 msg, self.bot.commands))
             return
         cmd = self.bot.commands[
             list(self.bot.commands.keys())[idx]]
-        prefix = await get_prefix(msg, self.bot.database)
+        prefix = await self.bot.database.get_prefix(msg)
         new_embed = await self.bot.create_additional_help(
             cmd.command_info(prefix), msg, prefix)
         new_embed.set_footer(
             text='React with {} to return to help menu.'.format(
                 emojis[help_idx]))
-        await msg_edit(msg=msg, embed=new_embed)
+        await msg.edit(embed=new_embed)
 
     async def help_embed(self, msg, commands):
-        prefix = await get_prefix(msg, self.bot.database)
+        prefix = await self.bot.database.get_prefix(msg)
         idx = list(self.bot.commands.keys()).index('help')
         embed_var = discord.Embed(
             title='Help',

@@ -1,9 +1,9 @@
 import discord
-from command import Command
-from utils import *
+from commands.help import Help
+from utils import waste_basket, emojis, colors
 
 
-class Config(Command):
+class Config(Help):
     def __init__(self):
         super().__init__('config')
         self.description = "Change bot's settings."
@@ -12,23 +12,20 @@ class Config(Command):
     async def execute_command(self, msg):
         # check if database connected
         if not self.bot.database.connected:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='This command requires database connection!',
                 delete_after=5)
             return
         args = msg.content.split()
         if msg.content.replace('{}'.format(args[0]), '', 1) in [
                 ' see', ' show', '']:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 embed=await self.create_config_embed(msg),
                 reactions=[emojis[list(
                     self.bot.commands.keys()).index('server')], waste_basket])
             return
         if len(args) < 2:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No arguments provided.',
                 delete_after=5)
             return
@@ -38,14 +35,12 @@ class Config(Command):
             'welcome': self.set_welcome,
         }
         if args[1] not in list(opts.keys()):
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Invalid arguments.',
                 delete_after=5)
             return
         if len(args) < 3:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='No argument to option: `{}`.'.format(args[1]),
                 delete_after=5)
             return
@@ -60,19 +55,17 @@ class Config(Command):
             title=msg.guild.name,
             description="Server configurations",
             color=colors[list(self.bot.commands.keys()).index('config')])
-        prefix = await get_prefix(msg, self.bot.database)
-        if prefix is None:
-            prefix = DEFAULT_PREFIX
+        prefix = await self.bot.database.get_prefix(msg)
         embed_var.add_field(
             name='Prefix',
             value='[{}]'.format(prefix),
             inline=False)
-        wlcm = await get_welcome(msg, self.bot.database)
+        wlcm = await self.bot.database.get_welcome(msg)
         embed_var.add_field(
             name='Welcome_text',
             value='None' if wlcm is None else wlcm,
             inline=False)
-        cmds = await roles_for_all_commands(msg, self.bot.database)
+        cmds = await self.bot.database.roles_for_all_commands(msg)
         embed_var.add_field(
             name='Roles that can use commands',
             value='None' if cmds is None else cmds,
@@ -89,9 +82,8 @@ class Config(Command):
                 msg.embeds[0].title != msg.guild.name or
                 msg.embeds[0].description != 'Server information'):
             return
-        await msg_reaction_remove(msg, waste_basket, msg.guild.me)
-        await msg_edit(
-            msg=msg,
+        await msg.remove_reaction(waste_basket, msg.guild.me)
+        await msg.edit(
             embed=await self.create_config_embed(msg),
             reactions=[emojis[list(
                 self.bot.commands.keys()).index('server')], waste_basket])
@@ -99,8 +91,7 @@ class Config(Command):
     async def set_prefix(self, msg, args):
         new_prefix = args[2]
         if len(new_prefix) > 5:
-            await send_msg(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Prefix cannot be longer than 5 signs!',
                 delete_after=5)
             return
@@ -113,15 +104,13 @@ class Config(Command):
             ("UPDATE prefix SET prefix = '{}' " +
                 "WHERE guild_id = '{}'").format(
                 new_prefix, msg.guild.id))
-        await msg_send(
-            channel=msg.channel,
+        await msg.channel.send(
             text='`Prefix` changed to `{}`.'.format(new_prefix))
 
     async def set_command(self, msg, args):
         if args[1] == 'command':
             if len(args) < 4:
-                await msg_send(
-                    channel=msg.channel,
+                await msg.channel.send(
                     text='Too few arguments.',
                     delete_after=5)
                 return
@@ -129,20 +118,17 @@ class Config(Command):
         new_roles = msg.content.remove(
             '{} {} '.format(args[0], args[1]), '', 1)
         if cmd not in self.bot.commands:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Invalid command!',
                 delete_after=5)
             return
         if len(cmd) > 50:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Role name too long!',
                 delete_after=5)
             return
         if new_roles != 'help' and len(new_roles) > 90:
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 text='Too many roles!',
                 delete_after=5)
             return
@@ -154,8 +140,7 @@ class Config(Command):
             cursor.execute(query)
             self.bot.database.cnx.commit()
             cursor.close()
-            await msg_send(
-                channel=msg.channel,
+            await msg.channel.send(
                 test=(
                     'Removed roles for `{}`'
                 ).format(cmd))
@@ -184,8 +169,7 @@ class Config(Command):
             i = i.strip().lower()
             x = list(map(str.lower, guild_roles))
             if i not in x:
-                await msg_send(
-                    channel=msg.channel,
+                await msg.channel.send(
                     text='Invalid role: {}'.format(i),
                     delete_after=5)
                 return
@@ -204,7 +188,7 @@ class Config(Command):
             cursor.execute(query)
             self.bot.database.cnx.commit()
             cursor.close()
-            await msg_send(msg.channel, text='Removed `Welcome text`.')
+            await msg.channel.send(text='Removed `Welcome text`.')
             return
         await self.edit_sql(
             "SELECT * FROM welcome WHERE guild_id = '{}'".format(
@@ -215,8 +199,7 @@ class Config(Command):
             ("UPDATE welcome SET welcome = '{}' " +
                 "WHERE guild_id = '{}'").format(
                 new_txt, msg.guild.id))
-        await msg_send(
-            channel=msg.channel,
+        await msg.channel.send(
             text='`Welcome text` changed to `{}`.'.format(new_txt))
 
     async def edit_sql(self, select, insert, update):
