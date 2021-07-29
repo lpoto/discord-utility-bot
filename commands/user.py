@@ -1,9 +1,9 @@
 import discord
 from commands.help import Help
-from utils import waste_basket, random_color
+from utils import waste_basket, random_color, EmbedWrapper
 
 
-class User_info(Help):
+class UserInfo(Help):
     def __init__(self):
         super().__init__(name='user')
         self.description = 'Get information about the user.'
@@ -31,9 +31,11 @@ class User_info(Help):
 
     async def create_embed(self, msg, user):
         # build the embed with user info
-        embed_var = discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title=user.name,
-            color=random_color())
+            color=random_color()),
+            embed_type="USER",
+            marks=['H'])
         # if user has nickname set up add nickname
         # else only username
         if user.nick:

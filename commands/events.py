@@ -3,10 +3,11 @@ import re
 from datetime import datetime
 from threading import Timer
 from commands.help import Help
-from utils import random_color, waste_basket
+from utils import random_color, waste_basket, EmbedWrapper
 
 # TODO -> remove event from channel
-#      -> show running events for the guild
+#      -> different dictionary that allows events with
+#      -> same name in different server
 
 
 class Events(Help):
@@ -86,12 +87,30 @@ class Events(Help):
                 text='Please add a name for the event!',
                 delete_after=5)
             return
+        if args[1] in ['show', 'events', 'see']:
+            events = await self.show_server_events(msg)
+            if events is None:
+                return
+            embed_var = discord.Embed(
+                title='Scheduled events',
+                color=random_color())
+            for k, v in events.items():
+                embed_var.add_field(name=k, value=v)
+            await msg.channel.send(embed=embed_var, reactions=waste_basket)
+            return
         name = msg.content.replace('{} '.format(args[0]), '', 1)
-        embed_var = discord.Embed(
-            title='Event: ' + name,
+        if self.events is not None and name in self.events.values():
+            await msg.channel.send(
+                text='Event with this name already exists.',
+                delete_after=5)
+            return
+        embed_var = EmbedWrapper(discord.Embed(
+            title=name,
             description='date:\ntime:\nchannel: {}\ntext:\ntags:'.format(
                 msg.channel.id),
-            color=random_color())
+            color=random_color()),
+            embed_type='EVENT',
+            marks=['ND'])
         embed_var.set_footer(
             text=('* Add options by replying "<opt> <value>" ' +
                   '\n* Multiple options can be added at one,' +
@@ -107,6 +126,7 @@ class Events(Help):
         await msg.channel.send(embed=embed_var)
 
     async def on_reply(self, msg, referenced_msg):
+        return
         # on reply add options to created event
         # multiple may be added, separated with ;
         if (len(referenced_msg.embeds) != 1 or
@@ -284,9 +304,13 @@ class Events(Help):
         cursor.execute('SELECT * FROM events')
         fetched = cursor.fetchall()
         if fetched is None or len(fetched) == 0:
+            cursor.close()
             return
         for e in fetched:
-            await self.schedule_event(e, False)
+            if e == fetched[-1]:
+                await self.schedule_event(e, True)
+            else:
+                await self.schedule_event(e, False)
         cursor.close()
 
     def event_to_database(self, info):
@@ -300,8 +324,41 @@ class Events(Help):
         self.bot.database.cnx.commit()
         cursor.close()
 
+    async def show_server_events(self, msg):
+        if not self.bot.database.connected:
+            await msg.channel.send(
+                text='No database connection.',
+                delete_after=5)
+            return
+        cursor = self.bot.database.cnx.cursor(buffered=True)
+        cursor.execute('SELECT * FROM events')
+        fetched = cursor.fetchall()
+        cursor.close()
+        if fetched is None or len(fetched) == 0:
+            await msg.channel.send(
+                text='No scheduled events.',
+                delete_after=5)
+            return
+        events = {}
+        for e in fetched:
+            channel = msg.guild.get_channel(int(e[1]))
+            if channel is None:
+                continue
+            date = e[0].split(',')[0]
+            time = e[0].split(',')[1]
+            events[e[2]] = 'Date: {}\nTime: {}\nChannel: {}'.format(
+                date, time, channel.name)
+        if len(events) == 0:
+            await msg.channel.send(
+                text='No scheduled events.',
+                delete_after=5)
+            return
+        return events
+
     def additional_info(self, prefix):
-        return '* {}\n* {}\n* {}'.format(
+        return '* {}\n* {}\n* {}\n* {}'.format(
             'Initialize new event with "{}event <event-name>"'.format(prefix),
             "Add event's information as described in the started event.",
-            'The events may be delayed by a minute.')
+            'The events may be delayed by a minute.',
+            'See scheduled events for the server with "{}event show".'.format(
+                prefix))

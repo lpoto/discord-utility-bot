@@ -1,9 +1,9 @@
 import discord
 from commands.help import Help
-from utils import emojis, waste_basket, colors
+from utils import emojis, waste_basket, colors, EmbedWrapper
 
 
-class Server_info(Help):
+class ServerInfo(Help):
     def __init__(self):
         super().__init__(name='server')
         self.description = 'Get server information.'
@@ -20,16 +20,16 @@ class Server_info(Help):
 
     async def create_info_embed(self, msg):
         # build embed with server info
-        embed_var = discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title=msg.guild.name,
             description="Server information",
-            color=colors[list(self.bot.commands.keys()).index('server')])
+            color=colors[list(self.bot.commands.keys()).index('server')]),
+            embed_type="SERVER",
+            marks=['H'])
         # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description
         # add guild's icon to the embed
-        if (msg.guild.icon_url):
-            embed_var.set_thumbnail(url=msg.guild.icon_url)
         # count total and online members
         embed_var.add_field(
             name='Total members',
@@ -67,6 +67,8 @@ class Server_info(Help):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
+        if msg.guild.icon_url:
+            embed_var.set_thumbnail(url=msg.guild.icon_url)
         embed_var.set_footer(
             text='React with {} to see server configurations.'.format(
                 emojis[list(self.bot.commands.keys()).index('config')]))
@@ -76,8 +78,7 @@ class Server_info(Help):
         if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
                 payload.emoji.name != emojis[list(
                     self.bot.commands.keys()).index('server')] or
-                msg.embeds[0].title != msg.guild.name or
-                msg.embeds[0].description != 'Server configurations'):
+                not msg.is_config()):
             return
         await msg.remove_reaction(
             emoji=waste_basket,

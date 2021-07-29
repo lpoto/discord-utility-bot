@@ -1,13 +1,12 @@
 import discord
-import sys
-from utils import Channel_wrapper, waste_basket, colors, Queue
+from utils import ChannelWrapper, waste_basket, colors, Queue, EmbedWrapper
 from database import DB
 import commands as cmds
 
 
 class Bot:
-    def __init__(self, client):
-        self.client = client
+    def __init__(self):
+        self.client = None
         self.database = None
         self.ready = False
         self.queue = Queue(self)
@@ -23,11 +22,7 @@ class Bot:
         # connect database
         if self.database is None:
             self.database = DB()
-        if not self.database.connected:
-            cn = self.database.connect_database()
-            if cn is not None:
-                self.print(cn)
-        self.print(self.database.show_connection())
+        self.database.connect_database()
         # initialize all the commands
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()
@@ -41,18 +36,6 @@ class Bot:
                 await self.commands['event'].events_from_database()
                 await self.commands['event'].start_timer()
             self.ready = True
-
-    def print(self, text, extra=None):
-        if extra is not None:
-            text = '{} {}'.format(text, extra)
-        if len(sys.argv) > 1:
-            with open(sys.argv[1], 'a') as f:
-                default_stdout = sys.stdout
-                sys.stdout = f
-                print(text)
-                sys.stdout = default_stdout
-            return
-        print(text)
 
     def add_command(self, command):
         # add a command object to commands dictionary
@@ -74,9 +57,8 @@ class Bot:
         # if 2nd word is help send additional info
         # about the command
         if len(args) > 1 and args[1] == 'help':
-            await msg.send(
-                channel=msg.channel,
-                embed=await self.create_additional_help(
+            await msg.channel.send(
+                embed=self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
                 reactions=waste_basket)
         else:
@@ -97,7 +79,7 @@ class Bot:
             id=payload.guild_id)
         if guild is None:
             return
-        channel = Channel_wrapper(discord.utils.get(
+        channel = ChannelWrapper(discord.utils.get(
             guild.channels,
             id=payload.channel_id))
         if channel is None:
@@ -119,17 +101,15 @@ class Bot:
             await i.on_raw_reaction(msg, payload)
 
     async def waste_basket_delete(self, msg):
-        if (not msg.pinned and len(msg.embeds) > 0 and
-                msg.author.id == msg.guild.me.id):
+        if msg.is_deletable():
             await msg.edit(
-                msg=msg,
                 text='Message has been deleted.',
                 delete_after=3)
 
     async def check_if_valid(self, command, msg):
         # check if command can be used in this type of channel
         if str(msg.channel.type) not in command.channel_types:
-            await msg.send(
+            await msg.channel.send(
                 text='This command cannot be used in this channel type!',
                 delete_after=5)
             return False
@@ -142,7 +122,7 @@ class Bot:
         p = msg.channel.permissions(
             msg.guild.me, command.bot_permissions)
         if not p[0]:
-            await msg.send(
+            await msg.channel.send(
                 text=('I need `{}` permission to use this command.'
                       ).format(p[1]),
                 delete_after=5)
@@ -158,7 +138,7 @@ class Bot:
             for i in required_roles:
                 if i in user_roles:
                     return True
-            await msg.send(
+            await msg.channel.send(
                 text=(
                     'This command can be used by the following roles:\n{}'
                 ).format(', '.join(required_roles)),
@@ -169,7 +149,7 @@ class Bot:
         p = msg.channel.permissions(
             msg.author, command.user_permissons)
         if not p[0]:
-            await msg.send(
+            await msg.channel.send(
                 text=(
                     'You need `{}` permission to use this command.'
                 ).format(p),
@@ -179,10 +159,12 @@ class Bot:
 
     async def create_additional_help(self, info, msg, prefix):
         idx = list(self.commands.keys()).index(info[0])
-        embed_var = discord.Embed(
-            title='Help: {}{}'.format(prefix, info[0]),
+        embed_var = EmbedWrapper(discord.Embed(
+            title='{}{}'.format(prefix, info[0]),
             description=info[1],
-            color=colors[idx])
+            color=colors[idx]),
+            embed_type='HELP',
+            marks=['H'])
         embed_var.add_field(
             name='Additional info',
             value=info[2],

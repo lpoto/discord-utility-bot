@@ -1,5 +1,5 @@
 import discord
-from utils import emojis, waste_basket, colors
+from utils import emojis, waste_basket, colors, EmbedWrapper
 
 
 class Help:
@@ -53,9 +53,10 @@ class Help:
         await msg.channel.send(embed=embed_var, reactions=emjis)
 
     async def on_raw_reaction(self, msg, payload):
-        if (payload.emoji.name not in emojis or len(msg.embeds) != 1 or
+        if (self.name != 'help' or
+                payload.emoji.name not in emojis or
                 payload.event_type != 'REACTION_ADD' or
-                not msg.embeds[0].title.startswith('Help')):
+                not msg.is_help()):
             return
         idx = emojis.index(payload.emoji.name)
         help_idx = list(self.bot.commands.keys()).index('help')
@@ -76,10 +77,12 @@ class Help:
     async def help_embed(self, msg, commands):
         prefix = await self.bot.database.get_prefix(msg)
         idx = list(self.bot.commands.keys()).index('help')
-        embed_var = discord.Embed(
-            title='Help',
+        embed_var = EmbedWrapper(discord.Embed(
+            title=None,
             description='current prefix: [{}]'.format(prefix),
-            color=colors[idx])
+            color=colors[idx]),
+            embed_type='HELP',
+            marks='H')
         footer = ("React with command's emoji for details or type " +
                   '"{}command help" in the chat.'.format(
                       prefix))

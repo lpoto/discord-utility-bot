@@ -1,5 +1,5 @@
 import discord
-from utils import rps_emojis, random_color, waste_basket
+from utils import rps_emojis, random_color, waste_basket, EmbedWrapper
 from commands.help import Help
 
 
@@ -7,7 +7,6 @@ class Rps(Help):
     def __init__(self):
         super().__init__(name='rps')
         self.description = 'A game of rock-paper-scissors between two users.'
-        self.running_games = {}
 
     async def execute_command(self, msg):
         args = msg.content.split()
@@ -18,10 +17,12 @@ class Rps(Help):
         # send dm to the user who started the game and
         # wait for him to react with one of the options
         dm = await msg.author.create_dm()
-        dm_embed = discord.Embed(
-            title='Rock-Paper-Scissors!',
+        dm_embed = EmbedWrapper(discord.Embed(
+            title=None,
             description='React with your weapon of choice!',
-            color=random_color())
+            color=random_color()),
+            embed_type='ROCK_PAPER_SCISSORS',
+            marks=['ND'])
         dm_embed.set_footer(text=msg.channel.id)
         await dm.send(
             embed=dm_embed,
@@ -32,20 +33,19 @@ class Rps(Help):
         # which the rps game was started
         # then send new embed to that channel and wait for another
         # opponent to join
-        if payload.emoji.name not in rps_emojis:
+        if (payload.emoji.name not in rps_emojis
+                or payload.event_type != 'REACTION_ADD'):
             return
-        dm_channel = self.bot.client.get_channel(payload.channel_id)
-        if dm_channel is None:
+        user = self.bot.client.get_user(int(payload.user_id))
+        if user is None:
             return
-        reaction_msg = await dm_channel.fetch_message(payload.message_id)
-        if reaction_msg is None or reaction_msg.embeds == []:
-            return
-        embed = reaction_msg.embeds[0]
-        if embed is None or embed.title != 'Rock-Paper-Scissors!':
+        reaction_msg = await user.fetch_message(payload.message_id)
+        if reaction_msg is None or not reaction_msg.is_rps():
             return
         # edit chosen emoji to embed's title
-        embed.title = 'Rock-Paper-Scissors!  ({})'.format(
-            payload.emoji.name)
+        embed = reaction_msg.embeds[0]
+        embed.title = payload.emoji.name
+        embed.mark(['E'])
         await reaction_msg.edit(
             text=reaction_msg.content,
             embed=embed)
@@ -62,26 +62,22 @@ class Rps(Help):
         except ValueError:
             return
         # create game embed and send it to channel where game was started
-        new_embed = discord.Embed(
-            title='Rock-Paper-Scissors!',
-            color=random_color())
+        new_embed = EmbedWrapper(discord.Embed(
+            title='{} is waiting for an opponent'.format(
+                user.name if not user.nick else user.nick),
+            color=random_color()),
+            embed_type="ROCK_PAPER_SCISSORS",
+            marks=['ND'])
         # if user has nickname set up use nickname, else use username
-        if user.nick:
-            new_embed.description = user.nick
-        else:
-            new_embed.description = user.name
+        new_embed.description = 'React with {}, {} or {} to join!'.format(
+            rps_emojis[0], rps_emojis[1], rps_emojis[2])
         new_embed.set_footer(
-            text='React with {}, {} or {} to join!'.format(
-                rps_emojis[0], rps_emojis[1], rps_emojis[2]))
-        new_embed.description += ' is waiting for an opponent.'
+            text='{}{}'.format(payload.message_id, user.id),
+            icon_url=None if not user.avatar_url else user.avatar_url)
         # add users profile picture to the embed
-        if user.avatar_url:
-            new_embed.set_thumbnail(url=user.avatar_url)
-        new_msg = await channel.send(
+        await channel.send(
             embed=new_embed,
             reactions=rps_emojis)
-        self.running_games[new_msg.id] = (
-            payload.user_id, payload.emoji.name)
 
     async def on_raw_reaction(self, msg, payload):
         # await for rock paper or scissors reaction on the running game
@@ -89,60 +85,63 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis or
                 payload.event_type != 'REACTION_ADD' or
                 payload.member.bot or
-                msg.embeds == [] or msg.id not in self.running_games or
-                msg.embeds[0].title != 'Rock-Paper-Scissors!' or
-                msg.content != '' or
-                self.running_games[msg.id][0] == payload.user_id):
+                str(payload.user_id) == msg.embeds[0].footer.text[18:] or
+                not msg.is_rps()):
             return
-        game = [self.running_games[msg.id],
-                (payload.user_id, payload.emoji.name)]
-        del self.running_games[msg.id]
+        # rps embed has user id and dm msg id in footer
+        # fetch the first msg from the dm and get first users choice from it
+        user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[18:]))
+        user2 = msg.guild.get_member(payload.user_id)
+        if user1 is None or user2 is None:
+            return
+        first_msg = await user1.fetch_message(
+            int(msg.embeds[0].footer.text[:18]))
+        if first_msg is None or len(first_msg.embeds) != 1:
+            return
+        emoji1 = first_msg.embeds[0].title
         # compare the chosen options and get the winner of the game
-        await self.game_results(game, msg)
+        await self.game_results(user1, user2, emoji1, payload.emoji.name, msg)
 
-    async def game_results(self, game, msg):
+    async def game_results(self, user1, user2, emoji1, emoji2, msg):
         # find the winner of the game
         # edit the existing game message accordingly
-        new_embed = discord.Embed(
-            title='Rock-Paper-Scissors!',
-            color=msg.embeds[0].color)
-        user1 = msg.guild.get_member(game[0][0])
-        user2 = msg.guild.get_member(game[1][0])
+        new_embed = msg.embeds[0]
         user_names = [user1.name, user2.name]
         if user1.nick:
             user_names[0] = user1.nick
         if user2.nick:
             user_names[1] = user2.nick
         # if same reactions -> draw
-        if game[0][1] == game[1][1]:
-            new_embed.description = '{} draws against {}!'.format(
+        if emoji1 == emoji2:
+            new_embed.title = '{} draws against {}!'.format(
                 user_names[0], user_names[1])
             await msg.edit(embed=new_embed)
             return
         # get winner
-        if ((game[0][1] == rps_emojis[0] and
-             game[1][1] == rps_emojis[2]) or
-            (game[0][1] == rps_emojis[1] and
-                game[1][1] == rps_emojis[0]) or
-                (game[0][1] == rps_emojis[2] and
-                    game[1][1] == rps_emojis[1])):
-            new_embed.description = (
-                '{} wins against {} with {} against {}').format(
-                user_names[0], user_names[1], game[0][1], game[1][1])
+        if ((emoji1 == rps_emojis[0] and
+             emoji2 == rps_emojis[2]) or
+            (emoji1 == rps_emojis[1] and
+                emoji2 == rps_emojis[0]) or
+                (emoji1 == rps_emojis[2] and
+                    emoji2 == rps_emojis[1])):
+            new_embed.title = (
+                '{} wins against {}!').format(user_names[0], user_names[1])
+            new_embed.description = '{} against {}'.format(emoji1, emoji2)
             if user1.avatar_url:
                 new_embed.set_thumbnail(url=user1.avatar_url)
             txt = await self.wins_to_database(
                 msg, user1.id, user_names[0], msg.guild.id)
             new_embed.set_footer(text=txt)
         else:
-            new_embed.description = (
-                '{} wins against {} with {} against {}').format(
-                user_names[1], user_names[0], game[1][1], game[0][1])
+            new_embed.title = (
+                '{} wins against {}!').format(user_names[1], user_names[0])
+            new_embed.description = '{} against {}'.format(emoji2, emoji1)
             if user2.avatar_url:
                 new_embed.set_thumbnail(url=user2.avatar_url)
             txt = await self.wins_to_database(
                 msg, user2.id, user_names[1], msg.guild.id)
             new_embed.set_footer(text=txt)
+        new_embed.mark(['E'])
         await msg.edit(embed=new_embed)
 
     async def wins_to_database(self, msg, user_id, user_name, guild_id):

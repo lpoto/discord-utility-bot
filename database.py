@@ -1,4 +1,5 @@
 from utils import DEFAULT_PREFIX
+import logging
 import mysql.connector
 import os
 
@@ -10,11 +11,15 @@ class DB:
         self.name = None
 
     def connect_database(self, info=None):
+        if self.connected and self.name is not None:
+            logging.info(msg='Database: {}\n'.format(self.name))
+            return
         info = self.get_info()
         # if database is give, connect
         if info is None:
+            logging.info(msg='No database info provided.\n')
             self.name = None
-            return 'Database: None'
+            return
         try:
             self.cnx = mysql.connector.connect(**info)
             self.connected = True
@@ -22,13 +27,17 @@ class DB:
             # create them
             txt = self.create_tables(info)
             self.name = info['database']
-            return txt
+            if txt is not None:
+                logging.info(msg='Database: {}'.format(self.name))
+                logging.info(msg='Created database tables:\n{}\n'.format(txt))
+            else:
+                logging.info(msg='Database: {}\n'.format(self.name))
         except mysql.connector.Error as err:
             self.name = None
             self.connected = False
             if err.errno == 2006:
                 return self.connect_database(info)
-            return 'Database error:\n{}'.format(err)
+            logging.warning(msg=err)
 
     def get_info(self):
         info = {}
@@ -41,12 +50,6 @@ class DB:
         if x is not None:
             info['port'] = x
         return info
-
-    def show_connection(self):
-        txt = 'Database: '
-        if self.connected and self.name:
-            return txt + self.name
-        return txt + 'None'
 
     def required_tables(self):
         return {
@@ -93,12 +96,12 @@ class DB:
                         "CREATE TABLE {} ({})".format(
                             i, ', '.join(tables[i])))
                     cursor.execute(query)
-                    txt = '- Created {} table "{}"'.format(
-                        info['database'], i)
+                    txt2 = '   - {}'.format(i)
+                    txt = txt2 if txt is None else '{}\n{}'.format(txt, txt2)
                 cursor.close()
             return txt
         except Exception as err:
-            return err
+            logging.warning(msg=err)
 
     async def prefix_from_database(self, msg):
         # try to get prefix from database, return default prefix if failed

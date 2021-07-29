@@ -1,18 +1,29 @@
 import discord
 import sys
+import os
+import logging
 import traceback
 import utils as utils
 
 
-class My_client(discord.Client):
+class MyClient(discord.Client):
     def __init__(self, *, loop=None, **options):
         super().__init__(loop=loop, **options)
         self.bot = None
 
 # wrap fetched channel objects
     def get_channel(self, channel_id):
-        return utils.Channel_wrapper(
+        return utils.ChannelWrapper(
             super().get_channel(int(channel_id)))
+
+    def get_user(self, user_id):
+        return utils.MemberWrapper(super().get_user(id=int(user_id)))
+
+    async def _run_event(self, coro, event_name, *args, **kwargs):
+        if event_name != 'on_ready' and not self.bot.ready:
+            return
+        await super()._run_event(
+            coro, event_name, *args, **kwargs)
 
 # when client collects events from discord:
 # a method that matches the event will be triggered
@@ -21,32 +32,34 @@ class My_client(discord.Client):
     async def on_ready(self):
         # on starting the self.bot, self.bot.print tag and activity
         if self.user:
-            self.bot.print('Bot logged in!')
-            self.bot.print('Client:',  self.user)
+            logging.info(msg='Bot logged in!')
+            logging.info(msg='Client: ' + str(self.user))
             # show help command in self.bot's status message
             activity = discord.Game(name=utils.DEFAULT_PREFIX+'help', type=2)
             status = discord.Status.idle
             await self.change_presence(status=status, activity=activity)
-            self.bot.print("Status:", activity)
+            logging.info(msg='Status: ' + str(activity))
             await self.bot.initialize(self)
 
     async def on_error(self, error, *args, **kwargs):
+        root_dir = os.path.abspath(os.curdir)
         ex_type, ex, tb = sys.exc_info()
-        x = traceback.extract_tb(tb)
+        x = traceback.format_list(traceback.extract_tb(tb))
         # 10008 -> unknown message, can ignore as mostly
         # when deleting or reacting to already deleted message
         if 'error code: 10008' in str(ex):
             return
-        self.bot.print('\nEXCEPTION ({})\n{}'.format(ex, 56*'-'))
-        for i in traceback.format_list(x):
-            if 'discord/self.py' not in i:
-                self.bot.print(i)
+        result = ['{}({})\n{}'.format(str(ex_type.__name__), str(ex), 56*'-')]
+        for i in x:
+            if root_dir in i:
+                result.append(i)
+        logging.error('\n'.join(result) + '\n')
 
     async def on_message(self, msg):
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
-        if msg.content == 'end':
+        if msg.content == 'kill':
             raise SystemExit
             return
         if (msg.author.id == self.user.id or
@@ -56,7 +69,7 @@ class My_client(discord.Client):
             return
         # wrapp message and override default functions to avoid errors
         # and add additional functionality
-        msg = utils.Message_wrapper(msg)
+        msg = utils.MessageWrapper(msg)
         if msg.reference is not None and msg.reference.message_id:
             referenced_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
@@ -128,7 +141,7 @@ class My_client(discord.Client):
         # on member join, if server has welcome text set up
         # in database, send welcome text to default channel
         server = member.guild
-        default_channel = utils.Channel_wrapper(server.system_channel)
+        default_channel = utils.ChannelWrapper(server.system_channel)
         # check if self.bot has send_messages permissions in defaut channel
         if not default_channel.permissions(
                 server.me, 'send_messages')[0]:

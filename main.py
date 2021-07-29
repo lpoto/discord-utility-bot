@@ -1,63 +1,72 @@
 import asyncio
+import logging
 import os
 from bot import Bot
 import discord
-from client import My_client
+from client import MyClient
+
+logging.getLogger('discord').setLevel(logging.WARN)
+
+file = os.environ.get('LOGFILE')
+logging.basicConfig(
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S %d-%m-%Y',
+    level=logging.INFO,
+    filename=None if file is None else file,
+    filemode=None if file is None else 'a')
 
 
-def handle_exit(client, bot):
+def handle_exit(client, bot, tasks):
     bot.client = None
-    client.loop.run_until_complete(client.logout())
-    for t in asyncio.all_tasks(loop=client.loop):
-        if t.done():
-            t.exception()
+    t = client.loop.create_task(client.logout())
+    client.loop.run_until_complete(t)
+    tasks.add(t)
+    for task in tasks:
+        if task.done():
+            task.exception()
             continue
-        t.cancel()
         try:
+            task.cancel()
             client.loop.run_until_complete(
-                asyncio.wait_for(t, 5, loop=client.loop))
+                asyncio.gather(asyncio.wait_for(
+                    task, 5, loop=client.loop), return_exceptions=True))
         except (asyncio.InvalidStateError,
                 asyncio.TimeoutError,
                 asyncio.CancelledError):
             pass
         finally:
-            if t.done() and not t.cancelled():
-                t.exception()
-            del client
+            if task.done() and not task.cancelled():
+                task.exception()
 
 
-async def task(client):
-    await client.wait_until_ready()
+def handle_exceptions(loop, context):
+    logging.error(context['message'])
 
 
-def run_bot(DISCORD_TOKEN, client=None, bot=None):
-    if client is None:
-        client = My_client(
-            intents=discord.Intents.all())
-        bot = Bot(client)
-        client.bot = bot
-    else:
-        client = My_client(
+def run_bot(DISCORD_TOKEN):
+    client = MyClient(
+        intents=discord.Intents.all())
+    bot = Bot()
+    client.loop.set_exception_handler(handle_exceptions)
+    while True:
+        try:
+            bot.client = client
+            client.bot = bot
+            client.loop.create_task(client.wait_until_ready())
+            client.loop.run_until_complete(
+                asyncio.gather(client.start(DISCORD_TOKEN)))
+        except SystemExit:
+            logging.info(msg='Disconnected')
+            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
+        except KeyboardInterrupt:
+            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
+            client.loop.close()
+            logging.info(msg='Program ended ')
+            break
+        logging.info(msg='Reconnecting...\n')
+        client = MyClient(
             loop=client.loop,
             intents=discord.Intents.all())
-        client.bot = bot
-    while True:
-        client.loop.create_task(task(client))
-        # run all events in loop so they keep collecting discord events
-        # try reconnecting on disconnect unless the exception was
-        # keyboard interrupt
-        try:
-            client.loop.run_until_complete(client.start(DISCORD_TOKEN))
-        except SystemExit:
-            bot.print("\nDisconnected")
-            handle_exit(client, bot)
-            bot.print("Reconnecting...\n")
-            return run_bot(DISCORD_TOKEN, client, bot)
-        except KeyboardInterrupt:
-            handle_exit(client, bot)
-            client.loop.close()
-            bot.print("\nProgram ended")
-            return
 
 
 run_bot(os.environ.get('DISCORD_TOKEN'))

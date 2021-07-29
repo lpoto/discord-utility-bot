@@ -31,6 +31,10 @@
 ```
 	PORT=your-database-port
 ```
+* Add filename to `.env` if you want error logs in a file:
+```
+	LOGFILE='error.log'
+```
 ## Running the bot
 Run the following command in your bot's root directory:
 

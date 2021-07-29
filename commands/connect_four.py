@@ -1,14 +1,14 @@
 import discord
 from collections import defaultdict
-from utils import thumbs_up, emojis, random_color, number_emojis, waste_basket
+import utils
 from commands.help import Help
 
 
-class Fil(Help):
+class ConnectFour(Help):
     def __init__(self):
-        super().__init__(name='fil')
+        super().__init__(name='cf')
         self.description = 'A game of 4 in a line between two users.'
-        self.tokens = [emojis[1], emojis[2]]
+        self.tokens = [utils.emojis[1], utils.emojis[2]]
 
     async def execute_command(self, msg):
         # send a message and await second user to join with thumbs up reaction
@@ -18,26 +18,23 @@ class Fil(Help):
             await self.show_leaderboard(msg)
             return
         name = msg.author.name if not msg.author.nick else msg.author.nick
-        embed_var = discord.Embed(
-            title='4 in a line!',
+        embed_var = utils.EmbedWrapper(discord.Embed(
+            title=None,
             description=('{} has challanged for a game of 4 in a line.\n' +
-                         'React with {} to join!').format(name, thumbs_up),
-            color=random_color())
+                         'React with {} to join!').format(
+                             name, utils.thumbs_up),
+            color=utils.random_color()),
+            embed_type='CONNECT_FOUR',
+            marks=['ND'])
         embed_var.set_footer(text=msg.author.id)
-        await msg.channel.send(embed=embed_var, reactions=thumbs_up)
+        await msg.channel.send(embed=embed_var, reactions=utils.thumbs_up)
 
     async def on_raw_reaction(self, msg, payload):
         # on added emoji if thumbs up join second user else if both users are
         # known start the game and await emoji number from 1 to 7, each
         # indicating a column in which the user drops a token
         if (payload.event_type != 'REACTION_ADD' or
-                len(msg.embeds) != 1 or
-                payload.member.bot or
-                msg.embeds[0].title != '4 in a line!' or
-                len(msg.embeds[0].footer.text) < 18 or
-                len(msg.embeds[0].footer.text) > 18 and (
-                ' vs ' not in msg.embeds[0].description or
-                'On turn: ' not in msg.embeds[0].description)):
+                not msg.is_connect_four()):
             return
         if len(msg.embeds[0].footer.text) == 18:
             # don't allow a user playing with himself
@@ -45,10 +42,10 @@ class Fil(Help):
                 return
             starting_name = msg.embeds[0].description.split(
                 ' has challanged for a game of 4 in a line.')[0]
-            if payload.emoji.name == thumbs_up:
+            if payload.emoji.name == utils.thumbs_up:
                 await self.start_game(msg, payload.user_id, starting_name)
             return
-        if payload.emoji.name in number_emojis:
+        if payload.emoji.name in utils.number_emojis:
             await self.play_game(
                 msg, str(payload.user_id), payload.emoji.name)
 
@@ -65,6 +62,7 @@ class Fil(Help):
                 'id': str(user_id),
                 'name': user.name if not user.nick else user.nick}
         }
+        info['title'] = self.title_text(info, 0)
         info['header'] = self.next_on_turn_text(info, 0)
         info['footer'] = '{}{}'.format(
             msg.embeds[0].footer.text, str(user_id))
@@ -74,15 +72,15 @@ class Fil(Help):
         info['grid_text'] = grid_text[0]
         embed_var = self.build_embed(info)
         await msg.remove_reaction(
-            emoji=thumbs_up)
+            emoji=utils.thumbs_up)
         await msg.edit(
             embed=embed_var,
-            reactions=[number_emojis[i] for i in range(7)])
+            reactions=[utils.number_emojis[i] for i in range(7)])
 
     async def play_game(self, msg, user_id, emoji):
         # gather info from message and add token into the grid
         # save a record of moves in the message
-        move = number_emojis.index(emoji) + 1
+        move = utils.number_emojis.index(emoji) + 1
         embed = msg.embeds[0]
         info = {}
         info['moves'] = ''
@@ -98,20 +96,20 @@ class Fil(Help):
         # description contains x vs x! text, who is on the move and
         # the grid
         desc_lines = embed.description.split('\n')
-        token = desc_lines[1].split()[-1][1:][:-1]
+        token = desc_lines[0].split()[-1][1:][:-1]
         for i in range(2):
             if token == self.tokens[i] and str(user_id) != info[
                     'user' + str(i)]['id']:
                 return
         # insert a new token into the grid and update the grid text
-        game = self.update_grid(move, token, desc_lines[3:][:-1])
+        game = self.update_grid(move, token, desc_lines[2:][:-1])
         if not game:
             return
         info['grid_text'] = game[0]
         # if winner, end the game and send wins and a record of moves to
         # database
         if game[1] is not None:
-            info['header'] = self.winner_text(game[1], info)
+            info['header'], info['title'] = self.winner_text(game[1], info)
             info['footer'] = ''
             if game[1] in [0, 1]:
                 info['footer'] = await self.wins_to_database(
@@ -121,11 +119,15 @@ class Fil(Help):
         else:
             info['header'] = self.next_on_turn_text(
                 info, (self.tokens.index(token) + 1) % 2)
+            info['title'] = self.title_text(
+                info, (self.tokens.index(token) + 1) % 2)
             info['footer'] = '{}{}\nMoves: {}'.format(
                 info['user0']['id'], info['user1']['id'], info['moves'])
         embed_var = self.build_embed(info, msg.embeds[0].color)
+        if game[1] is not None:
+            embed_var.mark(['E'])
         await msg.edit(embed=embed_var)
-        # if has permissions, remove players' emojis for convenience
+        # if has permissions, remove players' utils.emojis for convenience
         await msg.remove_reaction(
             emoji=emoji, member=msg.guild.get_member(int(user_id)))
 
@@ -224,32 +226,38 @@ class Fil(Help):
         # text displayed in header of description
         # at the end of the game
         if idx == 2:
-            return '{} draws {}!'.format(
+            return ('Game completed', '{} draws {}!'.format(
                 info['user1']['name'],
-                info['user0']['name'])
-        return '{} wins against {} with {}!'.format(
+                info['user0']['name']))
+        return ('Game completed', '{} wins against {} with {}!'.format(
             info['user'+str(idx)]['name'],
             info['user'+str((idx + 1) % 2)]['name'],
-            self.tokens[idx])
+            self.tokens[idx]))
+
+    def title_text(self, info, idx):
+        return '{} vs {}'.format(
+                info['user0']['name'],
+                info['user1']['name'])
 
     def next_on_turn_text(self, info, idx):
         # header displayed in description during the
         # game
-        return '{} vs {}\nOn turn: {} ({})'.format(
-            info['user0']['name'],
-            info['user1']['name'],
+        return 'On turn: {} ({})'.format(
             info['user'+str(idx)]['name'],
             self.tokens[idx])
 
-    def build_embed(self, info, color=random_color()):
+    def build_embed(self, info, color=utils.random_color()):
         # build embed from the info dict
         # header and grid in the description, id's and move records in
         # the footer
-        embed_var = discord.Embed(title='4 in a line!', color=color)
+        embed_var = utils.EmbedWrapper(
+                discord.Embed(title=info['title'], color=color),
+                embed_type='CONNECT_FOUR',
+                marks=['ND'])
         if info['footer'] is not None:
             embed_var.set_footer(text=info['footer'])
-        embed_var.description = '{}\n\n{}'.format(
-            info['header'], info['grid_text'])
+            embed_var.description = '{}\n\n{}'.format(
+                info['header'], info['grid_text'])
         return embed_var
 
     async def show_leaderboard(self, msg):
@@ -272,7 +280,7 @@ class Fil(Help):
             return
         embed_var = discord.Embed(
             title='4 in a line Leaderboard',
-            color=random_color())
+            color=utils.random_color())
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))
@@ -289,7 +297,7 @@ class Fil(Help):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg.channel.send(embed=embed_var, reactions=waste_basket)
+        await msg.channel.send(embed=embed_var, reactions=utils.waste_basket)
 
     async def wins_to_database(self, msg, user_id, user_name, guild_id):
         # add a players win to database

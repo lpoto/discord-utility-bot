@@ -19,15 +19,15 @@ def random_color():
 
 # wrapper for Message object to avoid erros when editing,
 # reacting,....
-class Message_wrapper(discord.Message):
+class MessageWrapper(discord.Message):
     def __init__(self, obj):
         self._wrapped_msg = obj
-        self.channel = Channel_wrapper(
+        self.channel = ChannelWrapper(
             self._wrapped_msg.channel)
         if str(self.channel.type) == 'text':
-            self.author = Member_wrapper(self.author)
-        self.additional_info = None
-        self.waiting_for = None
+            self.author = MemberWrapper(self.author)
+        for i in range(len(self.embeds)):
+            self.embeds[i] = EmbedWrapper(self.embeds[i])
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
@@ -85,10 +85,59 @@ class Message_wrapper(discord.Message):
             return
         await self._wrapped_msg.remove_reaction(emoji, member)
 
+    # check the type of message based on its embed
+    def type_check(self, name, bad_marks=[], good_marks=[]):
+        if len(self.embeds) != 1:
+            return False
+        if not isinstance(self.embeds[0], EmbedWrapper):
+            self.embeds[0] = EmbedWrapper(self.embeds[0])
+        mks = self.embeds[0].get_marks()
+        if any(i in mks for i in bad_marks):
+            return False
+        if any(i not in mks for i in good_marks):
+            return False
+        if name is None or self.embeds[0].embed_type == name:
+            return True
+        return False
+
+    def is_poll(self):
+        return self.type_check('POLL', ['E'])
+
+    def is_roles(self):
+        return self.type_check('ROLES')
+
+    def is_connect_four(self):
+        return self.type_check('CONNECT_FOUR', ['E'])
+
+    def is_event(self):
+        return self.type_check('EVENT', ['E'])
+
+    def is_help(self):
+        return self.type_check('HELP', ['E'], ['H'])
+
+    def is_server(self):
+        return self.type_check('SERVER', ['E'], ['H'])
+
+    def is_config(self):
+        return self.type_check('CONFIG', ['E'], ['H'])
+
+    def is_fixed(self):
+        return self.type_check(None, ['E'], ['F'])
+
+    def is_rps(self):
+        return self.type_check('ROCK_PAPER_SCISSORS', ['E'])
+
+    def is_deletable(self):
+        if self.pinned:
+            return False
+        if len(self.embeds) != 1:
+            return True
+        return self.type_check(None, ['ND'])
+
 
 # wrapper for Channel object, to avoid errors when sending messages
 # and add extra functions
-class Channel_wrapper(object):
+class ChannelWrapper(object):
     def __init__(self, chnl):
         self._wrapped_chnl = chnl
 
@@ -107,7 +156,7 @@ class Channel_wrapper(object):
             not self.permissions(
                 self.guild.me, 'send_messages')[0]):
             return
-        msg = Message_wrapper(
+        msg = MessageWrapper(
             await self._wrapped_chnl.send(
                 content=text,
                 embed=embed,
@@ -120,7 +169,7 @@ class Channel_wrapper(object):
         return msg
 
     async def fetch_message(self, msg_id):
-        return Message_wrapper(
+        return MessageWrapper(
             await self._wrapped_chnl.fetch_message(
                 msg_id))
 
@@ -135,7 +184,7 @@ class Channel_wrapper(object):
 
 # wrapper for discord guild member object, wraps dm channel
 # when created
-class Member_wrapper(discord.Member):
+class MemberWrapper(discord.Member):
     def __init__(self, member):
         self._wrapped_member = member
 
@@ -145,8 +194,12 @@ class Member_wrapper(discord.Member):
         return getattr(self._wrapped_member, attr)
 
     async def create_dm(self):
-        return Channel_wrapper(
+        return ChannelWrapper(
             await self._wrapped_member.create_dm())
+
+    async def fetch_message(self, id):
+        return MessageWrapper(
+            await self._wrapped_member.fetch_message(id=id))
 
 # create queues for different messages and process editing with reactions
 # and such functions in queue, to avoid duplicating or missing any
@@ -182,6 +235,60 @@ class Queue():
             if queue_id in self.queues and len(
                     self.queues[queue_id]) == 0:
                 del self.queues[queue_id]
+
+
+# wrapper for embeds, adding embed type and marks into the author section
+class EmbedWrapper(discord.Embed):
+    def __init__(self, embed, embed_type=None, marks=()):
+        self._wrapped_embed = embed
+        self.embed_type = self.get_type() if embed_type is None else embed_type
+        self.marks = ['F', 'ND', 'E', 'H']
+        self.mark(marks=marks)
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return getattr(self, attr)
+        return getattr(self._wrapped_embed, attr)
+
+    def get_type(self):
+        if not self.author:
+            return None
+        return self.author.name.split()[0]
+
+    def set_thumbnail(self, url):
+        self.mark(
+            marks=self.get_marks(),
+            size=36 if url is None else 28)
+        self._wrapped_embed.set_thumbnail(url=url)
+
+    def mark(self,
+             marks=(),
+             size=36):
+        if self.embed_type is None:
+            return
+        if any(i not in self.marks for i in marks):
+            raise Exception('Invalid embed marks!')
+            return
+        text = self.embed_type
+        if len(marks) == 0:
+            return self
+        text += str((size - len(text) - len(''.join(marks))
+                     ) * '\u3000') + ''.join(marks)
+        self.set_author(name=text)
+        return self
+
+    def get_marks(self):
+        if not self.author.name:
+            return []
+        mks = self.author.name.split()
+        if len(self.author.name) not in [28, 36] or len(mks) != 2:
+            return []
+        marks = []
+        for i in self.marks:
+            if i in mks[1]:
+                marks.append(i)
+        self.embed_type = mks[0]
+        return marks
 
 
 # emojis rock, paper, scissors

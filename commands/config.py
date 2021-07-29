@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils import waste_basket, emojis, colors
+from utils import waste_basket, emojis, colors, EmbedWrapper
 
 
 class Config(Help):
@@ -51,10 +51,14 @@ class Config(Help):
         await function(msg, args)
 
     async def create_config_embed(self, msg):
-        embed_var = discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title=msg.guild.name,
             description="Server configurations",
-            color=colors[list(self.bot.commands.keys()).index('config')])
+            color=colors[list(self.bot.commands.keys()).index('config')]),
+            embed_type='CONFIG',
+            marks=['H'])
+        if (msg.guild.icon_url):
+            embed_var.set_thumbnail(url=msg.guild.icon_url)
         prefix = await self.bot.database.get_prefix(msg)
         embed_var.add_field(
             name='Prefix',
@@ -79,8 +83,7 @@ class Config(Help):
         if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
                 payload.emoji.name != emojis[list(
                     self.bot.commands.keys()).index('config')] or
-                msg.embeds[0].title != msg.guild.name or
-                msg.embeds[0].description != 'Server information'):
+                not msg.is_server()):
             return
         await msg.remove_reaction(waste_basket, msg.guild.me)
         await msg.edit(

@@ -1,217 +1,198 @@
 from commands.help import Help
-from utils import emojis
 import discord
-import re
+from utils import emojis, EmbedWrapper, random_color
 
 
 class Poll(Help):
     def __init__(self):
         super().__init__(name='poll')
         self.description = 'Create a poll to vote on.'
+        self.token = '⦾'
 
     async def execute_command(self, msg):
-        # don't allow links and `, @ ... signs to avoid
-        # breaking poll form
-        if re.search('http|`|POLL|<@', msg.content):
-            await msg.channel.send(
-                text='Invalid question!',
-                delete_after=5)
+        args = msg.content.split()
+        if len(args) < 2:
+            await msg.channel.send(text='Add a question!', delete_after=5)
             return
-        if len(msg.content.split()) < 2:
-            await msg.channel.send(
-                text='I need a question!',
-                delete_after=5)
-            return
-        # question  is added with the poll command "poll <question>"
-        poll_question = msg.content.replace('{} '.format(
-            msg.content.split()[0]), '', 1)
-        await msg.channel.send(
-            text='```\nPOLL: ' + poll_question + '```')
-        # created poll is edited by replying with responses
+        question = msg.content.replace('{} '.format(args[0]), '', 1)
+        m = await msg.channel.send(embed=self.starting_embed(question))
+        m.is_poll()
 
-    async def on_reply(self, msg, poll_message):
-        # check if command is valid (can be used in this channel...)
-        if not re.search('^```.*\nPOLL:', poll_message.content):
-            return
-        # get replies from the message
-        for r in msg.content.split(';'):
-            await self.bot.queue.add_to_queue(
-                queue_id='message:{}'.format(poll_message.id),
-                item=(r, poll_message.channel.id, poll_message.id),
-                function=self.get_poll_info)
+    def response_format(self, emoji, count):
+        return '{}\u2000({}):\u2000\u2000{}'.format(
+            emoji, count, str(count * self.token))
 
-    async def get_poll_info(self, item):
-        # function used when clearing queue for adding responses,.. to a poll
-        # there can be multiple replies in one message, split with ;
-        response = item[0]
-        channel = self.bot.client.get_channel(int(item[1]))
-        if channel is None:
-            return
-        poll = await channel.fetch_message(int(item[2]))
-        if poll is None:
-            return
-        # if max number of responses added, edit apache into hidden text
-        # when removing responses, apache will be edited out
-        # hidden text allows us to not spam max responses message in chat
-        max_responses = False
-        if poll.content.split('\n')[0] == '```apache':
-            max_responses = True
-        # don't allow certain patterns that could break poll form
-        if re.search('http|`|POLL|<@', response):
-            await poll.channel.send(
-                text='Invalid response!',
-                delete_after=5)
-            return
+    def response_to_embed(
+            self, embed, response, emoji=None, count=0, index=None):
+        if emoji is None:
+            emoji = emojis[len(embed.fields)]
+        if index is None:
+            embed.add_field(
+                name='\u2000\u2000{}'.format(response),
+                value=self.response_format(emoji, count),
+                inline=False)
         else:
-            # if poll has ```yaml at the start it is fixed, so
-            # no replies can be added or removed
-            #  if poll has ```CSS it has been ended
-            responses = poll.content[3:][:-3].split('``````')
-            if poll.content.startswith('```CSS'):
-                pass
-            elif re.search('^ ?(poll)? ?end ?(poll)?|(stop)$', response):
-                await self.end_poll(poll)
-            elif poll.content.startswith('```yaml'):
-                pass
-            elif re.search('^ ?(poll)? ?fix ?(poll)?$', response):
-                await self.fix_poll(poll)
-            elif re.search('^ ?remove .*$', response):
-                await self.remove_response(
-                    response, responses, poll)
-            elif re.search('^ ?question .*', response):
-                await self.change_question(
-                    response, responses, poll)
-            elif len(responses) > len(emojis) and not max_responses:
-                poll_txt = poll.content.split('\n')
-                poll_txt[0] = '```apache'
-                await poll.edit(text='\n'.join(poll_txt))
-                await poll.channel.send(
-                    text='Maximum response count reached!',
-                    delete_after=5)
-            elif not max_responses:
-                await self.add_response(
-                    response, responses, poll)
+            embed.set_field_at(
+                index=index,
+                name='\u2000\u2000{}'.format(response),
+                value=self.response_format(emoji, count),
+                inline=False)
+        return embed
 
-    async def add_response(self, response, responses, poll):
-        emoji = emojis[len(responses) - 1]
-        responses[0] = responses[0].split('\n')
-        # check for hidden text -> (```<hidden_text>\nPOLL)
-        # contains indexes of removed responses
-        # so we can reuse the removed emojis
-        hidden_txt = responses[0][0]
-        if hidden_txt != '':
-            hidden_txt = hidden_txt.split('a')
-            emoji = emojis[int(hidden_txt[0])]
-            del hidden_txt[0]
-            hidden_txt = 'a'.join(hidden_txt)
-        responses[0] = '{}\n{}'.format(hidden_txt, responses[0][1])
-        responses.append('\n{}(0) {}: '.format(emoji, response))
-        txt = '```' + '``````'.join(responses) + '```'
-        await poll.edit(text=txt, reactions=emoji)
-
-    async def change_question(self, question, responses, poll):
-        # change the question of the poll
-        question = question.replace('question ', '', 1)
-        responses[0] = (responses[0].split('POLL: '))
-        responses[0][1] = question
-        responses[0] = 'POLL: '.join(responses[0])
-        txt = '```' + '``````'.join(responses) + '```'
-        await poll.edit(text=txt)
-
-    async def fix_poll(self, poll):
-        # if poll is fixed, no replies can be added or removed
-        if re.search('^```.*\nPOLL: ', poll.content) is None:
-            return
-        x = poll.content.split('\nPOLL: ')
-        x[0] = '```yaml'
-        await poll.edit(text='\nPOLL: '.join(x))
-        txt = 'Poll has been `fixed`, you cannot add or remove responses.'
-        await poll.channel.send(
-            text=txt,
-            delete_after=5)
-
-    async def end_poll(self, poll):
-        # if poll is ended, it cannot be edited anymore
-        x = poll.content.split('\nPOLL: ')
-        x[0] = '```CSS'
-        await poll.edit(text='\nPOLL[ended]: '.join(x))
-        await poll.channel.send(
-            text='Poll has been `ended`.',
-            delete_after=5)
-        return
-
-    async def remove_response(self, response, responses, poll):
-        num = response.split()[1]
-        try:
-            num = int(num) + 1
-            if num >= len(responses) or num < 0:
-                raise ValueError
-        except ValueError:
-            await poll.channel.send(
-                text=('Responses can only be removed by indexes ' +
-                      'from `{}` to `{}`').format(0, len(responses) - 2),
-                delete_after=5)
-            return
-        emoji = responses[num].split('(')[0].replace('\n', '')
-        del responses[num]
-        responses[0] = responses[0].split('\n')
-        # save indexes of removed emojis in hidden_txt so we can
-        # reuse them when adding new responses
-        hidden_txt = responses[0][0]
-        if hidden_txt == '' or hidden_txt == 'apache':
-            hidden_txt = emojis.index(emoji)
-        else:
-            hidden_txt = '{}a{}'.format(
-                hidden_txt, emojis.index(emoji))
-        responses[0] = '{}\n{}'.format(hidden_txt, responses[0][1])
-        txt = '```' + '``````'.join(responses) + '```'
-        await poll.edit(text=txt)
-        # remove bot's reaction that belongs to the removed response
-        await poll.remove_reaction(emoji=emoji)
-
-    async def on_raw_reaction(self, msg, payload):
-        # when a valid reaction is added or removed from the poll,
-        # edit the poll accordingly in queue
-        # so we don't lose or duplicate any responses
-        if re.search('```.*\nPOLL: ', msg.content) is None:
+    async def on_raw_reaction(self, poll_msg, payload):
+        if not poll_msg.is_poll():
             return
         emoji = payload.emoji.name
-        await self.bot.queue.add_to_queue(
-            queue_id='reaction:{}'.format(msg.id),
-            item=(msg.id, msg.channel, emoji),
-            function=self.queue_function)
+        for i in range(len(poll_msg.embeds[0].fields)):
+            if poll_msg.embeds[0].fields[i].value.startswith(emoji):
+                await self.bot.queue.add_to_queue(
+                    queue_id='pollreaction:{}'.format(poll_msg.id),
+                    item=(poll_msg.channel.id, poll_msg.id, emoji, i),
+                    function=self.edit_responses)
 
-    async def queue_function(self, item):
-        # function to be used when processing poll reactions queue
-        msg_id = item[0]
-        channel = item[1]
-        try:
-            msg = await channel.fetch_message(int(msg_id))
-            if msg is None:
-                raise ValueError
-        except ValueError:
+    async def edit_responses(self, item):
+        channel = self.bot.client.get_channel(int(item[0]))
+        if channel is None:
+            return
+        poll_msg = await channel.fetch_message(int(item[1]))
+        if poll_msg is None:
             return
         emoji = item[2]
-        responses = msg.content[3:][:-3].split('``````')
-        index = -1
-        for i in range(len(responses)):
-            if responses[i].startswith('\n' + emoji):
-                index = i
-                break
-        if index == -1:
-            return
-        reacts = discord.utils.get(
-            msg.reactions, emoji=emoji)
-        reacts_count = 0
+        idx = item[3]
+        response = poll_msg.embeds[0].fields[idx].name
+        reacts = discord.utils.get(poll_msg.reactions, emoji=emoji)
+        count = 0
         if reacts:
-            reacts_count = reacts.count
+            count = reacts.count
             if reacts.me:
-                reacts_count -= 1
-        x = responses[index].split(': ')[0].split(')')[1]
-        x = '\n{}({}){}'.format(emoji, reacts_count, x)
-        responses[index] = '{}: {}'.format(x, emoji * reacts_count)
-        txt = '```' + '``````'.join(responses) + '```'
-        await msg.edit(text=txt)
+                count -= 1
+        embed = self.response_to_embed(
+            embed=poll_msg.embeds[0],
+            response=response,
+            emoji=emoji,
+            count=count,
+            index=idx)
+        await poll_msg.edit(embed=embed)
+
+    async def on_reply(self, msg, poll_msg):
+        if not poll_msg.is_poll():
+            return
+        opts = msg.content.split(';')
+        for o in opts:
+            await self.bot.queue.add_to_queue(
+                queue_id='pollmessage:{}'.format(poll_msg.id),
+                item=(poll_msg.channel.id, poll_msg.id, o.strip()),
+                function=self.add_poll_info)
+
+    async def add_poll_info(self, item):
+        channel = self.bot.client.get_channel(int(item[0]))
+        if channel is None:
+            return
+        poll_msg = await channel.fetch_message(int(item[1]))
+        if poll_msg is None:
+            return
+        funcs = {'remove': self.remove_response,
+                 'fix': self.fix_poll,
+                 'end': self.end_poll,
+                 'question': self.change_question}
+        option = item[2]
+        args = option.split()
+        if args[0] in funcs:
+            v = option.replace('{} '.format(args[0]), '', 1)
+            return await funcs[args[0]](poll_msg, v)
+        return await self.add_response(poll_msg, option)
+
+    async def add_response(self, poll_msg, option):
+        if (len(poll_msg.embeds[0]) >= 6000 or
+                len(poll_msg.embeds[0].fields) >= len(emojis)):
+            await poll_msg.channel.send(
+                text='Maximum number of responses reached!',
+                delete_after=5)
+        marks = poll_msg.embeds[0].get_marks()
+        if marks is not None and 'F' in marks:
+            return
+        ftr = poll_msg.embeds[0].footer.text
+        emoji = emojis[len(poll_msg.embeds[0].fields)]
+        if ftr:
+            ftr = ftr.strip().split()
+            emoji = emojis[int(ftr[0])]
+            if len(ftr) > 1:
+                poll_msg.embeds[0].set_footer(text=' '.join(ftr[1:]))
+            else:
+                poll_msg.embeds[0].set_footer(text='')
+        embed = self.response_to_embed(
+            embed=poll_msg.embeds[0],
+            response=option,
+            emoji=emoji)
+        embed.description = None
+        await poll_msg.edit(embed=embed, reactions=emoji)
+
+    async def fix_poll(self, poll_msg, option):
+        marks = poll_msg.embeds[0].get_marks()
+        if marks is not None and 'F' in marks:
+            return
+        poll_msg.embeds[0].mark(['F', 'ND'])
+        await poll_msg.edit(embed=poll_msg.embeds[0])
+        await poll_msg.channel.send(
+            text='Poll has been fixed, no responses ' +
+            'can be added or removed.',
+            delete_after=5)
+
+    async def change_question(self, poll_msg, option):
+        marks = poll_msg.embeds[0].get_marks()
+        if marks is not None and 'F' in marks:
+            return
+        poll_msg.embeds[0].title = 'Q:\u2000' + option
+        await poll_msg.edit(embed=poll_msg.embeds[0])
+
+    async def end_poll(self, poll_msg, option):
+        poll_msg.embeds[0].mark(['E', 'ND'])
+        await poll_msg.edit(embed=poll_msg.embeds[0])
+        await poll_msg.channel.send(
+            text='Poll has been ended.',
+            delete_after=5)
+
+    async def remove_response(self, poll_msg, option):
+        marks = poll_msg.embeds[0].get_marks()
+        if marks is not None and 'F' in marks:
+            return
+        try:
+            option = int(option)
+            if (option >= len(poll_msg.embeds[0].fields) or
+                    option < 0):
+                raise ValueError
+        except ValueError:
+            await poll_msg.channel.send(
+                text=('Responses can only be removed by indexes ' +
+                      'from `{}` to `{}`').format(
+                    0, len(poll_msg.embeds[0].fields) - 1),
+                delete_after=5)
+            return
+        emoji = poll_msg.embeds[0].fields[option].value.split()[0]
+        poll_msg.embeds[0].remove_field(option)
+        option = emojis.index(emoji)
+        if not poll_msg.embeds[0].footer.text:
+            poll_msg.embeds[0].set_footer(text=option)
+        else:
+            poll_msg.embeds[0].set_footer(
+                text=poll_msg.embeds[0].footer.text + ' ' + str(option))
+        m = await poll_msg.edit(embed=poll_msg.embeds[0])
+        await m.remove_reaction(emoji)
+
+    def starting_embed(self, question):
+        poll_embed = EmbedWrapper(discord.Embed(
+            title='Q:\u2000' + question,
+            color=random_color(),
+            description='* {}\n* {}\n* {}\n* {}\n* {}\n{}'.format(
+                'Reply to this message to add a response.',
+                'Reply "remove <idx>" to remove response with index <idx>.',
+                'Reply "fix" to disable adding or removing responses.',
+                'Reply "end" to finish the poll.',
+                'Multiple options can be added at once, separated with ";".\n',
+                'Example: "response1; response2; remove 0; response3;fix"')),
+            embed_type='POLL',
+            marks=('ND',))
+        return poll_embed
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
