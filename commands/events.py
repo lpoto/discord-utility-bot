@@ -94,8 +94,8 @@ class Events(Help):
             embed_var = EmbedWrapper(discord.Embed(
                 title='Scheduled events',
                 color=random_color()),
-                event_type='EVENT',
-                mark=mk.INFO)
+                embed_type='EVENT',
+                marks=mk.INFO)
             for k, v in events.items():
                 embed_var.add_field(name=k, value=v)
             await msg.channel.send(embed=embed_var, reactions=waste_basket)
