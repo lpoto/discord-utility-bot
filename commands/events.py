@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from threading import Timer
 from commands.help import Help
-from utils import random_color, waste_basket, EmbedWrapper
+from utils import random_color, waste_basket, EmbedWrapper, mk
 
 # TODO -> remove event from channel
 #      -> different dictionary that allows events with
@@ -110,7 +110,7 @@ class Events(Help):
                 msg.channel.id),
             color=random_color()),
             embed_type='EVENT',
-            marks=['ND'])
+            marks=mk.NOT_DELETABLE)
         embed_var.set_footer(
             text=('* Add options by replying "<opt> <value>" ' +
                   '\n* Multiple options can be added at one,' +

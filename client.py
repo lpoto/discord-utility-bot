@@ -30,7 +30,7 @@ class MyClient(discord.Client):
 # -------------------- events --------------------
 
     async def on_ready(self):
-        # on starting the self.bot, self.bot.print tag and activity
+        # on starting the bot, print tag and activity
         if self.user:
             logging.info(msg='Bot logged in!')
             logging.info(msg='Client: ' + str(self.user))
@@ -59,9 +59,6 @@ class MyClient(discord.Client):
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
-        if msg.content == 'kill':
-            raise SystemExit
-            return
         if (msg.author.id == self.user.id or
                 str(msg.channel.type) != 'text' or
                 msg.content.split() is None or

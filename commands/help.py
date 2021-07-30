@@ -1,5 +1,5 @@
 import discord
-from utils import emojis, waste_basket, colors, EmbedWrapper
+from utils import emojis, waste_basket, colors, EmbedWrapper, mk
 
 
 class Help:
@@ -78,11 +78,10 @@ class Help:
         prefix = await self.bot.database.get_prefix(msg)
         idx = list(self.bot.commands.keys()).index('help')
         embed_var = EmbedWrapper(discord.Embed(
-            title=None,
             description='current prefix: [{}]'.format(prefix),
             color=colors[idx]),
             embed_type='HELP',
-            marks='H')
+            marks=mk.INFO)
         footer = ("React with command's emoji for details or type " +
                   '"{}command help" in the chat.'.format(
                       prefix))
@@ -98,4 +97,10 @@ class Help:
                 value='{} {}'.format(v.description, emojis[i]),
                 inline=False)
             i += 1
+        txt = ''
+        for i in embed_var.marks:
+            txt += '{}{}-\u3000{}\n'.format(
+                    i, '\u3000' * (3 - len(i)), embed_var.mark_info(i))
+        txt += '(Marks shown in the top right corner of the embed)'
+        embed_var.add_field(name='* Marks', value=txt, inline=False)
         return embed_var

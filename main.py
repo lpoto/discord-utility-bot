@@ -18,7 +18,7 @@ logging.basicConfig(
 
 def handle_exit(client, bot, tasks):
     bot.client = None
-    t = client.loop.create_task(client.logout())
+    t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
     tasks.add(t)
     for task in tasks:

@@ -3,6 +3,7 @@ import os
 from collections import deque
 import discord
 import random
+
 # enable all intents to get member info etc.
 # application on the discord dev website needs to have
 # presence and server members intent enabled under BOT
@@ -19,6 +20,26 @@ def random_color():
 
 # wrapper for Message object to avoid erros when editing,
 # reacting,....
+class Marks():
+    ENDED = 'E'
+    FIXED = 'F'
+    NOT_DELETABLE = 'ND'
+    INFO = 'I'
+
+    def mark_info(self, mark):
+        mi = {
+            self.INFO: 'Informational',
+            self.ENDED: 'Ended, bot does not respond to the message.',
+            self.FIXED: 'Fixed, only listening for reactions.',
+            self.NOT_DELETABLE: ('Cannot delete with waste basket ' +
+                                 'or clear command.')}
+        if mark in mi:
+            return mi[mark]
+
+
+mk = Marks()
+
+
 class MessageWrapper(discord.Message):
     def __init__(self, obj):
         self._wrapped_msg = obj
@@ -43,7 +64,8 @@ class MessageWrapper(discord.Message):
         await self._wrapped_msg.edit(
             content=text, embed=embed, delete_after=delete_after)
         if reactions is not None:
-            if not isinstance(reactions, list):
+            if not isinstance(reactions, list) and not isinstance(
+                    reactions, tuple):
                 reactions = [reactions]
             for i in reactions:
                 await self.react(emoji=i)
@@ -87,6 +109,12 @@ class MessageWrapper(discord.Message):
 
     # check the type of message based on its embed
     def type_check(self, name, bad_marks=[], good_marks=[]):
+        if not isinstance(bad_marks, list) and not isinstance(
+                bad_marks, tuple):
+            bad_marks = [bad_marks]
+        if not isinstance(good_marks, list) and not isinstance(
+                good_marks, tuple):
+            good_marks = [good_marks]
         if len(self.embeds) != 1:
             return False
         if not isinstance(self.embeds[0], EmbedWrapper):
@@ -101,38 +129,38 @@ class MessageWrapper(discord.Message):
         return False
 
     def is_poll(self):
-        return self.type_check('POLL', ['E'])
+        return self.type_check('POLL', mk.ENDED)
 
     def is_roles(self):
         return self.type_check('ROLES')
 
     def is_connect_four(self):
-        return self.type_check('CONNECT_FOUR', ['E'])
+        return self.type_check('CONNECT_FOUR', mk.ENDED)
 
     def is_event(self):
-        return self.type_check('EVENT', ['E'])
+        return self.type_check('EVENT', mk.ENDED)
 
     def is_help(self):
-        return self.type_check('HELP', ['E'], ['H'])
+        return self.type_check('HELP', mk.ENDED, mk.INFO)
 
     def is_server(self):
-        return self.type_check('SERVER', ['E'], ['H'])
+        return self.type_check('SERVER', mk.ENDED, mk.INFO)
 
     def is_config(self):
-        return self.type_check('CONFIG', ['E'], ['H'])
+        return self.type_check('CONFIG', mk.ENDED, mk.INFO)
 
     def is_fixed(self):
-        return self.type_check(None, ['E'], ['F'])
+        return self.type_check(None, mk.ENDED, mk.INFO)
 
     def is_rps(self):
-        return self.type_check('ROCK_PAPER_SCISSORS', ['E'])
+        return self.type_check('ROCK_PAPER_SCISSORS', mk.ENDED)
 
     def is_deletable(self):
         if self.pinned:
             return False
         if len(self.embeds) != 1:
             return True
-        return self.type_check(None, ['ND'])
+        return self.type_check(None, mk.NOT_DELETABLE)
 
 
 # wrapper for Channel object, to avoid errors when sending messages
@@ -162,7 +190,8 @@ class ChannelWrapper(object):
                 embed=embed,
                 delete_after=delete_after))
         if reactions is not None:
-            if not isinstance(reactions, list):
+            if not isinstance(reactions, list) and not isinstance(
+                    reactions, tuple):
                 reactions = [reactions]
             for i in reactions:
                 await msg.react(i)
@@ -174,7 +203,7 @@ class ChannelWrapper(object):
                 msg_id))
 
     def permissions(self, member, perms):
-        if not isinstance(perms, list):
+        if not isinstance(perms, list) and not isinstance(perms, tuple):
             perms = [perms]
         for i in perms:
             if not dict(iter(member.permissions_in(self)))[i]:
@@ -182,16 +211,17 @@ class ChannelWrapper(object):
         return (True, None)
 
 
-# wrapper for discord guild member object, wraps dm channel
-# when created
-class MemberWrapper(discord.Member):
+# wrapper for discord user/guild member object, wraps dm channel
+# when created and fetched messages
+class MemberWrapper(object):
     def __init__(self, member):
         self._wrapped_member = member
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
             return getattr(self, attr)
-        return getattr(self._wrapped_member, attr)
+        if hasattr(self._wrapped_member, attr):
+            return getattr(self._wrapped_member, attr)
 
     async def create_dm(self):
         return ChannelWrapper(
@@ -242,13 +272,20 @@ class EmbedWrapper(discord.Embed):
     def __init__(self, embed, embed_type=None, marks=()):
         self._wrapped_embed = embed
         self.embed_type = self.get_type() if embed_type is None else embed_type
-        self.marks = ['F', 'ND', 'E', 'H']
+        self.marks = [mk.FIXED, mk.ENDED, mk.INFO, mk.NOT_DELETABLE]
+        self.FIXED = mk.FIXED
+        self.ENDED = mk.ENDED
+        self.INFO = mk.INFO
+        self.NOT_DELETABLE = mk.NOT_DELETABLE
         self.mark(marks=marks)
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
             return getattr(self, attr)
         return getattr(self._wrapped_embed, attr)
+
+    def mark_info(self, m):
+        return mk.mark_info(m)
 
     def get_type(self):
         if not self.author:
@@ -262,8 +299,10 @@ class EmbedWrapper(discord.Embed):
         self._wrapped_embed.set_thumbnail(url=url)
 
     def mark(self,
-             marks=(),
+             marks=[],
              size=36):
+        if not isinstance(marks, list) and not isinstance(marks, tuple):
+            marks = [marks]
         if self.embed_type is None:
             return
         if any(i not in self.marks for i in marks):

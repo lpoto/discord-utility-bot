@@ -1,5 +1,5 @@
 import discord
-from utils import rps_emojis, random_color, waste_basket, EmbedWrapper
+from utils import rps_emojis, random_color, waste_basket, EmbedWrapper, mk
 from commands.help import Help
 
 
@@ -18,11 +18,10 @@ class Rps(Help):
         # wait for him to react with one of the options
         dm = await msg.author.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
-            title=None,
             description='React with your weapon of choice!',
             color=random_color()),
             embed_type='ROCK_PAPER_SCISSORS',
-            marks=['ND'])
+            marks=mk.ENDED)
         dm_embed.set_footer(text=msg.channel.id)
         await dm.send(
             embed=dm_embed,
@@ -45,7 +44,7 @@ class Rps(Help):
         # edit chosen emoji to embed's title
         embed = reaction_msg.embeds[0]
         embed.title = payload.emoji.name
-        embed.mark(['E'])
+        embed.mark(embed.ENDED)
         await reaction_msg.edit(
             text=reaction_msg.content,
             embed=embed)
@@ -67,7 +66,7 @@ class Rps(Help):
                 user.name if not user.nick else user.nick),
             color=random_color()),
             embed_type="ROCK_PAPER_SCISSORS",
-            marks=['ND'])
+            marks=mk.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
         new_embed.description = 'React with {}, {} or {} to join!'.format(
             rps_emojis[0], rps_emojis[1], rps_emojis[2])
@@ -115,6 +114,9 @@ class Rps(Help):
         if emoji1 == emoji2:
             new_embed.title = '{} draws against {}!'.format(
                 user_names[0], user_names[1])
+            new_embed.description = ''
+            new_embed.set_footer(text='')
+            new_embed.mark(new_embed.ENDED)
             await msg.edit(embed=new_embed)
             return
         # get winner
@@ -141,7 +143,7 @@ class Rps(Help):
             txt = await self.wins_to_database(
                 msg, user2.id, user_names[1], msg.guild.id)
             new_embed.set_footer(text=txt)
-        new_embed.mark(['E'])
+        new_embed.mark(new_embed.ENDED)
         await msg.edit(embed=new_embed)
 
     async def wins_to_database(self, msg, user_id, user_name, guild_id):

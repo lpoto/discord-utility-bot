@@ -1,6 +1,6 @@
 from commands.help import Help
 import discord
-from utils import emojis, EmbedWrapper, random_color
+from utils import emojis, EmbedWrapper, random_color, mk
 
 
 class Roles(Help):
@@ -26,14 +26,15 @@ class Roles(Help):
     async def starting_embed(self, title, msg):
         embed_var = EmbedWrapper(
             discord.Embed(
-                title=title,
                 color=random_color(),
                 description='* {}\n* {}\n{}'.format(
                     'Reply with a role to add it to the message.',
                     'You can add multiple at once, separated with ";".',
                     'Example: "role1;role2;role3"')),
             embed_type='ROLES',
-            marks=['ND'])
+            marks=mk.NOT_DELETABLE)
+        if title is not None:
+            embed_var.title = title
         return embed_var
 
     async def on_reply(self, msg, roles_message):

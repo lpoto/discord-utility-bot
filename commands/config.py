@@ -56,7 +56,7 @@ class Config(Help):
             description="Server configurations",
             color=colors[list(self.bot.commands.keys()).index('config')]),
             embed_type='CONFIG',
-            marks=['H'])
+            marks=['I'])
         if (msg.guild.icon_url):
             embed_var.set_thumbnail(url=msg.guild.icon_url)
         prefix = await self.bot.database.get_prefix(msg)

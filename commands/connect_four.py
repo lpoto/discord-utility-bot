@@ -19,13 +19,12 @@ class ConnectFour(Help):
             return
         name = msg.author.name if not msg.author.nick else msg.author.nick
         embed_var = utils.EmbedWrapper(discord.Embed(
-            title=None,
             description=('{} has challanged for a game of 4 in a line.\n' +
                          'React with {} to join!').format(
                              name, utils.thumbs_up),
             color=utils.random_color()),
             embed_type='CONNECT_FOUR',
-            marks=['ND'])
+            marks=utils.mk.NOT_DELETABLE)
         embed_var.set_footer(text=msg.author.id)
         await msg.channel.send(embed=embed_var, reactions=utils.thumbs_up)
 
@@ -125,7 +124,7 @@ class ConnectFour(Help):
                 info['user0']['id'], info['user1']['id'], info['moves'])
         embed_var = self.build_embed(info, msg.embeds[0].color)
         if game[1] is not None:
-            embed_var.mark(['E'])
+            embed_var.mark(embed_var.ENDED)
         await msg.edit(embed=embed_var)
         # if has permissions, remove players' utils.emojis for convenience
         await msg.remove_reaction(
@@ -236,8 +235,8 @@ class ConnectFour(Help):
 
     def title_text(self, info, idx):
         return '{} vs {}'.format(
-                info['user0']['name'],
-                info['user1']['name'])
+            info['user0']['name'],
+            info['user1']['name'])
 
     def next_on_turn_text(self, info, idx):
         # header displayed in description during the
@@ -251,9 +250,9 @@ class ConnectFour(Help):
         # header and grid in the description, id's and move records in
         # the footer
         embed_var = utils.EmbedWrapper(
-                discord.Embed(title=info['title'], color=color),
-                embed_type='CONNECT_FOUR',
-                marks=['ND'])
+            discord.Embed(title=info['title'], color=color),
+            embed_type='CONNECT_FOUR',
+            marks=utils.mk.NOT_DELETABLE)
         if info['footer'] is not None:
             embed_var.set_footer(text=info['footer'])
             embed_var.description = '{}\n\n{}'.format(

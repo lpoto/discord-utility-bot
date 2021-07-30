@@ -1,5 +1,5 @@
 import discord
-from utils import ChannelWrapper, waste_basket, colors, Queue, EmbedWrapper
+from utils import ChannelWrapper, waste_basket, colors, Queue, EmbedWrapper, mk
 from database import DB
 import commands as cmds
 
@@ -58,7 +58,7 @@ class Bot:
         # about the command
         if len(args) > 1 and args[1] == 'help':
             await msg.channel.send(
-                embed=self.create_additional_help(
+                embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
                 reactions=waste_basket)
         else:
@@ -164,7 +164,7 @@ class Bot:
             description=info[1],
             color=colors[idx]),
             embed_type='HELP',
-            marks=['H'])
+            marks=mk.INFO)
         embed_var.add_field(
             name='Additional info',
             value=info[2],
@@ -188,4 +188,5 @@ class Bot:
                 name='Allowed channel types',
                 value='[{}]'.format(', '.join(info[5])),
                 inline=False)
+
         return embed_var
