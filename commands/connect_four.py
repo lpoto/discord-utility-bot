@@ -277,9 +277,11 @@ class ConnectFour(Help):
                 text='No availible leaderboard.',
                 delete_after=5)
             return
-        embed_var = discord.Embed(
-            title='4 in a line Leaderboard',
-            color=utils.random_color())
+        embed_var = utils.EmbedWrapper(discord.Embed(
+            title='Leaderboard',
+            color=utils.random_color()),
+            embed_type='CONNECT_FOUR',
+            marks=utils.mk.INFO)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))

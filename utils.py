@@ -21,10 +21,11 @@ def random_color():
 # wrapper for Message object to avoid erros when editing,
 # reacting,....
 class Marks():
-    ENDED = 'E'
-    FIXED = 'F'
-    NOT_DELETABLE = 'ND'
-    INFO = 'I'
+    def __init__(self):
+        self.ENDED = 'E'
+        self.FIXED = 'F'
+        self.NOT_DELETABLE = 'ND'
+        self.INFO = 'I'
 
     def mark_info(self, mark):
         mi = {
@@ -60,7 +61,8 @@ class MessageWrapper(discord.Message):
             text=None,
             embed=None,
             delete_after=None,
-            reactions=None):
+            reactions=None,
+            ):
         await self._wrapped_msg.edit(
             content=text, embed=embed, delete_after=delete_after)
         if reactions is not None:
@@ -135,10 +137,11 @@ class MessageWrapper(discord.Message):
         return self.type_check('ROLES')
 
     def is_connect_four(self):
-        return self.type_check('CONNECT_FOUR', mk.ENDED)
+        return self.type_check('CONNECT_FOUR', [mk.ENDED, mk.INFO])
 
     def is_event(self):
-        return self.type_check('EVENT', mk.ENDED)
+        return self.type_check(
+                'EVENT', [mk.ENDED, mk.INFO], mk.NOT_DELETABLE)
 
     def is_help(self):
         return self.type_check('HELP', mk.ENDED, mk.INFO)
@@ -153,7 +156,7 @@ class MessageWrapper(discord.Message):
         return self.type_check(None, mk.ENDED, mk.INFO)
 
     def is_rps(self):
-        return self.type_check('ROCK_PAPER_SCISSORS', mk.ENDED)
+        return self.type_check('ROCK_PAPER_SCISSORS', [mk.ENDED, mk.INFO])
 
     def is_deletable(self):
         if self.pinned:
@@ -179,7 +182,8 @@ class ChannelWrapper(object):
             text=None,
             embed=None,
             delete_after=None,
-            reactions=None):
+            reactions=None,
+            file=None):
         if (str(self.type) == 'text' and
             not self.permissions(
                 self.guild.me, 'send_messages')[0]):
@@ -188,7 +192,8 @@ class ChannelWrapper(object):
             await self._wrapped_chnl.send(
                 content=text,
                 embed=embed,
-                delete_after=delete_after))
+                delete_after=delete_after,
+                file=file))
         if reactions is not None:
             if not isinstance(reactions, list) and not isinstance(
                     reactions, tuple):

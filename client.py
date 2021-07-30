@@ -10,6 +10,7 @@ class MyClient(discord.Client):
     def __init__(self, *, loop=None, **options):
         super().__init__(loop=loop, **options)
         self.bot = None
+        self.handle_exit = None
 
 # wrap fetched channel objects
     def get_channel(self, channel_id):
@@ -25,9 +26,9 @@ class MyClient(discord.Client):
         await super()._run_event(
             coro, event_name, *args, **kwargs)
 
-# when client collects events from discord:
-# a method that matches the event will be triggered
-# -------------------- events --------------------
+        # when client collects events from discord:
+        # a method that matches the event will be triggered
+        # -------------------- events --------------------
 
     async def on_ready(self):
         # on starting the bot, print tag and activity
@@ -59,6 +60,9 @@ class MyClient(discord.Client):
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
+        if msg.content == 'kill':
+            raise SystemExit
+            return
         if (msg.author.id == self.user.id or
                 str(msg.channel.type) != 'text' or
                 msg.content.split() is None or

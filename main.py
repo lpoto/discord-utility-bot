@@ -52,6 +52,7 @@ def run_bot(DISCORD_TOKEN):
         try:
             bot.client = client
             client.bot = bot
+            client.handle_exit = handle_exit
             client.loop.create_task(client.wait_until_ready())
             client.loop.run_until_complete(
                 asyncio.gather(client.start(DISCORD_TOKEN)))

@@ -32,15 +32,12 @@ class UserInfo(Help):
     async def create_embed(self, msg, user):
         # build the embed with user info
         embed_var = EmbedWrapper(discord.Embed(
-            title=user.name,
+            title=user.name if not user.nick else user.nick,
             color=random_color()),
             embed_type="USER",
             marks=mk.INFO)
         # if user has nickname set up add nickname
         # else only username
-        if user.nick:
-            embed_var.title = user.nick
-            embed_var.description = str(user)
         # add if user is bot
         if user.bot:
             embed_var.title += ' [bot]'
@@ -77,7 +74,7 @@ class UserInfo(Help):
             ("SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'" +
              " AND user_id = '{}'").format(msg.guild.id, user.id))
         fetched = cursor.fetchone()
-        count = 0 if fetched is None else fetched[1]
+        count = 0 if fetched is None else fetched[2]
         cursor.close()
         return ('Rock-Paper-Scissors wins', count)
 

@@ -91,9 +91,11 @@ class Events(Help):
             events = await self.show_server_events(msg)
             if events is None:
                 return
-            embed_var = discord.Embed(
+            embed_var = EmbedWrapper(discord.Embed(
                 title='Scheduled events',
-                color=random_color())
+                color=random_color()),
+                event_type='EVENT',
+                mark=mk.INFO)
             for k, v in events.items():
                 embed_var.add_field(name=k, value=v)
             await msg.channel.send(embed=embed_var, reactions=waste_basket)
@@ -126,11 +128,9 @@ class Events(Help):
         await msg.channel.send(embed=embed_var)
 
     async def on_reply(self, msg, referenced_msg):
-        return
         # on reply add options to created event
         # multiple may be added, separated with ;
-        if (len(referenced_msg.embeds) != 1 or
-                not referenced_msg.embeds[0].title.startswith('Event:')):
+        if not referenced_msg.is_event():
             return
         args = msg.content.split(';')
         opts = {'text': self.add_text,
@@ -141,6 +141,8 @@ class Events(Help):
                 'name': self.change_name,
                 'commit': self.commit_event}
         for i in args:
+            if len(i) < 1:
+                continue
             opt = (i.split()[0]).strip()
             if opt not in opts:
                 await msg.channel.send(
@@ -265,14 +267,17 @@ class Events(Help):
                  info[1].replace('time: ', '', 1)),
                 info[2].replace('channel: ', '', 1),
                 embed_var.title.replace('Event: ', '', 1),
-                info[3].replace('text: ', '', 1),
-                info[4].replace('tags: ', '', 1)
+                info[3].replace('text: ', '', 1).replace('text:', '', 1),
+                info[4].replace('tags: ', '', 1).replace('tags:', '', 1)
                 ]
         await self.schedule_event(info)
         self.event_to_database(info)
         embed_var.title = embed_var.title.replace(
             'Event:', 'Event(commited):', 1)
         embed_var.set_footer(text='')
+        embed_var = EmbedWrapper(embed_var,
+                                 embed_type="EVENT",
+                                 marks=mk.ENDED)
         await msg.edit(embed=embed_var, reactions=waste_basket)
 
     async def send_event(self, channel_id, event, text, tags):
@@ -281,11 +286,14 @@ class Events(Help):
         channel = self.bot.client.get_channel(int(channel_id))
         if channel is None:
             return
-        embed_var = discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title=event,
             color=random_color(),
-            description=text)
-        await channel.send(text=tags, embed=embed_var)
+            description=text),
+            embed_type="EVENT",
+            marks=mk.INFO)
+        await channel.send(
+                text=None if len(tags) < 1 else tags, embed=embed_var)
 
     async def schedule_event(self, event, start=True):
         # add a new event to the schedule
@@ -307,10 +315,7 @@ class Events(Help):
             cursor.close()
             return
         for e in fetched:
-            if e == fetched[-1]:
-                await self.schedule_event(e, True)
-            else:
-                await self.schedule_event(e, False)
+            await self.schedule_event(e, False)
         cursor.close()
 
     def event_to_database(self, info):

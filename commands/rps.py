@@ -21,7 +21,7 @@ class Rps(Help):
             description='React with your weapon of choice!',
             color=random_color()),
             embed_type='ROCK_PAPER_SCISSORS',
-            marks=mk.ENDED)
+            marks=mk.NOT_DELETABLE)
         dm_embed.set_footer(text=msg.channel.id)
         await dm.send(
             embed=dm_embed,
@@ -84,7 +84,7 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis or
                 payload.event_type != 'REACTION_ADD' or
                 payload.member.bot or
-                str(payload.user_id) == msg.embeds[0].footer.text[18:] or
+                # str(payload.user_id) == msg.embeds[0].footer.text[18:] or
                 not msg.is_rps()):
             return
         # rps embed has user id and dm msg id in footer
@@ -101,10 +101,23 @@ class Rps(Help):
         # compare the chosen options and get the winner of the game
         await self.game_results(user1, user2, emoji1, payload.emoji.name, msg)
 
+    async def add_winner(self, embed, msg,  info):
+        embed.title = (
+            '{} wins against {}!').format(
+            info['winner_name'], info['loser_name'])
+        embed.description = '{} against {}'.format(
+            info['winner_emoji'], info['loser_emoji'])
+        wins = await self.wins_to_database(
+            msg, info['winner_id'])
+        embed.set_footer(text='{} total wins: {}'.format(
+            info['winner_name'], wins))
+        if info['winner_avatar_url']:
+            embed.set_thumbnail(url=info['winner_avatar_url'])
+        return embed
+
     async def game_results(self, user1, user2, emoji1, emoji2, msg):
         # find the winner of the game
         # edit the existing game message accordingly
-        new_embed = msg.embeds[0]
         user_names = [user1.name, user2.name]
         if user1.nick:
             user_names[0] = user1.nick
@@ -112,13 +125,14 @@ class Rps(Help):
             user_names[1] = user2.nick
         # if same reactions -> draw
         if emoji1 == emoji2:
-            new_embed.title = '{} draws against {}!'.format(
-                user_names[0], user_names[1])
-            new_embed.description = ''
-            new_embed.set_footer(text='')
-            new_embed.mark(new_embed.ENDED)
+            new_embed = EmbedWrapper(discord.Embed(
+                title='{} draws against {}!'.format(
+                    user_names[0], user_names[1])),
+                embed_type='CONNECT_FOUR',
+                marks=mk.ENDED)
             await msg.edit(embed=new_embed)
             return
+        info = {}
         # get winner
         if ((emoji1 == rps_emojis[0] and
              emoji2 == rps_emojis[2]) or
@@ -126,51 +140,47 @@ class Rps(Help):
                 emoji2 == rps_emojis[0]) or
                 (emoji1 == rps_emojis[2] and
                     emoji2 == rps_emojis[1])):
-            new_embed.title = (
-                '{} wins against {}!').format(user_names[0], user_names[1])
-            new_embed.description = '{} against {}'.format(emoji1, emoji2)
-            if user1.avatar_url:
-                new_embed.set_thumbnail(url=user1.avatar_url)
-            txt = await self.wins_to_database(
-                msg, user1.id, user_names[0], msg.guild.id)
-            new_embed.set_footer(text=txt)
+            info['winner_name'] = user_names[0]
+            info['winner_id'] = user1.id
+            info['winner_emoji'] = emoji1
+            info['winner_avatar_url'] = user1.avatar_url
+            info['loser_name'] = user_names[1]
+            info['loser_emoji'] = emoji2
         else:
-            new_embed.title = (
-                '{} wins against {}!').format(user_names[1], user_names[0])
-            new_embed.description = '{} against {}'.format(emoji2, emoji1)
-            if user2.avatar_url:
-                new_embed.set_thumbnail(url=user2.avatar_url)
-            txt = await self.wins_to_database(
-                msg, user2.id, user_names[1], msg.guild.id)
-            new_embed.set_footer(text=txt)
+            info['winner_name'] = user_names[1]
+            info['winner_id'] = user2.id
+            info['winner_emoji'] = emoji2
+            info['winner_avatar_url'] = user2.avatar_url
+            info['loser_name'] = user_names[0]
+            info['loser_emoji'] = emoji1
+        new_embed = await self.add_winner(msg.embeds[0], msg, info)
         new_embed.mark(new_embed.ENDED)
         await msg.edit(embed=new_embed)
 
-    async def wins_to_database(self, msg, user_id, user_name, guild_id):
+    async def wins_to_database(self, msg, user_id):
         # add a win for the user to the database and return total win count
         if self.bot.database.connected is False:
             return ''
         cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute((
             "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}' AND" +
-            " user_id = '{}'").format(guild_id, user_id))
+            " user_id = '{}'").format(msg.guild.id, user_id))
         fetched = cursor.fetchone()
         count = 1
         if fetched is None:
             cursor.execute(
                 ("INSERT INTO rock_paper_scissors (guild_id, user_id, " +
                  "wins) VALUES ('{}', '{}', 1)").format(
-                    guild_id, user_id))
+                    msg.guild.id, user_id))
         else:
             count = fetched[2] + 1
             cursor.execute(
                 ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
                  "guild_id = '{}' and user_id = '{}'").format(
-                     count, guild_id, user_id))
+                     count, msg.guild.id, user_id))
         self.bot.database.cnx.commit()
         cursor.close()
-        return '{} total wins: {}'.format(
-            user_name, count)
+        return count
 
     async def show_leaderboard(self, msg):
         # show guild members that played rps in order
@@ -190,9 +200,11 @@ class Rps(Help):
                 text='No availible leaderboard.',
                 delete_after=5)
             return
-        embed_var = discord.Embed(
-            title='Rock-Paper-Scissors Leaderboard',
-            color=random_color())
+        embed_var = EmbedWrapper(discord.Embed(
+            title='Leaderboard',
+            color=random_color()),
+            embed_type='ROCK_PAPER_SCISSORS',
+            marks=mk.INFO)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))
