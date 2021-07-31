@@ -17,6 +17,10 @@ logging.basicConfig(
 
 
 def handle_exit(client, bot, tasks):
+    if ('event' in bot.commands and
+        bot.commands['event'].timer is not None and
+            bot.commands['event'].timer.is_alive()):
+        bot.commands['event'].timer.cancel()
     bot.client = None
     t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
@@ -63,7 +67,7 @@ def run_bot(DISCORD_TOKEN):
             handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
             client.loop.close()
             logging.info(msg='Program ended ')
-            break
+            return
         logging.info(msg='Reconnecting...\n')
         client = MyClient(
             loop=client.loop,

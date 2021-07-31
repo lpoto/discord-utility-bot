@@ -60,14 +60,15 @@ class Events(Help):
 
     async def compare_times(self, now, time2):
         dif = abs(time2 - now)
+        dif = dif.seconds + (dif.days * (24 * 60 * 60))
         if now > time2:
             time2 = time2.strftime('%d-%m,%H:%M')
-            if dif.days == 0 and dif.seconds <= 30 * 60:
+            if dif <= 30 * 60:
                 self.bot.client.dispatch('event_time', time2)
             else:
                 self.bot.client.dispatch('event_time', time2, False)
             return
-        return dif.seconds
+        return dif
 
     async def remove_event(self, time):
         if time not in self.events:
