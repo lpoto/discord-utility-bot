@@ -38,7 +38,7 @@ class Roles(Help):
         return embed_var
 
     async def on_reply(self, msg, roles_message):
-        if not roles_message.is_roles():
+        if not roles_message.is_roles:
             return
         for i in msg.content.split(';'):
             await self.bot.queue.add_to_queue(
@@ -77,7 +77,7 @@ class Roles(Help):
         await msg.edit(embed=msg.embeds[0], reactions=emoji)
 
     async def on_raw_reaction(self, msg, payload):
-        if not msg.is_roles():
+        if not msg.is_roles:
             return
         # listen for raw events and add or remove the role that matches
         # content of the roles message

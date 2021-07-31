@@ -16,7 +16,7 @@ class Poll(Help):
             return
         question = msg.content.replace('{} '.format(args[0]), '', 1)
         m = await msg.channel.send(embed=self.starting_embed(question))
-        m.is_poll()
+        m.is_poll
 
     def response_format(self, emoji, count):
         return '{}\u2000({}):\u2000\u2000{}'.format(
@@ -40,7 +40,7 @@ class Poll(Help):
         return embed
 
     async def on_raw_reaction(self, poll_msg, payload):
-        if not poll_msg.is_poll():
+        if not poll_msg.is_poll:
             return
         emoji = payload.emoji.name
         for i in range(len(poll_msg.embeds[0].fields)):
@@ -75,7 +75,7 @@ class Poll(Help):
         await poll_msg.edit(embed=embed)
 
     async def on_reply(self, msg, poll_msg):
-        if not poll_msg.is_poll():
+        if not poll_msg.is_poll:
             return
         opts = msg.content.split(';')
         for o in opts:

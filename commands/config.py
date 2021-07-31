@@ -83,7 +83,7 @@ class Config(Help):
         if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
                 payload.emoji.name != emojis[list(
                     self.bot.commands.keys()).index('config')] or
-                not msg.is_server()):
+                not msg.is_server):
             return
         await msg.remove_reaction(waste_basket, msg.guild.me)
         await msg.edit(

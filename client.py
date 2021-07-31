@@ -102,7 +102,7 @@ class MyClient(discord.Client):
         # iterate through those commands in linked list that
         # have on_reply function
         for i in self.bot.on_reply_commands:
-            if await self.bot.check_if_valid(i, msg):
+            if await self.bot.check_if_valid(i, msg) is True:
                 await i.on_reply(msg, referenced_msg)
 
     async def on_raw_reaction_add(self, payload):

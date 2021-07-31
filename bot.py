@@ -64,7 +64,7 @@ class Bot:
         else:
             # else execute the command
             # check if valid channel, permissions,...
-            if await self.check_if_valid(cmd, msg):
+            if await self.check_if_valid(cmd, msg) is True:
                 await cmd.execute_command(msg)
 
     async def handle_raw_reactions(self, payload, reaction_type, dm):
@@ -147,12 +147,12 @@ class Bot:
 
         # check if user has all the required permissions
         p = msg.channel.permissions(
-            msg.author, command.user_permissons)
+            msg.author, command.user_permissions)
         if not p[0]:
             await msg.channel.send(
                 text=(
                     'You need `{}` permission to use this command.'
-                ).format(p),
+                ).format(p[1]),
                 delete_after=5)
             return False
         return True

@@ -131,7 +131,7 @@ class Events(Help):
     async def on_reply(self, msg, referenced_msg):
         # on reply add options to created event
         # multiple may be added, separated with ;
-        if not referenced_msg.is_event():
+        if not referenced_msg.is_event:
             return
         args = msg.content.split(';')
         opts = {'text': self.add_text,

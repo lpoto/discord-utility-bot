@@ -56,7 +56,7 @@ class Help:
         if (self.name != 'help' or
                 payload.emoji.name not in emojis or
                 payload.event_type != 'REACTION_ADD' or
-                not msg.is_help()):
+                not msg.is_help):
             return
         idx = emojis.index(payload.emoji.name)
         help_idx = list(self.bot.commands.keys()).index('help')

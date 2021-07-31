@@ -62,7 +62,7 @@ class MessageWrapper(discord.Message):
             embed=None,
             delete_after=None,
             reactions=None,
-            ):
+    ):
         await self._wrapped_msg.edit(
             content=text, embed=embed, delete_after=delete_after)
         if reactions is not None:
@@ -130,34 +130,44 @@ class MessageWrapper(discord.Message):
             return True
         return False
 
+    @property
     def is_poll(self):
         return self.type_check('POLL', mk.ENDED)
 
+    @property
     def is_roles(self):
         return self.type_check('ROLES')
 
+    @property
     def is_connect_four(self):
         return self.type_check('CONNECT_FOUR', [mk.ENDED, mk.INFO])
 
+    @property
     def is_event(self):
         return self.type_check(
-                'EVENT', [mk.ENDED, mk.INFO], mk.NOT_DELETABLE)
+            'EVENT', [mk.ENDED, mk.INFO], mk.NOT_DELETABLE)
 
+    @property
     def is_help(self):
         return self.type_check('HELP', mk.ENDED, mk.INFO)
 
+    @property
     def is_server(self):
         return self.type_check('SERVER', mk.ENDED, mk.INFO)
 
+    @property
     def is_config(self):
         return self.type_check('CONFIG', mk.ENDED, mk.INFO)
 
+    @property
     def is_fixed(self):
-        return self.type_check(None, mk.ENDED, mk.INFO)
+        return self.type_check(None, mk.ENDED, mk.FIXED)
 
+    @property
     def is_rps(self):
         return self.type_check('ROCK_PAPER_SCISSORS', [mk.ENDED, mk.INFO])
 
+    @property
     def is_deletable(self):
         if self.pinned:
             return False

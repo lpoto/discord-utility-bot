@@ -39,7 +39,7 @@ class Rps(Help):
         if user is None:
             return
         reaction_msg = await user.fetch_message(payload.message_id)
-        if reaction_msg is None or not reaction_msg.is_rps():
+        if reaction_msg is None or not reaction_msg.is_rps:
             return
         # edit chosen emoji to embed's title
         embed = reaction_msg.embeds[0]
@@ -85,7 +85,7 @@ class Rps(Help):
                 payload.event_type != 'REACTION_ADD' or
                 payload.member.bot or
                 # str(payload.user_id) == msg.embeds[0].footer.text[18:] or
-                not msg.is_rps()):
+                not msg.is_rps):
             return
         # rps embed has user id and dm msg id in footer
         # fetch the first msg from the dm and get first users choice from it

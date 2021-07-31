@@ -1,5 +1,6 @@
 import discord
 import utils
+import random
 from commands.help import Help
 
 
@@ -7,7 +8,7 @@ class ConnectFour(Help):
     def __init__(self):
         super().__init__(name='cf')
         self.description = 'A game of 4 in a line between two users.'
-        self.tokens = [utils.emojis[1], utils.emojis[2]]
+        self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = '⚫'
 
     async def execute_command(self, msg):
@@ -19,46 +20,80 @@ class ConnectFour(Help):
             return
         name = msg.author.name if not msg.author.nick else msg.author.nick
         embed_var = utils.EmbedWrapper(discord.Embed(
-            description=('{} has challanged for a game of 4 in a line.\n' +
-                         'React with {} to join!').format(
+            description=('{} has challanged for a game of connect four.\n' +
+                         'React with a token to join!\n').format(
                              name, utils.thumbs_up),
             color=utils.random_color()),
             embed_type='CONNECT_FOUR',
             marks=utils.mk.NOT_DELETABLE)
         embed_var.set_footer(text=msg.author.id)
-        await msg.channel.send(embed=embed_var, reactions=utils.thumbs_up)
+        await msg.channel.send(embed=embed_var, reactions=self.tokens)
 
     async def on_raw_reaction(self, msg, payload):
         # on added emoji if thumbs up join second user else if both users are
         # known start the game and await emoji number from 1 to 7, each
         # indicating a column in which the user drops a token
         if (payload.event_type != 'REACTION_ADD' or
-                not msg.is_connect_four()):
+                not msg.is_connect_four):
             return
-        if len(msg.embeds[0].footer.text) == 18:
+        if not msg.is_fixed:
             # don't allow a user playing with himself
-            if msg.embeds[0].footer.text == str(payload.user_id):
-                return
+            # if msg.embeds[0].footer.text == str(payload.user_id):
+            #    return
             starting_name = msg.embeds[0].description.split(
-                ' has challanged for a game of 4 in a line.')[0]
-            if payload.emoji.name == utils.thumbs_up:
-                await self.start_game(msg, payload.user_id, starting_name)
+                ' has challanged for a game of connect four.')[0]
+            if payload.emoji.name in self.tokens:
+                await self.start_game(msg, payload.user_id,
+                                      starting_name,
+                                      payload.emoji.name)
             return
         if payload.emoji.name in utils.number_emojis:
             await self.play_game(
                 msg, str(payload.user_id), payload.emoji.name)
 
-    async def start_game(self, msg, user_id, name):
+    async def start_game(self, msg, user_id, name, token):
+        tks = msg.embeds[0].description.split('\n')[2:]
+        if len(tks) == 0:
+            tks = ['', '']
+        elif len(tks) == 1:
+            tks.append('')
+        if str(user_id) == msg.embeds[0].footer.text[:18]:
+            if token == tks[1]:
+                return
+            tks[0] = token
+        else:
+            if (len(msg.embeds[0].footer.text) > 18 and
+                    str(user_id) != msg.embeds[0].footer.text[18:] or
+                    token == tks[0]):
+                return
+            tks[1] = token
+            msg.embeds[0].set_footer(
+                text=msg.embeds[0].footer.text + str(user_id))
+        if any(i == '' for i in tks):
+            msg.embeds[0].description = '\n'.join(
+                    msg.embeds[0].description.split('\n')[:2] + tks)
+            await msg.edit(embed=msg.embeds[0])
+            return
         # create an empty grid and wait for players to start playing
         user = msg.guild.get_member(int(user_id))
         if user is None:
             return
-        user1 = (msg.embeds[0].footer.text, name)
-        user2 = (str(user_id), user.name if not user.nick else user.nick)
+        start = random.randint(0, 1)
+        if start == 0:
+            user1 = (msg.embeds[0].footer.text[:18], name)
+            user2 = (str(user_id), user.name if not user.nick else user.nick)
+            token1 = tks[0]
+            token2 = tks[1]
+        else:
+            user1 = (str(user_id), user.name if not user.nick else user.nick)
+            user2 = (msg.embeds[0].footer.text[:18], name)
+            token1 = tks[1]
+            token2 = tks[0]
         grid = self.empty_grid
-        embed_var = self.build_embed(user1, user2, [], grid, 1)
-        await msg.remove_reaction(
-            emoji=utils.thumbs_up)
+        embed_var = self.build_embed(user1, user2, token1, token2, [], grid, 1)
+        for i in self.tokens:
+            await msg.remove_reaction(
+                emoji=i)
         await msg.edit(
             embed=embed_var,
             reactions=[utils.number_emojis[i] for i in range(7)])
@@ -73,17 +108,22 @@ class ConnectFour(Help):
         if moves.count(move) >= 6:
             return
         ftr2 = embed.footer.text.split('\n')[1][9:]
+        if len(ftr2) < 32:
+            return
         user1 = msg.guild.get_member(int(ftr2[:18]))
         user2 = msg.guild.get_member(int(ftr2[18:]))
-        token = embed.description.split('\n')[0].split(' (')[-1][:-1]
+        token = embed.description.split('\n')[0].split(': ')[-1]
+        tks = embed.title.replace('!', '').split(' vs ')
+        token1 = tks[0][-1]
+        token2 = tks[1][-1]
         if (user1 is None or user2 is None or
-                token == self.tokens[0] and str(user1.id) != user_id or
-                token == self.tokens[1] and str(user2.id) != user_id):
+                token == token1 and str(user1.id) != user_id or
+                token == token2 and str(user2.id) != user_id):
             return
         moves.append(move)
         grid = msg.embeds[0].description.split('\n')[2:][:-1]
         grid = [self.split_line(i) for i in grid]
-        grid, completed, turn = self.game(moves, grid)
+        grid, completed, turn = self.game(moves, token1, token2, grid)
         await msg.remove_reaction(
             emoji=emoji, member=user1 if turn == 0 else user2)
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
@@ -91,15 +131,18 @@ class ConnectFour(Help):
         embed_var = None
         if completed:
             embed_var = self.completed_embed(
-                msg, user1, user2, moves, grid, turn, False, color=embed.color)
+                msg, user1, user2, token1, token2,
+                moves, grid, turn, False, color=embed.color)
         else:
             if len(moves) == 42:
                 embed_var = self.completed_embed(
-                    msg, user1, user2, moves, grid, turn,
+                    msg, user1, user2, token1, token2,
+                    moves, grid, turn,
                     True, color=embed.color)
             else:
                 embed_var = self.build_embed(
-                    user1, user2, moves, grid, turn, color=embed.color)
+                    user1, user2, token1, token2,
+                    moves, grid, turn, color=embed.color)
         await msg.edit(
             embed=embed_var)
 
@@ -112,6 +155,8 @@ class ConnectFour(Help):
             msg,
             user1,
             user2,
+            token1,
+            token2,
             moves,
             grid,
             on_move,
@@ -120,7 +165,7 @@ class ConnectFour(Help):
         users = (user1, user2) if on_move == 0 else (user2, user1)
         embed_var = utils.EmbedWrapper(discord.Embed(
             title='{} wins against {} with {}!'.format(
-                users[0][1], users[1][1], self.tokens[on_move]),
+                users[0][1], users[1][1], token1 if on_move == 0 else token2),
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
             color=color),
             embed_type='CONNECT_FOUR',
@@ -138,18 +183,20 @@ class ConnectFour(Help):
             self,
             user1,
             user2,
+            token1,
+            token2,
             moves,
             grid,
             on_move,
             color=utils.random_color()):
         embed_var = utils.EmbedWrapper(discord.Embed(
-            title='{} vs {}!'.format(user1[1], user2[1]),
-            description='On turn: {} ({})\n\n{}'.format(
-                user1[1] if on_move == 1 else user2[1],
-                self.tokens[(on_move + 1) % 2], self.grid_text(grid)),
+            title='{} {} vs {} {}!'.format(
+                user1[1], token1, user2[1], token2),
+            description='On turn: {}\n\n{}'.format(
+                token1 if on_move == 1 else token2, self.grid_text(grid)),
             color=color),
             embed_type='CONNECT_FOUR',
-            marks=utils.mk.NOT_DELETABLE)
+            marks=[utils.mk.FIXED, utils.mk.NOT_DELETABLE])
         embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
         return embed_var
@@ -176,12 +223,13 @@ class ConnectFour(Help):
     def overflow_mask(self):
         return 0x1020408102040
 
-    def game(self, moves, grid=None):
+    def game(self, moves, token1, token2, grid=None):
         if grid is None:
             grid = self.empty_grid
         mask, position, turn = self.mask_position_turn(moves)
         completed = self.game_completed((position ^ mask) ^ mask)
-        grid = self.add_token(grid, moves[-1] - 1, self.tokens[turn % 2])
+        grid = self.add_token(
+            grid, moves[-1] - 1, token1 if turn % 2 == 0 else token2)
         return (grid, completed, turn % 2)
 
     def mask_position_turn(self, moves):
@@ -296,3 +344,10 @@ class ConnectFour(Help):
             i += 1
         await msg.channel.send(embed=embed_var, reactions=utils.waste_basket)
 
+    def additional_info(self, prefix):
+        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
+                'Start the game with "{}cf".'.format(prefix),
+                'You and another user then react with preffered token.',
+                'Play the game by reacting with numbers from 1 to 7.',
+                'A record of moves and wins will be kept.',
+                'See leaderboard with "{}cf leaderboard".'.format(prefix))
