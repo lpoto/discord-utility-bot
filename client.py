@@ -51,6 +51,9 @@ class MyClient(discord.Client):
         if 'error code: 10008' in str(ex):
             return
         result = ['{}({})\n{}'.format(str(ex_type.__name__), str(ex), 56*'-')]
+        if str(ex) == 'MySQL Connection not available.':
+            self.client.bot.database.connect_database()
+            return
         for i in x:
             if root_dir in i:
                 result.append(i)

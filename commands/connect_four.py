@@ -37,8 +37,8 @@ class ConnectFour(Help):
             return
         if len(msg.embeds[0].footer.text) == 18:
             # don't allow a user playing with himself
-            # if msg.embeds[0].footer.text == str(payload.user_id):
-            #    return
+            if msg.embeds[0].footer.text == str(payload.user_id):
+                return
             starting_name = msg.embeds[0].description.split(
                 ' has challanged for a game of 4 in a line.')[0]
             if payload.emoji.name == utils.thumbs_up:
@@ -105,7 +105,7 @@ class ConnectFour(Help):
 
     def split_line(self, line):
         return (line.replace('\u2000', ''
-                             ).replace('\u3000', '')[:-1]).split()
+                             ).replace('\u3000', '')).split()
 
     def completed_embed(
             self,
@@ -154,14 +154,12 @@ class ConnectFour(Help):
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
         return embed_var
 
-    def join_line(self, line, num):
+    def join_line(self, line):
         separator = ' '
-        return str(2*'\u3000') + separator + separator.join(
-            line) + separator + '\u2000' + str(num)
+        return str(2*'\u3000') + separator.join(line)
 
     def grid_text(self, grid):
-        txt = '\n'.join([(self.join_line(grid[i], i+1)
-                          ) for i in range(len(grid))])
+        txt = '\n'.join([self.join_line(i) for i in grid])
         numbers = [str(i + 1) for i in range(7)]
         txt += '\n' + 5*'\u2000' + '\u3000'.join(numbers)
         return txt
