@@ -7,20 +7,24 @@ class Rps(Help):
     def __init__(self):
         super().__init__(name='rps')
         self.description = 'A game of rock-paper-scissors between two users.'
+        self.embed_type = 'ROCK_PAPER_SCISSORS'
+        self.game = True
 
-    async def execute_command(self, msg):
-        args = msg.content.split()
+    async def execute_command(self, msg, user=None):
         # show leaderboard
-        if len(args) > 1 and (args[1] == 'leaderboard' or args[1] == 'lb'):
-            await self.show_leaderboard(msg)
-            return
+        if user is None:
+            args = msg.content.split()
+            if len(args) > 1 and (args[1] == 'leaderboard' or args[1] == 'lb'):
+                await self.show_leaderboard(msg)
+                return
+            user = msg.author
         # send dm to the user who started the game and
         # wait for him to react with one of the options
-        dm = await msg.author.create_dm()
+        dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
             description='React with your weapon of choice!',
             color=random_color()),
-            embed_type='ROCK_PAPER_SCISSORS',
+            embed_type=self.embed_type,
             marks=mk.NOT_DELETABLE)
         dm_embed.set_footer(text=msg.channel.id)
         await dm.send(
@@ -35,7 +39,7 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis
                 or payload.event_type != 'REACTION_ADD'):
             return
-        user = self.bot.client.get_user(int(payload.user_id))
+        user = self.bot.client.get_member(int(payload.user_id))
         if user is None:
             return
         reaction_msg = await user.fetch_message(payload.message_id)
@@ -65,7 +69,7 @@ class Rps(Help):
             title='{} is waiting for an opponent'.format(
                 user.name if not user.nick else user.nick),
             color=random_color()),
-            embed_type="ROCK_PAPER_SCISSORS",
+            embed_type=self.embed_type,
             marks=mk.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
         new_embed.description = 'React with {}, {} or {} to join!'.format(
@@ -128,7 +132,7 @@ class Rps(Help):
             new_embed = EmbedWrapper(discord.Embed(
                 title='{} draws against {}!'.format(
                     user_names[0], user_names[1])),
-                embed_type='CONNECT_FOUR',
+                embed_type=self.embed_type,
                 marks=mk.ENDED)
             await msg.edit(embed=new_embed)
             return
@@ -203,7 +207,7 @@ class Rps(Help):
         embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',
             color=random_color()),
-            embed_type='ROCK_PAPER_SCISSORS',
+            embed_type=self.embed_type,
             marks=mk.INFO)
         users = {}
         for i in fetched:

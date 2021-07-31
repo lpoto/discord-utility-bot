@@ -7,26 +7,30 @@ from commands.help import Help
 class ConnectFour(Help):
     def __init__(self):
         super().__init__(name='cf')
-        self.description = 'A game of 4 in a line between two users.'
+        self.description = 'A game of connect-four between two users.'
+        self.game = True
+        self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
-        self.empty_grid_element = '⚫'
+        self.empty_grid_element = utils.black_circle
 
-    async def execute_command(self, msg):
+    async def execute_command(self, msg, user=None):
         # send a message and await second user to join with thumbs up reaction
         # if first word is lb or leaderboard show players with most wins
-        args = msg.content.split()
-        if len(args) > 1 and args[1] in ['lb', 'leaderboard']:
-            await self.show_leaderboard(msg)
-            return
-        name = msg.author.name if not msg.author.nick else msg.author.nick
+        if user is None:
+            args = msg.content.split()
+            if len(args) > 1 and args[1] in ['lb', 'leaderboard']:
+                await self.show_leaderboard(msg)
+                return
+            user = msg.author
+        name = user.name if not user.nick else user.nick
         embed_var = utils.EmbedWrapper(discord.Embed(
             description=('{} has challanged for a game of connect four.\n' +
                          'React with a token to join!\n').format(
                              name, utils.thumbs_up),
             color=utils.random_color()),
-            embed_type='CONNECT_FOUR',
+            embed_type=self.embed_type,
             marks=utils.mk.NOT_DELETABLE)
-        embed_var.set_footer(text=msg.author.id)
+        embed_var.set_footer(text=user.id)
         await msg.channel.send(embed=embed_var, reactions=self.tokens)
 
     async def on_raw_reaction(self, msg, payload):
@@ -71,7 +75,7 @@ class ConnectFour(Help):
                 text=msg.embeds[0].footer.text + str(user_id))
         if any(i == '' for i in tks):
             msg.embeds[0].description = '\n'.join(
-                    msg.embeds[0].description.split('\n')[:2] + tks)
+                msg.embeds[0].description.split('\n')[:2] + tks)
             await msg.edit(embed=msg.embeds[0])
             return
         # create an empty grid and wait for players to start playing
@@ -168,7 +172,7 @@ class ConnectFour(Help):
                 users[0][1], users[1][1], token1 if on_move == 0 else token2),
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
             color=color),
-            embed_type='CONNECT_FOUR',
+            embed_type=self.embed_type,
             marks=utils.mk.ENDED)
         if draw:
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
@@ -195,7 +199,7 @@ class ConnectFour(Help):
             description='On turn: {}\n\n{}'.format(
                 token1 if on_move == 1 else token2, self.grid_text(grid)),
             color=color),
-            embed_type='CONNECT_FOUR',
+            embed_type=self.embed_type,
             marks=[utils.mk.FIXED, utils.mk.NOT_DELETABLE])
         embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
@@ -207,8 +211,7 @@ class ConnectFour(Help):
 
     def grid_text(self, grid):
         txt = '\n'.join([self.join_line(i) for i in grid])
-        numbers = [str(i + 1) for i in range(7)]
-        txt += '\n' + 5*'\u2000' + '\u3000'.join(numbers)
+        txt += '\n' + 2*'\u3000' + ' '.join(utils.number_emojis)
         return txt
 
 # the binary stuff
@@ -324,7 +327,7 @@ class ConnectFour(Help):
         embed_var = utils.EmbedWrapper(discord.Embed(
             title='Leaderboard',
             color=utils.random_color()),
-            embed_type='CONNECT_FOUR',
+            embed_type=self.embed_type,
             marks=utils.mk.INFO)
         users = {}
         for i in fetched:
@@ -346,8 +349,8 @@ class ConnectFour(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
-                'Start the game with "{}cf".'.format(prefix),
-                'You and another user then react with preffered token.',
-                'Play the game by reacting with numbers from 1 to 7.',
-                'A record of moves and wins will be kept.',
-                'See leaderboard with "{}cf leaderboard".'.format(prefix))
+            'Start the game with "{}cf".'.format(prefix),
+            'You and another user then react with preffered token.',
+            'Play the game by reacting with numbers from 1 to 7.',
+            'A record of moves and wins will be kept.',
+            'See leaderboard with "{}cf leaderboard".'.format(prefix))

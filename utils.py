@@ -168,6 +168,10 @@ class MessageWrapper(discord.Message):
         return self.type_check('ROCK_PAPER_SCISSORS', [mk.ENDED, mk.INFO])
 
     @property
+    def is_games(self):
+        return self.type_check('GAMES', mk.ENDED, mk.INFO)
+
+    @property
     def is_deletable(self):
         if self.pinned:
             return False
@@ -404,3 +408,7 @@ colors = [
     0xf75f1c,
     0x0099e1,
 ]
+black_circle = u"\U000026AB"
+white_circle = u"\U000026AA"
+black_square = u"\U000026AB"
+white_square = u"\U00002B1C"

@@ -15,6 +15,8 @@ class Help:
             'add_reactions']
         self.user_permissions = ['send_messages']
         self.channel_types = ['text']
+        self.embed_type = None
+        self.game = False
         # on init add the created object to
         # Bot's commands dictionary
 

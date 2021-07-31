@@ -8,3 +8,4 @@ from commands.poll import Poll
 from commands.rps import Rps
 from commands.connect_four import ConnectFour
 from commands.events import Events
+from commands.games import Games

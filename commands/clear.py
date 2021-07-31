@@ -56,7 +56,7 @@ class ClearChat(Help):
 
     def purge_filter(self, msg):
         # don't delete pinned messages and polls
-        return (MessageWrapper(msg).is_deletable())
+        return (MessageWrapper(msg).is_deletable)
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(

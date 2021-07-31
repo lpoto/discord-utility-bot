@@ -101,7 +101,7 @@ class Bot:
             await i.on_raw_reaction(msg, payload)
 
     async def waste_basket_delete(self, msg):
-        if msg.is_deletable():
+        if msg.is_deletable:
             await msg.edit(
                 text='Message has been deleted.',
                 delete_after=3)
