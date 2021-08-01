@@ -97,7 +97,7 @@ class ServerInfo(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}'.format(
-            '* Total members and online members.',
-            "* Owner's name and nickname.",
-            '* Afk channel and timeout time (if set up).',
-            '* Rules channel (if set up).')
+            'Total members and online members.',
+            "Owner's name and nickname.",
+            'Afk channel and timeout time (if set up).',
+            'Rules channel (if set up).')

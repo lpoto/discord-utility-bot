@@ -59,8 +59,7 @@ class ClearChat(Help):
         return (MessageWrapper(msg).is_deletable)
 
     def additional_info(self, prefix):
-        return '{}\n{}\n{}\n{}'.format(
-            '* deleting messages older than 14 days takes longer.',
-            '* Pinned messages will not be deleted.',
-            '* Messages in roles channel will not be deleted.',
-            '* Polls will not be deleted.')
+        return '* {}\n* {}'.format(
+            'Messages with "ND" embed mark in the top right corner ' +
+            'and pinned messages will not be deleted.',
+            'deleting messages older than 14 days takes longer.')

@@ -409,7 +409,7 @@ class Events(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Initialize new event with "{}event <event-name>"'.format(prefix),
+            'Initialize an event with "{}event <event-name>"'.format(prefix),
             "Add event's information as described in the started event.",
             'The events may be delayed by a minute.',
             'See scheduled events for the server with "{}event show".'.format(

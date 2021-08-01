@@ -39,3 +39,6 @@ class Games(Help):
                 n = i.value.split(' (')[-1][:-1]
                 await self.bot.commands[n].execute_command(msg, user)
                 return
+
+    def additional_info(self, prefix):
+        return '* React with an emoji that matches the game to start it.'

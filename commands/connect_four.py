@@ -352,7 +352,7 @@ class ConnectFour(Help):
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
             'Start the game with "{}cf".'.format(prefix),
-            'You and another user then react with preffered token.',
+            'You and another user then react with a preffered token.',
             'Play the game by reacting with numbers from 1 to 7.',
             'A record of moves and wins will be kept.',
             'See leaderboard with "{}cf leaderboard".'.format(prefix))
