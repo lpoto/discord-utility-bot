@@ -13,7 +13,7 @@ class Games(Help):
             description="React with a game's emoji to start it.",
             color=utils.random_color()),
             embed_type='GAMES',
-            marks=utils.mk.INFO)
+            marks=utils.EmbedWrapper.INFO)
         e_count = 0
         for k, v in self.bot.commands.items():
             if v.game:
@@ -33,6 +33,7 @@ class Games(Help):
         user = utils.MemberWrapper(msg.guild.get_member(payload.user_id))
         if user is None:
             return
+        await msg.remove_reaction(emoji=payload.emoji.name, member=user)
         for i in msg.embeds[0].fields:
             if i.value.startswith(payload.emoji.name):
                 n = i.value.split(' (')[-1][:-1]

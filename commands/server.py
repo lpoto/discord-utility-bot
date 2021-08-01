@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils import emojis, waste_basket, colors, EmbedWrapper, mk
+from utils import emojis, waste_basket, colors, EmbedWrapper
 
 
 class ServerInfo(Help):
@@ -25,7 +25,7 @@ class ServerInfo(Help):
             description="Server information",
             color=colors[list(self.bot.commands.keys()).index('server')]),
             embed_type="SERVER",
-            marks=mk.INFO)
+            marks=EmbedWrapper.INFO)
         # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description

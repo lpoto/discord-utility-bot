@@ -1,6 +1,6 @@
 from commands.help import Help
 import discord
-from utils import emojis, EmbedWrapper, random_color, mk
+from utils import emojis, EmbedWrapper, random_color
 
 
 class Poll(Help):
@@ -109,7 +109,7 @@ class Poll(Help):
                 text='Maximum number of responses reached!',
                 delete_after=5)
         marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and mk.FIXED in marks:
+        if marks is not None and EmbedWrapper.FIXED in marks:
             return
         ftr = poll_msg.embeds[0].footer.text
         emoji = emojis[len(poll_msg.embeds[0].fields)]
@@ -129,9 +129,10 @@ class Poll(Help):
 
     async def fix_poll(self, poll_msg, option):
         marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and mk.FIXED in marks:
+        if marks is not None and EmbedWrapper.FIXED in marks:
             return
-        poll_msg.embeds[0].mark([mk.FIXED, mk.NOT_DELETABLE])
+        poll_msg.embeds[0].mark(
+                [EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.send(
             text='Poll has been fixed, no responses ' +
@@ -140,13 +141,14 @@ class Poll(Help):
 
     async def change_question(self, poll_msg, option):
         marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and mk.FIXED in marks:
+        if marks is not None and EmbedWrapper.FIXED in marks:
             return
         poll_msg.embeds[0].title = 'Q:\u2000' + option
         await poll_msg.edit(embed=poll_msg.embeds[0])
 
     async def end_poll(self, poll_msg, option):
-        poll_msg.embeds[0].mark([mk.ENDED, mk.NOT_DELETABLE])
+        poll_msg.embeds[0].mark(
+                [EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.send(
             text='Poll has been ended.',
@@ -154,7 +156,7 @@ class Poll(Help):
 
     async def remove_response(self, poll_msg, option):
         marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and mk.FIXED in marks:
+        if marks is not None and EmbedWrapper.FIXED in marks:
             return
         try:
             option = int(option)
@@ -191,7 +193,7 @@ class Poll(Help):
                 'Multiple options can be added at once, separated with ";".\n',
                 'Example: "response1; response2; remove 0; response3;fix"')),
             embed_type='POLL',
-            marks=mk.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         return poll_embed
 
     def additional_info(self, prefix):

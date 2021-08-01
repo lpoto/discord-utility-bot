@@ -1,6 +1,6 @@
 from commands.help import Help
 import discord
-from utils import emojis, EmbedWrapper, random_color, mk
+from utils import emojis, EmbedWrapper, random_color
 
 
 class Roles(Help):
@@ -32,7 +32,7 @@ class Roles(Help):
                     'You can add multiple at once, separated with ";".',
                     'Example: "role1;role2;role3"')),
             embed_type='ROLES',
-            marks=mk.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         if title is not None:
             embed_var.title = title
         return embed_var

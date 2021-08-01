@@ -1,5 +1,5 @@
 import discord
-from utils import emojis, waste_basket, colors, EmbedWrapper, mk
+from utils import emojis, waste_basket, colors, EmbedWrapper
 
 
 class Help:
@@ -83,7 +83,7 @@ class Help:
             description='current prefix: [{}]'.format(prefix),
             color=colors[idx]),
             embed_type='HELP',
-            marks=mk.INFO)
+            marks=EmbedWrapper.INFO)
         footer = ("React with command's emoji for details or type " +
                   '"{}command help" in the chat.'.format(
                       prefix))

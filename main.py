@@ -16,12 +16,10 @@ logging.basicConfig(
     filemode=None if file is None else 'a')
 
 
-def handle_exit(client, bot, tasks):
-    if ('event' in bot.commands and
-        bot.commands['event'].timer is not None and
-            bot.commands['event'].timer.is_alive()):
-        bot.commands['event'].timer.cancel()
-    bot.client = None
+def handle_exit(client, bot, tasks, disconnected=False):
+    if disconnected:
+        logging.warning(msg='Disconnected\n')
+    bot.clean_up()
     t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
     tasks.add(t)
@@ -44,14 +42,21 @@ def handle_exit(client, bot, tasks):
 
 
 def handle_exceptions(loop, context):
-    logging.error(context['message'])
+    ex = context['message']
+    if '_ClientEventTask' in ex:
+        return
+    ex_type = type(context['exception']).__name__
+    loc = context['future'].get_coro().__name__
+    logging.error(msg='{} ({})\n{}\n    {}\n'.format(
+        ex_type, loc, 56*'-', ex))
 
 
 def run_bot(DISCORD_TOKEN):
     client = MyClient(
         intents=discord.Intents.all())
-    bot = Bot()
+    client.handle_exit = handle_exit
     client.loop.set_exception_handler(handle_exceptions)
+    bot = Bot()
     while True:
         try:
             bot.client = client
@@ -61,8 +66,7 @@ def run_bot(DISCORD_TOKEN):
             client.loop.run_until_complete(
                 asyncio.gather(client.start(DISCORD_TOKEN)))
         except SystemExit:
-            logging.info(msg='Disconnected')
-            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
+            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop), True)
         except KeyboardInterrupt:
             handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
             client.loop.close()

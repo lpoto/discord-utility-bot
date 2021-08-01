@@ -1,4 +1,5 @@
 import discord
+import asyncio
 import sys
 import os
 import logging
@@ -21,10 +22,17 @@ class MyClient(discord.Client):
         return utils.MemberWrapper(super().get_user(id=int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
-        if event_name != 'on_ready' and not self.bot.ready:
-            return
-        await super()._run_event(
-            coro, event_name, *args, **kwargs)
+        try:
+            if event_name != 'on_ready' and not self.bot.ready:
+                return
+            await super()._run_event(
+                coro, event_name, *args, **kwargs)
+        except SystemExit:
+            self.dispatch('error', event_name, *sys.exc_info())
+            self.handle_exit(
+                    self, self.bot, asyncio.all_tasks(loop=self.loop), True)
+        except Exception:
+            self.dispatch('error', event_name, *sys.exc_info())
 
         # when client collects events from discord:
         # a method that matches the event will be triggered
@@ -44,7 +52,10 @@ class MyClient(discord.Client):
 
     async def on_error(self, error, *args, **kwargs):
         root_dir = os.path.abspath(os.curdir)
-        ex_type, ex, tb = sys.exc_info()
+        if len(args) == 3:
+            ex_type, ex, tb = args
+        else:
+            ex_type, ex, tb = sys.exc_info()
         x = traceback.format_list(traceback.extract_tb(tb))
         # 10008 -> unknown message, can ignore as mostly
         # when deleting or reacting to already deleted message
@@ -55,17 +66,17 @@ class MyClient(discord.Client):
             self.client.bot.database.connect_database()
             return
         for i in x:
-            if root_dir in i:
+            if root_dir in i and 'super()._run_event' not in i:
                 result.append(i)
         logging.error('\n'.join(result) + '\n')
 
     async def on_message(self, msg):
+        if msg.content == 'end':
+            raise SystemExit
+            return
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
-        if msg.content == 'kill':
-            raise SystemExit
-            return
         if (msg.author.id == self.user.id or
                 str(msg.channel.type) != 'text' or
                 msg.content.split() is None or

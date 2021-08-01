@@ -20,36 +20,18 @@ def random_color():
 
 # wrapper for Message object to avoid erros when editing,
 # reacting,....
-class Marks():
-    def __init__(self):
-        self.ENDED = 'E'
-        self.FIXED = 'F'
-        self.NOT_DELETABLE = 'ND'
-        self.INFO = 'I'
-
-    def mark_info(self, mark):
-        mi = {
-            self.INFO: 'Informational',
-            self.ENDED: 'Ended, bot does not respond to the message.',
-            self.FIXED: 'Fixed, only listening for reactions.',
-            self.NOT_DELETABLE: ('Cannot delete with waste basket ' +
-                                 'or clear command.')}
-        if mark in mi:
-            return mi[mark]
-
-
-mk = Marks()
-
-
 class MessageWrapper(discord.Message):
     def __init__(self, obj):
         self._wrapped_msg = obj
-        self.channel = ChannelWrapper(
-            self._wrapped_msg.channel)
-        if str(self.channel.type) == 'text':
+        if not isinstance(self.channel, ChannelWrapper):
+            self.channel = ChannelWrapper(
+                self._wrapped_msg.channel)
+        if (str(self.channel.type) == 'text' and
+                not isinstance(self.author, MemberWrapper)):
             self.author = MemberWrapper(self.author)
         for i in range(len(self.embeds)):
-            self.embeds[i] = EmbedWrapper(self.embeds[i])
+            if not isinstance(self.embeds[i], EmbedWrapper):
+                self.embeds[i] = EmbedWrapper(self.embeds[i])
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
@@ -132,7 +114,7 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_poll(self):
-        return self.type_check('POLL', mk.ENDED)
+        return self.type_check('POLL', EmbedWrapper.ENDED)
 
     @property
     def is_roles(self):
@@ -140,36 +122,39 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_connect_four(self):
-        return self.type_check('CONNECT_FOUR', [mk.ENDED, mk.INFO])
+        return self.type_check('CONNECT_FOUR', [
+            EmbedWrapper.ENDED, EmbedWrapper.INFO])
 
     @property
     def is_event(self):
         return self.type_check(
-            'EVENT', [mk.ENDED, mk.INFO], mk.NOT_DELETABLE)
+            'EVENT', [EmbedWrapper.ENDED, EmbedWrapper.INFO
+                      ], EmbedWrapper.NOT_DELETABLE)
 
     @property
     def is_help(self):
-        return self.type_check('HELP', mk.ENDED, mk.INFO)
+        return self.type_check('HELP', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_server(self):
-        return self.type_check('SERVER', mk.ENDED, mk.INFO)
+        return self.type_check('SERVER', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_config(self):
-        return self.type_check('CONFIG', mk.ENDED, mk.INFO)
+        return self.type_check('CONFIG', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_fixed(self):
-        return self.type_check(None, mk.ENDED, mk.FIXED)
+        return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.FIXED)
 
     @property
     def is_rps(self):
-        return self.type_check('ROCK_PAPER_SCISSORS', [mk.ENDED, mk.INFO])
+        return self.type_check('ROCK_PAPER_SCISSORS', [
+            EmbedWrapper.ENDED, EmbedWrapper.INFO])
 
     @property
     def is_games(self):
-        return self.type_check('GAMES', mk.ENDED, mk.INFO)
+        return self.type_check('GAMES', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_deletable(self):
@@ -177,7 +162,7 @@ class MessageWrapper(discord.Message):
             return False
         if len(self.embeds) != 1:
             return True
-        return self.type_check(None, mk.NOT_DELETABLE)
+        return self.type_check(None, EmbedWrapper.NOT_DELETABLE)
 
 
 # wrapper for Channel object, to avoid errors when sending messages
@@ -288,23 +273,25 @@ class Queue():
 
 # wrapper for embeds, adding embed type and marks into the author section
 class EmbedWrapper(discord.Embed):
+    FIXED = 'F'
+    ENDED = 'E'
+    NOT_DELETABLE = 'ND'
+    INFO = 'I'
+
     def __init__(self, embed, embed_type=None, marks=()):
         self._wrapped_embed = embed
         self.embed_type = self.get_type() if embed_type is None else embed_type
-        self.marks = [mk.FIXED, mk.ENDED, mk.INFO, mk.NOT_DELETABLE]
-        self.FIXED = mk.FIXED
-        self.ENDED = mk.ENDED
-        self.INFO = mk.INFO
-        self.NOT_DELETABLE = mk.NOT_DELETABLE
+        self.marks = [
+            EmbedWrapper.FIXED,
+            EmbedWrapper.ENDED,
+            EmbedWrapper.INFO,
+            EmbedWrapper.NOT_DELETABLE]
         self.mark(marks=marks)
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
             return getattr(self, attr)
         return getattr(self._wrapped_embed, attr)
-
-    def mark_info(self, m):
-        return mk.mark_info(m)
 
     def get_type(self):
         if not self.author:
@@ -347,6 +334,17 @@ class EmbedWrapper(discord.Embed):
                 marks.append(i)
         self.embed_type = mks[0]
         return marks
+
+    @classmethod
+    def mark_info(cls, mark):
+        mi = {
+            cls.INFO: 'Informational',
+            cls.ENDED: 'Ended, bot does not respond to the message.',
+            cls.FIXED: 'Fixed, only listening for reactions.',
+            cls.NOT_DELETABLE: ('Cannot delete with waste basket ' +
+                                'or clear command.')}
+        if mark in mi:
+            return mi[mark]
 
 
 # emojis rock, paper, scissors

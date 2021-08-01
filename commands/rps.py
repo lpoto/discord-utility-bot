@@ -1,5 +1,5 @@
 import discord
-from utils import rps_emojis, random_color, waste_basket, EmbedWrapper, mk
+from utils import rps_emojis, random_color, waste_basket, EmbedWrapper
 from commands.help import Help
 
 
@@ -25,7 +25,7 @@ class Rps(Help):
             description='React with your weapon of choice!',
             color=random_color()),
             embed_type=self.embed_type,
-            marks=mk.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         dm_embed.set_footer(text=msg.channel.id)
         await dm.send(
             embed=dm_embed,
@@ -39,7 +39,7 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis
                 or payload.event_type != 'REACTION_ADD'):
             return
-        user = self.bot.client.get_member(int(payload.user_id))
+        user = self.bot.client.get_user(int(payload.user_id))
         if user is None:
             return
         reaction_msg = await user.fetch_message(payload.message_id)
@@ -70,7 +70,7 @@ class Rps(Help):
                 user.name if not user.nick else user.nick),
             color=random_color()),
             embed_type=self.embed_type,
-            marks=mk.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
         new_embed.description = 'React with {}, {} or {} to join!'.format(
             rps_emojis[0], rps_emojis[1], rps_emojis[2])
@@ -88,7 +88,7 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis or
                 payload.event_type != 'REACTION_ADD' or
                 payload.member.bot or
-                # str(payload.user_id) == msg.embeds[0].footer.text[18:] or
+                str(payload.user_id) == msg.embeds[0].footer.text[18:] or
                 not msg.is_rps):
             return
         # rps embed has user id and dm msg id in footer
@@ -133,7 +133,7 @@ class Rps(Help):
                 title='{} draws against {}!'.format(
                     user_names[0], user_names[1])),
                 embed_type=self.embed_type,
-                marks=mk.ENDED)
+                marks=EmbedWrapper.ENDED)
             await msg.edit(embed=new_embed)
             return
         info = {}
@@ -208,7 +208,7 @@ class Rps(Help):
             title='Leaderboard',
             color=random_color()),
             embed_type=self.embed_type,
-            marks=mk.INFO)
+            marks=EmbedWrapper.INFO)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))

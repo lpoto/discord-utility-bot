@@ -29,7 +29,7 @@ class ConnectFour(Help):
                              name, utils.thumbs_up),
             color=utils.random_color()),
             embed_type=self.embed_type,
-            marks=utils.mk.NOT_DELETABLE)
+            marks=utils.EmbedWrapper.NOT_DELETABLE)
         embed_var.set_footer(text=user.id)
         await msg.channel.send(embed=embed_var, reactions=self.tokens)
 
@@ -79,20 +79,22 @@ class ConnectFour(Help):
             await msg.edit(embed=msg.embeds[0])
             return
         # create an empty grid and wait for players to start playing
-        user = msg.guild.get_member(int(user_id))
-        if user is None:
+        user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[:18]))
+        user2 = msg.guild.get_member(int(msg.embeds[0].footer.text[18:]))
+        if user1 is None or user2 is None:
             return
+        user1 = (user1.id, user1.name if not user1.nick else user1.nick)
+        user2 = (user2.id, user2.name if not user2.nick else user2.nick)
+        token1 = tks[0]
+        token2 = tks[1]
         start = random.randint(0, 1)
-        if start == 0:
-            user1 = (msg.embeds[0].footer.text[:18], name)
-            user2 = (str(user_id), user.name if not user.nick else user.nick)
-            token1 = tks[0]
-            token2 = tks[1]
-        else:
-            user1 = (str(user_id), user.name if not user.nick else user.nick)
-            user2 = (msg.embeds[0].footer.text[:18], name)
-            token1 = tks[1]
-            token2 = tks[0]
+        if start == 1:
+            x = user1
+            user1 = user2
+            user2 = x
+            x = token1
+            token1 = token2
+            token2 = x
         grid = self.empty_grid
         embed_var = self.build_embed(user1, user2, token1, token2, [], grid, 1)
         for i in self.tokens:
@@ -127,7 +129,7 @@ class ConnectFour(Help):
         moves.append(move)
         grid = msg.embeds[0].description.split('\n')[2:][:-1]
         grid = [self.split_line(i) for i in grid]
-        grid, completed, turn = self.game(moves, token1, token2, grid)
+        grid, completed, turn = self.play(moves, token1, token2, grid)
         await msg.remove_reaction(
             emoji=emoji, member=user1 if turn == 0 else user2)
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
@@ -173,7 +175,7 @@ class ConnectFour(Help):
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
-            marks=utils.mk.ENDED)
+            marks=utils.EmbedWrapper.ENDED)
         if draw:
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
             moves.append(0)
@@ -200,7 +202,7 @@ class ConnectFour(Help):
                 token1 if on_move == 1 else token2, self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
-            marks=[utils.mk.FIXED, utils.mk.NOT_DELETABLE])
+            marks=[utils.EmbedWrapper.FIXED, utils.EmbedWrapper.NOT_DELETABLE])
         embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
         return embed_var
@@ -226,7 +228,7 @@ class ConnectFour(Help):
     def overflow_mask(self):
         return 0x1020408102040
 
-    def game(self, moves, token1, token2, grid=None):
+    def play(self, moves, token1, token2, grid=None):
         if grid is None:
             grid = self.empty_grid
         mask, position, turn = self.mask_position_turn(moves)
@@ -328,7 +330,7 @@ class ConnectFour(Help):
             title='Leaderboard',
             color=utils.random_color()),
             embed_type=self.embed_type,
-            marks=utils.mk.INFO)
+            marks=utils.EmbedWrapper.INFO)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))

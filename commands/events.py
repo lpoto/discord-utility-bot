@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from threading import Timer
 from commands.help import Help
-from utils import random_color, waste_basket, EmbedWrapper, mk
+from utils import random_color, waste_basket, EmbedWrapper
 
 # TODO -> remove event from channel
 #      -> different dictionary that allows events with
@@ -96,7 +96,7 @@ class Events(Help):
                 title='Scheduled events',
                 color=random_color()),
                 embed_type='EVENT',
-                marks=mk.INFO)
+                marks=EmbedWrapper.INFO)
             for k, v in events.items():
                 embed_var.add_field(name=k, value=v)
             await msg.channel.send(embed=embed_var, reactions=waste_basket)
@@ -113,7 +113,7 @@ class Events(Help):
                 msg.channel.id),
             color=random_color()),
             embed_type='EVENT',
-            marks=mk.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         embed_var.set_footer(
             text=('* Add options by replying "<opt> <value>" ' +
                   '\n* Multiple options can be added at one,' +
@@ -278,7 +278,7 @@ class Events(Help):
         embed_var.set_footer(text='')
         embed_var = EmbedWrapper(embed_var,
                                  embed_type="EVENT",
-                                 marks=mk.ENDED)
+                                 marks=EmbedWrapper.ENDED)
         await msg.edit(embed=embed_var, reactions=waste_basket)
 
     async def send_event(self, channel_id, event, text, tags):
@@ -292,7 +292,7 @@ class Events(Help):
             color=random_color(),
             description=text),
             embed_type="EVENT",
-            marks=mk.INFO)
+            marks=EmbedWrapper.INFO)
         await channel.send(
                 text=None if len(tags) < 1 else tags, embed=embed_var)
 

@@ -1,5 +1,5 @@
 import discord
-from utils import ChannelWrapper, waste_basket, colors, Queue, EmbedWrapper, mk
+import utils
 from database import DB
 import commands as cmds
 
@@ -9,7 +9,7 @@ class Bot:
         self.client = None
         self.database = None
         self.ready = False
-        self.queue = Queue(self)
+        self.queue = utils.Queue(self)
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
@@ -60,7 +60,7 @@ class Bot:
             await msg.channel.send(
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
-                reactions=waste_basket)
+                reactions=utils.waste_basket)
         else:
             # else execute the command
             # check if valid channel, permissions,...
@@ -79,7 +79,7 @@ class Bot:
             id=payload.guild_id)
         if guild is None:
             return
-        channel = ChannelWrapper(discord.utils.get(
+        channel = utils.ChannelWrapper(discord.utils.get(
             guild.channels,
             id=payload.channel_id))
         if channel is None:
@@ -91,7 +91,7 @@ class Bot:
         # if wastebin reaction and bot is msg author
         # and message is not pinned and message has an
         # embed or starts with help, delete it
-        if payload.emoji.name == waste_basket:
+        if payload.emoji.name == utils.waste_basket:
             if reaction_type == 'REACTION_ADD':
                 await self.waste_basket_delete(msg)
             return
@@ -159,12 +159,12 @@ class Bot:
 
     async def create_additional_help(self, info, msg, prefix):
         idx = list(self.commands.keys()).index(info[0])
-        embed_var = EmbedWrapper(discord.Embed(
+        embed_var = utils.EmbedWrapper(discord.Embed(
             title='{}{}'.format(prefix, info[0]),
             description=info[1],
-            color=colors[idx]),
+            color=utils.colors[idx]),
             embed_type='HELP',
-            marks=mk.INFO)
+            marks=utils.EmbedWrapper.INFO)
         embed_var.add_field(
             name='Additional info',
             value=info[2],
@@ -188,5 +188,11 @@ class Bot:
                 name='Allowed channel types',
                 value='[{}]'.format(', '.join(info[5])),
                 inline=False)
-
         return embed_var
+
+    def clean_up(self):
+        if ('event' in self.commands and
+                self.commands['event'].timer is not None and
+                self.commands['event'].timer.is_alive()):
+            self.commands['event'].timer.cancel()
+        self.client = None

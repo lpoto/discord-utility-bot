@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils import waste_basket, random_color, EmbedWrapper, mk
+from utils import waste_basket, random_color, EmbedWrapper
 
 
 class UserInfo(Help):
@@ -35,7 +35,7 @@ class UserInfo(Help):
             title=user.name if not user.nick else user.nick,
             color=random_color()),
             embed_type="USER",
-            marks=mk.INFO)
+            marks=EmbedWrapper.INFO)
         # if user has nickname set up add nickname
         # else only username
         # add if user is bot
