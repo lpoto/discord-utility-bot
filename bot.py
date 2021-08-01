@@ -1,29 +1,42 @@
 import discord
-import utils
+from utils import Queue, ChannelWrapper, EmbedWrapper, waste_basket, colors
 from database import DB
 import commands as cmds
 
 
 class Bot:
+    """
+    Connection between discord.Client's events and
+    user defined commands.
+    """
+
     def __init__(self):
         self.client = None
         self.database = None
+        # discord.Client will not trigger events until
+        # it has a ready Bot object
         self.ready = False
-        self.queue = utils.Queue(self)
+        self.queue = Queue(self)
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
+        # lists containing commands with special functions
+        # that need to be processes separately
         self.on_reply_commands = []
         self.on_raw_reaction_commands = []
         self.on_dm_reaction_commands = []
+        self.on_time_commands = []
 
     async def initialize(self, client):
+        """
+        Link a discord.Client to a Bot object,
+        connect MySQL database if info provided and
+        initialize all the commands.
+        """
         self.client = client
-        # connect database
         if self.database is None:
             self.database = DB()
         self.database.connect_database()
-        # initialize all the commands
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()
                            if isinstance(cls, type)]):
@@ -38,9 +51,10 @@ class Bot:
             self.ready = True
 
     def add_command(self, command):
-        # add a command object to commands dictionary
-        # this is called when initializing a
-        # Command object
+        """
+        Add a command object to Bot object's commands
+        dictionary, when initializing a command object.
+        """
         self.commands[command.name] = command
         # if commands have on raw reaction or on message
         # methods, add them to list
@@ -50,8 +64,13 @@ class Bot:
             self.on_raw_reaction_commands.append(command)
         if hasattr(command, 'on_dm_reaction'):
             self.on_dm_reaction_commands.append(command)
+        if hasattr(command, 'on_time'):
+            self.on_time_commands.append(command)
 
     async def handle_message(self, msg, cmd, prefix):
+        """
+        Handle a message sent by a user in a discord server.
+        """
         args = msg.content.split()
         cmd = self.commands[cmd]
         # if 2nd word is help send additional info
@@ -60,7 +79,7 @@ class Bot:
             await msg.channel.send(
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
-                reactions=utils.waste_basket)
+                reactions=waste_basket)
         else:
             # else execute the command
             # check if valid channel, permissions,...
@@ -68,6 +87,10 @@ class Bot:
                 await cmd.execute_command(msg)
 
     async def handle_raw_reactions(self, payload, reaction_type, dm):
+        """
+        Handle a payload recieved from a raw reaction event in
+        a discord server.
+        """
         if dm:
             # iterate through those commands that have
             # on dm reaction function
@@ -79,7 +102,7 @@ class Bot:
             id=payload.guild_id)
         if guild is None:
             return
-        channel = utils.ChannelWrapper(discord.utils.get(
+        channel = ChannelWrapper(discord.utils.get(
             guild.channels,
             id=payload.channel_id))
         if channel is None:
@@ -91,7 +114,7 @@ class Bot:
         # if wastebin reaction and bot is msg author
         # and message is not pinned and message has an
         # embed or starts with help, delete it
-        if payload.emoji.name == utils.waste_basket:
+        if payload.emoji.name == waste_basket:
             if reaction_type == 'REACTION_ADD':
                 await self.waste_basket_delete(msg)
             return
@@ -101,13 +124,16 @@ class Bot:
             await i.on_raw_reaction(msg, payload)
 
     async def waste_basket_delete(self, msg):
+        """Delete a message with a waste basket emoji."""
         if msg.is_deletable:
             await msg.edit(
                 text='Message has been deleted.',
                 delete_after=3)
 
-    async def check_if_valid(self, command, msg):
-        # check if command can be used in this type of channel
+    async def check_if_valid(self, command, msg) -> bool:
+        """
+        Check if a command is allowd in message's channel type.
+        """
         if str(msg.channel.type) not in command.channel_types:
             await msg.channel.send(
                 text='This command cannot be used in this channel type!',
@@ -117,8 +143,12 @@ class Bot:
         # and roles
         return await self.check_permissions(command, msg)
 
-    async def check_permissions(self, command, msg):
-        # check if bot has all the required permissions in the channel
+    async def check_permissions(self, command, msg) -> bool:
+        """
+        Check if bot and user have all the required permissions to use the
+        command in message's channel.
+        """
+        # check bot's permissions
         p = msg.channel.permissions(
             msg.guild.me, command.bot_permissions)
         if not p[0]:
@@ -144,7 +174,6 @@ class Bot:
                 ).format(', '.join(required_roles)),
                 delete_after=5)
             return False
-
         # check if user has all the required permissions
         p = msg.channel.permissions(
             msg.author, command.user_permissions)
@@ -157,14 +186,15 @@ class Bot:
             return False
         return True
 
-    async def create_additional_help(self, info, msg, prefix):
+    async def create_additional_help(self, info, msg, prefix) -> EmbedWrapper:
+        """Return command's information in an embed."""
         idx = list(self.commands.keys()).index(info[0])
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title='{}{}'.format(prefix, info[0]),
             description=info[1],
-            color=utils.colors[idx]),
+            color=colors[idx]),
             embed_type='HELP',
-            marks=utils.EmbedWrapper.INFO)
+            marks=EmbedWrapper.INFO)
         embed_var.add_field(
             name='Additional info',
             value=info[2],
@@ -191,6 +221,7 @@ class Bot:
         return embed_var
 
     def clean_up(self):
+        """Clean up running events."""
         if ('event' in self.commands and
                 self.commands['event'].timer is not None and
                 self.commands['event'].timer.is_alive()):

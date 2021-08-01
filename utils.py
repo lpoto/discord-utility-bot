@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import sys
 from collections import deque
 import discord
 import random
@@ -9,18 +10,17 @@ import random
 # presence and server members intent enabled under BOT
 
 load_dotenv()
-# default prefix key used before commands
 DEFAULT_PREFIX = os.environ.get('DEFAULT_PREFIX')
 
 
-def random_color():
-    # generate a random color (mostly for embeds)
-    return int("%06x" % random.randint(0, 0xFFFFFF), 16)
-
-
-# wrapper for Message object to avoid erros when editing,
-# reacting,....
 class MessageWrapper(discord.Message):
+    """
+    Wrapper for discord.Message that avoids permission errors,
+    adds additional functionality to editing, reacting, deleting and
+    removing reactions from messages and adds properties that check
+    for specific message types based on EmbedWrapper embed types.
+    """
+
     def __init__(self, obj):
         self._wrapped_msg = obj
         if not isinstance(self.channel, ChannelWrapper):
@@ -127,9 +127,7 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_event(self):
-        return self.type_check(
-            'EVENT', [EmbedWrapper.ENDED, EmbedWrapper.INFO
-                      ], EmbedWrapper.NOT_DELETABLE)
+        return self.type_check('EVENT', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_help(self):
@@ -165,9 +163,12 @@ class MessageWrapper(discord.Message):
         return self.type_check(None, EmbedWrapper.NOT_DELETABLE)
 
 
-# wrapper for Channel object, to avoid errors when sending messages
-# and add extra functions
 class ChannelWrapper(object):
+    """
+    Wrapper for discord.Channel that avoids permission errors
+    and allows adding reactions when sending a message.
+    """
+
     def __init__(self, chnl):
         self._wrapped_chnl = chnl
 
@@ -215,9 +216,12 @@ class ChannelWrapper(object):
         return (True, None)
 
 
-# wrapper for discord user/guild member object, wraps dm channel
-# when created and fetched messages
 class MemberWrapper(object):
+    """
+    Wrapper for discord.User that returns wrapped objects
+    when fetching channels and messages.
+    """
+
     def __init__(self, member):
         self._wrapped_member = member
 
@@ -235,11 +239,13 @@ class MemberWrapper(object):
         return MessageWrapper(
             await self._wrapped_member.fetch_message(id=id))
 
-# create queues for different messages and process editing with reactions
-# and such functions in queue, to avoid duplicating or missing any
-
 
 class Queue():
+    """
+    Create queues for messages edited by reactions or replies,
+    to avoid duplicating or missins edits.
+    """
+
     def __init__(self, bot):
         self.bot = bot
         self.queues = {}
@@ -261,8 +267,8 @@ class Queue():
             item = self.queues[queue_id].popleft()
             try:
                 await function(item)
-            except Exception as error:
-                await self.bot.client.on_error(error, None, None)
+            except Exception as err:
+                self.bot.client.dispatch('error', err, *sys.exc_info())
             finally:
                 await self.clear_queue(queue_id, function, True)
         else:
@@ -271,8 +277,8 @@ class Queue():
                 del self.queues[queue_id]
 
 
-# wrapper for embeds, adding embed type and marks into the author section
 class EmbedWrapper(discord.Embed):
+    """wrapper that adds types and marks to the discord.Embed"""
     FIXED = 'F'
     ENDED = 'E'
     NOT_DELETABLE = 'ND'
@@ -383,6 +389,12 @@ emojis = [
     u"\U00002B1B",
     u"\U0001F536",
     u"\U0001F537"]
+
+black_circle = u"\U000026AB"
+white_circle = u"\U000026AA"
+black_square = u"\U000026AB"
+white_square = u"\U00002B1C"
+
 # colors that match emoji colors by indexes
 colors = [
     0xffffff,
@@ -406,7 +418,8 @@ colors = [
     0xf75f1c,
     0x0099e1,
 ]
-black_circle = u"\U000026AB"
-white_circle = u"\U000026AA"
-black_square = u"\U000026AB"
-white_square = u"\U00002B1C"
+
+
+def random_color():
+    """generate a random color"""
+    return int("%06x" % random.randint(0, 0xFFFFFF), 16)

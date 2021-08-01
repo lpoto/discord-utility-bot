@@ -12,8 +12,7 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
     datefmt='%H:%M:%S %d-%m-%Y',
     level=logging.INFO,
-    filename=None if file is None else file,
-    filemode=None if file is None else 'a')
+    filename=file)
 
 
 def handle_exit(client, bot, tasks, disconnected=False):

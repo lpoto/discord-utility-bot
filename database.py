@@ -11,6 +11,7 @@ class DB:
         self.name = None
 
     def connect_database(self, info=None):
+        """Connect a MySQL database from provided info."""
         if self.connected and self.name is not None:
             logging.info(msg='Database: {}\n'.format(self.name))
             return
@@ -39,7 +40,7 @@ class DB:
                 return self.connect_database(info)
             logging.warning(msg=err)
 
-    def get_info(self):
+    def get_info(self) -> dict or None:
         info = {}
         for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
             x = os.environ.get(i)
@@ -52,6 +53,7 @@ class DB:
         return info
 
     def required_tables(self):
+        """All the required tables used by the bot."""
         return {
             'prefix': [
                 'guild_id VARCHAR(18) NOT NULL',
@@ -82,6 +84,8 @@ class DB:
         }
 
     def create_tables(self, info):
+        """Check if all the required tables exist, and create
+        those that do not."""
         txt = None
         try:
             tables = self.required_tables()
@@ -103,8 +107,7 @@ class DB:
         except Exception as err:
             logging.warning(msg=err)
 
-    async def prefix_from_database(self, msg):
-        # try to get prefix from database, return default prefix if failed
+    async def prefix_from_database(self, msg) -> str:
         if not self.connected:
             return DEFAULT_PREFIX
         query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
@@ -118,12 +121,15 @@ class DB:
         cursor.close()
 
     async def get_prefix(self, msg):
+        """Fetch a prefix used in message's server from database."""
         prefix = await self.prefix_from_database(msg)
         if prefix is None:
             return DEFAULT_PREFIX
         return prefix
 
-    async def get_welcome(self, server):
+    async def get_welcome(self, server) -> str or None:
+        """Get the text that the bot should send when a new member
+        joins the server."""
         # get guild's welcome text from database
         if not self.connected:
             return None
@@ -137,8 +143,9 @@ class DB:
         return fetched[1]
         cursor.close()
 
-    async def get_required_roles(self, msg, command):
-        # get which roles can use a command from database
+    async def get_required_roles(self, msg, command) -> list or None:
+        """ Get the roles that are allowed to use the command in
+        a message's discord server"""
         if not self.connected:
             return None
         query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
@@ -151,7 +158,9 @@ class DB:
             return None
         return fetched[2].split('<;>')
 
-    async def roles_for_all_commands(self, msg):
+    async def roles_for_all_commands(self, msg) -> str or None:
+        """ Return all the commands that have required roles set
+        up in the message's discord server."""
         if not self.connected:
             return None
         cursor = self.cnx.cursor(buffered=True)

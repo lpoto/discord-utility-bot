@@ -13,15 +13,15 @@ class MyClient(discord.Client):
         self.bot = None
         self.handle_exit = None
 
-# wrap fetched channel objects
-    def get_channel(self, channel_id):
+    def get_channel(self, channel_id) -> utils.ChannelWrapper:
         return utils.ChannelWrapper(
             super().get_channel(int(channel_id)))
 
-    def get_user(self, user_id):
+    def get_user(self, user_id) -> utils.MemberWrapper:
         return utils.MemberWrapper(super().get_user(id=int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
+        """Call a method matching the event recieved from discord."""
         try:
             if event_name != 'on_ready' and not self.bot.ready:
                 return
@@ -30,16 +30,13 @@ class MyClient(discord.Client):
         except SystemExit:
             self.dispatch('error', event_name, *sys.exc_info())
             self.handle_exit(
-                    self, self.bot, asyncio.all_tasks(loop=self.loop), True)
+                self, self.bot, asyncio.all_tasks(loop=self.loop), True)
         except Exception:
             self.dispatch('error', event_name, *sys.exc_info())
 
-        # when client collects events from discord:
-        # a method that matches the event will be triggered
-        # -------------------- events --------------------
+#  -------------------------- events -------------------------
 
     async def on_ready(self):
-        # on starting the bot, print tag and activity
         if self.user:
             logging.info(msg='Bot logged in!')
             logging.info(msg='Client: ' + str(self.user))
@@ -71,9 +68,6 @@ class MyClient(discord.Client):
         logging.error('\n'.join(result) + '\n')
 
     async def on_message(self, msg):
-        if msg.content == 'end':
-            raise SystemExit
-            return
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
@@ -106,7 +100,6 @@ class MyClient(discord.Client):
             return
 
     async def on_reply(self, msg, referenced_msg):
-        # custom event to handle commands that have on_reply
         # functions that should be processed separately
         if referenced_msg.author.id != self.user.id:
             return
@@ -117,8 +110,6 @@ class MyClient(discord.Client):
                 await i.on_reply(msg, referenced_msg)
 
     async def on_raw_reaction_add(self, payload):
-        # listen for raw reaction events, so we can listen to
-        # reactions on messages created before self.bot was online
         if (payload.user_id == self.user.id or
                 (payload.emoji.name not in utils.emojis and
                     payload.emoji.name not in utils.rps_emojis and
@@ -136,24 +127,12 @@ class MyClient(discord.Client):
     async def on_raw_reaction_remove(self, payload):
         self.dispatch('raw_reaction_add', payload)
 
-    async def on_event_time(self, time, execute=True):
-        if execute:
-            if not self.user:
-                return
-            if 'event' not in self.bot.commands:
-                return
-            if time not in self.bot.commands['event'].events:
-                return
-            for f in self.bot.commands['event'].events[time]:
-                if 'args' in f:
-                    await f['function'](*f['args'])
-                else:
-                    await f['function']
-        await self.bot.commands['event'].remove_event(time)
-        await self.bot.commands['event'].start_timer()
+    async def on_time(self, time, execute=True):
+        for cmd in self.bot.on_time_commands:
+            await cmd.on_time(time, execute)
 
     async def on_member_join(self, member):
-        # on member join, if server has welcome text set up
+        # if server has welcome text set up
         # in database, send welcome text to default channel
         server = member.guild
         default_channel = utils.ChannelWrapper(server.system_channel)

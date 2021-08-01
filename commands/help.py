@@ -20,12 +20,12 @@ class Help:
         # on init add the created object to
         # Bot's commands dictionary
 
-    def additional_info(self, prefix):
-        # default additional info, overriden by
-        # child classes' additional info
+    def additional_info(self, prefix) -> str:
+        """ Informations about the command, more detailed
+        than the command's description."""
         return '* There is no additional information.'
 
-    def command_info(self, prefix):
+    def command_info(self, prefix) -> list:
         # detailed information about
         # the command
         info = [
@@ -39,10 +39,8 @@ class Help:
         return info
 
     async def execute_command(self, msg):
-        # by default the Command object will
-        # send info about all the commands...
-        # classes extending default Command will
-        # override this method
+        """Function called when a message in a discord channel
+        starts with the prefix and the command's name."""
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
@@ -55,6 +53,8 @@ class Help:
         await msg.channel.send(embed=embed_var, reactions=emjis)
 
     async def on_raw_reaction(self, msg, payload):
+        """Function called when an emoji is added or removed in
+        a discord server."""
         if (self.name != 'help' or
                 payload.emoji.name not in emojis or
                 payload.event_type != 'REACTION_ADD' or
@@ -76,7 +76,7 @@ class Help:
                 emojis[help_idx]))
         await msg.edit(embed=new_embed)
 
-    async def help_embed(self, msg, commands):
+    async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)
         idx = list(self.bot.commands.keys()).index('help')
         embed_var = EmbedWrapper(discord.Embed(

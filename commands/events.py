@@ -5,9 +5,7 @@ from threading import Timer
 from commands.help import Help
 from utils import random_color, waste_basket, EmbedWrapper
 
-# TODO -> remove event from channel
-#      -> different dictionary that allows events with
-#      -> same name in different server
+# TODO     -> Remove event from channel.
 
 
 class Events(Help):
@@ -47,7 +45,19 @@ class Events(Help):
 
     def timer_function(self, time):
         # start the event
-        self.bot.client.dispatch('event_time', time)
+        self.bot.client.dispatch('time', time)
+
+    async def on_time(self, time, execute=True):
+        # send the event to the channel
+        if not execute or time not in self.events:
+            return
+        for f in self.events[time]:
+            if 'args' in f:
+                await f['function'](*f['args'])
+            else:
+                await f['function']
+        await self.remove_event(time)
+        await self.start_timer()
 
     async def add_event(self, times_functions, start=True):
         # times_function = {datetime: (function, args)}
@@ -64,9 +74,9 @@ class Events(Help):
         if now > time2:
             time2 = time2.strftime('%d-%m,%H:%M')
             if dif <= 30 * 60:
-                self.bot.client.dispatch('event_time', time2)
+                self.bot.client.dispatch('time', time2)
             else:
-                self.bot.client.dispatch('event_time', time2, False)
+                self.bot.client.dispatch('time', time2, False)
             return
         return dif
 
@@ -88,9 +98,27 @@ class Events(Help):
                 text='Please add a name for the event!',
                 delete_after=5)
             return
-        if args[1] in ['show', 'events', 'see']:
-            events = await self.show_server_events(msg)
+        events = await self.show_server_events(msg)
+        if args[1] in ['stop', 'remove', 'end', 'cancel']:
+            if len(args) < 3:
+                await msg.channel.send(
+                        text='Which event do you want to delete?',
+                        delete_after=5)
+                return
+            e = msg.content.replace('{} {} '.format(
+                args[0], args[1]), '', 1)
+            if e not in events.keys():
+                await msg.channel.send(
+                    text='No such event.',
+                    delete_after=5)
+            else:
+                await self.remove_server_event(msg, e, events[e])
+            return
+        if args[1] in ['show', 'events', 'see'] and len(args) == 2:
             if events is None:
+                await msg.channel.send(
+                    text='No scheduled events.',
+                    delete_after=5)
                 return
             embed_var = EmbedWrapper(discord.Embed(
                 title='Scheduled events',
@@ -102,9 +130,9 @@ class Events(Help):
             await msg.channel.send(embed=embed_var, reactions=waste_basket)
             return
         name = msg.content.replace('{} '.format(args[0]), '', 1)
-        if self.events is not None and name in self.events.values():
+        if events is not None and name in events.keys():
             await msg.channel.send(
-                text='Event with this name already exists.',
+                text='Event with this name already exists in this server.',
                 delete_after=5)
             return
         embed_var = EmbedWrapper(discord.Embed(
@@ -113,7 +141,7 @@ class Events(Help):
                 msg.channel.id),
             color=random_color()),
             embed_type='EVENT',
-            marks=EmbedWrapper.NOT_DELETABLE)
+            marks=EmbedWrapper.INFO)
         embed_var.set_footer(
             text=('* Add options by replying "<opt> <value>" ' +
                   '\n* Multiple options can be added at one,' +
@@ -294,7 +322,7 @@ class Events(Help):
             embed_type="EVENT",
             marks=EmbedWrapper.INFO)
         await channel.send(
-                text=None if len(tags) < 1 else tags, embed=embed_var)
+            text=None if len(tags) < 1 else tags, embed=embed_var)
 
     async def schedule_event(self, event, start=True):
         # add a new event to the schedule
@@ -305,6 +333,33 @@ class Events(Help):
         # add the event to events and reset the timer
         # timer waits until closest event
         await self.add_event(e, start)
+
+    async def remove_server_event(self, msg,  event, info):
+        info = info.split('\n')
+        dt = ','.join([info[0][6:], info[1][6:]])
+        channel = discord.utils.get(self.bot.client.get_all_channels(),
+                                    name=info[2][9:])
+        if channel is None or dt not in self.events or len(
+                self.events[dt]) == 0:
+            return
+        for e in self.events[dt]:
+            if ('args' in e and len(e['args']) >= 2 and
+                    e['args'][0] == str(channel.id) and
+                    e['args'][1] == event):
+                self.events[dt].remove(e)
+                break
+        if len(self.events[dt]) == 0:
+            del self.events[dt]
+        if not self.bot.database.connected:
+            return
+        cursor = self.bot.database.cnx.cursor(buffered=True)
+        cursor.execute(("DELETE FROM events WHERE datetime = '{}' " +
+                        "AND channel_id = '{}' AND event = '{}'").format(
+            dt, channel.id, event))
+        self.bot.database.cnx.commit()
+        cursor.close()
+        await msg.channel.send(
+            text='Removed event `{}`.'.format(event))
 
     async def events_from_database(self):
         if not self.bot.database.connected:
@@ -332,18 +387,12 @@ class Events(Help):
 
     async def show_server_events(self, msg):
         if not self.bot.database.connected:
-            await msg.channel.send(
-                text='No database connection.',
-                delete_after=5)
             return
         cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute('SELECT * FROM events')
         fetched = cursor.fetchall()
         cursor.close()
         if fetched is None or len(fetched) == 0:
-            await msg.channel.send(
-                text='No scheduled events.',
-                delete_after=5)
             return
         events = {}
         for e in fetched:
@@ -355,16 +404,15 @@ class Events(Help):
             events[e[2]] = 'Date: {}\nTime: {}\nChannel: {}'.format(
                 date, time, channel.name)
         if len(events) == 0:
-            await msg.channel.send(
-                text='No scheduled events.',
-                delete_after=5)
             return
         return events
 
     def additional_info(self, prefix):
-        return '* {}\n* {}\n* {}\n* {}'.format(
+        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
             'Initialize new event with "{}event <event-name>"'.format(prefix),
             "Add event's information as described in the started event.",
             'The events may be delayed by a minute.',
             'See scheduled events for the server with "{}event show".'.format(
+                prefix),
+            'Remove event with "{}event remove <event_name>".'.format(
                 prefix))
