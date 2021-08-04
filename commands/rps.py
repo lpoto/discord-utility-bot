@@ -15,7 +15,8 @@ class Rps(Help):
         if user is None:
             args = msg.content.split()
             if len(args) > 1 and (args[1] == 'leaderboard' or args[1] == 'lb'):
-                await self.show_leaderboard(msg)
+                await self.bot.database.use_database(
+                    self.show_leaderboard, msg)
                 return
             user = msg.author
         # send dm to the user who started the game and
@@ -111,8 +112,8 @@ class Rps(Help):
             info['winner_name'], info['loser_name'])
         embed.description = '{} against {}'.format(
             info['winner_emoji'], info['loser_emoji'])
-        wins = await self.wins_to_database(
-            msg, info['winner_id'])
+        wins = await self.database.use_database(
+            self.wins_to_database, msg, info['winner_id'])
         embed.set_footer(text='{} total wins: {}'.format(
             info['winner_name'], wins))
         if info['winner_avatar_url']:
@@ -161,11 +162,8 @@ class Rps(Help):
         new_embed.mark(new_embed.ENDED)
         await msg.edit(embed=new_embed)
 
-    async def wins_to_database(self, msg, user_id):
+    async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count
-        if self.bot.database.connected is False:
-            return ''
-        cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute((
             "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}' AND" +
             " user_id = '{}'").format(msg.guild.id, user_id))
@@ -182,19 +180,11 @@ class Rps(Help):
                 ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, msg.guild.id, user_id))
-        self.bot.database.cnx.commit()
-        cursor.close()
         return count
 
-    async def show_leaderboard(self, msg):
+    async def show_leaderboard(self, cursor, msg):
         # show guild members that played rps in order
         # best to worst
-        if self.bot.database.connected is False:
-            await msg.channel.send(
-                text='No database connection.',
-                delete_after=5)
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute(
             "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'"
             .format(msg.guild.id))

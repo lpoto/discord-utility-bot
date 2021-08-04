@@ -242,8 +242,8 @@ class MemberWrapper(object):
 
 class Queue():
     """
-    Create queues for messages edited by reactions or replies,
-    to avoid duplicating or missins edits.
+    Create queues for messages constantly edited by reactions or replies
+    to avoid duplicating or missing any of the edits.
     """
 
     def __init__(self, bot):

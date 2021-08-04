@@ -48,7 +48,8 @@ class Config(Help):
         await self.edit_config(opts[args[1]], msg, args)
 
     async def edit_config(self, function, msg, args):
-        await function(msg, args)
+        await self.bot.database.use_database(
+            function, msg, args)
 
     async def create_config_embed(self, msg):
         embed_var = EmbedWrapper(discord.Embed(
@@ -91,7 +92,7 @@ class Config(Help):
             reactions=[emojis[list(
                 self.bot.commands.keys()).index('server')], waste_basket])
 
-    async def set_prefix(self, msg, args):
+    async def set_prefix(self, cursor, msg, args):
         new_prefix = args[2]
         if len(new_prefix) > 5:
             await msg.channel.send(
@@ -99,6 +100,7 @@ class Config(Help):
                 delete_after=5)
             return
         await self.edit_sql(
+            cursor,
             "SELECT * FROM prefix WHERE guild_id = '{}'".format(
                 msg.guild.id),
             ("INSERT INTO prefix (guild_id, prefix) VALUES " +
@@ -110,7 +112,7 @@ class Config(Help):
         await msg.channel.send(
             text='`Prefix` changed to `{}`.'.format(new_prefix))
 
-    async def set_command(self, msg, args):
+    async def set_command(self, cursor, msg, args):
         if args[1] == 'command':
             if len(args) < 4:
                 await msg.channel.send(
@@ -139,20 +141,19 @@ class Config(Help):
             query = ("DELETE FROM commands WHERE guild_id = '{}' AND " +
                      "command = '{}'").format(
                 msg.guild.id, cmd)
-            cursor = self.bot.database.cnx.cursor(buffered=True)
             cursor.execute(query)
-            self.bot.database.cnx.commit()
-            cursor.close()
             await msg.channel.send(
                 test=(
                     'Removed roles for `{}`'
                 ).format(cmd))
             return
+
         guild_roles = [i.name for i in msg.guild.roles]
         roles = await self.valid_roles(msg, new_roles, guild_roles)
         if roles is None:
             return
         await self.edit_sql(
+            cursor,
             ("SELECT * FROM commands WHERE guild_id = '{}' " +
              "AND command = '{}'").format(
                 msg.guild.id, cmd),
@@ -179,7 +180,7 @@ class Config(Help):
             roles.append(guild_roles[x.index(i)])
         return roles
 
-    async def set_welcome(self, msg, args):
+    async def set_welcome(self, cursor, msg, args):
         new_txt = msg.content.replace(
             '{} {} '.format(args[0], args[1]), '', 1)
         if len(new_txt) < 1:
@@ -189,11 +190,11 @@ class Config(Help):
                     msg.guild.id)
             cursor = self.bot.database.cnx.cursor(buffered=True)
             cursor.execute(query)
-            self.bot.database.cnx.commit()
             cursor.close()
             await msg.channel.send(text='Removed `Welcome text`.')
             return
         await self.edit_sql(
+            cursor,
             "SELECT * FROM welcome WHERE guild_id = '{}'".format(
                 msg.guild.id),
             ("INSERT INTO welcome (guild_id, welcome) VALUES " +
@@ -205,16 +206,13 @@ class Config(Help):
         await msg.channel.send(
             text='`Welcome text` changed to `{}`.'.format(new_txt))
 
-    async def edit_sql(self, select, insert, update):
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    async def edit_sql(self, cursor, select, insert, update):
         cursor.execute(select)
         fetched = cursor.fetchone()
         if fetched is None:
             cursor.execute(insert)
         else:
             cursor.execute(update)
-        self.bot.database.cnx.commit()
-        cursor.close()
 
     def additional_info(self, prefix):
         return "* {}\n* {}\n* {}\n* {}\n* {}".format(

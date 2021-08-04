@@ -49,7 +49,15 @@ class UserInfo(Help):
             value=str(user.joined_at).split()[0],
             inline=False
         )
-        rps_wins = await self.add_rps_wins(msg, user)
+        cf_wins = await self.bot.database.use_database(
+            self.add_wins, msg, 'connect_four', user)
+        if cf_wins is not None:
+            embed_var.add_field(
+                name=cf_wins[0],
+                value=cf_wins[1],
+                inline=False)
+        rps_wins = await self.bot.database.use_database(
+            self.add_wins, msg, 'rock_paper_scissors', user)
         if rps_wins is not None:
             embed_var.add_field(
                 name=rps_wins[0],
@@ -66,17 +74,13 @@ class UserInfo(Help):
         )
         return embed_var
 
-    async def add_rps_wins(self, msg, user):
-        if self.bot.database.connected is False:
-            return None
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    async def add_wins(self, cursor, msg, nm, user):
         cursor.execute(
-            ("SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'" +
-             " AND user_id = '{}'").format(msg.guild.id, user.id))
+            ("SELECT * FROM {} WHERE guild_id = '{}'" +
+             " AND user_id = '{}'").format(nm, msg.guild.id, user.id))
         fetched = cursor.fetchone()
         count = 0 if fetched is None else fetched[2]
-        cursor.close()
-        return ('Rock-Paper-Scissors wins', count)
+        return ('{} wins'.format(nm), count)
 
     def additional_info(self, prefix):
         return '{}\n{}'.format(

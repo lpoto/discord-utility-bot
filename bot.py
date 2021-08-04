@@ -36,7 +36,8 @@ class Bot:
         self.client = client
         if self.database is None:
             self.database = DB()
-        self.database.connect_database()
+            self.database.bot = self
+        await self.database.connect_database()
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()
                            if isinstance(cls, type)]):
@@ -46,7 +47,8 @@ class Bot:
             # if event command is ready, start timing for the scheduled
             # events
             if 'event' in self.commands:
-                await self.commands['event'].events_from_database()
+                await self.database.use_database(
+                        self.commands['event'].events_from_database)
                 await self.commands['event'].start_timer()
             self.ready = True
 

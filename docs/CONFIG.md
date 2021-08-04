@@ -27,10 +27,7 @@
 	USER="user"
 	PASSWORD="your-database-password"
 ```
-* You can also add port:
-```
-	PORT=your-database-port
-```
+
 * Add filename to `.env` if you want error logs in a file:
 ```
 	LOGFILE='error.log'

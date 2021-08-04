@@ -19,7 +19,8 @@ class ConnectFour(Help):
         if user is None:
             args = msg.content.split()
             if len(args) > 1 and args[1] in ['lb', 'leaderboard']:
-                await self.show_leaderboard(msg)
+                await self.bot.database.use_database(
+                    self.show_leaderboard, msg)
                 return
             user = msg.author
         name = user.name if not user.nick else user.nick
@@ -141,7 +142,7 @@ class ConnectFour(Help):
                 moves, grid, turn, False, color=embed.color)
         else:
             if len(moves) == 42:
-                embed_var = self.completed_embed(
+                embed_var = await self.completed_embed(
                     msg, user1, user2, token1, token2,
                     moves, grid, turn,
                     True, color=embed.color)
@@ -156,7 +157,7 @@ class ConnectFour(Help):
         return (line.replace('\u2000', ''
                              ).replace('\u3000', '')).split()
 
-    def completed_embed(
+    async def completed_embed(
             self,
             msg,
             user1,
@@ -180,9 +181,12 @@ class ConnectFour(Help):
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
             moves.append(0)
         else:
+            wins = await self.bot.database.use_database(
+                    self.wins_to_database, users[0][0], msg.guild.id)
             embed_var.set_footer(text='{} total wins: {}'.format(
-                users[0][1], self.wins_to_database(users[0][0], msg.guild.id)))
-        self.moves_to_database(''.join([str(i) for i in moves]))
+                users[0][1], wins))
+        await self.bot.database.use_database(
+                self.moves_to_database, ''.join([str(i) for i in moves]))
         return embed_var
 
     def build_embed(
@@ -273,11 +277,8 @@ class ConnectFour(Help):
                 break
         return grid
 
-    def wins_to_database(self, user_id, guild_id):
+    def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database
-        if self.bot.database.connected is False:
-            return ''
-        cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute((
             "SELECT * FROM four_in_line WHERE guild_id = '{}' AND" +
             " user_id = '{}'").format(guild_id, user_id))
@@ -294,29 +295,16 @@ class ConnectFour(Help):
                 ("UPDATE four_in_line SET wins = {} WHERE " +
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, guild_id, user_id))
-        self.bot.database.cnx.commit()
-        cursor.close()
         return count
 
-    def moves_to_database(self, moves):
-        if self.bot.database.connected is False:
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    def moves_to_database(self, cursor, moves):
         cursor.execute(
             ("INSERT INTO four_in_line_records (moves) VALUES ('{}')"
              ).format(moves))
-        self.bot.database.cnx.commit()
-        cursor.close()
 
-    async def show_leaderboard(self, msg):
+    async def show_leaderboard(self, cursor, msg):
         # show guild members that played fil in order
         # best to worst
-        if self.bot.database.connected is False:
-            await msg.channel.send(
-                text='No database connection.',
-                delete_after=5)
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute(
             "SELECT * FROM four_in_line WHERE guild_id = '{}'"
             .format(msg.guild.id))

@@ -98,12 +98,13 @@ class Events(Help):
                 text='Please add a name for the event!',
                 delete_after=5)
             return
-        events = await self.show_server_events(msg)
+        events = await self.bot.database.use_database(
+            self.show_server_events, msg)
         if args[1] in ['stop', 'remove', 'end', 'cancel']:
             if len(args) < 3:
                 await msg.channel.send(
-                        text='Which event do you want to delete?',
-                        delete_after=5)
+                    text='Which event do you want to delete?',
+                    delete_after=5)
                 return
             e = msg.content.replace('{} {} '.format(
                 args[0], args[1]), '', 1)
@@ -112,7 +113,8 @@ class Events(Help):
                     text='No such event.',
                     delete_after=5)
             else:
-                await self.remove_server_event(msg, e, events[e])
+                await self.bot.database.use_database(
+                    self.remove_server_event, msg, e, events[e])
             return
         if args[1] in ['show', 'events', 'see'] and len(args) == 2:
             if events is None:
@@ -300,7 +302,8 @@ class Events(Help):
                 info[4].replace('tags: ', '', 1).replace('tags:', '', 1)
                 ]
         await self.schedule_event(info)
-        self.event_to_database(info)
+        await self.bot.database.use_database(
+            self.event_to_database, info)
         embed_var.title = embed_var.title.replace(
             'Event:', 'Event(commited):', 1)
         embed_var.set_footer(text='')
@@ -334,7 +337,7 @@ class Events(Help):
         # timer waits until closest event
         await self.add_event(e, start)
 
-    async def remove_server_event(self, msg,  event, info):
+    async def remove_server_event(self, cursor, msg,  event, info):
         info = info.split('\n')
         dt = ','.join([info[0][6:], info[1][6:]])
         channel = discord.utils.get(self.bot.client.get_all_channels(),
@@ -352,19 +355,14 @@ class Events(Help):
             del self.events[dt]
         if not self.bot.database.connected:
             return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
         cursor.execute(("DELETE FROM events WHERE datetime = '{}' " +
                         "AND channel_id = '{}' AND event = '{}'").format(
             dt, channel.id, event))
         self.bot.database.cnx.commit()
-        cursor.close()
         await msg.channel.send(
             text='Removed event `{}`.'.format(event))
 
-    async def events_from_database(self):
-        if not self.bot.database.connected:
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    async def events_from_database(self, cursor):
         cursor.execute('SELECT * FROM events')
         fetched = cursor.fetchall()
         if fetched is None or len(fetched) == 0:
@@ -372,26 +370,17 @@ class Events(Help):
             return
         for e in fetched:
             await self.schedule_event(e, False)
-        cursor.close()
 
-    def event_to_database(self, info):
-        if not self.bot.database.connected:
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    def event_to_database(self, cursor, info):
         cursor.execute(('INSERT INTO events ' +
                         '(datetime, channel_id, event, text, tags) VALUES' +
                         "('{}', '{}', '{}', '{}', '{}')".format(
                             info[0], info[1], info[2], info[3], info[4])))
         self.bot.database.cnx.commit()
-        cursor.close()
 
-    async def show_server_events(self, msg):
-        if not self.bot.database.connected:
-            return
-        cursor = self.bot.database.cnx.cursor(buffered=True)
+    async def show_server_events(self, cursor, msg):
         cursor.execute('SELECT * FROM events')
         fetched = cursor.fetchall()
-        cursor.close()
         if fetched is None or len(fetched) == 0:
             return
         events = {}
