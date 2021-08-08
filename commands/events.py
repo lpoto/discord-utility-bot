@@ -3,9 +3,8 @@ import re
 from datetime import datetime
 from threading import Timer
 from commands.help import Help
-from utils import random_color, waste_basket, EmbedWrapper
-
-# TODO     -> Remove event from channel.
+from utils.misc import random_color, waste_basket
+from utils.wrappers import EmbedWrapper
 
 
 class Events(Help):

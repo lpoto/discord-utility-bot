@@ -1,6 +1,7 @@
 import discord
 from commands.help import Help
-from utils import emojis, waste_basket, colors, EmbedWrapper
+from utils.misc import emojis, waste_basket, colors
+from utils.wrappers import EmbedWrapper
 
 
 class ServerInfo(Help):

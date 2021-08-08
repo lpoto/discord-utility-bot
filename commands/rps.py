@@ -1,5 +1,6 @@
 import discord
-from utils import rps_emojis, random_color, waste_basket, EmbedWrapper
+from utils.misc import rps_emojis, random_color, waste_basket
+from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
 

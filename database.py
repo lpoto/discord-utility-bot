@@ -1,21 +1,20 @@
-from utils import DEFAULT_PREFIX
 import logging
 from mysql.connector import pooling, Error
 import os
 
 
 class DB:
-    def __init__(self):
-        self.bot = None
+    def __init__(self, default_prefix):
         self.connection_pool = None
+        self.default_prefix = default_prefix
 
     @property
-    def connection_object(self):
+    def connection_object(self) -> None or pooling.PooledMySQLConnection:
         if self.connection_pool is not None:
             return self.connection_pool.get_connection()
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         cnx = self.connection_object
         if cnx is None:
             return False
@@ -24,7 +23,17 @@ class DB:
         return c
 
     @property
-    def required_tables(self):
+    def get_info(self) -> None or dict:
+        info = {}
+        for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
+            x = os.environ.get(i)
+            if x is None:
+                return None
+            info[i.lower()] = x
+        return info
+
+    @property
+    def required_tables(self) -> dict:
         """All the required tables used by the bot."""
         return {
             'prefix': [
@@ -57,7 +66,7 @@ class DB:
 
     async def connect_database(self, info=None):
         """Connect a MySQL database from provided info."""
-        info = self.get_info()
+        info = info if info is not None else self.get_info
         cnx = None
         # if database is given, connect
         if info is None:
@@ -83,10 +92,8 @@ class DB:
             cursor.execute('select database();')
             result = cursor.fetchone()[0]
             t = await self.use_database(self.create_tables)
-            if t is None or len(t) < 1:
-                logging.info(msg='Database: {}\n'.format(result))
-            else:
-                logging.info(msg='Database: {}'.format(result))
+            logging.info(msg='Database: {}'.format(result))
+            if t is not None and len(t) > 0:
                 logging.info(msg='Created database tables:\n{}'.format(
                     '\n'.join(t)))
         except Error as err:
@@ -130,16 +137,7 @@ class DB:
                 if repeat:
                     self.use_database(function, *args, repeat)
 
-    def get_info(self) -> dict or None:
-        info = {}
-        for i in ['USER', 'PASSWORD', 'HOST', 'DATABASE']:
-            x = os.environ.get(i)
-            if x is None:
-                return None
-            info[i.lower()] = x
-        return info
-
-    async def create_tables(self, cursor):
+    async def create_tables(self, cursor) -> list:
         """Check if all the required tables exist, and create
         those that do not."""
         tables = self.required_tables
@@ -159,7 +157,7 @@ class DB:
         prefix = await self.use_database(
             self.prefix_from_database, msg)
         if prefix is None:
-            return DEFAULT_PREFIX
+            return self.default_prefix
         return prefix
 
     async def get_welcome(self, server) -> str or None:
@@ -186,7 +184,7 @@ class DB:
         cursor.execute(query)
         fetched = cursor.fetchone()
         if fetched is None:
-            return DEFAULT_PREFIX
+            return self.default_prefix
         return fetched[1]
 
     async def welcome_from_database(self, cursor, server):

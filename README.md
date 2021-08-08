@@ -21,15 +21,15 @@ For more information type `-help` in discord channel, after adding the bot.
 
 ## required permissions
 
-* vital:
+* necessary:
 	- Read Messages
 	- Send Messages
 	- Read Message History
 	- Add Reactions
 
 * optional:
-	- Manage Roles (for adding and removing roles with reactions)
-	- Manage Messages (for clearing chat and cleaner commands)
+	- Manage Roles (adding and removing roles with reactions)
+	- Manage Messages (clearing chat, removing reactions when hosting games,...)
 	
 ## using the code
 

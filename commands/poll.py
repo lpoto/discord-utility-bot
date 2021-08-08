@@ -1,6 +1,7 @@
 from commands.help import Help
 import discord
-from utils import emojis, EmbedWrapper, random_color
+from utils.misc import emojis, random_color
+from utils.wrappers import EmbedWrapper
 
 
 class Poll(Help):
@@ -132,7 +133,7 @@ class Poll(Help):
         if marks is not None and EmbedWrapper.FIXED in marks:
             return
         poll_msg.embeds[0].mark(
-                [EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
+            [EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.send(
             text='Poll has been fixed, no responses ' +
@@ -148,7 +149,7 @@ class Poll(Help):
 
     async def end_poll(self, poll_msg, option):
         poll_msg.embeds[0].mark(
-                [EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE])
+            [EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.send(
             text='Poll has been ended.',

@@ -1,6 +1,7 @@
 from commands.help import Help
 import discord
-from utils import emojis, EmbedWrapper, random_color
+from utils.misc import emojis, random_color
+from utils.wrappers import EmbedWrapper
 
 
 class Roles(Help):

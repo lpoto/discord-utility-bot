@@ -1,5 +1,6 @@
 import discord
-from utils import Queue, ChannelWrapper, EmbedWrapper, waste_basket, colors
+from utils.misc import Queue, waste_basket, colors
+from utils.wrappers import ChannelWrapper, EmbedWrapper
 from database import DB
 import commands as cmds
 
@@ -10,9 +11,10 @@ class Bot:
     user defined commands.
     """
 
-    def __init__(self):
+    def __init__(self, default_prefix):
         self.client = None
         self.database = None
+        self.default_prefix = default_prefix
         # discord.Client will not trigger events until
         # it has a ready Bot object
         self.ready = False
@@ -35,8 +37,7 @@ class Bot:
         """
         self.client = client
         if self.database is None:
-            self.database = DB()
-            self.database.bot = self
+            self.database = DB(self.default_prefix)
         await self.database.connect_database()
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()

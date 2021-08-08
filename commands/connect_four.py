@@ -1,5 +1,6 @@
 import discord
-import utils
+import utils.misc as utils
+from utils.wrappers import EmbedWrapper
 import random
 from commands.help import Help
 
@@ -24,13 +25,13 @@ class ConnectFour(Help):
                 return
             user = msg.author
         name = user.name if not user.nick else user.nick
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             description=('{} has challanged for a game of connect four.\n' +
                          'React with a token to join!\n').format(
                              name, utils.thumbs_up),
             color=utils.random_color()),
             embed_type=self.embed_type,
-            marks=utils.EmbedWrapper.NOT_DELETABLE)
+            marks=EmbedWrapper.NOT_DELETABLE)
         embed_var.set_footer(text=user.id)
         await msg.channel.send(embed=embed_var, reactions=self.tokens)
 
@@ -170,13 +171,13 @@ class ConnectFour(Help):
             draw,
             color):
         users = (user1, user2) if on_move == 0 else (user2, user1)
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title='{} wins against {} with {}!'.format(
                 users[0][1], users[1][1], token1 if on_move == 0 else token2),
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
-            marks=utils.EmbedWrapper.ENDED)
+            marks=EmbedWrapper.ENDED)
         if draw:
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
             moves.append(0)
@@ -199,14 +200,14 @@ class ConnectFour(Help):
             grid,
             on_move,
             color=utils.random_color()):
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title='{} {} vs {} {}!'.format(
                 user1[1], token1, user2[1], token2),
             description='On turn: {}\n\n{}'.format(
                 token1 if on_move == 1 else token2, self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
-            marks=[utils.EmbedWrapper.FIXED, utils.EmbedWrapper.NOT_DELETABLE])
+            marks=[EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
         embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
         return embed_var
@@ -314,11 +315,11 @@ class ConnectFour(Help):
                 text='No availible leaderboard.',
                 delete_after=5)
             return
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',
             color=utils.random_color()),
             embed_type=self.embed_type,
-            marks=utils.EmbedWrapper.INFO)
+            marks=EmbedWrapper.INFO)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))

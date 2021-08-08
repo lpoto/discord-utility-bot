@@ -1,5 +1,6 @@
 import discord
-import utils
+from utils.wrappers import EmbedWrapper, MemberWrapper
+from utils.misc import random_color, emojis
 from commands.help import Help
 
 
@@ -9,28 +10,28 @@ class Games(Help):
         self.description = 'Show all games.'
 
     async def execute_command(self, msg):
-        embed_var = utils.EmbedWrapper(discord.Embed(
+        embed_var = EmbedWrapper(discord.Embed(
             description="React with a game's emoji to start it.",
-            color=utils.random_color()),
+            color=random_color()),
             embed_type='GAMES',
-            marks=utils.EmbedWrapper.INFO)
+            marks=EmbedWrapper.INFO)
         e_count = 0
         for k, v in self.bot.commands.items():
             if v.game:
                 embed_var.add_field(name=v.embed_type,
-                                    value=(utils.emojis[e_count] +
+                                    value=(emojis[e_count] +
                                            ' ({})'.format(k)))
                 e_count += 1
         await msg.channel.send(
             embed=embed_var, reactions=[
-                utils.emojis[i] for i in range(e_count)])
+                emojis[i] for i in range(e_count)])
 
     async def on_raw_reaction(self, msg, payload):
         if (not msg.is_games or
-                payload.emoji.name not in utils.emojis or
+                payload.emoji.name not in emojis or
                 payload.event_type != 'REACTION_ADD'):
             return
-        user = utils.MemberWrapper(msg.guild.get_member(payload.user_id))
+        user = MemberWrapper(msg.guild.get_member(payload.user_id))
         if user is None:
             return
         await msg.remove_reaction(emoji=payload.emoji.name, member=user)

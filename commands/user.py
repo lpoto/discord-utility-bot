@@ -1,6 +1,7 @@
 import discord
 from commands.help import Help
-from utils import waste_basket, random_color, EmbedWrapper
+from utils.misc import waste_basket, random_color
+from utils.wrappers import EmbedWrapper
 
 
 class UserInfo(Help):
@@ -63,10 +64,11 @@ class UserInfo(Help):
                 name=rps_wins[0],
                 value=rps_wins[1],
                 inline=False)
-        roles = 'everyone'
+        roles = None
         for i in user.roles:
             if str(i.name) != '@everyone':
-                roles += ',\n' + str(i.name)
+                roles = str(i.name) if roles is None else '{}, \n{}'.format(
+                        roles, i.name)
         embed_var.add_field(
             name='Roles',
             value=roles,

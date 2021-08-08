@@ -4,7 +4,8 @@ import sys
 import os
 import logging
 import traceback
-import utils as utils
+from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper
+import utils.misc as utils
 
 
 class MyClient(discord.Client):
@@ -13,12 +14,12 @@ class MyClient(discord.Client):
         self.bot = None
         self.handle_exit = None
 
-    def get_channel(self, channel_id) -> utils.ChannelWrapper:
-        return utils.ChannelWrapper(
+    def get_channel(self, channel_id) -> ChannelWrapper:
+        return ChannelWrapper(
             super().get_channel(int(channel_id)))
 
-    def get_user(self, user_id) -> utils.MemberWrapper:
-        return utils.MemberWrapper(super().get_user(id=int(user_id)))
+    def get_user(self, user_id) -> MemberWrapper:
+        return MemberWrapper(super().get_user(id=int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
         """Call a method matching the event recieved from discord."""
@@ -41,11 +42,12 @@ class MyClient(discord.Client):
             logging.info(msg='Bot logged in!')
             logging.info(msg='Client: ' + str(self.user))
             # show help command in self.bot's status message
-            activity = discord.Game(name=utils.DEFAULT_PREFIX+'help', type=2)
+            await self.bot.initialize(self)
+            activity = discord.Game(
+                name=self.bot.default_prefix + 'help', type=2)
             status = discord.Status.idle
             await self.change_presence(status=status, activity=activity)
-            logging.info(msg='Status: ' + str(activity))
-            await self.bot.initialize(self)
+            logging.info(msg='Status: {}\n'.format(activity))
 
     async def on_error(self, error, *args, **kwargs):
         root_dir = os.path.abspath(os.curdir)
@@ -78,7 +80,7 @@ class MyClient(discord.Client):
             return
         # wrapp message and override default functions to avoid errors
         # and add additional functionality
-        msg = utils.MessageWrapper(msg)
+        msg = MessageWrapper(msg)
         if msg.reference is not None and msg.reference.message_id:
             referenced_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
@@ -87,8 +89,10 @@ class MyClient(discord.Client):
                 return
         # allow calling help with default prefix, even if a different
         # prefix is set
-        if msg.content == "{prefix}help".format(prefix=utils.DEFAULT_PREFIX):
-            await self.bot.handle_message(msg, 'help', utils.DEFAULT_PREFIX)
+        if msg.content == "{prefix}help".format(
+                prefix=self.bot.default_prefix):
+            await self.bot.handle_message(
+                    msg, 'help', self.bot.default_prefix)
             return
         # if server has prefix set in it's config, use that prefix,
         # else use default prefix
@@ -135,7 +139,7 @@ class MyClient(discord.Client):
         # if server has welcome text set up
         # in database, send welcome text to default channel
         server = member.guild
-        default_channel = utils.ChannelWrapper(server.system_channel)
+        default_channel = ChannelWrapper(server.system_channel)
         # check if self.bot has send_messages permissions in defaut channel
         if not default_channel.permissions(
                 server.me, 'send_messages')[0]:

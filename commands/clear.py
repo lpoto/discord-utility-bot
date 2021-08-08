@@ -1,5 +1,5 @@
 from commands.help import Help
-from utils import MessageWrapper
+from utils.wrappers import MessageWrapper
 
 
 class ClearChat(Help):

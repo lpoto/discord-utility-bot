@@ -1,10 +1,12 @@
 import asyncio
 import logging
 import os
+from dotenv import load_dotenv
 from bot import Bot
 import discord
 from client import MyClient
 
+load_dotenv()
 logging.getLogger('discord').setLevel(logging.WARN)
 
 file = os.environ.get('LOGFILE')
@@ -55,7 +57,7 @@ def run_bot(DISCORD_TOKEN):
         intents=discord.Intents.all())
     client.handle_exit = handle_exit
     client.loop.set_exception_handler(handle_exceptions)
-    bot = Bot()
+    bot = Bot(os.environ.get('DEFAULT_PREFIX'))
     while True:
         try:
             bot.client = client
