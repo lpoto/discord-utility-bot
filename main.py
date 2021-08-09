@@ -7,20 +7,25 @@ import discord
 from client import MyClient
 
 load_dotenv()
-logging.getLogger('discord').setLevel(logging.WARN)
 
-file = os.environ.get('LOGFILE')
+# send only warnings and errors from discord module
+logging.getLogger('discord').setLevel(logging.WARN)
+# set up default logging config, log to file if filename provided
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
     datefmt='%H:%M:%S %d-%m-%Y',
     level=logging.INFO,
-    filename=file)
+    filename=os.environ.get('LOGFILE'))
 
 
 def handle_exit(client, bot, tasks, disconnected=False):
+    """
+    Handle running tasks and clean up Bot's multithreading
+    functions on Client disconnect.
+    """
     if disconnected:
         logging.warning(msg='Disconnected\n')
-    bot.clean_up()
+    bot.clean_up()  # kill threading.Timer etc.
     t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
     tasks.add(t)
@@ -43,6 +48,7 @@ def handle_exit(client, bot, tasks, disconnected=False):
 
 
 def handle_exceptions(loop, context):
+    # prettier exceptions format
     ex = context['message']
     if '_ClientEventTask' in ex:
         return
@@ -52,31 +58,52 @@ def handle_exceptions(loop, context):
         ex_type, loc, 56*'-', ex))
 
 
-def run_bot(DISCORD_TOKEN):
+def new_client(client=None, bot=None) -> MyClient:
+    """
+    Create a new discord.Client() instance and
+    link it with a Bot() object
+    """
+    # enable all intents to get member info etc.
+    # application on the discord dev website needs to have
+    # presence and server members intent enabled under BOT
     client = MyClient(
+        loop=None if client is None else client.loop,
         intents=discord.Intents.all())
+    if bot is None:
+        bot = Bot(os.environ.get('DEFAULT_PREFIX'))
+    bot.client = client
+    client.bot = bot
     client.handle_exit = handle_exit
+    return client
+
+
+def run_bot(DISCORD_TOKEN):
+    """
+    Run the bot in a loop while handling exits, reconnects
+    and exceptions
+    """
+    client = new_client()
     client.loop.set_exception_handler(handle_exceptions)
-    bot = Bot(os.environ.get('DEFAULT_PREFIX'))
     while True:
         try:
-            bot.client = client
-            client.bot = bot
-            client.handle_exit = handle_exit
             client.loop.create_task(client.wait_until_ready())
             client.loop.run_until_complete(
                 asyncio.gather(client.start(DISCORD_TOKEN)))
         except SystemExit:
-            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop), True)
+            # try reconnecting
+            handle_exit(client, client.bot, asyncio.all_tasks(
+                        loop=client.loop), True)
         except KeyboardInterrupt:
-            handle_exit(client, bot, asyncio.all_tasks(loop=client.loop))
+            # kill the program
+            handle_exit(client, client.bot, asyncio.all_tasks(
+                loop=client.loop))
             client.loop.close()
             logging.info(msg='Program ended ')
             return
         logging.info(msg='Reconnecting...\n')
-        client = MyClient(
-            loop=client.loop,
-            intents=discord.Intents.all())
+        # create a new discord.Client while keeping the same
+        # Bot instance to avoid reinitializing all the commands...
+        client = new_client(client, client.bot)
 
 
 run_bot(os.environ.get('DISCORD_TOKEN'))

@@ -2,10 +2,6 @@ import sys
 from collections import deque
 import random
 
-# enable all intents to get member info etc.
-# application on the discord dev website needs to have
-# presence and server members intent enabled under BOT
-
 
 class Queue():
     """
@@ -21,6 +17,7 @@ class Queue():
         if queue_id not in self.queues:
             self.queues[queue_id] = deque([])
         self.queues[queue_id].append(item)
+        # start clearing the queue immediately if function provided
         if function is not None:
             await self.clear_queue(queue_id, function, False)
 
@@ -32,6 +29,8 @@ class Queue():
         if ((queue_id in self.queues or
              ignore_running) and len(self.queues[queue_id]) > 0):
             item = self.queues[queue_id].popleft()
+            # catch exceptions triggered when clearing the queue
+            # and continue clearing
             try:
                 await function(item)
             except Exception as err:
@@ -39,6 +38,7 @@ class Queue():
             finally:
                 await self.clear_queue(queue_id, function, True)
         else:
+            # clean up
             if queue_id in self.queues and len(
                     self.queues[queue_id]) == 0:
                 del self.queues[queue_id]

@@ -24,15 +24,11 @@ class ConnectFour(Help):
                     self.show_leaderboard, msg)
                 return
             user = msg.author
-        name = user.name if not user.nick else user.nick
         embed_var = EmbedWrapper(discord.Embed(
-            description=('{} has challanged for a game of connect four.\n' +
-                         'React with a token to join!\n').format(
-                             name, utils.thumbs_up),
+            description='React with a token to join!',
             color=utils.random_color()),
             embed_type=self.embed_type,
-            marks=EmbedWrapper.NOT_DELETABLE)
-        embed_var.set_footer(text=user.id)
+            marks=EmbedWrapper.INFO)
         await msg.channel.send(embed=embed_var, reactions=self.tokens)
 
     async def on_raw_reaction(self, msg, payload):
@@ -42,44 +38,60 @@ class ConnectFour(Help):
         if (payload.event_type != 'REACTION_ADD' or
                 not msg.is_connect_four):
             return
-        if not msg.is_fixed:
+        await self.bot.queue.add_to_queue(
+            queue_id='connectfour:{}'.format(msg.id),
+            item=payload,
+            function=self.reactions_queue_function)
+
+    async def reactions_queue_function(self, payload):
+        channel = self.bot.client.get_channel(payload.channel_id)
+        if channel is None:
+            return
+        msg = await channel.fetch_message(payload.message_id)
+        if msg is None:
+            return
+        if msg.is_info:
             # don't allow a user playing with himself
             # if msg.embeds[0].footer.text == str(payload.user_id):
             #    return
-            starting_name = msg.embeds[0].description.split(
-                ' has challanged for a game of connect four.')[0]
             if payload.emoji.name in self.tokens:
-                await self.start_game(msg, payload.user_id,
-                                      starting_name,
-                                      payload.emoji.name)
+                user = msg.guild.get_member(payload.user_id)
+                if user is None:
+                    return
+                await self.add_tokens(
+                    msg, payload.user_id,
+                    user.name if not user.nick else user.nick,
+                    payload.emoji.name)
             return
         if payload.emoji.name in utils.number_emojis:
             await self.play_game(
                 msg, str(payload.user_id), payload.emoji.name)
 
-    async def start_game(self, msg, user_id, name, token):
-        tks = msg.embeds[0].description.split('\n')[2:]
-        if len(tks) == 0:
-            tks = ['', '']
-        elif len(tks) == 1:
-            tks.append('')
-        if str(user_id) == msg.embeds[0].footer.text[:18]:
-            if token == tks[1]:
-                return
-            tks[0] = token
+    async def add_tokens(self, msg, user_id, name, token):
+        tks = msg.embeds[0].description.split('\n')
+        start = False
+        if len(tks) == 1:
+            tks.append('{}: {}'.format(name, token))
+            msg.embeds[0].set_footer(text=str(user_id))
         else:
-            if (len(msg.embeds[0].footer.text) > 18 and
-                    str(user_id) != msg.embeds[0].footer.text[18:] or
-                    token == tks[0]):
+            u1_id = msg.embeds[0].footer.text
+            tkn = tks[1].split(': ')[-1]
+            if token == tkn:
                 return
-            tks[1] = token
-            msg.embeds[0].set_footer(
-                text=msg.embeds[0].footer.text + str(user_id))
-        if any(i == '' for i in tks):
-            msg.embeds[0].description = '\n'.join(
-                msg.embeds[0].description.split('\n')[:2] + tks)
-            await msg.edit(embed=msg.embeds[0])
-            return
+            if u1_id == str(user_id):
+                tks[1] = '{}: {}'.format(name, token)
+            else:
+                msg.embeds[0].mark(EmbedWrapper.NOT_DELETABLE)
+                tks.append('{}: {}'.format(name, token))
+                msg.embeds[0].set_footer(text=str(u1_id) + str(user_id))
+                start = True
+        msg.embeds[0].description = '\n'.join(tks)
+        await msg.edit(embed=msg.embeds[0])
+        if start:
+            await self.start_game(msg)
+
+    async def start_game(self, msg):
+        tks = msg.embeds[0].description.split('\n')[1:]
         # create an empty grid and wait for players to start playing
         user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[:18]))
         user2 = msg.guild.get_member(int(msg.embeds[0].footer.text[18:]))
@@ -87,8 +99,8 @@ class ConnectFour(Help):
             return
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
         user2 = (user2.id, user2.name if not user2.nick else user2.nick)
-        token1 = tks[0]
-        token2 = tks[1]
+        token1 = tks[0].split(': ')[-1]
+        token2 = tks[1].split(': ')[-1]
         start = random.randint(0, 1)
         if start == 1:
             x = user1
@@ -183,11 +195,11 @@ class ConnectFour(Help):
             moves.append(0)
         else:
             wins = await self.bot.database.use_database(
-                    self.wins_to_database, users[0][0], msg.guild.id)
+                self.wins_to_database, users[0][0], msg.guild.id)
             embed_var.set_footer(text='{} total wins: {}'.format(
                 users[0][1], wins))
         await self.bot.database.use_database(
-                self.moves_to_database, ''.join([str(i) for i in moves]))
+            self.moves_to_database, ''.join([str(i) for i in moves]))
         return embed_var
 
     def build_embed(
@@ -207,7 +219,7 @@ class ConnectFour(Help):
                 token1 if on_move == 1 else token2, self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
-            marks=[EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
+            marks=EmbedWrapper.NOT_DELETABLE)
         embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
             ''.join([str(i) for i in moves]), user1[0], user2[0]))
         return embed_var

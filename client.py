@@ -70,6 +70,9 @@ class MyClient(discord.Client):
         logging.error('\n'.join(result) + '\n')
 
     async def on_message(self, msg):
+        if msg.content == 'kill':
+            raise SystemExit
+            return
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one

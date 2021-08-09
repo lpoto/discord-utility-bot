@@ -110,8 +110,7 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_connect_four(self):
-        return self.type_check('CONNECT_FOUR', [
-            EmbedWrapper.ENDED, EmbedWrapper.INFO])
+        return self.type_check('CONNECT_FOUR', EmbedWrapper.ENDED)
 
     @property
     def is_event(self):
@@ -132,6 +131,10 @@ class MessageWrapper(discord.Message):
     @property
     def is_fixed(self):
         return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.FIXED)
+
+    @property
+    def is_info(self):
+        return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
     def is_rps(self):
