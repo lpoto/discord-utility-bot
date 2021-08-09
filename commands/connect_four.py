@@ -25,11 +25,20 @@ class ConnectFour(Help):
                 return
             user = msg.author
         embed_var = EmbedWrapper(discord.Embed(
-            description='React with a token to join!',
+            description='{}\n{}'.format(
+                'React with a token to join or change selected token!',
+                'React with "X" to leave the game.'),
             color=utils.random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO)
-        await msg.channel.send(embed=embed_var, reactions=self.tokens)
+        m = await msg.channel.send(embed=embed_var)
+        await self.select_tokens(
+            m,
+            user.id,
+            user.name if not user.nick else user.nick,
+            self.tokens[1])
+        for i in [*self.tokens, utils.cross]:
+            await m.react(i)
 
     async def on_raw_reaction(self, msg, payload):
         # on added emoji if thumbs up join second user else if both users are
@@ -54,11 +63,14 @@ class ConnectFour(Help):
             # don't allow a user playing with himself
             # if msg.embeds[0].footer.text == str(payload.user_id):
             #    return
+            if payload.emoji.name == utils.cross:
+                await self.remove_selected_token(msg, payload.user_id)
+                return
             if payload.emoji.name in self.tokens:
                 user = msg.guild.get_member(payload.user_id)
                 if user is None:
                     return
-                await self.add_tokens(
+                await self.select_tokens(
                     msg, payload.user_id,
                     user.name if not user.nick else user.nick,
                     payload.emoji.name)
@@ -67,19 +79,19 @@ class ConnectFour(Help):
             await self.play_game(
                 msg, str(payload.user_id), payload.emoji.name)
 
-    async def add_tokens(self, msg, user_id, name, token):
+    async def select_tokens(self, msg, user_id, name, token):
         tks = msg.embeds[0].description.split('\n')
         start = False
-        if len(tks) == 1:
+        if len(tks) == 2:
             tks.append('{}: {}'.format(name, token))
             msg.embeds[0].set_footer(text=str(user_id))
         else:
             u1_id = msg.embeds[0].footer.text
-            tkn = tks[1].split(': ')[-1]
+            tkn = tks[2].split(': ')[-1]
             if token == tkn:
                 return
             if u1_id == str(user_id):
-                tks[1] = '{}: {}'.format(name, token)
+                tks[2] = '{}: {}'.format(name, token)
             else:
                 msg.embeds[0].mark(EmbedWrapper.NOT_DELETABLE)
                 tks.append('{}: {}'.format(name, token))
@@ -90,6 +102,23 @@ class ConnectFour(Help):
         if start:
             await self.start_game(msg)
 
+    async def remove_selected_token(self, msg, user_id):
+        if (not msg.embeds[0].footer.text or
+                len(msg.embeds[0].footer.text) < 18):
+            return
+        idx = None
+        if str(user_id) == msg.embeds[0].footer.text[:18]:
+            idx = 0
+        elif (len(msg.embeds[0].footer.text) > 18 and
+                str(user_id) == msg.embeds[0].footer.text[18:]):
+            idx = 1
+        tks = msg.embeds[0].description.split('\n')
+        del tks[idx + 2]
+        msg.embeds[0].set_footer(text=msg.embeds[0].footer.text.replace(
+            str(user_id), '', 1))
+        msg.embeds[0].description = '\n'.join(tks)
+        await msg.edit(embed=msg.embeds[0])
+
     async def start_game(self, msg):
         tks = msg.embeds[0].description.split('\n')[1:]
         # create an empty grid and wait for players to start playing
@@ -99,8 +128,8 @@ class ConnectFour(Help):
             return
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
         user2 = (user2.id, user2.name if not user2.nick else user2.nick)
-        token1 = tks[0].split(': ')[-1]
-        token2 = tks[1].split(': ')[-1]
+        token1 = tks[1].split(': ')[-1]
+        token2 = tks[2].split(': ')[-1]
         start = random.randint(0, 1)
         if start == 1:
             x = user1
@@ -111,7 +140,7 @@ class ConnectFour(Help):
             token2 = x
         grid = self.empty_grid
         embed_var = self.build_embed(user1, user2, token1, token2, [], grid, 1)
-        for i in self.tokens:
+        for i in [*self.tokens, utils.cross]:
             await msg.remove_reaction(
                 emoji=i)
         await msg.edit(
@@ -150,7 +179,7 @@ class ConnectFour(Help):
         user2 = (user2.id, user2.name if not user2.nick else user2.nick)
         embed_var = None
         if completed:
-            embed_var = self.completed_embed(
+            embed_var = await self.completed_embed(
                 msg, user1, user2, token1, token2,
                 moves, grid, turn, False, color=embed.color)
         else:
@@ -290,7 +319,7 @@ class ConnectFour(Help):
                 break
         return grid
 
-    def wins_to_database(self, cursor, user_id, guild_id):
+    async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database
         cursor.execute((
             "SELECT * FROM four_in_line WHERE guild_id = '{}' AND" +

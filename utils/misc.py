@@ -91,6 +91,7 @@ white_circle = u"\U000026AA"
 black_square = u"\U000026AB"
 white_square = u"\U00002B1C"
 
+cross = u"\U0000274C"
 # colors that match emoji colors by indexes
 colors = [
     0xffffff,

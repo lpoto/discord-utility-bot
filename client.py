@@ -122,6 +122,7 @@ class MyClient(discord.Client):
                     payload.emoji.name not in utils.rps_emojis and
                     payload.emoji.name not in utils.number_emojis and
                     payload.emoji.name != utils.thumbs_up and
+                    payload.emoji.name != utils.cross and
                     payload.emoji.name != utils.waste_basket)):
             return
         if payload.guild_id:
