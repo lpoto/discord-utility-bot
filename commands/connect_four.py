@@ -1,4 +1,6 @@
 import discord
+from threading import Timer
+import asyncio
 import utils.misc as utils
 from utils.wrappers import EmbedWrapper
 import random
@@ -13,6 +15,13 @@ class ConnectFour(Help):
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = utils.black_circle
+        self.timers = {}
+
+    def clean_up(self):
+        for timer in self.timers.values():
+            if timer is not None and timer.is_alive():
+                timer.cancel()
+        self.timers = {}
 
     async def execute_command(self, msg, user=None):
         # send a message and await second user to join with thumbs up reaction
@@ -63,6 +72,8 @@ class ConnectFour(Help):
             # don't allow a user playing with himself
             # if msg.embeds[0].footer.text == str(payload.user_id):
             #    return
+            if msg.id in self.timers and self.timers[msg.id] is False:
+                return
             if payload.emoji.name == utils.cross:
                 await self.remove_selected_token(msg, payload.user_id)
                 return
@@ -86,26 +97,37 @@ class ConnectFour(Help):
             tks.append('{}: {}'.format(name, token))
             msg.embeds[0].set_footer(text=str(user_id))
         else:
-            u1_id = msg.embeds[0].footer.text
+            u1_id = msg.embeds[0].footer.text[:18]
             tkn = tks[2].split(': ')[-1]
             if token == tkn:
                 return
             if u1_id == str(user_id):
                 tks[2] = '{}: {}'.format(name, token)
+            elif len(msg.embeds[0].footer.text) == 36:
+                u2_id = msg.embeds[0].footer.text[18:]
+                if u2_id != str(user_id):
+                    return
+                tks[3] = '{}: {}'.format(name, token)
             else:
-                msg.embeds[0].mark(EmbedWrapper.NOT_DELETABLE)
                 tks.append('{}: {}'.format(name, token))
                 msg.embeds[0].set_footer(text=str(u1_id) + str(user_id))
+                msg.embeds[0].title = 'Starting in 5 seconds'
                 start = True
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
         if start:
-            await self.start_game(msg)
+            self.timers[msg.id] = Timer(7, self.start_game, args=(msg,))
+            self.timers[msg.id].start()
 
     async def remove_selected_token(self, msg, user_id):
         if (not msg.embeds[0].footer.text or
                 len(msg.embeds[0].footer.text) < 18):
             return
+        if (msg.id in self.timers and
+            self.timers[msg.id] is not None and
+                self.timers[msg.id].is_alive()):
+            self.timers[msg.id].cancel()
+            del self.timers[msg.id]
         idx = None
         if str(user_id) == msg.embeds[0].footer.text[:18]:
             idx = 0
@@ -114,12 +136,15 @@ class ConnectFour(Help):
             idx = 1
         tks = msg.embeds[0].description.split('\n')
         del tks[idx + 2]
+        msg.embeds[0].title = ''
         msg.embeds[0].set_footer(text=msg.embeds[0].footer.text.replace(
             str(user_id), '', 1))
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
 
-    async def start_game(self, msg):
+    def start_game(self, msg):
+        if msg.id in self.timers:
+            self.timers[msg.id] = False
         tks = msg.embeds[0].description.split('\n')[1:]
         # create an empty grid and wait for players to start playing
         user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[:18]))
@@ -141,11 +166,16 @@ class ConnectFour(Help):
         grid = self.empty_grid
         embed_var = self.build_embed(user1, user2, token1, token2, [], grid, 1)
         for i in [*self.tokens, utils.cross]:
-            await msg.remove_reaction(
-                emoji=i)
-        await msg.edit(
+            x = asyncio.run_coroutine_threadsafe(msg.remove_reaction(
+                emoji=i), loop=self.bot.client.loop)
+            x.result()
+        x = asyncio.run_coroutine_threadsafe(msg.edit(
             embed=embed_var,
-            reactions=[utils.number_emojis[i] for i in range(7)])
+            reactions=[utils.number_emojis[i] for i in range(7)]),
+            loop=self.bot.client.loop)
+        x.result()
+        if msg.id in self.timers:
+            del self.timers[msg.id]
 
     async def play_game(self, msg, user_id, emoji):
         move = utils.number_emojis.index(emoji) + 1

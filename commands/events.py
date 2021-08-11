@@ -17,6 +17,11 @@ class Events(Help):
         # timer between events
         self.timer = None
 
+    def clean_up(self):
+        if self.timer is not None and self.timer.is_alive():
+            self.timer.cancel()
+        self.timer = None
+
     async def start_timer(self):
         # start the timer that waits until closest event
         if self.timer is not None and self.timer.is_alive():

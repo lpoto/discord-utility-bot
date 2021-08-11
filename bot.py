@@ -224,9 +224,7 @@ class Bot:
         return embed_var
 
     def clean_up(self):
-        """Clean up running events."""
-        if ('event' in self.commands and
-                self.commands['event'].timer is not None and
-                self.commands['event'].timer.is_alive()):
-            self.commands['event'].timer.cancel()
+        """Cancel multithreading functions."""
+        for cmd in self.commands.values():
+            cmd.clean_up()
         self.client = None

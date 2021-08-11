@@ -25,7 +25,7 @@ def handle_exit(client, bot, tasks, disconnected=False):
     """
     if disconnected:
         logging.warning(msg='Disconnected\n')
-    bot.clean_up()  # kill threading.Timer etc.
+    bot.clean_up()  # kill threading.Timers etc.
     t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
     tasks.add(t)

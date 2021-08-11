@@ -21,6 +21,9 @@ class Help:
         # on init add the created object to
         # Bot's commands dictionary
 
+    def clean_up(self):
+        pass
+
     def additional_info(self, prefix) -> str:
         """ Informations about the command, more detailed
         than the command's description."""
