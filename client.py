@@ -70,12 +70,12 @@ class MyClient(discord.Client):
         logging.error('\n'.join(result) + '\n')
 
     async def on_message(self, msg):
-        if msg.content == 'kill':
-            raise SystemExit
-            return
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
+        if str(msg.channel.type) == 'private':
+            self.dispatch('dm', msg)
+            return
         if (msg.author.id == self.user.id or
                 str(msg.channel.type) != 'text' or
                 msg.content.split() is None or
@@ -106,6 +106,19 @@ class MyClient(discord.Client):
             await self.bot.handle_message(msg, cmd, prefix)
             return
 
+    async def on_dm(self, msg):
+        if (msg.author.id == self.user.id or
+                msg.content.split() is None or
+                len(msg.content.split()) < 1):
+            return
+        msg = MessageWrapper(msg)
+        if msg.reference is not None and msg.reference.message_id:
+            referenced_msg = await msg.channel.fetch_message(
+                msg.reference.message_id)
+            if referenced_msg is not None:
+                self.dispatch('dm_reply', msg, referenced_msg)
+                return
+
     async def on_reply(self, msg, referenced_msg):
         # functions that should be processed separately
         if referenced_msg.author.id != self.user.id:
@@ -115,6 +128,12 @@ class MyClient(discord.Client):
         for i in self.bot.on_reply_commands:
             if await self.bot.check_if_valid(i, msg) is True:
                 await i.on_reply(msg, referenced_msg)
+
+    async def on_dm_reply(self, msg, referenced_msg):
+        if referenced_msg.author.id != self.user.id:
+            return
+        for i in self.bot.on_dm_reply_commands:
+            await i.on_dm_reply(msg, referenced_msg)
 
     async def on_raw_reaction_add(self, payload):
         if (payload.user_id == self.user.id or

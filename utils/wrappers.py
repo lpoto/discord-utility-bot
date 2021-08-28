@@ -113,6 +113,10 @@ class MessageWrapper(discord.Message):
         return self.type_check('CONNECT_FOUR', EmbedWrapper.ENDED)
 
     @property
+    def is_hangman(self):
+        return self.type_check('HANGMAN', EmbedWrapper.ENDED)
+
+    @property
     def is_event(self):
         return self.type_check('EVENT', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
@@ -196,7 +200,7 @@ class ChannelWrapper(object):
     async def fetch_message(self, msg_id):
         return MessageWrapper(
             await self._wrapped_chnl.fetch_message(
-                msg_id))
+                int(msg_id)))
 
     def permissions(self, member, perms):
         if not isinstance(perms, list) and not isinstance(perms, tuple):

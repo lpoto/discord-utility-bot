@@ -27,6 +27,7 @@ class Bot:
         self.on_reply_commands = []
         self.on_raw_reaction_commands = []
         self.on_dm_reaction_commands = []
+        self.on_dm_reply_commands = []
         self.on_time_commands = []
 
     async def initialize(self, client):
@@ -67,6 +68,8 @@ class Bot:
             self.on_raw_reaction_commands.append(command)
         if hasattr(command, 'on_dm_reaction'):
             self.on_dm_reaction_commands.append(command)
+        if hasattr(command, 'on_dm_reply'):
+            self.on_dm_reply_commands.append(command)
         if hasattr(command, 'on_time'):
             self.on_time_commands.append(command)
 
