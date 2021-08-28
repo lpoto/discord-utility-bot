@@ -164,9 +164,6 @@ class MyClient(discord.Client):
         server = member.guild
         default_channel = ChannelWrapper(server.system_channel)
         # check if self.bot has send_messages permissions in defaut channel
-        if not default_channel.permissions(
-                server.me, 'send_messages')[0]:
-            return
         hello = await self.bot.database.get_welcome(server)
         if hello is None:
             return

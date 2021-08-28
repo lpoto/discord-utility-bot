@@ -62,6 +62,7 @@ class Hangman(Help):
         if embed is None:
             return
         await referenced_msg.edit(embed=embed)
+        await msg.delete(delay=4)
 
     async def get_word(self, guild, usr_id, msg_id, chars):
         user = MemberWrapper(guild.get_member(int(usr_id)))
@@ -75,7 +76,6 @@ class Hangman(Help):
         return (word, word.replace(' ', '') == msg.embeds[0].description)
 
     async def game_embed(self, guild, msg_info, u_id, char=None, msg=None):
-        # msg_info = (chanel_id, message_id, user_id)
         if char is not None and msg_info[0] == str(u_id):
             return
         embed = None
@@ -152,3 +152,9 @@ class Hangman(Help):
         pic[-2] = 'Wrong guesses: {}/6'.format(phase)
         pic[phases[phase][0]] = phases[phase][1]
         return pic
+
+    def additional_info(self, prefix):
+        return '{}\n{}\n'.format(
+            ('* Start the game with "{}hm", then reply ' +
+             'with a word in DM.').format(prefix),
+            '* Other users can then reply with letters to guess the word.')

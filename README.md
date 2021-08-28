@@ -12,6 +12,7 @@ A discord bot written in python, intended for managing smaller discord servers.
 * scheduling events,
 * hosting rock-paper-scissors games,
 * hosting connect-four games,
+* hosting hangman games,
 * Customizable: 
 	- prefix,
 	- welcome text,
