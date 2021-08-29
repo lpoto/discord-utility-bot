@@ -5,6 +5,7 @@ from utils.wrappers import MessageWrapper
 class ClearChat(Help):
     def __init__(self):
         super().__init__(name='clear')
+        self.synonyms = ['delete', 'clean', 'purge']
         self.description = 'Clear from 1 to 50 messages in chat.'
         self.bot_permissions = ['send_messages', 'manage_messages']
         self.user_permissions = ['send_messages', 'manage_messages']

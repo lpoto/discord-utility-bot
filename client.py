@@ -102,7 +102,8 @@ class MyClient(discord.Client):
         prefix = await self.bot.database.get_prefix(msg)
         cmd = msg.content.split()[0][len(prefix):]
         if (msg.content[:len(prefix)] == prefix and
-                cmd in self.bot.commands):
+                (cmd in self.bot.commands or 
+                    cmd in self.bot.commands_synonyms)):
             await self.bot.handle_message(msg, cmd, prefix)
             return
 
@@ -126,8 +127,7 @@ class MyClient(discord.Client):
         # iterate through those commands in linked list that
         # have on_reply function
         for i in self.bot.on_reply_commands:
-            if await self.bot.check_if_valid(i, msg) is True:
-                await i.on_reply(msg, referenced_msg)
+            await i.on_reply(msg, referenced_msg)
 
     async def on_dm_reply(self, msg, referenced_msg):
         if referenced_msg.author.id != self.user.id:

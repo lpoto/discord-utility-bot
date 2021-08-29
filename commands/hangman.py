@@ -3,11 +3,11 @@ from utils.misc import random_color
 from utils.wrappers import EmbedWrapper, MemberWrapper
 from commands.help import Help
 
-
 class Hangman(Help):
     def __init__(self):
-        super().__init__(name='hm')
+        super().__init__(name='hangman')
         self.description = 'A game of hangman.'
+        self.synonyms = ['hgmn', 'hm']
         self.embed_type = 'HANGMAN'
         self.game = True
 
@@ -30,7 +30,8 @@ class Hangman(Help):
         if not referenced_msg.embeds[0].title:
             if (len(msg.content) > 20 or
                     len(msg.content) < 1 or
-                    ' ' in msg.content):
+                    any(i in msg.content for i in [
+                        ' ', '@', '`', ',', '.', '?', '!', '"', "'"])):
                 return
             referenced_msg.embeds[0].description = msg.content.upper()
             referenced_msg.embeds[0].mark(EmbedWrapper.ENDED)
@@ -76,8 +77,8 @@ class Hangman(Help):
         return (word, word.replace(' ', '') == msg.embeds[0].description)
 
     async def game_embed(self, guild, msg_info, u_id, char=None, msg=None):
-        if char is not None and msg_info[0] == str(u_id):
-            return
+        #if char is not None and msg_info[0] == str(u_id):
+        #    return
         embed = None
         chars = []
         phase = 0
@@ -107,7 +108,7 @@ class Hangman(Help):
         if word_info[1]:
             return self.end_embed(
                 winner=False, embed=embed, user_id=msg_info[0], msg=msg)
-        if phase >= 6:
+        if phase >= 8:
             return self.end_embed(
                 winner=True, embed=embed, user_id=msg_info[0], msg=msg)
         embed.set_footer(text='Reply with a letter to play!\n\n{}'.format(
@@ -127,21 +128,23 @@ class Hangman(Help):
 
     def picture(self, phase=0, guessed_chars=[]):
         phases = {
-            1: (2, '\u2000│' + 8 * '\u2000' + '0'),
-            2: (3, '\u2000│' + 8 * '\u2000' + '│'),
-            3: (3, '\u2000│' + 7 * '\u2000' + '/│'),
-            4: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
-            5: (4, '\u2000│' + 7 * '\u2000' + ' /'),
-            6: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
+            1: (1, '\u2000│/'),
+            2: (1, '\u2000│/' + 7 * '\u2000' + '|'),
+            3: (2, '\u2000│' + 8 * '\u2000' + '0'),
+            4: (3, '\u2000│' + 8 * '\u2000' + '│'),
+            5: (3, '\u2000│' + 7 * '\u2000' + '/│'),
+            6: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
+            7: (4, '\u2000│' + 7 * '\u2000' + ' /'),
+            8: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
         }
-        if phase > 6:
+        if phase > 8:
             return self.picture(phase, guessed_chars)
         if phase == 0:
             return {
                 -2: 'Wrong guesses: {}/6'.format(phase),
                 -1: 'Guessed letters: ' + ', '.join(guessed_chars),
                 0: 13*r'\_',
-                1: '\u2000│' + 8 * '\u2000' + '|',
+                1: '\u2000│',
                 2: '\u2000│',
                 3: '\u2000│',
                 4: '\u2000│',
@@ -149,7 +152,7 @@ class Hangman(Help):
                 6: '/ | \\'
             }
         pic = self.picture(phase-1, guessed_chars)
-        pic[-2] = 'Wrong guesses: {}/6'.format(phase)
+        pic[-2] = 'Wrong guesses: {}/8'.format(phase)
         pic[phases[phase][0]] = phases[phase][1]
         return pic
 

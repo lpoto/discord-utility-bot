@@ -159,13 +159,17 @@ class Events(Help):
                   '* After adding desired options (date and time are ' +
                   'mandatory) reply "commit" to start the event.\n' +
                   'Example:\n"date 27. 7.; time 16:00; text Test text; "' +
-                  'name new_name; tags test_tags; channel general; commit".'))
+                  'name new_name; tags test_tags; channel general; commit".'
+                  + '\n' + str(msg.author.id)))
         await msg.channel.send(embed=embed_var)
 
     async def on_reply(self, msg, referenced_msg):
         # on reply add options to created event
         # multiple may be added, separated with ;
         if not referenced_msg.is_event:
+            return
+        u_id = referenced_msg.embeds[0].footer.text.split('\n')[-1]
+        if u_id != str(msg.author.id):
             return
         args = msg.content.split(';')
         opts = {'text': self.add_text,

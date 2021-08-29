@@ -22,6 +22,7 @@ class Bot:
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
+        self.commands_synonyms = {}
         # lists containing commands with special functions
         # that need to be processes separately
         self.on_reply_commands = []
@@ -72,13 +73,21 @@ class Bot:
             self.on_dm_reply_commands.append(command)
         if hasattr(command, 'on_time'):
             self.on_time_commands.append(command)
+        for i in command.synonyms:
+            self.commands_synonyms[i] = command
 
     async def handle_message(self, msg, cmd, prefix):
         """
         Handle a message sent by a user in a discord server.
         """
         args = msg.content.split()
-        cmd = self.commands[cmd]
+        self.commands['help'].name = 'asd'
+        if cmd in self.commands:
+            cmd = self.commands[cmd]
+        elif cmd in self.commands_synonyms:
+            cmd = self.commands_synonyms[cmd]
+        else:
+            return
         # if 2nd word is help send additional info
         # about the command
         if len(args) > 1 and args[1] == 'help':
@@ -201,6 +210,13 @@ class Bot:
             color=colors[idx]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
+        synonyms = 'None'
+        if len(info[6]) > 0:
+            synonyms = ', '.join([prefix + i for i in info[6]])
+        embed_var.add_field(
+                name='synonyms',
+                value=synonyms,
+                inline=False)
         embed_var.add_field(
             name='Additional info',
             value=info[2],

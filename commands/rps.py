@@ -6,7 +6,8 @@ from commands.help import Help
 
 class Rps(Help):
     def __init__(self):
-        super().__init__(name='rps')
+        super().__init__(name='rock-paper-scissors')
+        self.synonyms = ['rps']
         self.description = 'A game of rock-paper-scissors between two users.'
         self.embed_type = 'ROCK_PAPER_SCISSORS'
         self.game = True

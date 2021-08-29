@@ -9,6 +9,7 @@ class Help:
             name='help',
     ):
         self.bot = None
+        self.synonyms = ['h'] if name == 'help' else []
         self.name = name
         self.description = 'Get information about the commands.'
         self.bot_permissions = [
@@ -38,7 +39,8 @@ class Help:
             self.additional_info(prefix),
             self.bot_permissions,
             self.user_permissions,
-            self.channel_types
+            self.channel_types,
+            self.synonyms
         ]
         return info
 
@@ -88,9 +90,10 @@ class Help:
             color=colors[idx]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
-        footer = ("React with command's emoji for details or type " +
-                  '"{}command help" in the chat.'.format(
-                      prefix))
+        footer = ("React with command's emoji or type " +
+                  '"{}command help" in the chat for details ' +
+                  'about the command (synonyms, permissions,...)').format(
+                      prefix)
         embed_var.set_footer(text=footer)
         i = 0
         for k, v in commands.items():

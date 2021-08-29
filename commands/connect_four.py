@@ -9,9 +9,10 @@ from commands.help import Help
 
 class ConnectFour(Help):
     def __init__(self):
-        super().__init__(name='cf')
+        super().__init__(name='connect-four')
         self.description = 'A game of connect-four between two users.'
         self.game = True
+        self.synonyms = ['connectfour', 'cf']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = utils.black_circle
