@@ -3,6 +3,7 @@ from utils.misc import random_color
 from utils.wrappers import EmbedWrapper, MemberWrapper
 from commands.help import Help
 
+
 class Hangman(Help):
     def __init__(self):
         super().__init__(name='hangman')
@@ -50,16 +51,27 @@ class Hangman(Help):
     async def on_reply(self, msg, referenced_msg):
         if not referenced_msg.is_hangman:
             return
+        await self.bot.queue.add_to_queue(
+            queue_id='hmmessage:{}'.format(referenced_msg.id),
+            item=(msg.channel.id, msg.id, referenced_msg.id),
+            function=self.guess_letter)
+
+    async def guess_letter(self, item):
+        chnl = self.bot.client.get_channel(int(item[0]))
+        if chnl is None:
+            return
+        msg = await chnl.fetch_message(int(item[1]))
+        referenced_msg = await chnl.fetch_message(int(item[2]))
         if len(msg.content) != 1:
             return
         ftr = referenced_msg.embeds[0].footer.text.split('\n')[-1]
         msg_info = [ftr[:18], ftr[18:]]
         embed = await self.game_embed(
-                msg.guild,
-                msg_info,
-                msg.author.id,
-                msg.content,
-                referenced_msg)
+            msg.guild,
+            msg_info,
+            msg.author.id,
+            msg.content,
+            referenced_msg)
         if embed is None:
             return
         await referenced_msg.edit(embed=embed)
@@ -77,7 +89,7 @@ class Hangman(Help):
         return (word, word.replace(' ', '') == msg.embeds[0].description)
 
     async def game_embed(self, guild, msg_info, u_id, char=None, msg=None):
-        #if char is not None and msg_info[0] == str(u_id):
+        # if char is not None and msg_info[0] == str(u_id):
         #    return
         embed = None
         chars = []
@@ -141,7 +153,7 @@ class Hangman(Help):
             return self.picture(phase, guessed_chars)
         if phase == 0:
             return {
-                -2: 'Wrong guesses: {}/6'.format(phase),
+                -2: 'Wrong guesses: {}/8'.format(phase),
                 -1: 'Guessed letters: ' + ', '.join(guessed_chars),
                 0: 13*r'\_',
                 1: '\u2000│',
