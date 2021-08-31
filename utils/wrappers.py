@@ -1,4 +1,5 @@
 import discord
+from numpy import base_repr
 
 
 class MessageWrapper(discord.Message):
@@ -35,6 +36,10 @@ class MessageWrapper(discord.Message):
     ):
         await self._wrapped_msg.edit(
             content=text, embed=embed, delete_after=delete_after)
+        for i in range(len(self._wrapped_msg.embeds)):
+            if not isinstance(self._wrapped_msg.embeds[i], EmbedWrapper):
+                self._wrapped_msg.embeds[i] = EmbedWrapper(
+                    self._wrapped_msg.embeds[i])
         if reactions is not None:
             if not isinstance(reactions, list) and not isinstance(
                     reactions, tuple):
@@ -244,7 +249,7 @@ class EmbedWrapper(discord.Embed):
 
     def __init__(self, embed, embed_type=None, marks=()):
         self._wrapped_embed = embed
-        self.embed_type = self.get_type() if embed_type is None else embed_type
+        self.embed_type = self.get_type(embed_type)
         self.marks = [
             EmbedWrapper.FIXED,
             EmbedWrapper.ENDED,
@@ -257,20 +262,15 @@ class EmbedWrapper(discord.Embed):
             return getattr(self, attr)
         return getattr(self._wrapped_embed, attr)
 
-    def get_type(self):
-        if not self.author:
-            return None
-        return self.author.name.split()[0]
+    def get_type(self, embed_type):
+        if self.author.name:
+            embed_type = self.author.name
+        elif embed_type is None:
+            return
+        self.set_author(name=embed_type)
+        return embed_type
 
-    def set_thumbnail(self, url):
-        self.mark(
-            marks=self.get_marks(),
-            size=36 if url is None else 28)
-        self._wrapped_embed.set_thumbnail(url=url)
-
-    def mark(self,
-             marks=[],
-             size=36):
+    def mark(self, marks=[]):
         if not isinstance(marks, list) and not isinstance(marks, tuple):
             marks = [marks]
         if self.embed_type is None:
@@ -278,26 +278,85 @@ class EmbedWrapper(discord.Embed):
         if any(i not in self.marks for i in marks):
             raise Exception('Invalid embed marks!')
             return
-        text = self.embed_type
         if len(marks) == 0:
             return self
-        text += str((size - len(text) - len(''.join(marks))
-                     ) * '\u3000') + ''.join(marks)
-        self.set_author(name=text)
+        text = '' if not self.footer.text else self.footer.text
+        mks = ''.join(marks)
+        if not self.footer.text:
+            self.set_footer(text='@{}@{}'.format((70 - len(mks))
+                            * '\u2000', mks))
+            return self
+        x = text.split('@')[1:]
+        self.set_footer(text='@{}{}@{}'.format(
+            x[0],
+            (70 - len(mks) - len(x[0])) * '\u2000',
+            mks))
         return self
 
     def get_marks(self):
-        if not self.author.name:
+        if (not self.footer.text or '@' not in self.footer.text
+                or self.footer.text.count('@') == 1):
             return []
-        mks = self.author.name.split()
-        if len(self.author.name) not in [28, 36] or len(mks) != 2:
+        x = self.footer.text.split('@')[-1].strip()
+        if len(x) > 5:
             return []
-        marks = []
+        mks = []
         for i in self.marks:
-            if i in mks[1]:
-                marks.append(i)
-        self.embed_type = mks[0]
-        return marks
+            if i in x:
+                mks.append(i)
+        return mks
+
+    def set_id(
+            self,
+            user_id=None,
+            user2_id=None,
+            channel_id=None,
+            message_id=None,
+            extra=None):
+        content = {'u': user_id, 'v': user2_id,
+                   'c': channel_id, 'm': message_id,
+                   'e': extra}
+        txt = ''
+        for k, v in content.items():
+            if v is not None:
+                if txt != '':
+                    txt += '.'
+                if k != 'e':
+                    txt += '{}{}'.format(k, base_repr(int(v), 32).lower())
+                else:
+                    txt += '{}{}'.format(k, v)
+        if not self.footer.text:
+            self.set_footer(text=txt)
+        else:
+            if '@' not in self.footer.text or self.footer.text.count('@') == 1:
+                self.set_footer(text='@' + txt)
+            else:
+                x = self.footer.text.split('@')[-1]
+                self.set_footer(
+                    text='@{}{}@{}'.format(
+                        txt,
+                        '\u2000' * (70 - len(x) - len(txt)),
+                        x))
+
+    def get_id(self) -> dict:
+        content = {'user_id': None, 'user2_id': None,
+                   'channel_id': None, 'message_id': None, 'extra': None}
+        text = self._wrapped_embed.footer.text.split('@')[1].strip()
+        if text is None:
+            return content
+        text = text.split('.')
+        for i in text:
+            if len(i) > 1 and i[0] == 'u':
+                content['user_id'] = int(i[1:], 32)
+            elif len(i) > 1 and i[0] == 'v':
+                content['user2_id'] = int(i[1:], 32)
+            elif len(i) > 1 and i[0] == 'c':
+                content['channel_id'] = int(i[1:], 32)
+            elif len(i) > 1 and i[0] == 'm':
+                content['message_id'] = int(i[1:], 32)
+            elif len(i) > 1 and i[0] == 'e':
+                content['extra'] = i[1:]
+        return content
 
     @classmethod
     def mark_info(cls, mark):

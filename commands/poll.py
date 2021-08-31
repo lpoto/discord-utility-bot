@@ -112,15 +112,15 @@ class Poll(Help):
         marks = poll_msg.embeds[0].get_marks()
         if marks is not None and EmbedWrapper.FIXED in marks:
             return
-        ftr = poll_msg.embeds[0].footer.text
+        info = poll_msg.embeds[0].get_id()
         emoji = emojis[len(poll_msg.embeds[0].fields)]
-        if ftr:
-            ftr = ftr.strip().split()
+        if info['extra']:
+            ftr = info['extra'].strip().split()
             emoji = emojis[int(ftr[0])]
             if len(ftr) > 1:
-                poll_msg.embeds[0].set_footer(text=' '.join(ftr[1:]))
+                poll_msg.embeds[0].set_id(extra=' '.join(ftr[1:]))
             else:
-                poll_msg.embeds[0].set_footer(text='')
+                poll_msg.embeds[0].set_id()
         embed = self.response_to_embed(
             embed=poll_msg.embeds[0],
             response=option,
@@ -174,11 +174,12 @@ class Poll(Help):
         emoji = poll_msg.embeds[0].fields[option].value.split()[0]
         poll_msg.embeds[0].remove_field(option)
         option = emojis.index(emoji)
-        if not poll_msg.embeds[0].footer.text:
-            poll_msg.embeds[0].set_footer(text=option)
+        info = poll_msg.embeds[0].get_id()['extra']
+        if not info:
+            poll_msg.embeds[0].set_id(extra=option)
         else:
-            poll_msg.embeds[0].set_footer(
-                text=poll_msg.embeds[0].footer.text + ' ' + str(option))
+            poll_msg.embeds[0].set_id(
+                extra=info + ' ' + str(option))
         m = await poll_msg.edit(embed=poll_msg.embeds[0])
         await m.remove_reaction(emoji)
 

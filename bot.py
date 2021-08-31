@@ -81,7 +81,6 @@ class Bot:
         Handle a message sent by a user in a discord server.
         """
         args = msg.content.split()
-        self.commands['help'].name = 'asd'
         if cmd in self.commands:
             cmd = self.commands[cmd]
         elif cmd in self.commands_synonyms:

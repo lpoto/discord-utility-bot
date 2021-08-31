@@ -70,9 +70,9 @@ class ServerInfo(Help):
             )
         if msg.guild.icon_url:
             embed_var.set_thumbnail(url=msg.guild.icon_url)
-        embed_var.set_footer(
-            text='React with {} to see server configurations.'.format(
-                emojis[list(self.bot.commands.keys()).index('config')]))
+        embed_var.description += (
+                '\n\nReact with {} to see server configurations.').format(
+                emojis[list(self.bot.commands.keys()).index('config')])
         return embed_var
 
     async def on_raw_reaction(self, msg, payload):

@@ -29,7 +29,7 @@ class Rps(Help):
             color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
-        dm_embed.set_footer(text=msg.channel.id)
+        dm_embed.set_id(channel_id=msg.channel.id)
         await dm.send(
             embed=dm_embed,
             reactions=rps_emojis)
@@ -56,10 +56,10 @@ class Rps(Help):
             text=reaction_msg.content,
             embed=embed)
         # get channel id, message id from embed's footer
-        info = embed.footer.text
+        info = embed.get_id()
         channel = None
         try:
-            channel = self.bot.client.get_channel(int(info))
+            channel = self.bot.client.get_channel(info['channel_id'])
             if channel is None:
                 raise ValueError
             user = channel.guild.get_member(payload.user_id)
@@ -77,9 +77,7 @@ class Rps(Help):
         # if user has nickname set up use nickname, else use username
         new_embed.description = 'React with {}, {} or {} to join!'.format(
             rps_emojis[0], rps_emojis[1], rps_emojis[2])
-        new_embed.set_footer(
-            text='{}{}'.format(payload.message_id, user.id),
-            icon_url=None if not user.avatar_url else user.avatar_url)
+        new_embed.set_id(message_id=payload.message_id, user_id=user.id)
         # add users profile picture to the embed
         await channel.send(
             embed=new_embed,
@@ -91,17 +89,19 @@ class Rps(Help):
         if (payload.emoji.name not in rps_emojis or
                 payload.event_type != 'REACTION_ADD' or
                 payload.member.bot or
-                str(payload.user_id) == msg.embeds[0].footer.text[18:] or
                 not msg.is_rps):
+            return
+        info = msg.embeds[0].get_id()
+        if str(payload.user_id) == str(info['user_id']):
             return
         # rps embed has user id and dm msg id in footer
         # fetch the first msg from the dm and get first users choice from it
-        user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[18:]))
+        user1 = msg.guild.get_member(int(info['user_id']))
         user2 = msg.guild.get_member(payload.user_id)
         if user1 is None or user2 is None:
             return
         first_msg = await user1.fetch_message(
-            int(msg.embeds[0].footer.text[:18]))
+            int(info['message_id']))
         if first_msg is None or len(first_msg.embeds) != 1:
             return
         emoji1 = first_msg.embeds[0].title
@@ -114,10 +114,11 @@ class Rps(Help):
             info['winner_name'], info['loser_name'])
         embed.description = '{} against {}'.format(
             info['winner_emoji'], info['loser_emoji'])
-        wins = await self.database.use_database(
+        wins = await self.bot.database.use_database(
             self.wins_to_database, msg, info['winner_id'])
-        embed.set_footer(text='{} total wins: {}'.format(
-            info['winner_name'], wins))
+        embed.description += '\n\n{} total wins: {}'.format(
+            info['winner_name'], wins)
+        embed.set_id()
         if info['winner_avatar_url']:
             embed.set_thumbnail(url=info['winner_avatar_url'])
         return embed

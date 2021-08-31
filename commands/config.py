@@ -76,9 +76,9 @@ class Config(Help):
             name='Roles that can use commands',
             value='None' if cmds is None else cmds,
             inline=False)
-        embed_var.set_footer(
-            text='React with {} to see server info.'.format(
-                emojis[list(self.bot.commands.keys()).index('server')]))
+        embed_var.description += (
+                '\n\nReact with {} to see server info.').format(
+                emojis[list(self.bot.commands.keys()).index('server')])
         return embed_var
 
     async def on_raw_reaction(self, msg, payload):

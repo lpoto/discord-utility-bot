@@ -70,7 +70,7 @@ class DB:
         cnx = None
         # if database is given, connect
         if info is None:
-            logging.info(msg='No database info provided.\n')
+            logging.info(msg='No database info provided.')
             self.name = None
             return
         try:

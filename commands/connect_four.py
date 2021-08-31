@@ -70,9 +70,6 @@ class ConnectFour(Help):
         if msg is None:
             return
         if msg.is_info:
-            # don't allow a user playing with himself
-            # if msg.embeds[0].footer.text == str(payload.user_id):
-            #    return
             if msg.id in self.timers and self.timers[msg.id] is False:
                 return
             if payload.emoji.name == utils.cross:
@@ -96,22 +93,23 @@ class ConnectFour(Help):
         start = False
         if len(tks) == 2:
             tks.append('{}: {}'.format(name, token))
-            msg.embeds[0].set_footer(text=str(user_id))
+            msg.embeds[0].set_id(user_id=user_id)
         else:
-            u1_id = msg.embeds[0].footer.text[:18]
+            x = msg.embeds[0].get_id()
+            u1_id = x['user_id']
             tkn = tks[2].split(': ')[-1]
             if token == tkn:
                 return
             if u1_id == str(user_id):
                 tks[2] = '{}: {}'.format(name, token)
-            elif len(msg.embeds[0].footer.text) == 36:
-                u2_id = msg.embeds[0].footer.text[18:]
+            elif x['user2_id']:
+                u2_id = x['user2_id']
                 if u2_id != str(user_id):
                     return
                 tks[3] = '{}: {}'.format(name, token)
             else:
                 tks.append('{}: {}'.format(name, token))
-                msg.embeds[0].set_footer(text=str(u1_id) + str(user_id))
+                msg.embeds[0].set_id(user_id=u1_id, user2_id=user_id)
                 msg.embeds[0].title = 'Starting in 5 seconds'
                 start = True
         msg.embeds[0].description = '\n'.join(tks)
@@ -121,8 +119,8 @@ class ConnectFour(Help):
             self.timers[msg.id].start()
 
     async def remove_selected_token(self, msg, user_id):
-        if (not msg.embeds[0].footer.text or
-                len(msg.embeds[0].footer.text) < 18):
+        x = msg.embeds[0].get_id()
+        if (not x['user_id'] and not x['user2_id']):
             return
         if (msg.id in self.timers and
             self.timers[msg.id] is not None and
@@ -130,16 +128,17 @@ class ConnectFour(Help):
             self.timers[msg.id].cancel()
             del self.timers[msg.id]
         idx = None
-        if str(user_id) == msg.embeds[0].footer.text[:18]:
+        if str(user_id) == str(x['user_id']):
             idx = 0
-        elif (len(msg.embeds[0].footer.text) > 18 and
-                str(user_id) == msg.embeds[0].footer.text[18:]):
+            msg.embeds[0].set_id(user2_id=x['user2_id'])
+        elif str(user_id) == str(x['user2_id']):
             idx = 1
+            msg.embeds[0].set_id(user_id=x['user_id'])
+        if idx is None:
+            return
         tks = msg.embeds[0].description.split('\n')
         del tks[idx + 2]
         msg.embeds[0].title = ''
-        msg.embeds[0].set_footer(text=msg.embeds[0].footer.text.replace(
-            str(user_id), '', 1))
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
 
@@ -148,8 +147,9 @@ class ConnectFour(Help):
             self.timers[msg.id] = False
         tks = msg.embeds[0].description.split('\n')[1:]
         # create an empty grid and wait for players to start playing
-        user1 = msg.guild.get_member(int(msg.embeds[0].footer.text[:18]))
-        user2 = msg.guild.get_member(int(msg.embeds[0].footer.text[18:]))
+        x = msg.embeds[0].get_id()
+        user1 = msg.guild.get_member(int(x['user_id']))
+        user2 = msg.guild.get_member(int(x['user2_id']))
         if user1 is None or user2 is None:
             return
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
@@ -181,17 +181,15 @@ class ConnectFour(Help):
     async def play_game(self, msg, user_id, emoji):
         move = utils.number_emojis.index(emoji) + 1
         embed = msg.embeds[0]
-        moves = []
-        # footer contains both users' id's and a record of moves
-        moves = [int(i) for i in embed.footer.text.split(
-            '\n')[0][7:]]
+        moves = embed.description.split('\n')[-1][7:]
+        moves = [int(i) for i in moves]
         if moves.count(move) >= 6:
             return
-        ftr2 = embed.footer.text.split('\n')[1][9:]
-        if len(ftr2) < 32:
+        x = embed.get_id()
+        if not x['user_id'] or not x['user2_id']:
             return
-        user1 = msg.guild.get_member(int(ftr2[:18]))
-        user2 = msg.guild.get_member(int(ftr2[18:]))
+        user1 = msg.guild.get_member(x['user_id'])
+        user2 = msg.guild.get_member(x['user2_id'])
         token = embed.description.split('\n')[0].split(': ')[-1]
         tks = embed.title.replace('!', '').split(' vs ')
         token1 = tks[0][-1]
@@ -201,7 +199,7 @@ class ConnectFour(Help):
                 token == token2 and str(user2.id) != user_id):
             return
         moves.append(move)
-        grid = msg.embeds[0].description.split('\n')[2:][:-1]
+        grid = msg.embeds[0].description.split('\n')[2:][:-3]
         grid = [self.split_line(i) for i in grid]
         grid, completed, turn = self.play(moves, token1, token2, grid)
         await msg.remove_reaction(
@@ -256,8 +254,9 @@ class ConnectFour(Help):
         else:
             wins = await self.bot.database.use_database(
                 self.wins_to_database, users[0][0], msg.guild.id)
-            embed_var.set_footer(text='{} total wins: {}'.format(
-                users[0][1], wins))
+            if wins is not None:
+                embed_var.description += '\n\n{} total wins: {}'.format(
+                    users[0][1], wins)
         await self.bot.database.use_database(
             self.moves_to_database, ''.join([str(i) for i in moves]))
         return embed_var
@@ -275,13 +274,14 @@ class ConnectFour(Help):
         embed_var = EmbedWrapper(discord.Embed(
             title='{} {} vs {} {}!'.format(
                 user1[1], token1, user2[1], token2),
-            description='On turn: {}\n\n{}'.format(
-                token1 if on_move == 1 else token2, self.grid_text(grid)),
+            description='On turn: {}\n\n{}\n\nMoves: {}'.format(
+                token1 if on_move == 1 else token2,
+                self.grid_text(grid),
+                ''.join([str(i) for i in moves])),
             color=color),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
-        embed_var.set_footer(text='Moves: {}\nGame_id: {}{}'.format(
-            ''.join([str(i) for i in moves]), user1[0], user2[0]))
+        embed_var.set_id(user_id=user1[0], user2_id=user2[0])
         return embed_var
 
     def join_line(self, line):

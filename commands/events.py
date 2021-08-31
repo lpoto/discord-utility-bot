@@ -11,6 +11,7 @@ class Events(Help):
     def __init__(self):
         super().__init__(name='event')
         self.description = 'Set up events for bot to send notifications.'
+        self.synonyms = ['events']
         # dict {datetime: [(f1, args), (f2, args),...]}
         # functions to be called independently at certain times
         self.events = {}
@@ -148,19 +149,19 @@ class Events(Help):
             color=random_color()),
             embed_type='EVENT',
             marks=EmbedWrapper.INFO)
-        embed_var.set_footer(
-            text=('* Add options by replying "<opt> <value>" ' +
-                  '\n* Multiple options can be added at one,' +
-                  ' separated with ";".\n' +
-                  '* Date should be given in day and month format.\n' +
-                  '* Time should be given in hours and minutes format.\n'
-                  '* Name can also be changed.\n' +
-                  '* Channel should be given with its name.\n'
-                  '* After adding desired options (date and time are ' +
-                  'mandatory) reply "commit" to start the event.\n' +
-                  'Example:\n"date 27. 7.; time 16:00; text Test text; "' +
-                  'name new_name; tags test_tags; channel general; commit".'
-                  + '\n' + str(msg.author.id)))
+        embed_var.description += (
+            '\n\n* Add options by replying "<opt> <value>" ' +
+            '\n* Multiple options can be added at one,' +
+            ' separated with ";".\n' +
+            '* Date should be given in day and month format.\n' +
+            '* Time should be given in hours and minutes format.\n'
+            '* Name can also be changed.\n' +
+            '* Channel should be given with its name.\n'
+            '* After adding desired options (date and time are ' +
+            'mandatory) reply "commit" to start the event.\n' +
+            'Example:\n"date 27. 7.; time 16:00; text Test text; "' +
+            'name new_name; tags test_tags; channel general; commit".')
+        embed_var.set_id(user_id=msg.author.id)
         await msg.channel.send(embed=embed_var)
 
     async def on_reply(self, msg, referenced_msg):
@@ -168,7 +169,8 @@ class Events(Help):
         # multiple may be added, separated with ;
         if not referenced_msg.is_event:
             return
-        u_id = referenced_msg.embeds[0].footer.text.split('\n')[-1]
+        x = referenced_msg.embeds[0].get_id()
+        u_id = str(x['user_id'])
         if u_id != str(msg.author.id):
             return
         args = msg.content.split(';')
@@ -314,7 +316,8 @@ class Events(Help):
             self.event_to_database, info)
         embed_var.title = embed_var.title.replace(
             'Event:', 'Event(commited):', 1)
-        embed_var.set_footer(text='')
+        embed_var.description = embed_var.description.split('\n\n')[0]
+        embed_var.set_id()
         embed_var = EmbedWrapper(embed_var,
                                  embed_type="EVENT",
                                  marks=EmbedWrapper.ENDED)

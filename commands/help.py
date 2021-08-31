@@ -77,9 +77,9 @@ class Help:
         prefix = await self.bot.database.get_prefix(msg)
         new_embed = await self.bot.create_additional_help(
             cmd.command_info(prefix), msg, prefix)
-        new_embed.set_footer(
-            text='React with {} to return to help menu.'.format(
-                emojis[help_idx]))
+        new_embed.description += (
+                '\n\nReact with {} to return to help menu.').format(
+                emojis[help_idx])
         await msg.edit(embed=new_embed)
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
@@ -90,11 +90,11 @@ class Help:
             color=colors[idx]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
-        footer = ("React with command's emoji or type " +
-                  '"{}command help" in the chat for details ' +
-                  'about the command (synonyms, permissions,...)').format(
-                      prefix)
-        embed_var.set_footer(text=footer)
+        embed_var.description += (
+            "\n\nReact with command's emoji or type " +
+            '"{}command help" in the chat for details ' +
+            'about the command (synonyms, permissions,...)').format(
+            prefix)
         i = 0
         for k, v in commands.items():
             if i == idx:
@@ -109,7 +109,7 @@ class Help:
         txt = ''
         for i in embed_var.marks:
             txt += '{}{}-\u3000{}\n'.format(
-                    i, '\u3000' * (3 - len(i)), embed_var.mark_info(i))
-        txt += '(Marks shown in the top right corner of the embed)'
+                i, '\u3000' * (3 - len(i)), embed_var.mark_info(i))
+        txt += '(Marks shown at the bottom of the embed)'
         embed_var.add_field(name='* Marks', value=txt, inline=False)
         return embed_var
