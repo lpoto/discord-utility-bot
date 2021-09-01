@@ -56,13 +56,13 @@ class Hangman(Help):
                 'Guess the word!\n ' +
                 'All messages in this thread containing: ' +
                 '\n* A single letter A-z (example: `a`)' +
-                '\n* Multiple single letters (example `a;B;c`)' +
+                '\n* Multiple single letters (example `a B c`)' +
                 '\nwill be counted as guesses to the game!')
 
     async def on_thread_message(self, msg):
         if msg.channel.name != 'HANGMAN':
             return
-        x = msg.content.split(';')
+        x = msg.content.split(' ')
         if any(len(c.strip()) > 1 for c in x) or any(
                 ord(c.strip().upper()) > 90 or ord(
                     c.strip().upper()) < 65 for c in x):
@@ -221,4 +221,4 @@ class Hangman(Help):
             '* A new thread will be started where other users can guess '
             'the word by typing letters.',
             '* Multiple letters can be guessed at a time ' +
-            'separated with ; (example: "a;b;c;d;...")')
+            'separated with " " (example: "a B c d ...")')
