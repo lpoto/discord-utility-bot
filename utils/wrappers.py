@@ -1,5 +1,13 @@
 import discord
-from numpy import base_repr
+
+
+def encodeN(n, N, D="0123456789qwertyuiopasdfghjklzxc"):
+    return (encodeN(n//N, N)+D[n % N]).lstrip("0") if n > 0 else "0"
+
+
+def decode(n):
+    tmap = str.maketrans('qwertyuiopasdfghjklzxc', 'abcdefghijklmnopqrstuv')
+    return int(n.translate(tmap), 32)
 
 
 class MessageWrapper(discord.Message):
@@ -349,7 +357,7 @@ class EmbedWrapper(discord.Embed):
                 if txt != '':
                     txt += '.'
                 if k != 'e':
-                    txt += '{}{}'.format(k, base_repr(int(v), 32).lower())
+                    txt += '{}{}'.format(k, encodeN(int(v), 32).lower())
                 else:
                     txt += '{}{}'.format(k, v)
         if not self.footer.text:
@@ -372,13 +380,13 @@ class EmbedWrapper(discord.Embed):
         text = text.split('.')
         for i in text:
             if len(i) > 1 and i[0] == 'u':
-                content['user_id'] = int(i[1:], 32)
+                content['user_id'] = decode(i[1:])
             elif len(i) > 1 and i[0] == 'v':
-                content['user2_id'] = int(i[1:], 32)
+                content['user2_id'] = decode(i[1:])
             elif len(i) > 1 and i[0] == 'c':
-                content['channel_id'] = int(i[1:], 32)
+                content['channel_id'] = decode(i[1:])
             elif len(i) > 1 and i[0] == 'm':
-                content['message_id'] = int(i[1:], 32)
+                content['message_id'] = decode(i[1:])
             elif len(i) > 1 and i[0] == 'e':
                 content['extra'] = i[1:]
         return content
