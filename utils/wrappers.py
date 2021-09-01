@@ -211,7 +211,7 @@ class ChannelWrapper(object):
         if not isinstance(perms, list) and not isinstance(perms, tuple):
             perms = [perms]
         for i in perms:
-            if not dict(iter(member.permissions_in(self)))[i]:
+            if not dict(iter(self.permissions_for(member)))[i]:
                 return (False, i)
         return (True, None)
 
@@ -237,7 +237,7 @@ class MemberWrapper(object):
 
     async def fetch_message(self, id):
         return MessageWrapper(
-            await self._wrapped_member.fetch_message(id=id))
+            await self._wrapped_member.fetch_message(id))
 
 
 class EmbedWrapper(discord.Embed):
@@ -283,14 +283,11 @@ class EmbedWrapper(discord.Embed):
         text = '' if not self.footer.text else self.footer.text
         mks = ''.join(marks)
         if not self.footer.text:
-            self.set_footer(text='@{}@{}'.format((70 - len(mks))
-                            * '\u2000', mks))
+            self.set_footer(text='@ @{}'.format(mks))
             return self
         x = text.split('@')[1:]
-        self.set_footer(text='@{}{}@{}'.format(
-            x[0],
-            (70 - len(mks) - len(x[0])) * '\u2000',
-            mks))
+        self.set_footer(text='@{} @{}'.format(
+            x[0][:-1], mks))
         return self
 
     def get_marks(self):
@@ -333,15 +330,13 @@ class EmbedWrapper(discord.Embed):
             else:
                 x = self.footer.text.split('@')[-1]
                 self.set_footer(
-                    text='@{}{}@{}'.format(
-                        txt,
-                        '\u2000' * (70 - len(x) - len(txt)),
-                        x))
+                    text='@{} @{}'.format(
+                        txt, x))
 
     def get_id(self) -> dict:
         content = {'user_id': None, 'user2_id': None,
                    'channel_id': None, 'message_id': None, 'extra': None}
-        text = self._wrapped_embed.footer.text.split('@')[1].strip()
+        text = self._wrapped_embed.footer.text.split('@')[1][:-1].strip()
         if text is None:
             return content
         text = text.split('.')

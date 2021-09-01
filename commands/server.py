@@ -10,9 +10,6 @@ class ServerInfo(Help):
         self.description = 'Get server information.'
 
     async def execute_command(self, msg):
-        args = msg.content.split()
-        if (len(args) > 1):
-            return msg.reply('Invalid command!')
         embed_var = await self.create_info_embed(msg)
         await msg.channel.send(
             embed=embed_var,
@@ -27,6 +24,8 @@ class ServerInfo(Help):
             color=colors[list(self.bot.commands.keys()).index('server')]),
             embed_type="SERVER",
             marks=EmbedWrapper.INFO)
+        if msg.guild.icon:
+            embed_var.set_thumbnail(url=msg.guild.icon)
         # check if guild has description
         if (msg.guild.description):
             embed_var.description = msg.guild.description
@@ -68,11 +67,9 @@ class ServerInfo(Help):
                     timeout=msg.guild.afk_timeout // 60),
                 inline=False
             )
-        if msg.guild.icon_url:
-            embed_var.set_thumbnail(url=msg.guild.icon_url)
         embed_var.description += (
-                '\n\nReact with {} to see server configurations.').format(
-                emojis[list(self.bot.commands.keys()).index('config')])
+            '\n\nReact with {} to see server configurations.').format(
+            emojis[list(self.bot.commands.keys()).index('config')])
         return embed_var
 
     async def on_raw_reaction(self, msg, payload):

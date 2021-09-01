@@ -19,7 +19,7 @@ class MyClient(discord.Client):
             super().get_channel(int(channel_id)))
 
     def get_user(self, user_id) -> MemberWrapper:
-        return MemberWrapper(super().get_user(id=int(user_id)))
+        return MemberWrapper(super().get_user(int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
         """Call a method matching the event recieved from discord."""

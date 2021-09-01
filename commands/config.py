@@ -59,8 +59,8 @@ class Config(Help):
             color=colors[list(self.bot.commands.keys()).index('config')]),
             embed_type='CONFIG',
             marks=['I'])
-        if (msg.guild.icon_url):
-            embed_var.set_thumbnail(url=msg.guild.icon_url)
+        if (msg.guild.icon):
+            embed_var.set_thumbnail(url=msg.guild.icon)
         prefix = await self.bot.database.get_prefix(msg)
         embed_var.add_field(
             name='Prefix',

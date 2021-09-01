@@ -43,8 +43,8 @@ class UserInfo(Help):
         if user.bot:
             embed_var.title += ' [bot]'
         # add user's avatar picture to the embed
-        if user.avatar_url:
-            embed_var.set_thumbnail(url=user.avatar_url)
+        if user.avatar:
+            embed_var.set_thumbnail(url=user.avatar)
         embed_var.add_field(
             name='Joined server',
             value=str(user.joined_at).split()[0],

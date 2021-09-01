@@ -119,8 +119,8 @@ class Rps(Help):
         embed.description += '\n\n{} total wins: {}'.format(
             info['winner_name'], wins)
         embed.set_id()
-        if info['winner_avatar_url']:
-            embed.set_thumbnail(url=info['winner_avatar_url'])
+        if info['winner_avatar']:
+            embed.set_thumbnail(url=info['winner_avatar'])
         return embed
 
     async def game_results(self, user1, user2, emoji1, emoji2, msg):
@@ -151,14 +151,14 @@ class Rps(Help):
             info['winner_name'] = user_names[0]
             info['winner_id'] = user1.id
             info['winner_emoji'] = emoji1
-            info['winner_avatar_url'] = user1.avatar_url
+            info['winner_avatar'] = user1.avatar
             info['loser_name'] = user_names[1]
             info['loser_emoji'] = emoji2
         else:
             info['winner_name'] = user_names[1]
             info['winner_id'] = user2.id
             info['winner_emoji'] = emoji2
-            info['winner_avatar_url'] = user2.avatar_url
+            info['winner_avatar'] = user2.avatar
             info['loser_name'] = user_names[0]
             info['loser_emoji'] = emoji1
         new_embed = await self.add_winner(msg.embeds[0], msg, info)
