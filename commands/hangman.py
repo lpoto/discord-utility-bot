@@ -54,9 +54,10 @@ class Hangman(Help):
             thread = await m.create_thread(name='HANGMAN')
             await thread.send(
                 'Guess the word!\n ' +
-                'All messages in this thread containing a single letter ' +
-                'from A to Z, or multiple single letters separated with ";"' +
-                ' will be counted as guesses to the game!')
+                'All messages in this thread containing: ' +
+                '\n* A single letter A-z (example: `a`)' +
+                '\n* Multiple single letters (example `a;B;c`)' +
+                '\nwill be counted as guesses to the game!')
 
     async def on_thread_message(self, msg):
         if msg.channel.name != 'HANGMAN':
@@ -91,6 +92,8 @@ class Hangman(Help):
             return
         letter = item[3]
         msg_info = referenced_msg.embeds[0].get_id()
+        if str(msg_info['user_id']) == str(msg.author.id):
+            return
         embed = await self.game_embed(
             referenced_msg.guild,
             msg_info,
@@ -157,6 +160,7 @@ class Hangman(Help):
         if phase >= 8:
             return await self.end_embed(
                 winner=True, embed=embed, user_id=msg_info['user_id'], msg=msg)
+        embed.description += '\n\nGuess the word in this message\'s thread!'
         embed.set_id(
             user_id=msg_info['user_id'],
             message_id=msg_info['message_id'],
