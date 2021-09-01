@@ -121,7 +121,7 @@ class Config(Help):
                     delete_after=5)
                 return
         cmd = args[2]
-        new_roles = msg.content.remove(
+        new_roles = msg.content.replace(
             '{} {} '.format(args[0], args[1]), '', 1)
         if cmd not in self.bot.commands:
             await msg.channel.send(
