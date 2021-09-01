@@ -33,9 +33,15 @@ class MessageWrapper(discord.Message):
             embed=None,
             delete_after=None,
             reactions=None,
+            view=None,
     ):
-        await self._wrapped_msg.edit(
-            content=text, embed=embed, delete_after=delete_after)
+        if view is not None:
+            await self._wrapped_msg.edit(
+                content=text, embed=embed, delete_after=delete_after,
+                view=view)
+        else:
+            await self._wrapped_msg.edit(
+                content=text, embed=embed, delete_after=delete_after)
         for i in range(len(self._wrapped_msg.embeds)):
             if not isinstance(self._wrapped_msg.embeds[i], EmbedWrapper):
                 self._wrapped_msg.embeds[i] = EmbedWrapper(
@@ -142,6 +148,10 @@ class MessageWrapper(discord.Message):
         return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.FIXED)
 
     @property
+    def is_ended(self):
+        return self.type_check(None, good_marks=EmbedWrapper.ENDED)
+
+    @property
     def is_info(self):
         return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
@@ -183,17 +193,28 @@ class ChannelWrapper(object):
             embed=None,
             delete_after=None,
             reactions=None,
-            file=None):
+            file=None,
+            view=None,
+            components=None):
         if (str(self.type) == 'text' and
             not self.permissions(
                 self.guild.me, 'send_messages')[0]):
             return
+        if components is not None:
+            if not isinstance(components, list) and not isinstance(
+                    components, tuple):
+                components = [components]
+            if view is None:
+                view = discord.ui.View()
+            for i in components:
+                view.add_item(i)
         msg = MessageWrapper(
             await self._wrapped_chnl.send(
                 content=text,
                 embed=embed,
                 delete_after=delete_after,
-                file=file))
+                file=file,
+                view=view))
         if reactions is not None:
             if not isinstance(reactions, list) and not isinstance(
                     reactions, tuple):
@@ -214,6 +235,15 @@ class ChannelWrapper(object):
             if not dict(iter(self.permissions_for(member)))[i]:
                 return (False, i)
         return (True, None)
+
+    async def delete(self):
+        if str(self.type) in ['public_thread', 'private_thread']:
+            if not self.permissions(self.guild.me, 'manage_threads')[0]:
+                return
+        elif str(self.type) == 'text':
+            if not self.permissions(self.guild.me, 'manage_channels')[0]:
+                return
+        await self._wrapped_chnl.delete()
 
 
 class MemberWrapper(object):

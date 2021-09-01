@@ -76,6 +76,9 @@ class MyClient(discord.Client):
         if str(msg.channel.type) == 'private':
             self.dispatch('dm', msg)
             return
+        if str(msg.channel.type) == 'public_thread':
+            self.dispatch('thread_message', msg)
+            return
         if (msg.author.id == self.user.id or
                 str(msg.channel.type) != 'text' or
                 msg.content.split() is None or
@@ -95,14 +98,14 @@ class MyClient(discord.Client):
         if msg.content == "{prefix}help".format(
                 prefix=self.bot.default_prefix):
             await self.bot.handle_message(
-                    msg, 'help', self.bot.default_prefix)
+                msg, 'help', self.bot.default_prefix)
             return
         # if server has prefix set in it's config, use that prefix,
         # else use default prefix
         prefix = await self.bot.database.get_prefix(msg)
         cmd = msg.content.split()[0][len(prefix):]
         if (msg.content[:len(prefix)] == prefix and
-                (cmd in self.bot.commands or 
+                (cmd in self.bot.commands or
                     cmd in self.bot.commands_synonyms)):
             await self.bot.handle_message(msg, cmd, prefix)
             return
@@ -119,6 +122,16 @@ class MyClient(discord.Client):
             if referenced_msg is not None:
                 self.dispatch('dm_reply', msg, referenced_msg)
                 return
+
+    async def on_thread_message(self, msg):
+        if (msg.author.id == self.user.id or
+                msg.content.split() is None or
+                len(msg.content.split()) < 1):
+            return
+        msg = MessageWrapper(msg)
+        msg.channel.parent = ChannelWrapper(msg.channel.parent)
+        for cmd in self.bot.on_thread_message_commands:
+            await cmd.on_thread_message(msg)
 
     async def on_reply(self, msg, referenced_msg):
         # functions that should be processed separately

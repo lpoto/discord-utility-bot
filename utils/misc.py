@@ -15,8 +15,8 @@ class Queue():
 
     async def add_to_queue(self, queue_id, item, function=None):
         if queue_id not in self.queues:
-            self.queues[queue_id] = deque([])
-        self.queues[queue_id].append(item)
+            self.queues[queue_id] = [False, deque([])]
+        self.queues[queue_id][1].append(item)
         # start clearing the queue immediately if function provided
         if function is not None:
             await self.clear_queue(queue_id, function, False)
@@ -26,9 +26,11 @@ class Queue():
             return
         # clear messages or reaction in queue to avoid
         # multiple instances of same command or reactions
-        if ((queue_id in self.queues or
-             ignore_running) and len(self.queues[queue_id]) > 0):
-            item = self.queues[queue_id].popleft()
+        if (queue_id in self.queues and
+            (not self.queues[queue_id][0] or
+             ignore_running) and len(self.queues[queue_id][1]) > 0):
+            self.queues[queue_id][0] = True
+            item = self.queues[queue_id][1].popleft()
             # catch exceptions triggered when clearing the queue
             # and continue clearing
             try:
@@ -40,7 +42,7 @@ class Queue():
         else:
             # clean up
             if queue_id in self.queues and len(
-                    self.queues[queue_id]) == 0:
+                    self.queues[queue_id][1]) == 0:
                 del self.queues[queue_id]
 
 
