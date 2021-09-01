@@ -157,7 +157,7 @@ class Hangman(Help):
                 embed=embed,
                 user_id=msg_info['user_id'],
                 msg=msg)
-        if phase >= 8:
+        if phase >= 6:
             return await self.end_embed(
                 winner=True, embed=embed, user_id=msg_info['user_id'], msg=msg)
         embed.description += '\n\nGuess the word in this message\'s thread!'
@@ -185,23 +185,21 @@ class Hangman(Help):
 
     def picture(self, phase=0, guessed_chars=[]):
         phases = {
-            1: (1, '\u2000│/'),
-            2: (1, '\u2000│/' + 7 * '\u2000' + '|'),
-            3: (2, '\u2000│' + 8 * '\u2000' + '0'),
-            4: (3, '\u2000│' + 8 * '\u2000' + '│'),
-            5: (3, '\u2000│' + 7 * '\u2000' + '/│'),
-            6: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
-            7: (4, '\u2000│' + 7 * '\u2000' + ' /'),
-            8: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
+            1: (2, '\u2000│' + 8 * '\u2000' + '0'),
+            2: (3, '\u2000│' + 8 * '\u2000' + '│'),
+            3: (3, '\u2000│' + 7 * '\u2000' + '/│'),
+            4: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
+            5: (4, '\u2000│' + 7 * '\u2000' + ' /'),
+            6: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
         }
-        if phase > 8:
-            return self.picture(8, guessed_chars)
+        if phase > 6:
+            return self.picture(6, guessed_chars)
         if phase == 0:
             return {
-                -2: 'Wrong guesses: {}/8'.format(phase),
+                -2: 'Wrong guesses: {}/6'.format(phase),
                 -1: 'Guessed letters: ' + ', '.join(guessed_chars),
                 0: 13*r'\_',
-                1: '\u2000│',
+                1: '\u2000│/' + 7 * '\u2000' + '|',
                 2: '\u2000│',
                 3: '\u2000│',
                 4: '\u2000│',
@@ -209,7 +207,7 @@ class Hangman(Help):
                 6: '/ | \\'
             }
         pic = self.picture(phase-1, guessed_chars)
-        pic[-2] = 'Wrong guesses: {}/8'.format(phase)
+        pic[-2] = 'Wrong guesses: {}/6'.format(phase)
         pic[phases[phase][0]] = phases[phase][1]
         return pic
 
