@@ -121,8 +121,6 @@ class Config(Help):
                     delete_after=5)
                 return
         cmd = args[2]
-        new_roles = msg.content.replace(
-            '{} {} '.format(args[0], args[1]), '', 1)
         if cmd not in self.bot.commands:
             await msg.channel.send(
                 text='Invalid command!',
@@ -130,9 +128,11 @@ class Config(Help):
             return
         if len(cmd) > 50:
             await msg.channel.send(
-                text='Role name too long!',
+                text='command name too long!',
                 delete_after=5)
             return
+        new_roles = msg.content.replace(
+            '{} {} {} '.format(args[0], args[1], args[2]), '', 1)
         if new_roles != 'help' and len(new_roles) > 90:
             await msg.channel.send(
                 text='Too many roles!',
@@ -148,7 +148,6 @@ class Config(Help):
                     'Removed roles for `{}`'
                 ).format(cmd))
             return
-
         guild_roles = [i.name for i in msg.guild.roles]
         roles = await self.valid_roles(msg, new_roles, guild_roles)
         if roles is None:
