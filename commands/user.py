@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import waste_basket, random_color
+from utils.misc import random_color
 from utils.wrappers import EmbedWrapper
 
 
@@ -28,7 +28,7 @@ class UserInfo(Help):
             return
         await msg.channel.send(
             embed=embed_var,
-            reactions=waste_basket)
+            components=discord.ui.Button(label='delete'))
 
     async def create_embed(self, msg, user):
         # build the embed with user info

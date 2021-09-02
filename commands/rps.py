@@ -1,5 +1,5 @@
 import discord
-from utils.misc import rps_emojis, random_color, waste_basket
+from utils.misc import rps_emojis, random_color
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -25,49 +25,54 @@ class Rps(Help):
         # wait for him to react with one of the options
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
-            description='React with your weapon of choice!',
+            description='Choose your weapon!',
             color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
         dm_embed.set_id(channel_id=msg.channel.id)
+        components = [discord.ui.Button(emoji=i) for i in rps_emojis]
         await dm.send(
             embed=dm_embed,
-            reactions=rps_emojis)
+            components=components)
 
-    async def on_dm_reaction(self, payload):
+    async def on_button_click(self, interaction, interaction_message):
+        if not interaction_message.is_rps:
+            return
         # check if rps dm message, then get channel id from
         # which the rps game was started
         # then send new embed to that channel and wait for another
         # opponent to join
-        if (payload.emoji.name not in rps_emojis
-                or payload.event_type != 'REACTION_ADD'):
-            return
-        user = self.bot.client.get_user(int(payload.user_id))
-        if user is None:
-            return
-        reaction_msg = await user.fetch_message(payload.message_id)
-        if reaction_msg is None or not reaction_msg.is_rps:
-            return
         # edit chosen emoji to embed's title
-        embed = reaction_msg.embeds[0]
-        embed.title = payload.emoji.name
+        for i in interaction_message.components:
+            for j in i.children:
+                if j.custom_id == interaction.data['custom_id']:
+                    if str(interaction_message.channel.type) == 'text':
+                        await self.handle_button_click(
+                            j, interaction_message, interaction.user)
+                        return
+                    await self.handle_dm_button_click(
+                        j, interaction_message, interaction.user)
+                    return
+
+    async def handle_dm_button_click(self, button, interaction_msg, user):
+        embed = interaction_msg.embeds[0]
         embed.mark(embed.ENDED)
-        await reaction_msg.edit(
-            text=reaction_msg.content,
-            embed=embed)
+        components = []
+        embed.description = 'The game has been sent to the channel!'
+        for i in rps_emojis:
+            if str(i) == button.emoji.name:
+                components.append(discord.ui.Button(
+                    style=discord.ButtonStyle.green, emoji=i))
+            else:
+                components.append(discord.ui.Button(emoji=i))
+        await interaction_msg.edit(
+            embed=embed,
+            components=components)
         # get channel id, message id from embed's footer
         info = embed.get_id()
-        channel = None
-        try:
-            channel = self.bot.client.get_channel(info['channel_id'])
-            if channel is None:
-                raise ValueError
-            user = channel.guild.get_member(payload.user_id)
-            if user is None:
-                raise ValueError
-        except ValueError:
-            return
+        channel = self.bot.client.get_channel(info['channel_id'])
         # create game embed and send it to channel where game was started
+        user = channel.guild.get_member(user.id)
         new_embed = EmbedWrapper(discord.Embed(
             title='{} is waiting for an opponent'.format(
                 user.name if not user.nick else user.nick),
@@ -75,38 +80,39 @@ class Rps(Help):
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
-        new_embed.description = 'React with {}, {} or {} to join!'.format(
-            rps_emojis[0], rps_emojis[1], rps_emojis[2])
-        new_embed.set_id(message_id=payload.message_id, user_id=user.id)
+        new_embed.description = 'Select your weapon to join the game!'
+        new_embed.set_id(message_id=interaction_msg.id, user_id=user.id)
         # add users profile picture to the embed
         await channel.send(
             embed=new_embed,
-            reactions=rps_emojis)
+            components=[discord.ui.Button(emoji=i) for i in rps_emojis])
 
-    async def on_raw_reaction(self, msg, payload):
+    async def handle_button_click(self, button, interaction_msg, user):
         # await for rock paper or scissors reaction on the running game
         # and get the user and the winner from the reaction
-        if (payload.emoji.name not in rps_emojis or
-                payload.event_type != 'REACTION_ADD' or
-                payload.member.bot or
-                not msg.is_rps):
+        info = interaction_msg.embeds[0].get_id()
+        if str(user.id) == str(info['user_id']):
             return
-        info = msg.embeds[0].get_id()
-        if str(payload.user_id) == str(info['user_id']):
-            return
+        user = interaction_msg.guild.get_member(user.id)
         # rps embed has user id and dm msg id in footer
         # fetch the first msg from the dm and get first users choice from it
-        user1 = msg.guild.get_member(int(info['user_id']))
-        user2 = msg.guild.get_member(payload.user_id)
+        user1 = interaction_msg.guild.get_member(int(info['user_id']))
+        user2 = interaction_msg.guild.get_member(user.id)
         if user1 is None or user2 is None:
             return
         first_msg = await user1.fetch_message(
             int(info['message_id']))
         if first_msg is None or len(first_msg.embeds) != 1:
             return
-        emoji1 = first_msg.embeds[0].title
+        emoji1 = None
+        for i in first_msg.components:
+            for j in i.children:
+                if j.style == discord.ButtonStyle.green:
+                    emoji1 = j.emoji.name
         # compare the chosen options and get the winner of the game
-        await self.game_results(user1, user2, emoji1, payload.emoji.name, msg)
+        await self.game_results(
+                user1, user2, emoji1, button.emoji.name,
+                interaction_msg)
 
     async def add_winner(self, embed, msg,  info):
         embed.title = (
@@ -116,8 +122,9 @@ class Rps(Help):
             info['winner_emoji'], info['loser_emoji'])
         wins = await self.bot.database.use_database(
             self.wins_to_database, msg, info['winner_id'])
-        embed.description += '\n\n{} total wins: {}'.format(
-            info['winner_name'], wins)
+        if wins is not None:
+            embed.description += '\n\n{} total wins: {}'.format(
+                info['winner_name'], wins)
         embed.set_id()
         if info['winner_avatar']:
             embed.set_thumbnail(url=info['winner_avatar'])
@@ -163,7 +170,14 @@ class Rps(Help):
             info['loser_emoji'] = emoji1
         new_embed = await self.add_winner(msg.embeds[0], msg, info)
         new_embed.mark(new_embed.ENDED)
-        await msg.edit(embed=new_embed)
+        components = []
+        for i in rps_emojis:
+            if i == emoji2:
+                components.append(discord.ui.Button(
+                    style=discord.ButtonStyle.green, emoji=i))
+            else:
+                components.append(discord.ui.Button(emoji=i))
+        await msg.edit(embed=new_embed, components=components)
 
     async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count
@@ -219,8 +233,7 @@ class Rps(Help):
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
         await msg.channel.send(
-            embed=embed_var,
-            reactions=waste_basket)
+            embed=embed_var)
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(

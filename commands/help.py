@@ -1,5 +1,5 @@
 import discord
-from utils.misc import emojis, waste_basket, colors
+from utils.misc import colors
 from utils.wrappers import EmbedWrapper
 
 
@@ -12,9 +12,7 @@ class Help:
         self.synonyms = ['h'] if name == 'help' else []
         self.name = name
         self.description = 'Get information about the commands.'
-        self.bot_permissions = [
-            'send_messages',
-            'add_reactions']
+        self.bot_permissions = ['send_messages']
         self.user_permissions = ['send_messages']
         self.channel_types = ['text']
         self.embed_type = None
@@ -50,37 +48,31 @@ class Help:
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
-        idx = list(self.bot.commands.keys()).index('help')
-        emjis = []
-        for i in range(len(self.bot.commands)):
-            if i != idx:
-                emjis.append(emojis[i])
-        emjis += [emojis[idx], waste_basket]
-        await msg.channel.send(embed=embed_var, reactions=emjis)
+        options = []
+        for i in embed_var.fields[:-1]:
+            options.append(discord.SelectOption(label=i.name))
+        options.append(discord.SelectOption(label=self.name))
+        components = [discord.ui.Select(
+            placeholder='Select a command', options=options),
+            discord.ui.Button(label='delete')]
+        await msg.channel.send(embed=embed_var, components=components)
 
-    async def on_raw_reaction(self, msg, payload):
-        """Function called when an emoji is added or removed in
-        a discord server."""
-        if (self.name != 'help' or
-                payload.emoji.name not in emojis or
-                payload.event_type != 'REACTION_ADD' or
-                not msg.is_help):
+    async def on_menu_select(self, interaction, interaction_msg):
+        if not interaction_msg.is_help or self.name != 'help':
             return
-        idx = emojis.index(payload.emoji.name)
-        help_idx = list(self.bot.commands.keys()).index('help')
-        if idx == help_idx:
-            await msg.edit(embed=await self.help_embed(
-                msg, self.bot.commands))
+        name = interaction.data['values'][0]
+        if name == 'help':
+            await interaction_msg.edit(
+                embed=await self.help_embed(
+                    interaction_msg, self.bot.commands))
             return
-        cmd = self.bot.commands[
-            list(self.bot.commands.keys())[idx]]
-        prefix = await self.bot.database.get_prefix(msg)
+        cmd = self.bot.commands[name]
+        prefix = await self.bot.database.get_prefix(interaction_msg)
         new_embed = await self.bot.create_additional_help(
-            cmd.command_info(prefix), msg, prefix)
+            cmd.command_info(prefix), interaction_msg, prefix)
         new_embed.description += (
-            '\n\nReact with {} to return to help menu.').format(
-            emojis[help_idx])
-        await msg.edit(embed=new_embed)
+            '\n\nSelect help in the dropdown to return to help menu.')
+        await interaction_msg.edit(embed=new_embed)
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)
@@ -91,21 +83,16 @@ class Help:
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         embed_var.description += (
-            "\n\nReact with command's emoji or type " +
-            '"{}command help" in the chat for details ' +
+            "\n\nselect a command or type " +
+            '"{}<command> help" in the chat for details ' +
             'about the command (synonyms, permissions,...)').format(
             prefix)
-        i = 0
         for k, v in commands.items():
-            if i == idx:
-                i += 1
             if k == 'help':
                 continue
             embed_var.add_field(
-                name='{}{}'.format(prefix, k),
-                value='{} {}'.format(v.description, emojis[i]),
-                inline=False)
-            i += 1
+                name=k,
+                value=v.description)
         txt = ''
         for i in embed_var.marks:
             txt += '{}{}-\u3000{}\n'.format(

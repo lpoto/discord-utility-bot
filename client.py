@@ -182,3 +182,38 @@ class MyClient(discord.Client):
             return
         msg = '{} {}'.format(member.mention, hello)
         await default_channel.send(msg)
+
+    async def on_interaction(self, interaction):
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            pass
+        msg = MessageWrapper(interaction.message)
+        if msg.is_ended:
+            return
+        if interaction.data['component_type'] == 2:
+            self.dispatch('button_click', interaction, msg)
+            return
+        elif interaction.data['component_type'] == 3:
+            self.dispatch('menu_select', interaction, msg)
+            return
+
+    async def on_button_click(self, interaction, msg):
+        for i in msg.components:
+            for j in i.children:
+                if (j.custom_id == interaction.data['custom_id'] and
+                        j.label == 'delete'):
+                    if msg.is_deletable:
+                        await msg.edit(
+                                text='Message has been deleted.',
+                                components=[discord.ui.Button(
+                                    label='delete',
+                                    style=discord.ButtonStyle.green)],
+                                delete_after=3)
+                    return
+        for cmd in self.bot.on_button_click_commands:
+            await cmd.on_button_click(interaction, msg)
+
+    async def on_menu_select(self, interaction, msg):
+        for cmd in self.bot.on_menu_select_commands:
+            await cmd.on_menu_select(interaction, msg)

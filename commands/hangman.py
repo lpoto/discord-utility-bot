@@ -19,8 +19,9 @@ class Hangman(Help):
             user = msg.author
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
-            description=('Reply to this message with a single word,' +
-                         ' not longer than 20 letters.'),
+            description=('Reply to this message with a word or ' +
+                         'multiple words with a total length of ' +
+                         'maximum 30 characters.'),
             color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
@@ -28,36 +29,37 @@ class Hangman(Help):
         await dm.send(embed=dm_embed)
 
     async def on_dm_reply(self, msg, referenced_msg):
-        if not referenced_msg.is_hangman:
+        if (not referenced_msg.is_hangman or
+                referenced_msg.embeds[0].title or
+                len(msg.content) > 30):
             return
-        if not referenced_msg.embeds[0].title:
-            for c in msg.content.strip():
-                x = ord(c.upper())
-                if (x < 65 or x > 90) and x != 32:
-                    return
-            referenced_msg.embeds[0].description = msg.content.strip().upper()
-            referenced_msg.embeds[0].mark(EmbedWrapper.ENDED)
-            await referenced_msg.edit(embed=referenced_msg.embeds[0])
-            ch_id = referenced_msg.embeds[0].get_id()['channel_id']
-            channel = self.bot.client.get_channel(int(ch_id))
-            if not channel:
+        for c in msg.content.strip():
+            x = ord(c.upper())
+            if (x < 65 or x > 90) and x != 32:
                 return
-            msg_info = {
-                'user_id': msg.author.id,
-                'message_id': referenced_msg.id,
-                'channel_id': None}
-            guild = channel.guild
-            if not guild:
-                return
-            embed = await self.game_embed(guild, msg_info, msg.author.id)
-            m = await channel.send(embed=embed)
-            thread = await m.create_thread(name='HANGMAN')
-            await thread.send(
-                'Guess the word!\n ' +
-                'All messages in this thread containing: ' +
-                '\n* A single letter A-z (example: `a`)' +
-                '\n* Multiple single letters (example `a B c`)' +
-                '\nwill be counted as guesses to the game!')
+        referenced_msg.embeds[0].description = msg.content.strip().upper()
+        referenced_msg.embeds[0].mark(EmbedWrapper.ENDED)
+        await referenced_msg.edit(embed=referenced_msg.embeds[0])
+        ch_id = referenced_msg.embeds[0].get_id()['channel_id']
+        channel = self.bot.client.get_channel(int(ch_id))
+        if not channel:
+            return
+        msg_info = {
+            'user_id': msg.author.id,
+            'message_id': referenced_msg.id,
+            'channel_id': None}
+        guild = channel.guild
+        if not guild:
+            return
+        embed = await self.game_embed(guild, msg_info, msg.author.id)
+        m = await channel.send(embed=embed)
+        thread = await m.create_thread(name='HANGMAN')
+        await thread.send(
+            'Guess the word!\n ' +
+            'All messages in this thread containing: ' +
+            '\n* A single letter A-z (example: `a`)' +
+            '\n* Multiple single letters (example `a B c`)' +
+            '\nwill be counted as guesses to the game!')
 
     async def on_thread_message(self, msg):
         if msg.channel.name != 'HANGMAN':
@@ -157,7 +159,7 @@ class Hangman(Help):
                 embed=embed,
                 user_id=msg_info['user_id'],
                 msg=msg)
-        if phase >= 6:
+        if phase >= 7:
             return await self.end_embed(
                 winner=True, embed=embed, user_id=msg_info['user_id'], msg=msg)
         embed.description += '\n\nGuess the word in this message\'s thread!'
@@ -185,21 +187,22 @@ class Hangman(Help):
 
     def picture(self, phase=0, guessed_chars=[]):
         phases = {
-            1: (2, '\u2000│' + 8 * '\u2000' + '0'),
-            2: (3, '\u2000│' + 8 * '\u2000' + '│'),
-            3: (3, '\u2000│' + 7 * '\u2000' + '/│'),
-            4: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
-            5: (4, '\u2000│' + 7 * '\u2000' + ' /'),
-            6: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
+            1: (1, '\u2000│/' + 7 * '\u2000' + '|'),
+            2: (2, '\u2000│' + 8 * '\u2000' + '0'),
+            3: (3, '\u2000│' + 8 * '\u2000' + '│'),
+            4: (3, '\u2000│' + 7 * '\u2000' + '/│'),
+            5: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
+            6: (4, '\u2000│' + 7 * '\u2000' + ' /'),
+            7: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
         }
-        if phase > 6:
-            return self.picture(6, guessed_chars)
+        if phase > 7:
+            return self.picture(7, guessed_chars)
         if phase == 0:
             return {
-                -2: 'Wrong guesses: {}/6'.format(phase),
+                -2: 'Wrong guesses: {}/7'.format(phase),
                 -1: 'Guessed letters: ' + ', '.join(guessed_chars),
                 0: 13*r'\_',
-                1: '\u2000│/' + 7 * '\u2000' + '|',
+                1: '\u2000│',
                 2: '\u2000│',
                 3: '\u2000│',
                 4: '\u2000│',
@@ -207,7 +210,7 @@ class Hangman(Help):
                 6: '/ | \\'
             }
         pic = self.picture(phase-1, guessed_chars)
-        pic[-2] = 'Wrong guesses: {}/6'.format(phase)
+        pic[-2] = 'Wrong guesses: {}/7'.format(phase)
         pic[phases[phase][0]] = phases[phase][1]
         return pic
 

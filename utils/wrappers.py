@@ -42,8 +42,17 @@ class MessageWrapper(discord.Message):
             delete_after=None,
             reactions=None,
             view=None,
+            components=None
     ):
-        if view is not None:
+        if view is not None or components is not None:
+            if view is None:
+                view = discord.ui.View(timeout=None)
+            if components is not None:
+                if (not isinstance(components, list) and
+                        not isinstance(components, tuple)):
+                    components = [components]
+                for i in components:
+                    view.add_item(i)
             await self._wrapped_msg.edit(
                 content=text, embed=embed, delete_after=delete_after,
                 view=view)
@@ -213,7 +222,7 @@ class ChannelWrapper(object):
                     components, tuple):
                 components = [components]
             if view is None:
-                view = discord.ui.View()
+                view = discord.ui.View(timeout=None)
             for i in components:
                 view.add_item(i)
         msg = MessageWrapper(

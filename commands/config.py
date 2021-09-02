@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import waste_basket, emojis, colors
+from utils.misc import emojis, colors
 from utils.wrappers import EmbedWrapper
 
 
@@ -12,18 +12,18 @@ class Config(Help):
 
     async def execute_command(self, msg):
         # check if database connected
-        if not self.bot.database.connected:
-            await msg.channel.send(
-                text='This command requires database connection!',
-                delete_after=5)
-            return
         args = msg.content.split()
         if msg.content.replace('{}'.format(args[0]), '', 1) in [
                 ' see', ' show', '']:
             await msg.channel.send(
                 embed=await self.create_config_embed(msg),
-                reactions=[emojis[list(
-                    self.bot.commands.keys()).index('server')], waste_basket])
+                components=[discord.ui.Button(label='server'),
+                            discord.ui.Button(label='delete')])
+            return
+        if not self.bot.database.connected:
+            await msg.channel.send(
+                text='This command requires database connection!',
+                delete_after=5)
             return
         if len(args) < 2:
             await msg.channel.send(
@@ -77,21 +77,29 @@ class Config(Help):
             value='None' if cmds is None else cmds,
             inline=False)
         embed_var.description += (
-                '\n\nReact with {} to see server info.').format(
-                emojis[list(self.bot.commands.keys()).index('server')])
+            '\n\nClick "server" to see server info.')
         return embed_var
 
-    async def on_raw_reaction(self, msg, payload):
+    async def on_button_click(self, interaction, interaction_msg):
+        if not interaction_msg.is_server:
+            return
+        await interaction_msg.edit(
+            embed=await self.create_config_embed(interaction_msg),
+            components=[
+                discord.ui.Button(label='server'),
+                discord.ui.Button(label='delete')])
+
+    async def on(self, msg, payload):
         if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
                 payload.emoji.name != emojis[list(
                     self.bot.commands.keys()).index('config')] or
                 not msg.is_server):
             return
-        await msg.remove_reaction(waste_basket, msg.guild.me)
         await msg.edit(
             embed=await self.create_config_embed(msg),
-            reactions=[emojis[list(
-                self.bot.commands.keys()).index('server')], waste_basket])
+            components=[
+                discord.ui.Button(label='server'),
+                discord.ui.Button(label='delete')])
 
     async def set_prefix(self, cursor, msg, args):
         new_prefix = args[2]

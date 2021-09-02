@@ -1,6 +1,6 @@
 import discord
 from utils.wrappers import EmbedWrapper, MemberWrapper
-from utils.misc import random_color, emojis
+from utils.misc import random_color
 from commands.help import Help
 
 
@@ -11,34 +11,40 @@ class Games(Help):
 
     async def execute_command(self, msg):
         embed_var = EmbedWrapper(discord.Embed(
-            description="React with a game's emoji to start it.",
+            description="React with a game's numer to start it.",
             color=random_color()),
             embed_type='GAMES',
             marks=EmbedWrapper.INFO)
         e_count = 0
+        prefix = await self.bot.database.get_prefix(msg)
         for k, v in self.bot.commands.items():
             if v.game:
-                embed_var.add_field(name=v.embed_type,
-                                    value=(emojis[e_count] +
-                                           ' ({})'.format(k)))
+                embed_var.add_field(
+                    name='({}) - {}'.format(e_count, v.embed_type),
+                    value='{}{}'.format(prefix, k),
+                    inline=False)
                 e_count += 1
+        components = [discord.ui.Button(label=str(i)) for i in range(e_count)]
         await msg.channel.send(
-            embed=embed_var, reactions=[
-                emojis[i] for i in range(e_count)])
+            embed=embed_var, components=components)
 
-    async def on_raw_reaction(self, msg, payload):
-        if (not msg.is_games or
-                payload.emoji.name not in emojis or
-                payload.event_type != 'REACTION_ADD'):
+    async def on_button_click(self, interaction, interaction_msg):
+        if not interaction_msg.is_games:
             return
-        user = MemberWrapper(msg.guild.get_member(payload.user_id))
-        if user is None:
-            return
-        await msg.remove_reaction(emoji=payload.emoji.name, member=user)
-        for i in msg.embeds[0].fields:
-            if i.value.startswith(payload.emoji.name):
-                n = i.value.split(' (')[-1][:-1]
-                await self.bot.commands[n].execute_command(msg, user)
+        for i in interaction_msg.components:
+            for j in i.children:
+                if j.custom_id == interaction.data['custom_id']:
+                    await self.handle_button_click(
+                            j, interaction_msg, interaction.user)
+                    return
+
+    async def handle_button_click(self, button, interaction_msg, user):
+        for i in interaction_msg.embeds[0].fields:
+            if i.name[1:].startswith(button.label):
+                user = MemberWrapper(user)
+                await self.bot.commands[i.value[
+                    len(await self.bot.database.get_prefix(interaction_msg)):]
+                    ].execute_command(interaction_msg, user)
                 return
 
     def additional_info(self, prefix):

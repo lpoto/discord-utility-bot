@@ -1,5 +1,5 @@
 import discord
-from utils.misc import Queue, waste_basket, colors
+from utils.misc import Queue, colors
 from utils.wrappers import ChannelWrapper, EmbedWrapper
 from database import DB
 import commands as cmds
@@ -31,6 +31,8 @@ class Bot:
         self.on_dm_reply_commands = []
         self.on_time_commands = []
         self.on_thread_message_commands = []
+        self.on_button_click_commands = []
+        self.on_menu_select_commands = []
 
     async def initialize(self, client):
         """
@@ -52,7 +54,7 @@ class Bot:
             # events
             if 'event' in self.commands:
                 await self.database.use_database(
-                        self.commands['event'].events_from_database)
+                    self.commands['event'].events_from_database)
                 await self.commands['event'].start_timer()
             self.ready = True
 
@@ -68,6 +70,10 @@ class Bot:
             self.on_reply_commands.append(command)
         if hasattr(command, 'on_thread_message'):
             self.on_thread_message_commands.append(command)
+        if hasattr(command, 'on_button_click'):
+            self.on_button_click_commands.append(command)
+        if hasattr(command, 'on_menu_select'):
+            self.on_menu_select_commands.append(command)
         if hasattr(command, 'on_raw_reaction'):
             self.on_raw_reaction_commands.append(command)
         if hasattr(command, 'on_dm_reaction'):
@@ -96,7 +102,7 @@ class Bot:
             await msg.channel.send(
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
-                reactions=waste_basket)
+                components=discord.ui.Button(label='delete'))
         else:
             # else execute the command
             # check if valid channel, permissions,...
@@ -128,24 +134,10 @@ class Bot:
         # onnly listen for reactions on bot's messages
         if msg.author.id != self.client.user.id:
             return
-        # if wastebin reaction and bot is msg author
-        # and message is not pinned and message has an
-        # embed or starts with help, delete it
-        if payload.emoji.name == waste_basket:
-            if reaction_type == 'REACTION_ADD':
-                await self.waste_basket_delete(msg)
-            return
         # iterate through those commands that have
         # on raw reaction functinon
         for i in self.on_raw_reaction_commands:
             await i.on_raw_reaction(msg, payload)
-
-    async def waste_basket_delete(self, msg):
-        """Delete a message with a waste basket emoji."""
-        if msg.is_deletable:
-            await msg.edit(
-                text='Message has been deleted.',
-                delete_after=3)
 
     async def check_if_valid(self, command, msg) -> bool:
         """
@@ -216,9 +208,9 @@ class Bot:
         if len(info[6]) > 0:
             synonyms = ', '.join([prefix + i for i in info[6]])
         embed_var.add_field(
-                name='synonyms',
-                value=synonyms,
-                inline=False)
+            name='synonyms',
+            value=synonyms,
+            inline=False)
         embed_var.add_field(
             name='Additional info',
             value=info[2],

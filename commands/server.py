@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import emojis, waste_basket, colors
+from utils.misc import emojis, colors
 from utils.wrappers import EmbedWrapper
 
 
@@ -13,8 +13,9 @@ class ServerInfo(Help):
         embed_var = await self.create_info_embed(msg)
         await msg.channel.send(
             embed=embed_var,
-            reactions=[emojis[list(
-                self.bot.commands.keys()).index('config')], waste_basket])
+            components=[
+                discord.ui.Button(label='config'),
+                discord.ui.Button(label='delete')])
 
     async def create_info_embed(self, msg):
         # build embed with server info
@@ -68,23 +69,17 @@ class ServerInfo(Help):
                 inline=False
             )
         embed_var.description += (
-            '\n\nReact with {} to see server configurations.').format(
-            emojis[list(self.bot.commands.keys()).index('config')])
+            '\n\nClick "config" to see server configurations.')
         return embed_var
 
-    async def on_raw_reaction(self, msg, payload):
-        if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
-                payload.emoji.name != emojis[list(
-                    self.bot.commands.keys()).index('server')] or
-                not msg.is_config):
+    async def on_button_click(self, interaction, interaction_msg):
+        if not interaction_msg.is_config:
             return
-        await msg.remove_reaction(
-            emoji=waste_basket,
-            member=msg.guild.me)
-        await msg.edit(
-            embed=await self.create_info_embed(msg),
-            reactions=[emojis[list(
-                self.bot.commands.keys()).index('config')], waste_basket])
+        await interaction_msg.edit(
+            embed=await self.create_info_embed(interaction_msg),
+            components=[
+                discord.ui.Button(label='config'),
+                discord.ui.Button(label='delete')])
 
     def get_online_members(self, msg):
         count = 0
