@@ -90,10 +90,29 @@ class Roles(Help):
         if role is None:
             return
         rl = user.get_role(role.id)
+        components1 = []
+        components2 = []
+        for i in msg.components:
+            for j in i.children:
+                components1.append(
+                        discord.ui.Button(label=j.label))
+                if j.label != button.label:
+                    components2.append(discord.ui.Button(
+                        label=j.label))
+                elif rl is None:
+                    components2.append(discord.ui.Button(
+                        label=j.label,
+                        style=discord.ButtonStyle.green))
+                else:
+                    components2.append(discord.ui.Button(
+                        label=j.label,
+                        style=discord.ButtonStyle.red))
         if rl is None:
             await user.add_roles(role)
         else:
             await user.remove_roles(role)
+        await msg.edit(embed=msg.embeds[0], components=components2)
+        await msg.edit(embed=msg.embeds[0], components=components1)
 
     async def valid_role(self, pot_role, msg):
         # check if role exists and if bot can add such a role

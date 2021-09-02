@@ -4,7 +4,7 @@ import sys
 import os
 import logging
 import traceback
-from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper, EmbedWrapper
+from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper
 import utils.misc as utils
 
 
@@ -188,8 +188,6 @@ class MyClient(discord.Client):
             await interaction.response.defer()
         except discord.NotFound:
             pass
-        except Exception as err:
-            print(err)
         msg = MessageWrapper(interaction.message)
         if interaction.data['component_type'] == 2:
             self.dispatch('button_click', interaction, msg)
