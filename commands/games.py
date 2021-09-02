@@ -16,12 +16,11 @@ class Games(Help):
             embed_type='GAMES',
             marks=EmbedWrapper.INFO)
         e_count = 0
-        prefix = await self.bot.database.get_prefix(msg)
         for k, v in self.bot.commands.items():
             if v.game:
                 embed_var.add_field(
-                    name='({}) - {}'.format(e_count, v.embed_type),
-                    value='{}{}'.format(prefix, k),
+                    name='({})  {}'.format(e_count, k),
+                    value=v.description,
                     inline=False)
                 e_count += 1
         components = [discord.ui.Button(label=str(i)) for i in range(e_count)]
@@ -35,16 +34,18 @@ class Games(Help):
             for j in i.children:
                 if j.custom_id == interaction.data['custom_id']:
                     await self.handle_button_click(
-                            j, interaction_msg, interaction.user)
+                        j, interaction_msg, interaction.user)
                     return
 
     async def handle_button_click(self, button, interaction_msg, user):
         for i in interaction_msg.embeds[0].fields:
-            if i.name[1:].startswith(button.label):
+            x = i.name.split(')  ')[0][1:]
+            if x.startswith(button.label):
                 user = MemberWrapper(user)
-                await self.bot.commands[i.value[
-                    len(await self.bot.database.get_prefix(interaction_msg)):]
-                    ].execute_command(interaction_msg, user)
+                await self.bot.commands[i.name.replace(
+                    '({})  '.format(x), '', 1)
+                ].execute_command(
+                    interaction_msg, user)
                 return
 
     def additional_info(self, prefix):
