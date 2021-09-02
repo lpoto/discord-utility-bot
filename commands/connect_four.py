@@ -124,7 +124,7 @@ class ConnectFour(Help):
         idx = None
         if str(user_id) == str(x['user_id']):
             idx = 0
-            msg.embeds[0].set_id(user2_id=x['user2_id'])
+            msg.embeds[0].set_id(user_id=x['user2_id'])
         elif str(user_id) == str(x['user2_id']):
             idx = 1
             msg.embeds[0].set_id(user_id=x['user_id'])
@@ -251,7 +251,7 @@ class ConnectFour(Help):
         elif forfeit:
             embed_var.title = '{} {} forfeits agains {}!'.format(
                 users[1][1], token2 if on_move == 0 else token1, users[0][1])
-        elif draw:
+        if draw:
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
             moves.append(0)
         else:
@@ -352,33 +352,33 @@ class ConnectFour(Help):
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database
         cursor.execute((
-            "SELECT * FROM four_in_line WHERE guild_id = '{}' AND" +
+            "SELECT * FROM connect_four WHERE guild_id = '{}' AND" +
             " user_id = '{}'").format(guild_id, user_id))
         fetched = cursor.fetchone()
         count = 1
         if fetched is None:
             cursor.execute(
-                ("INSERT INTO four_in_line (guild_id, user_id, " +
+                ("INSERT INTO connect_four (guild_id, user_id, " +
                  "wins) VALUES ('{}', '{}', 1)").format(
                     guild_id, user_id))
         else:
             count = fetched[2] + 1
             cursor.execute(
-                ("UPDATE four_in_line SET wins = {} WHERE " +
+                ("UPDATE connect_four SET wins = {} WHERE " +
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, guild_id, user_id))
         return count
 
     def moves_to_database(self, cursor, moves):
         cursor.execute(
-            ("INSERT INTO four_in_line_records (moves) VALUES ('{}')"
+            ("INSERT INTO connect_four_records (moves) VALUES ('{}')"
              ).format(moves))
 
     async def show_leaderboard(self, cursor, msg):
         # show guild members that played fil in order
         # best to worst
         cursor.execute(
-            "SELECT * FROM four_in_line WHERE guild_id = '{}'"
+            "SELECT * FROM connect_four WHERE guild_id = '{}'"
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is []:
