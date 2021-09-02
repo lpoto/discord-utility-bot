@@ -64,7 +64,7 @@ class Hangman(Help):
     async def on_thread_message(self, msg):
         if msg.channel.name != 'HANGMAN':
             return
-        x = msg.content.split(' ')
+        x = msg.content.split()
         if any(len(c.strip()) > 1 for c in x) or any(
                 ord(c.strip().upper()) > 90 or ord(
                     c.strip().upper()) < 65 for c in x):
@@ -105,7 +105,13 @@ class Hangman(Help):
         if embed is None:
             return
         if referenced_msg.is_ended:
+            await thread.send('Game ended! ({})'.format(
+                embed.title))
             await thread.edit(archived=True)
+            await referenced_msg.edit(
+                embed=embed,
+                components=discord.ui.Button(label='delete'))
+            return
         await referenced_msg.edit(embed=embed)
 
     async def get_word(self, guild, msg_info, chars, full=False):

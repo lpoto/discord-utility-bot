@@ -207,7 +207,7 @@ class MyClient(discord.Client):
                             components=[discord.ui.Button(
                                 label='delete',
                                 style=discord.ButtonStyle.green)],
-                            delete_after=3)
+                            delete_after=2)
                     return
         if msg.is_ended:
             return
