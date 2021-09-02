@@ -189,8 +189,6 @@ class MyClient(discord.Client):
         except discord.NotFound:
             pass
         msg = MessageWrapper(interaction.message)
-        if msg.is_ended:
-            return
         if interaction.data['component_type'] == 2:
             self.dispatch('button_click', interaction, msg)
             return
@@ -211,9 +209,13 @@ class MyClient(discord.Client):
                                     style=discord.ButtonStyle.green)],
                                 delete_after=3)
                     return
+        if msg.is_ended:
+            return
         for cmd in self.bot.on_button_click_commands:
             await cmd.on_button_click(interaction, msg)
 
     async def on_menu_select(self, interaction, msg):
+        if msg.is_ended:
+            return
         for cmd in self.bot.on_menu_select_commands:
             await cmd.on_menu_select(interaction, msg)

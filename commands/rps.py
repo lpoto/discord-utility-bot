@@ -25,7 +25,7 @@ class Rps(Help):
         # wait for him to react with one of the options
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
-            description='Choose your weapon!',
+            description='Select one of the three options to start the game.',
             color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
@@ -80,8 +80,11 @@ class Rps(Help):
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
-        new_embed.description = 'Select your weapon to join the game!'
+        new_embed.description = (
+            'Select one of the three options to join the game!')
         new_embed.set_id(message_id=interaction_msg.id, user_id=user.id)
+        if user.avatar:
+            new_embed.set_thumbnail(url=user.avatar)
         # add users profile picture to the embed
         await channel.send(
             embed=new_embed,
@@ -111,8 +114,8 @@ class Rps(Help):
                     emoji1 = j.emoji.name
         # compare the chosen options and get the winner of the game
         await self.game_results(
-                user1, user2, emoji1, button.emoji.name,
-                interaction_msg)
+            user1, user2, emoji1, button.emoji.name,
+            interaction_msg)
 
     async def add_winner(self, embed, msg,  info):
         embed.title = (
@@ -141,35 +144,35 @@ class Rps(Help):
         # if same reactions -> draw
         if emoji1 == emoji2:
             new_embed = EmbedWrapper(discord.Embed(
-                title='{} draws against {}!'.format(
-                    user_names[0], user_names[1])),
+                title='{} and {} draw with {} vs {}!'.format(
+                    user_names[0], user_names[1], emoji1, emoji2)),
                 embed_type=self.embed_type,
                 marks=EmbedWrapper.ENDED)
             await msg.edit(embed=new_embed)
-            return
-        info = {}
-        # get winner
-        if ((emoji1 == rps_emojis[0] and
-             emoji2 == rps_emojis[2]) or
-            (emoji1 == rps_emojis[1] and
-                emoji2 == rps_emojis[0]) or
-                (emoji1 == rps_emojis[2] and
-                    emoji2 == rps_emojis[1])):
-            info['winner_name'] = user_names[0]
-            info['winner_id'] = user1.id
-            info['winner_emoji'] = emoji1
-            info['winner_avatar'] = user1.avatar
-            info['loser_name'] = user_names[1]
-            info['loser_emoji'] = emoji2
         else:
-            info['winner_name'] = user_names[1]
-            info['winner_id'] = user2.id
-            info['winner_emoji'] = emoji2
-            info['winner_avatar'] = user2.avatar
-            info['loser_name'] = user_names[0]
-            info['loser_emoji'] = emoji1
-        new_embed = await self.add_winner(msg.embeds[0], msg, info)
-        new_embed.mark(new_embed.ENDED)
+            info = {}
+            # get winner
+            if ((emoji1 == rps_emojis[0] and
+                 emoji2 == rps_emojis[2]) or
+                (emoji1 == rps_emojis[1] and
+                    emoji2 == rps_emojis[0]) or
+                    (emoji1 == rps_emojis[2] and
+                        emoji2 == rps_emojis[1])):
+                info['winner_name'] = user_names[0]
+                info['winner_id'] = user1.id
+                info['winner_emoji'] = emoji1
+                info['winner_avatar'] = user1.avatar
+                info['loser_name'] = user_names[1]
+                info['loser_emoji'] = emoji2
+            else:
+                info['winner_name'] = user_names[1]
+                info['winner_id'] = user2.id
+                info['winner_emoji'] = emoji2
+                info['winner_avatar'] = user2.avatar
+                info['loser_name'] = user_names[0]
+                info['loser_emoji'] = emoji1
+            new_embed = await self.add_winner(msg.embeds[0], msg, info)
+            new_embed.mark(new_embed.ENDED)
         components = []
         for i in rps_emojis:
             if i == emoji2:
@@ -177,6 +180,7 @@ class Rps(Help):
                     style=discord.ButtonStyle.green, emoji=i))
             else:
                 components.append(discord.ui.Button(emoji=i))
+        components.append(discord.ui.Button(label='delete'))
         await msg.edit(embed=new_embed, components=components)
 
     async def wins_to_database(self, cursor, msg, user_id):
