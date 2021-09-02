@@ -5,7 +5,7 @@ A discord bot written in python, intended for managing smaller discord servers.
 
 ## features
 
-* Adding and removing roles with reactions,
+* Adding and removing roles with button clicks,
 * hosting polls,
 * clearing chat,
 * providing server and user info,

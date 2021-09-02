@@ -1,13 +1,12 @@
 from commands.help import Help
 import discord
 from utils.misc import emojis, random_color
-from utils.wrappers import EmbedWrapper
 
 
 class Roles(Help):
     def __init__(self):
         super().__init__(name='roles')
-        self.description = 'Add or remove roles.'
+        self.description = 'Add or remove roles with button clicks.'
         self.bot_permissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['send_messages', 'manage_roles']
         self.roles_queue = {}
@@ -25,17 +24,17 @@ class Roles(Help):
             reactions=[emojis[i] for i in range(len(embed_var.fields))])
 
     async def starting_embed(self, title, msg):
-        embed_var = EmbedWrapper(
-            discord.Embed(
+        embed_var = discord.Embed(
                 color=random_color(),
                 description='* {}\n* {}\n{}'.format(
                     'Reply with a role to add it to the message.',
                     'You can add multiple at once, separated with ";".',
-                    'Example: "role1;role2;role3"')),
-            embed_type='ROLES',
-            marks=EmbedWrapper.NOT_DELETABLE)
-        if title is not None:
-            embed_var.title = title
+                    'Example: "role1;role2;role3"'))
+        text = 'ROLES'
+        if title:
+            text += ' - ' + title
+        text = text + (70 - len(text)) * '\u2000' + 'ND'
+        embed_var.set_footer(text=text)
         return embed_var
 
     async def on_reply(self, msg, roles_message):
@@ -64,36 +63,34 @@ class Roles(Help):
         rl = await self.valid_role(arg, msg)
         if rl is None:
             return
-        idx = 0
-        if len(msg.embeds[0].fields) > 0:
-            idx = emojis.index(msg.embeds[0].fields[-1].value) + 1
-        emoji = emojis[idx]
-        if idx >= len(emojis):
-            await msg.channel.send(
-                text='Cannot add any more roles to the message!',
-                delete_after=5)
-            return
-        msg.embeds[0].add_field(name=str(rl), value=emoji, inline=True)
+        components = []
+        for i in msg.components:
+            for j in i.children:
+                if j.label == rl.name:
+                    return
+                components.append(discord.ui.Button(label=j.label))
+        components.append(discord.ui.Button(label=rl.name))
         msg.embeds[0].description = None
-        await msg.edit(embed=msg.embeds[0], reactions=emoji)
+        await msg.edit(embed=msg.embeds[0], components=components)
 
-    async def on_raw_reaction(self, msg, payload):
-        if not msg.is_roles:
+    async def on_button_click(self, interaction, interaction_msg):
+        if not interaction_msg.is_roles:
             return
         # listen for raw events and add or remove the role that matches
         # content of the roles message
-        role = None
-        for i in msg.embeds[0].fields:
-            if i.value == payload.emoji.name:
-                role = await self.valid_role(i.name, msg)
-                break
+        for i in interaction_msg.components:
+            for j in i.children:
+                if j.custom_id == interaction.data['custom_id']:
+                    await self.handle_button_click(
+                            j, interaction_msg, interaction.user)
+                    return
+
+    async def handle_button_click(self, button, msg, user):
+        role = await self.valid_role(button.label, msg)
         if role is None:
             return
-        # fetch user that reacted to the role message
-        user = await msg.guild.fetch_member(payload.user_id)
-        if user is None:
-            return
-        if payload.event_type == 'REACTION_ADD':
+        rl = user.get_role(role.id)
+        if rl is None:
             await user.add_roles(role)
         else:
             await user.remove_roles(role)
@@ -160,26 +157,26 @@ class Roles(Help):
                 delete_after=5)
             return
         name = arg.replace('{} '.format(args[0]), '', 1)
-        index = None
-        emoji = None
-        for i in range(len(msg.embeds[0].fields)):
-            if msg.embeds[0].fields[i].name == name:
-                index = i
-                emoji = msg.embeds[0].fields[i].value
-                break
-        if index is None:
+        found = False
+        components = []
+        for i in msg.components:
+            for j in i.children:
+                if j.label == name:
+                    found = True
+                else:
+                    components.append(discord.ui.Button(label=j.label))
+        if found is False:
             await msg.channel.send(
                 text='There is no role `{}` in the message.'.format(name),
                 delete_after=5)
             return
-        msg.embeds[0].remove_field(index)
-        await msg.edit(embed=msg.embeds[0])
-        await msg.remove_reaction(emoji)
+        await msg.edit(embed=msg.embeds[0], components=components)
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}'.format(
             ('Initialize roles message with "{}roles <optional: title>"'
              ).format(prefix),
             'Add roles to the message by replying (examle in the message).',
-            'Reacting adds the role, removing the reaction removes the role.',
-            'Remove role from the message bt replying "remove <role_name>"')
+            'Clicking on the role adds the role or removes it if you  ' +
+            'already have it.',
+            'Remove role from the message by replying "remove <role_name>"')

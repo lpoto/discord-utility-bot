@@ -4,7 +4,7 @@ import sys
 import os
 import logging
 import traceback
-from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper
+from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper, EmbedWrapper
 import utils.misc as utils
 
 
@@ -104,7 +104,7 @@ class MyClient(discord.Client):
         # else use default prefix
         prefix = await self.bot.database.get_prefix(msg)
         cmd = msg.content.split()[0][len(prefix):]
-        if (msg.content[:len(prefix)] == prefix and
+        if (msg.content[: len(prefix)] == prefix and
                 (cmd in self.bot.commands or
                     cmd in self.bot.commands_synonyms)):
             await self.bot.handle_message(msg, cmd, prefix)
@@ -188,6 +188,8 @@ class MyClient(discord.Client):
             await interaction.response.defer()
         except discord.NotFound:
             pass
+        except Exception as err:
+            print(err)
         msg = MessageWrapper(interaction.message)
         if interaction.data['component_type'] == 2:
             self.dispatch('button_click', interaction, msg)
@@ -203,11 +205,11 @@ class MyClient(discord.Client):
                         j.label == 'delete'):
                     if msg.is_deletable:
                         await msg.edit(
-                                text='Message has been deleted.',
-                                components=[discord.ui.Button(
-                                    label='delete',
-                                    style=discord.ButtonStyle.green)],
-                                delete_after=3)
+                            text='Message has been deleted.',
+                            components=[discord.ui.Button(
+                                label='delete',
+                                style=discord.ButtonStyle.green)],
+                            delete_after=3)
                     return
         if msg.is_ended:
             return

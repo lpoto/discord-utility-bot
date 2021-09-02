@@ -134,7 +134,15 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_roles(self):
-        return self.type_check('ROLES')
+        if (not len(self.embeds) == 1 or
+                not str(self.channel.type) == 'text' or not
+                self.channel.guild.me.id == self.author.id or
+                self.embeds[0].title or not self.embeds[0].footer
+                or not self.embeds[0].footer.text or 
+                self.embeds[0].footer.text.split()[-1] != 'ND' or
+                self.embeds[0].footer.text.split()[0] != 'ROLES'):
+            return False
+        return True
 
     @property
     def is_connect_four(self):
@@ -183,7 +191,7 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_deletable(self):
-        if self.pinned:
+        if self.pinned or self.is_roles:
             return False
         if len(self.embeds) != 1:
             return True
@@ -315,11 +323,11 @@ class EmbedWrapper(discord.Embed):
         if any(i is not None for i in [
                 channel_id, message_id, user_id, user2_id, extra]):
             self.set_id(
-                    message_id=message_id,
-                    channel_id=channel_id,
-                    user_id=user_id,
-                    user2_id=user2_id,
-                    extra=extra)
+                message_id=message_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                user2_id=user2_id,
+                extra=extra)
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
