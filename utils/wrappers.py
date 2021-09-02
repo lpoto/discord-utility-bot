@@ -294,7 +294,16 @@ class EmbedWrapper(discord.Embed):
     NOT_DELETABLE = 'ND'
     INFO = 'I'
 
-    def __init__(self, embed, embed_type=None, marks=()):
+    def __init__(
+            self,
+            embed,
+            embed_type=None,
+            marks=(),
+            channel_id=None,
+            message_id=None,
+            user_id=None,
+            user2_id=None,
+            extra=None):
         self._wrapped_embed = embed
         self.embed_type = self.get_type(embed_type)
         self.marks = [
@@ -303,6 +312,14 @@ class EmbedWrapper(discord.Embed):
             EmbedWrapper.INFO,
             EmbedWrapper.NOT_DELETABLE]
         self.mark(marks=marks)
+        if any(i is not None for i in [
+                channel_id, message_id, user_id, user2_id, extra]):
+            self.set_id(
+                    message_id=message_id,
+                    channel_id=channel_id,
+                    user_id=user_id,
+                    user2_id=user2_id,
+                    extra=extra)
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
@@ -330,10 +347,10 @@ class EmbedWrapper(discord.Embed):
         text = '' if not self.footer.text else self.footer.text
         mks = ''.join(marks)
         if not self.footer.text:
-            self.set_footer(text='@ @{}'.format(mks))
+            self._wrapped_embed.set_footer(text='@ @{}'.format(mks))
             return self
         x = text.split('@')[1:]
-        self.set_footer(text='@{} @{}'.format(
+        self._wrapped_embed.set_footer(text='@{} @{}'.format(
             x[0][:-1], mks))
         return self
 

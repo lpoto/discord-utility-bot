@@ -24,8 +24,8 @@ class Hangman(Help):
                          'maximum 30 characters.'),
             color=random_color()),
             embed_type=self.embed_type,
-            marks=EmbedWrapper.NOT_DELETABLE)
-        dm_embed.set_id(channel_id=msg.channel.id)
+            marks=EmbedWrapper.NOT_DELETABLE,
+            channel_id=str(msg.channel.id))
         await dm.send(embed=dm_embed)
 
     async def on_dm_reply(self, msg, referenced_msg):
