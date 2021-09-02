@@ -2,8 +2,7 @@ import discord
 from threading import Timer
 import asyncio
 import utils.misc as utils
-from utils.wrappers import EmbedWrapper
-import random
+from utils.wrappers import EmbedWrapper, MemberWrapper
 from commands.help import Help
 
 
@@ -25,7 +24,6 @@ class ConnectFour(Help):
         self.timers = {}
 
     async def execute_command(self, msg, user=None):
-        # send a message and await second user to join with thumbs up reaction
         # if first word is lb or leaderboard show players with most wins
         if user is None:
             args = msg.content.split()
@@ -36,57 +34,53 @@ class ConnectFour(Help):
             user = msg.author
         embed_var = EmbedWrapper(discord.Embed(
             description='{}\n{}'.format(
-                'React with a token to join or change selected token!',
-                'React with "X" to leave the game.'),
+                'Select a token to join or change the already selected token!',
+                'Select "leave" to leave the game.'),
             color=utils.random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO)
-        m = await msg.channel.send(embed=embed_var)
+        components = [discord.ui.Button(
+            emoji=self.tokens[i], row=0 if i < 4 else 1
+        ) for i in range(len(self.tokens))]
+        components.append(discord.ui.Button(
+            label='leave', row=1, style=discord.ButtonStyle.primary))
+        m = await msg.channel.send(embed=embed_var, components=components)
         await self.select_tokens(
             m,
             user.id,
             user.name if not user.nick else user.nick,
             self.tokens[1])
-        for i in [*self.tokens, utils.cross]:
-            await m.react(i)
 
-    async def on_raw_reaction(self, msg, payload):
-        # on added emoji if thumbs up join second user else if both users are
-        # known start the game and await emoji number from 1 to 7, each
-        # indicating a column in which the user drops a token
-        if (payload.event_type != 'REACTION_ADD' or
-                not msg.is_connect_four):
+    async def on_button_click(self, interaction, interaction_msg):
+        if not interaction_msg.is_connect_four:
             return
-        await self.bot.queue.add_to_queue(
-            queue_id='connectfour:{}'.format(msg.id),
-            item=payload,
-            function=self.reactions_queue_function)
-
-    async def reactions_queue_function(self, payload):
-        channel = self.bot.client.get_channel(payload.channel_id)
-        if channel is None:
-            return
-        msg = await channel.fetch_message(payload.message_id)
-        if msg is None:
-            return
-        if msg.is_info:
-            if msg.id in self.timers and self.timers[msg.id] is False:
-                return
-            if payload.emoji.name == utils.cross:
-                await self.remove_selected_token(msg, payload.user_id)
-                return
-            if payload.emoji.name in self.tokens:
-                user = msg.guild.get_member(payload.user_id)
-                if user is None:
+        for i in interaction_msg.components:
+            for j in i.children:
+                if j.custom_id == interaction.data['custom_id']:
+                    user = MemberWrapper(interaction.user)
+                    await self.handle_button_click(j, interaction_msg, user)
                     return
+
+    async def handle_button_click(self, button, interaction_msg, user):
+        if interaction_msg.is_info:
+            if interaction_msg.id in self.timers and self.timers[
+                    interaction_msg.id] is False:
+                return
+            if button.label and button.label == 'leave':
+                await self.remove_selected_token(interaction_msg, user.id)
+                return
+            if button.emoji.name in self.tokens:
                 await self.select_tokens(
-                    msg, payload.user_id,
+                    interaction_msg, user.id,
                     user.name if not user.nick else user.nick,
-                    payload.emoji.name)
+                    button.emoji.name)
             return
-        if payload.emoji.name in utils.number_emojis:
-            await self.play_game(
-                msg, str(payload.user_id), payload.emoji.name)
+        if (button.label == 'forfeit' or
+                button.emoji.name in utils.number_emojis):
+            await self.bot.queue.add_to_queue(
+                queue_id='connectfour:{}'.format(interaction_msg.id),
+                item=(button, interaction_msg, user),
+                function=self.play_game)
 
     async def select_tokens(self, msg, user_id, name, token):
         tks = msg.embeds[0].description.split('\n')
@@ -100,7 +94,7 @@ class ConnectFour(Help):
             tkn = tks[2].split(': ')[-1]
             if token == tkn:
                 return
-            if u1_id == str(user_id):
+            if str(u1_id) == str(user_id):
                 tks[2] = '{}: {}'.format(name, token)
             elif x['user2_id']:
                 u2_id = x['user2_id']
@@ -156,35 +150,26 @@ class ConnectFour(Help):
         user2 = (user2.id, user2.name if not user2.nick else user2.nick)
         token1 = tks[1].split(': ')[-1]
         token2 = tks[2].split(': ')[-1]
-        start = random.randint(0, 1)
-        if start == 1:
-            x = user1
-            user1 = user2
-            user2 = x
-            x = token1
-            token1 = token2
-            token2 = x
         grid = self.empty_grid
-        embed_var = self.build_embed(user1, user2, token1, token2, [], grid, 1)
-        for i in [*self.tokens, utils.cross]:
-            x = asyncio.run_coroutine_threadsafe(msg.remove_reaction(
-                emoji=i), loop=self.bot.client.loop)
-            x.result()
+        embed_var = self.build_embed(
+            msg.embeds[0], user1, user2, token1, token2, [], grid, 1)
         x = asyncio.run_coroutine_threadsafe(msg.edit(
             embed=embed_var,
-            reactions=[utils.number_emojis[i] for i in range(7)]),
+            components=[discord.ui.Button(
+                emoji=utils.number_emojis[i], row=0 if i < 4 else 1
+            ) for i in range(7)] +
+            [discord.ui.Button(label='forfeit', row=1,
+                               style=discord.ButtonStyle.primary)]),
             loop=self.bot.client.loop)
         x.result()
         if msg.id in self.timers:
             del self.timers[msg.id]
 
-    async def play_game(self, msg, user_id, emoji):
-        move = utils.number_emojis.index(emoji) + 1
+    async def play_game(self, item):
+        button = item[0]
+        msg = item[1]
+        user = msg.guild.get_member(item[2].id)
         embed = msg.embeds[0]
-        moves = embed.description.split('\n')[-1][7:]
-        moves = [int(i) for i in moves]
-        if moves.count(move) >= 6:
-            return
         x = embed.get_id()
         if not x['user_id'] or not x['user2_id']:
             return
@@ -195,32 +180,45 @@ class ConnectFour(Help):
         token1 = tks[0][-1]
         token2 = tks[1][-1]
         if (user1 is None or user2 is None or
-                token == token1 and str(user1.id) != user_id or
-                token == token2 and str(user2.id) != user_id):
+                token == token1 and str(user1.id) != str(user.id) or
+                token == token2 and str(user2.id) != str(user.id)):
+            return
+        move = 0
+        if button.emoji and button.emoji.name in utils.number_emojis:
+            move = utils.number_emojis.index(button.emoji.name) + 1
+        moves = embed.description.split('\n')[-1][7:]
+        moves = [int(i) for i in moves]
+        if moves.count(move) >= 6:
             return
         moves.append(move)
         grid = msg.embeds[0].description.split('\n')[2:][:-3]
         grid = [self.split_line(i) for i in grid]
-        grid, completed, turn = self.play(moves, token1, token2, grid)
-        await msg.remove_reaction(
-            emoji=emoji, member=user1 if turn == 0 else user2)
+        completed = False
+        turn = len(moves) % 2
+        if move > 0:
+            grid, completed, turn = self.play(moves, token1, token2, grid)
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
         user2 = (user2.id, user2.name if not user2.nick else user2.nick)
         embed_var = None
-        if completed:
+        if completed or button.label == 'forfeit':
             embed_var = await self.completed_embed(
                 msg, user1, user2, token1, token2,
-                moves, grid, turn, False, color=embed.color)
+                moves, grid, turn, False, color=embed.color,
+                forfeit=button.label == 'forfeit')
+            await msg.edit(embed=embed_var, components=discord.ui.Button(
+                label='delete'))
         else:
             if len(moves) == 42:
                 embed_var = await self.completed_embed(
                     msg, user1, user2, token1, token2,
                     moves, grid, turn,
                     True, color=embed.color)
+                await msg.edit(embed=embed_var, components=discord.ui.Button(
+                    label='delete'))
             else:
                 embed_var = self.build_embed(
-                    user1, user2, token1, token2,
-                    moves, grid, turn, color=embed.color)
+                    msg.embeds[0], user1, user2, token1, token2,
+                    moves, grid, turn)
         await msg.edit(
             embed=embed_var)
 
@@ -239,16 +237,21 @@ class ConnectFour(Help):
             grid,
             on_move,
             draw,
-            color):
+            color,
+            forfeit=False):
         users = (user1, user2) if on_move == 0 else (user2, user1)
         embed_var = EmbedWrapper(discord.Embed(
-            title='{} wins against {} with {}!'.format(
-                users[0][1], users[1][1], token1 if on_move == 0 else token2),
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
             color=color),
             embed_type=self.embed_type,
             marks=EmbedWrapper.ENDED)
-        if draw:
+        if not forfeit:
+            embed_var.title = '{} wins against {} with {}!'.format(
+                users[0][1], users[1][1], token1 if on_move == 0 else token2)
+        elif forfeit:
+            embed_var.title = '{} {} forfeits agains {}!'.format(
+                users[1][1], token2 if on_move == 0 else token1, users[0][1])
+        elif draw:
             embed_var.title = '{} draws against {}!'.format(user1[1], user2[1])
             moves.append(0)
         else:
@@ -263,34 +266,30 @@ class ConnectFour(Help):
 
     def build_embed(
             self,
+            embed,
             user1,
             user2,
             token1,
             token2,
             moves,
             grid,
-            on_move,
-            color=utils.random_color()):
-        embed_var = EmbedWrapper(discord.Embed(
-            title='{} {} vs {} {}!'.format(
-                user1[1], token1, user2[1], token2),
-            description='On turn: {}\n\n{}\n\nMoves: {}'.format(
-                token1 if on_move == 1 else token2,
-                self.grid_text(grid),
-                ''.join([str(i) for i in moves])),
-            color=color),
-            embed_type=self.embed_type,
-            marks=EmbedWrapper.NOT_DELETABLE)
-        embed_var.set_id(user_id=user1[0], user2_id=user2[0])
-        return embed_var
+            on_move):
+        embed.title = '{} {} vs {} {}!'.format(
+            user1[1], token1, user2[1], token2)
+        embed.description = 'On turn: {}\n\n{}\n\nMoves: {}'.format(
+            token1 if on_move == 1 else token2,
+            self.grid_text(grid),
+            ''.join([str(i) for i in moves]))
+        embed.mark(EmbedWrapper.NOT_DELETABLE)
+        return embed
 
     def join_line(self, line):
         separator = ' '
-        return str(2*'\u3000') + separator.join(line)
+        return str(3*'\u3000') + separator.join(line) + 3 * '\u3000'
 
     def grid_text(self, grid):
         txt = '\n'.join([self.join_line(i) for i in grid])
-        txt += '\n' + 2*'\u3000' + ' '.join(utils.number_emojis)
+        txt += '\n' + 3*'\u3000' + ' '.join(utils.number_emojis)
         return txt
 
 # the binary stuff
@@ -413,7 +412,7 @@ class ConnectFour(Help):
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
             'Start the game with "{}cf".'.format(prefix),
-            'You and another user then react with a preffered token.',
-            'Play the game by reacting with numbers from 1 to 7.',
+            'You and another user then select a preffered token.',
+            'Play the game by selecting buttons with numbers from 1 to 7.',
             'A record of moves and wins will be kept.',
             'See leaderboard with "{}cf leaderboard".'.format(prefix))

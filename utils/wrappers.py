@@ -370,13 +370,13 @@ class EmbedWrapper(discord.Embed):
                 else:
                     txt += '{}{}'.format(k, v)
         if not self.footer.text:
-            self.set_footer(text=txt)
+            self._wrapped_embed.set_footer(text=txt)
         else:
             if '@' not in self.footer.text or self.footer.text.count('@') == 1:
-                self.set_footer(text='@' + txt)
+                self._wrapped_embed.set_footer(text='@' + txt)
             else:
                 x = self.footer.text.split('@')[-1]
-                self.set_footer(
+                self._wrapped_embed.set_footer(
                     text='@{} @{}'.format(
                         txt, x))
 
