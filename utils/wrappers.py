@@ -138,7 +138,7 @@ class MessageWrapper(discord.Message):
                 not str(self.channel.type) == 'text' or not
                 self.channel.guild.me.id == self.author.id or
                 self.embeds[0].title or not self.embeds[0].footer
-                or not self.embeds[0].footer.text or 
+                or not self.embeds[0].footer.text or
                 self.embeds[0].footer.text.split()[-1] != 'ND' or
                 self.embeds[0].footer.text.split()[0] != 'ROLES'):
             return False

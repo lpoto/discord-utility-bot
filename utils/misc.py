@@ -60,7 +60,10 @@ def random_color():
 
 
 # emojis rock, paper, scissors
-rps_emojis = [u"\U0001FAA8", u"\U0001F4C4", u"\U00002702\U0000FE0F"]
+rps_emojis = [
+        u"\U0001FAA8",
+        u"\U0001F5DE\U0000FE0F",
+        u"\U00002702\U0000FE0F"]
 # thumbs up emoji
 thumbs_up = u"\U0001F44D"
 number_emojis = [u"\U00000031\U0000FE0F\U000020E3",

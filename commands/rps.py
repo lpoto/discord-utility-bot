@@ -131,6 +131,8 @@ class Rps(Help):
         embed.set_id()
         if info['winner_avatar']:
             embed.set_thumbnail(url=info['winner_avatar'])
+        else:
+            embed.set_thumbnail(url=discord.Embed.Empty)
         return embed
 
     async def game_results(self, user1, user2, emoji1, emoji2, msg):
