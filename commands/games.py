@@ -1,5 +1,5 @@
 import discord
-from utils.wrappers import EmbedWrapper, MemberWrapper
+from utils.wrappers import EmbedWrapper
 from utils.misc import random_color, delete_button
 from commands.help import Help
 
@@ -27,7 +27,6 @@ class Games(Help):
 
     async def on_button_click(self, button, msg, user):
         if button.label in self.bot.commands:
-            user = MemberWrapper(user)
             await self.bot.commands[button.label].execute_command(
                 msg, user)
 
