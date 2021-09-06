@@ -44,11 +44,11 @@ class Poll(Help):
         if not poll_msg.is_poll:
             return
         emoji = payload.emoji.name
-        for i in range(len(poll_msg.embeds[0].fields)):
-            if poll_msg.embeds[0].fields[i].value.startswith(emoji):
+        for idx, field in enumerate(poll_msg.embeds[0].fields):
+            if field.value.startswith(emoji):
                 await self.bot.queue.add_to_queue(
                     queue_id='pollreaction:{}'.format(poll_msg.id),
-                    item=(poll_msg.channel.id, poll_msg.id, emoji, i),
+                    item=(poll_msg.channel.id, poll_msg.id, emoji, idx),
                     function=self.edit_responses)
 
     async def edit_responses(self, item):
@@ -79,6 +79,7 @@ class Poll(Help):
         if not poll_msg.is_poll:
             return
         opts = msg.content.split(';')
+        opts.remove('')
         for o in opts:
             await self.bot.queue.add_to_queue(
                 queue_id='pollmessage:{}'.format(poll_msg.id),

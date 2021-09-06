@@ -15,9 +15,7 @@ class Queue():
         self.queues = {}
 
     async def add_to_queue(self, queue_id, item, function=None):
-        if queue_id not in self.queues:
-            self.queues[queue_id] = [False, deque([])]
-        self.queues[queue_id][1].append(item)
+        self.queues.setdefault(queue_id, [False, deque([])])[1].append(item)
         # start clearing the queue immediately if function provided
         if function is not None:
             await self.clear_queue(queue_id, function, False)
@@ -61,9 +59,9 @@ def random_color():
 
 # emojis rock, paper, scissors
 rps_emojis = [
-        u"\U0001FAA8",
-        u"\U0001F5DE\U0000FE0F",
-        u"\U00002702\U0000FE0F"]
+    u"\U0001FAA8",
+    u"\U0001F5DE\U0000FE0F",
+    u"\U00002702\U0000FE0F"]
 # thumbs up emoji
 thumbs_up = u"\U0001F44D"
 number_emojis = [u"\U00000031\U0000FE0F\U000020E3",

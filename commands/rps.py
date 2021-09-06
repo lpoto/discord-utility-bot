@@ -35,24 +35,20 @@ class Rps(Help):
             embed=dm_embed,
             components=components)
 
-    async def on_button_click(self, interaction, interaction_message):
-        if not interaction_message.is_rps:
+    async def on_button_click(self, button, msg, user):
+        if not msg.is_rps:
             return
         # check if rps dm message, then get channel id from
         # which the rps game was started
         # then send new embed to that channel and wait for another
         # opponent to join
         # edit chosen emoji to embed's title
-        for i in interaction_message.components:
-            for j in i.children:
-                if j.custom_id == interaction.data['custom_id']:
-                    if str(interaction_message.channel.type) == 'text':
-                        await self.handle_button_click(
-                            j, interaction_message, interaction.user)
-                        return
-                    await self.handle_dm_button_click(
-                        j, interaction_message, interaction.user)
-                    return
+        if str(msg.channel.type) == 'text':
+            await self.handle_button_click(
+                button, msg, user)
+            return
+        await self.handle_dm_button_click(
+            button, msg, user)
 
     async def handle_dm_button_click(self, button, interaction_msg, user):
         embed = interaction_msg.embeds[0]
@@ -107,11 +103,9 @@ class Rps(Help):
             int(info['message_id']))
         if first_msg is None or len(first_msg.embeds) != 1:
             return
-        emoji1 = None
-        for i in first_msg.components:
-            for j in i.children:
-                if j.style == discord.ButtonStyle.green:
-                    emoji1 = j.emoji.name
+        emoji1 = next(filter(
+            lambda x: x.style == discord.ButtonStyle.green,
+            *[i.children for i in first_msg.components])).emoji
         # compare the chosen options and get the winner of the game
         await self.game_results(
             user1, user2, emoji1, button.emoji.name,

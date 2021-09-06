@@ -73,19 +73,9 @@ class Roles(Help):
         msg.embeds[0].description = None
         await msg.edit(embed=msg.embeds[0], components=components)
 
-    async def on_button_click(self, interaction, interaction_msg):
-        if not interaction_msg.is_roles:
+    async def on_button_click(self, button, msg, user):
+        if not msg.is_roles:
             return
-        # listen for raw events and add or remove the role that matches
-        # content of the roles message
-        for i in interaction_msg.components:
-            for j in i.children:
-                if j.custom_id == interaction.data['custom_id']:
-                    await self.handle_button_click(
-                            j, interaction_msg, interaction.user)
-                    return
-
-    async def handle_button_click(self, button, msg, user):
         role = await self.valid_role(button.label, msg)
         if role is None:
             return
@@ -118,9 +108,9 @@ class Roles(Help):
         # check if role exists and if bot can add such a role
         role = None
         # search existing roles in server
-        for i in range(len(msg.guild.roles)):
-            if msg.guild.roles[i].name == pot_role:
-                role = msg.guild.roles[i]
+        for i in msg.guild.roles:
+            if i.name == pot_role:
+                role = i
                 break
         if role is None:
             await msg.channel.send(

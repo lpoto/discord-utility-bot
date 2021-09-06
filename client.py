@@ -210,23 +210,28 @@ class MyClient(discord.Client):
 
     async def on_button_click(self, interaction, msg):
         # handle interaction when a button is clicked
-        for i in msg.components:
-            for j in i.children:
-                if (j.custom_id == interaction.data['custom_id'] and
-                        j.label == 'delete'):
-                    if msg.is_deletable:
-                        await msg.edit(
-                            text='Message has been deleted.',
-                            components=[discord.ui.Button(
+        button = next(filter(
+            lambda x: x.custom_id == interaction.data['custom_id'],
+            *[i.children for i in msg.components]))
+        if not button:
+            return
+        if button.label == 'delete':
+            if msg.is_deletable:
+                await msg.edit(
+                    text='Message has been deleted.',
+                    components=[discord.ui.Button(
                                 label='delete',
                                 style=discord.ButtonStyle.green)],
-                            delete_after=2)
-                    return
+                    delete_after=2)
+            return
         if msg.is_ended:
             return
         # call those commands that have on button click functions
         for cmd in self.bot.on_button_click_commands:
-            await cmd.on_button_click(interaction, msg)
+            await cmd.on_button_click(
+                    button,
+                    msg,
+                    MemberWrapper(interaction.user))
 
     async def on_menu_select(self, interaction, msg):
         # handle interaction when a selection is made

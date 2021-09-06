@@ -25,21 +25,11 @@ class Games(Help):
         await msg.channel.send(
             embed=embed_var, components=components)
 
-    async def on_button_click(self, interaction, interaction_msg):
-        if not interaction_msg.is_games:
-            return
-        for i in interaction_msg.components:
-            for j in i.children:
-                if j.custom_id == interaction.data['custom_id']:
-                    await self.handle_button_click(
-                        j, interaction_msg, interaction.user)
-                    return
-
-    async def handle_button_click(self, button, interaction_msg, user):
+    async def on_button_click(self, button, msg, user):
         if button.label in self.bot.commands:
             user = MemberWrapper(user)
             await self.bot.commands[button.label].execute_command(
-                interaction_msg, user)
+                msg, user)
 
     def additional_info(self, prefix):
         return ('* Click on the button with the name of the game ' +

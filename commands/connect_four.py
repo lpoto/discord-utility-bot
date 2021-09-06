@@ -2,7 +2,7 @@ import discord
 from threading import Timer
 import asyncio
 import utils.misc as utils
-from utils.wrappers import EmbedWrapper, MemberWrapper
+from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
 
@@ -40,8 +40,8 @@ class ConnectFour(Help):
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO)
         components = [discord.ui.Button(
-            emoji=self.tokens[i], row=0 if i < 4 else 1
-        ) for i in range(len(self.tokens))]
+            emoji=token, row=0 if idx < 4 else 1
+        ) for idx, token in enumerate(self.tokens)]
         components.append(discord.ui.Button(
             label='leave', row=1, style=discord.ButtonStyle.primary))
         m = await msg.channel.send(embed=embed_var, components=components)
@@ -51,35 +51,27 @@ class ConnectFour(Help):
             user.name if not user.nick else user.nick,
             self.tokens[1])
 
-    async def on_button_click(self, interaction, interaction_msg):
-        if not interaction_msg.is_connect_four:
+    async def on_button_click(self, button, msg, user):
+        if not msg.is_connect_four:
             return
-        for i in interaction_msg.components:
-            for j in i.children:
-                if j.custom_id == interaction.data['custom_id']:
-                    user = MemberWrapper(interaction.user)
-                    await self.handle_button_click(j, interaction_msg, user)
-                    return
-
-    async def handle_button_click(self, button, interaction_msg, user):
-        if interaction_msg.is_info:
-            if interaction_msg.id in self.timers and self.timers[
-                    interaction_msg.id] is False:
+        if msg.is_info:
+            if msg.id in self.timers and self.timers[
+                    msg.id] is False:
                 return
             if button.label and button.label == 'leave':
-                await self.remove_selected_token(interaction_msg, user.id)
+                await self.remove_selected_token(msg, user.id)
                 return
             if button.emoji.name in self.tokens:
                 await self.select_tokens(
-                    interaction_msg, user.id,
+                    msg, user.id,
                     user.name if not user.nick else user.nick,
                     button.emoji.name)
             return
         if (button.label == 'forfeit' or
                 button.emoji.name in utils.number_emojis):
             await self.bot.queue.add_to_queue(
-                queue_id='connectfour:{}'.format(interaction_msg.id),
-                item=(button, interaction_msg, user),
+                queue_id='connectfour:{}'.format(msg.id),
+                item=(button, msg, user),
                 function=self.play_game)
 
     async def select_tokens(self, msg, user_id, name, token):

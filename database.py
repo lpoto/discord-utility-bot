@@ -215,9 +215,9 @@ class DB:
             return
         prefix = await self.get_prefix(msg)
         txt = ''
-        for i in range(len(fetched)):
+        for idx, val in enumerate(fetched):
             txt += '{}{}: [{}]'.format(
-                prefix, fetched[i][1], ', '.join(fetched[i][2].split('<;>')))
-            if i < len(fetched) - 1:
+                prefix, val[1], ', '.join(val[2].split('<;>')))
+            if idx < len(fetched) - 1:
                 txt += ',\n'
         return txt

@@ -80,11 +80,11 @@ class Config(Help):
             '\n\nClick "server" to see server info.')
         return embed_var
 
-    async def on_button_click(self, interaction, interaction_msg):
-        if not interaction_msg.is_server:
+    async def on_button_click(self, button, msg, user):
+        if not msg.is_server:
             return
-        await interaction_msg.edit(
-            embed=await self.create_config_embed(interaction_msg),
+        await msg.edit(
+            embed=await self.create_config_embed(msg),
             components=[
                 discord.ui.Button(label='server'),
                 delete_button()])
