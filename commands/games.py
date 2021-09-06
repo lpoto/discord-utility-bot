@@ -1,6 +1,6 @@
 import discord
 from utils.wrappers import EmbedWrapper, MemberWrapper
-from utils.misc import random_color
+from utils.misc import random_color, delete_button
 from commands.help import Help
 
 
@@ -11,19 +11,17 @@ class Games(Help):
 
     async def execute_command(self, msg):
         embed_var = EmbedWrapper(discord.Embed(
-            description="React with a game's numer to start it.",
+            description='',
             color=random_color()),
             embed_type='GAMES',
-            marks=EmbedWrapper.INFO)
-        e_count = 0
+            marks=EmbedWrapper.INFO,
+            extra='Click on the game you want to play to start it.' +
+            10 * '\u2000')
+        components = []
         for k, v in self.bot.commands.items():
             if v.game:
-                embed_var.add_field(
-                    name='({})  {}'.format(e_count, k),
-                    value=v.description,
-                    inline=False)
-                e_count += 1
-        components = [discord.ui.Button(label=str(i)) for i in range(e_count)]
+                components.append(discord.ui.Button(label=k))
+        components.append(delete_button())
         await msg.channel.send(
             embed=embed_var, components=components)
 
@@ -38,15 +36,11 @@ class Games(Help):
                     return
 
     async def handle_button_click(self, button, interaction_msg, user):
-        for i in interaction_msg.embeds[0].fields:
-            x = i.name.split(')  ')[0][1:]
-            if x.startswith(button.label):
-                user = MemberWrapper(user)
-                await self.bot.commands[i.name.replace(
-                    '({})  '.format(x), '', 1)
-                ].execute_command(
-                    interaction_msg, user)
-                return
+        if button.label in self.bot.commands:
+            user = MemberWrapper(user)
+            await self.bot.commands[button.label].execute_command(
+                interaction_msg, user)
 
     def additional_info(self, prefix):
-        return '* React with an emoji that matches the game to start it.'
+        return ('* Click on the button with the name of the game ' +
+                'you want to play.')

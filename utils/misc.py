@@ -1,4 +1,5 @@
 import sys
+import discord
 from collections import deque
 import random
 
@@ -46,6 +47,13 @@ class Queue():
                 del self.queues[queue_id]
 
 
+def delete_button(row=None):
+    return discord.ui.Button(
+        style=discord.ButtonStyle.blurple,
+        label='delete',
+        row=row)
+
+
 def random_color():
     """generate a random color"""
     return int("%06x" % random.randint(0, 0xFFFFFF), 16)
@@ -53,8 +61,6 @@ def random_color():
 
 # emojis rock, paper, scissors
 rps_emojis = [u"\U0001FAA8", u"\U0001F4C4", u"\U00002702\U0000FE0F"]
-# waste basket emoji for deleting messages
-waste_basket = u"\U0001F5D1\U0000FE0F"
 # thumbs up emoji
 thumbs_up = u"\U0001F44D"
 number_emojis = [u"\U00000031\U0000FE0F\U000020E3",

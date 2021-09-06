@@ -73,6 +73,7 @@ class MyClient(discord.Client):
         # check messages if they start with prefix and
         # match any of the commands
         # if so push them to queue, to be processed one by one
+        # dispatch different events based on message type
         if str(msg.channel.type) == 'private':
             self.dispatch('dm', msg)
             return
@@ -110,7 +111,17 @@ class MyClient(discord.Client):
             await self.bot.handle_message(msg, cmd, prefix)
             return
 
+    async def on_reply(self, msg, referenced_msg):
+        # functions that should be processed separately
+        if referenced_msg.author.id != self.user.id:
+            return
+        # iterate through those commands in linked list that
+        # have on_reply function
+        for i in self.bot.on_reply_commands:
+            await i.on_reply(msg, referenced_msg)
+
     async def on_dm(self, msg):
+        # handle messages sent in private chats
         if (msg.author.id == self.user.id or
                 msg.content.split() is None or
                 len(msg.content.split()) < 1):
@@ -123,30 +134,24 @@ class MyClient(discord.Client):
                 self.dispatch('dm_reply', msg, referenced_msg)
                 return
 
+    async def on_dm_reply(self, msg, referenced_msg):
+        if referenced_msg.author.id != self.user.id:
+            return
+        # call commands that have on_dm_reply function
+        for i in self.bot.on_dm_reply_commands:
+            await i.on_dm_reply(msg, referenced_msg)
+
     async def on_thread_message(self, msg):
+        # handle messages sent in threads
         if (msg.author.id == self.user.id or
                 msg.content.split() is None or
                 len(msg.content.split()) < 1):
             return
         msg = MessageWrapper(msg)
         msg.channel.parent = ChannelWrapper(msg.channel.parent)
+        # run commands that have on thread message function
         for cmd in self.bot.on_thread_message_commands:
             await cmd.on_thread_message(msg)
-
-    async def on_reply(self, msg, referenced_msg):
-        # functions that should be processed separately
-        if referenced_msg.author.id != self.user.id:
-            return
-        # iterate through those commands in linked list that
-        # have on_reply function
-        for i in self.bot.on_reply_commands:
-            await i.on_reply(msg, referenced_msg)
-
-    async def on_dm_reply(self, msg, referenced_msg):
-        if referenced_msg.author.id != self.user.id:
-            return
-        for i in self.bot.on_dm_reply_commands:
-            await i.on_dm_reply(msg, referenced_msg)
 
     async def on_raw_reaction_add(self, payload):
         if (payload.user_id == self.user.id or
@@ -168,6 +173,8 @@ class MyClient(discord.Client):
         self.dispatch('raw_reaction_add', payload)
 
     async def on_time(self, time, execute=True):
+        # event triggered when a threading timer
+        # reaches a certain commands user defined event time
         for cmd in self.bot.on_time_commands:
             await cmd.on_time(time, execute)
 
@@ -184,7 +191,12 @@ class MyClient(discord.Client):
         await default_channel.send(msg)
 
     async def on_interaction(self, interaction):
+        # catch user interactions on  buttons and dropdown menus
+        # and dispatch new events based on interaction type
         try:
+            # defer interaction response to avoid
+            # "This interaction failed" in discord channel
+            # when  clicking on a button created before bot restarted
             await interaction.response.defer()
         except discord.NotFound:
             pass
@@ -197,6 +209,7 @@ class MyClient(discord.Client):
             return
 
     async def on_button_click(self, interaction, msg):
+        # handle interaction when a button is clicked
         for i in msg.components:
             for j in i.children:
                 if (j.custom_id == interaction.data['custom_id'] and
@@ -211,11 +224,15 @@ class MyClient(discord.Client):
                     return
         if msg.is_ended:
             return
+        # call those commands that have on button click functions
         for cmd in self.bot.on_button_click_commands:
             await cmd.on_button_click(interaction, msg)
 
     async def on_menu_select(self, interaction, msg):
+        # handle interaction when a selection is made
+        # in a dropdown menu
         if msg.is_ended:
             return
+        # call those commands that have on menu select functions
         for cmd in self.bot.on_menu_select_commands:
             await cmd.on_menu_select(interaction, msg)

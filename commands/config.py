@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import emojis, colors
+from utils.misc import emojis, colors, delete_button
 from utils.wrappers import EmbedWrapper
 
 
@@ -18,7 +18,7 @@ class Config(Help):
             await msg.channel.send(
                 embed=await self.create_config_embed(msg),
                 components=[discord.ui.Button(label='server'),
-                            discord.ui.Button(label='delete')])
+                            delete_button()])
             return
         if not self.bot.database.connected:
             await msg.channel.send(
@@ -87,7 +87,7 @@ class Config(Help):
             embed=await self.create_config_embed(interaction_msg),
             components=[
                 discord.ui.Button(label='server'),
-                discord.ui.Button(label='delete')])
+                delete_button()])
 
     async def on(self, msg, payload):
         if (payload.event_type != 'REACTION_ADD' or msg.embeds == [] or
@@ -99,7 +99,7 @@ class Config(Help):
             embed=await self.create_config_embed(msg),
             components=[
                 discord.ui.Button(label='server'),
-                discord.ui.Button(label='delete')])
+                delete_button()])
 
     async def set_prefix(self, cursor, msg, args):
         new_prefix = args[2]

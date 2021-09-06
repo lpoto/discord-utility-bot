@@ -205,16 +205,15 @@ class ConnectFour(Help):
                 msg, user1, user2, token1, token2,
                 moves, grid, turn, False, color=embed.color,
                 forfeit=button.label == 'forfeit')
-            await msg.edit(embed=embed_var, components=discord.ui.Button(
-                label='delete'))
+            await msg.edit(embed=embed_var, components=utils.delete_button())
         else:
             if len(moves) == 42:
                 embed_var = await self.completed_embed(
                     msg, user1, user2, token1, token2,
                     moves, grid, turn,
                     True, color=embed.color)
-                await msg.edit(embed=embed_var, components=discord.ui.Button(
-                    label='delete'))
+                await msg.edit(
+                        embed=embed_var, components=utils.delete_button())
             else:
                 embed_var = self.build_embed(
                     msg.embeds[0], user1, user2, token1, token2,

@@ -384,13 +384,13 @@ class EmbedWrapper(discord.Embed):
             extra=None):
         content = {'u': user_id, 'v': user2_id,
                    'c': channel_id, 'm': message_id,
-                   'e': extra}
+                   '-': extra}
         txt = ''
         for k, v in content.items():
             if v is not None:
                 if txt != '':
                     txt += '.'
-                if k != 'e':
+                if k != '-':
                     txt += '{}{}'.format(k, encodeN(int(v), 32).lower())
                 else:
                     txt += '{}{}'.format(k, v)
@@ -421,7 +421,7 @@ class EmbedWrapper(discord.Embed):
                 content['channel_id'] = decode(i[1:])
             elif len(i) > 1 and i[0] == 'm':
                 content['message_id'] = decode(i[1:])
-            elif len(i) > 1 and i[0] == 'e':
+            elif len(i) > 1 and i[0] == '-':
                 content['extra'] = i[1:]
         return content
 

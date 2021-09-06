@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from threading import Timer
 from commands.help import Help
-from utils.misc import random_color, waste_basket
+from utils.misc import random_color, delete_button
 from utils.wrappers import EmbedWrapper
 
 
@@ -321,7 +321,7 @@ class Events(Help):
         embed_var = EmbedWrapper(embed_var,
                                  embed_type="EVENT",
                                  marks=EmbedWrapper.ENDED)
-        await msg.edit(embed=embed_var, reactions=waste_basket)
+        await msg.edit(embed=embed_var, components=delete_button())
 
     async def send_event(self, channel_id, event, text, tags):
         # send scheduled event at the right time

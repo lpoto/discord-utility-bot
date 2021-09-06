@@ -1,5 +1,5 @@
 import discord
-from utils.misc import random_color
+from utils.misc import random_color, delete_button
 from utils.wrappers import EmbedWrapper, MemberWrapper
 from commands.help import Help
 
@@ -15,6 +15,9 @@ class Hangman(Help):
         self.game = True
 
     async def execute_command(self, msg, user=None):
+        # sent a dm to the user who started the game
+        # msg author if game was started with a typed command
+        # else user if game was started from games command
         if user is None:
             user = msg.author
         dm = await user.create_dm()
@@ -29,6 +32,9 @@ class Hangman(Help):
         await dm.send(embed=dm_embed)
 
     async def on_dm_reply(self, msg, referenced_msg):
+        # User need to reply to the dm message with a word
+        # with max length of 30 characters
+        # only allow ASCII characters from 65 to 90 (case insensitive)
         if (not referenced_msg.is_hangman or
                 referenced_msg.embeds[0].title or
                 len(msg.content) > 30):
@@ -51,6 +57,9 @@ class Hangman(Help):
         guild = channel.guild
         if not guild:
             return
+        # Start the hangman game in a guild channel that the command was
+        # originaly called
+        # Open a thread where letters can be guessed
         embed = await self.game_embed(guild, msg_info, msg.author.id)
         m = await channel.send(embed=embed)
         thread = await m.create_thread(name='HANGMAN')
@@ -62,9 +71,13 @@ class Hangman(Help):
             '\nwill be counted as guesses to the game!')
 
     async def on_thread_message(self, msg):
+        # all users except the one who started the game
+        # can guess letters in a game's thread
         if msg.channel.name != 'HANGMAN':
             return
         x = msg.content.split()
+        # allow only 1 ASCII (65-90) letter at a time
+        # or multiple, separated with whitespace
         if any(len(c.strip()) > 1 for c in x) or any(
                 ord(c.strip().upper()) > 90 or ord(
                     c.strip().upper()) < 65 for c in x):
@@ -84,6 +97,7 @@ class Hangman(Help):
                 function=self.guess_letter)
 
     async def guess_letter(self, item):
+        # edit the hangman's embed based on guessed letter
         chnl = self.bot.client.get_channel(int(item[0]))
         thread = self.bot.client.get_channel(int(item[2]))
         if chnl is None or thread is None:
@@ -105,29 +119,35 @@ class Hangman(Help):
         if embed is None:
             return
         if referenced_msg.is_ended:
+            # if is_ended, game was completed
             await thread.send('Game ended! ({})'.format(
                 embed.title))
+            # archive the thread
             await thread.edit(archived=True)
+            # add the delete button to the completed game
             await referenced_msg.edit(
                 embed=embed,
-                components=discord.ui.Button(label='delete'))
+                components=delete_button())
             return
         await referenced_msg.edit(embed=embed)
 
-    async def get_word(self, guild, msg_info, chars, full=False):
-        user = MemberWrapper(guild.get_member(int(msg_info['user_id'])))
+    async def get_word(self, guild, info, chars, full=False) -> (str, bool):
+        # Search for the word in the game author's dm
+        user = MemberWrapper(guild.get_member(int(info['user_id'])))
         if user is None:
             return
-        msg = await user.fetch_message(int(msg_info['message_id']))
+        msg = await user.fetch_message(int(info['message_id']))
         if not msg:
             return
         word = msg.embeds[0].description
         if full:
             return word
+        # replace unknown characters (except spaces) with '_'
         word = ' '.join([i if i in chars or i == ' ' else r'\_' for i in word])
         return (word, word == ' '.join([i for i in msg.embeds[0].description]))
 
-    async def game_embed(self, guild, msg_info, u_id, char=None, msg=None):
+    async def game_embed(
+            self, guild, msg_info, u_id, char=None, msg=None) -> EmbedWrapper:
         embed = None
         chars = []
         phase = 0
@@ -175,7 +195,7 @@ class Hangman(Help):
             channel_id=msg_info['channel_id'])
         return embed
 
-    async def end_embed(self, winner, embed, user_id, msg):
+    async def end_embed(self, winner, embed, user_id, msg) -> EmbedWrapper:
         user = msg.guild.get_member(int(user_id))
         embed.title = await self.get_word(msg.guild, embed.get_id(), [], True)
         if user:
@@ -191,7 +211,7 @@ class Hangman(Help):
         embed.mark(EmbedWrapper.ENDED)
         return embed
 
-    def picture(self, phase=0, guessed_chars=[]):
+    def picture(self, phase=0, guessed_chars=[]) -> dict:
         phases = {
             1: (1, '\u2000│/' + 7 * '\u2000' + '|'),
             2: (2, '\u2000│' + 8 * '\u2000' + '0'),

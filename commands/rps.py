@@ -1,5 +1,5 @@
 import discord
-from utils.misc import rps_emojis, random_color
+from utils.misc import rps_emojis, random_color, delete_button
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -180,7 +180,7 @@ class Rps(Help):
                     style=discord.ButtonStyle.green, emoji=i))
             else:
                 components.append(discord.ui.Button(emoji=i))
-        components.append(discord.ui.Button(label='delete'))
+        components.append(delete_button())
         await msg.edit(embed=new_embed, components=components)
 
     async def wins_to_database(self, cursor, msg, user_id):

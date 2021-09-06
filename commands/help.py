@@ -1,5 +1,5 @@
 import discord
-from utils.misc import colors
+from utils.misc import colors, delete_button
 from utils.wrappers import EmbedWrapper
 
 
@@ -54,7 +54,7 @@ class Help:
         options.append(discord.SelectOption(label=self.name))
         components = [discord.ui.Select(
             placeholder='Select a command', options=options),
-            discord.ui.Button(label='delete')]
+            delete_button()]
         await msg.channel.send(embed=embed_var, components=components)
 
     async def on_menu_select(self, interaction, interaction_msg):
