@@ -217,12 +217,17 @@ class Poll(Help):
         name = None
         for i in poll_msg.components:
             for i2 in i.children:
+                if not isinstance(i2, discord.Button):
+                    continue
                 if count != option:
                     components.append(discord.ui.Button(
                         label=i2.label))
                 else:
                     name = self.get_response_name(i2.label)
                 count += 1
+        menu = self.info_menu(components)
+        if menu is not None:
+            components.append(menu)
         await poll_msg.edit(
             components=components)
         if name is not None:
@@ -301,6 +306,15 @@ class Poll(Help):
         y = None
         k = 0
         for i in users:
+            user = None
+            for j in i:
+                try:
+                    user = msg.guild.get_member(int(j))
+                    if user is None:
+                        raise ValueError
+                except ValueError:
+                    continue
+                break
             user = msg.guild.get_member(int(i[1]))
             if user is None:
                 continue

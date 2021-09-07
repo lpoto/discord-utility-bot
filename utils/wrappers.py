@@ -151,11 +151,12 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_deletable(self):
-        if (self.pinned or len(self.embeds) != 1 or
-                self.embeds[0].description[-2:] == 'ND'):
-            return False
         if len(self.embeds) != 1:
             return True
+        if (self.pinned or
+            self.embed.description and
+                'ND' in self.embeds[0].description[-3:]):
+            return False
         return self.type_check(None, EmbedWrapper.NOT_DELETABLE)
 
 
