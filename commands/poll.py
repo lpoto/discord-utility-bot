@@ -2,7 +2,6 @@ from commands.help import Help
 import discord
 from utils.misc import random_color, black_circle, white_circle
 
-# TODO see lists of users who voted with dropdown menu
 # TODO add date and time to poll embed, indicating
 #      when the poll will automatically end
 #      once a day check for these old polls and close them
@@ -113,6 +112,7 @@ class Poll(Help):
 
     async def add_response(self, poll_msg, option):
         components = []
+        option = option.replace('"', "'")
         option = '\u2000'.join(option.split())
         if len(option) > 30:
             await poll_msg.channel.warn(
@@ -315,7 +315,6 @@ class Poll(Help):
                 except ValueError:
                     continue
                 break
-            user = msg.guild.get_member(int(i[1]))
             if user is None:
                 continue
             x = user.name
@@ -330,8 +329,8 @@ class Poll(Help):
 
     async def users_who_voted(self, cursor, rsp, msg):
         cursor.execute((
-            "SELECT * FROM poll WHERE guild_id = '{}' AND " +
-            "channel_id = '{}' AND message_id = '{}' AND response = '{}'"
+            "SELECT * FROM poll WHERE guild_id = \"{}\" AND " +
+            "channel_id = \"{}\" AND message_id = \"{}\" AND response = \"{}\""
         ).format(
             msg.guild.id, msg.channel.id, msg.id, rsp))
         fetched = cursor.fetchall()
@@ -339,9 +338,9 @@ class Poll(Help):
 
     async def add_or_remove(self, cursor, rsp, msg, user_id):
         cursor.execute((
-            "SELECT * FROM poll WHERE guild_id = '{}' AND " +
-            "channel_id = '{}' AND " +
-            "message_id = '{}' AND user_id = '{}' AND response = '{}'"
+            "SELECT * FROM poll WHERE guild_id = \"{}\" AND " +
+            "channel_id = \"{}\" AND " +
+            "message_id = \"{}\" AND user_id = \"{}\" AND response = \"{}\""
         ).format(
             msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
         fetched = cursor.fetchone()
@@ -351,22 +350,23 @@ class Poll(Help):
 
     async def delete_from_db(self, cursor, rsp, msg, user_id):
         cursor.execute((
-            "DELETE FROM poll WHERE guild_id = '{}' AND " +
-            "channel_id = '{}' AND " +
-            "message_id = '{}' AND user_id = '{}' AND response = '{}'"
+            "DELETE FROM poll WHERE guild_id = \"{}\" AND " +
+            "channel_id = \"{}\" AND " +
+            "message_id = \"{}\" AND user_id = \"{}\" AND response = \"{}\""
         ).format(
             msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
 
     async def insert_to_db(self, cursor, rsp, msg, user_id):
         cursor.execute((
             "INSERT INTO poll (guild_id, channel_id, message_id, user_id, " +
-            "response) VALUES ('{}', '{}', '{}', '{}', '{}')").format(
+            "response) VALUES (\"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
+            ).format(
                 msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
 
     async def delete_poll_from_db(self, cursor, msg):
         cursor.execute((
-            "DELETE FROM poll WHERE guild_id = '{}' AND " +
-            "channel_id = '{}' AND message_id = '{}'").format(
+            "DELETE FROM poll WHERE guild_id = \"{}\" AND " +
+            "channel_id = \"{}\" AND message_id = \"{}\"").format(
             msg.guild.id, msg.channel.id, msg.id))
 
     def additional_info(self, prefix):
