@@ -7,6 +7,5 @@ from commands.roles import Roles
 from commands.poll import Poll
 from commands.rps import Rps
 from commands.connect_four import ConnectFour
-from commands.events import Events
 from commands.games import Games
 from commands.hangman import Hangman

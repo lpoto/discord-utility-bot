@@ -79,9 +79,6 @@ class Rps(Help):
         new_embed.description = (
             'Select one of the three options to join the game!')
         new_embed.set_id(message_id=interaction_msg.id, user_id=user.id)
-        if user.avatar:
-            new_embed.set_thumbnail(url=user.avatar)
-        # add users profile picture to the embed
         await channel.send(
             embed=new_embed,
             components=[discord.ui.Button(emoji=i) for i in rps_emojis])
@@ -126,8 +123,6 @@ class Rps(Help):
         embed.set_id()
         if info['winner_avatar']:
             embed.set_thumbnail(url=info['winner_avatar'])
-        else:
-            embed.set_thumbnail(url=discord.Embed.Empty)
         return embed
 
     async def game_results(self, user1, user2, emoji1, emoji2, msg):
@@ -233,7 +228,8 @@ class Rps(Help):
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
         await msg.channel.send(
-            embed=embed_var)
+            embed=embed_var,
+            components=delete_button())
 
     def additional_info(self, prefix):
         return '{}\n{}\n{}\n{}'.format(

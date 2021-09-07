@@ -56,12 +56,6 @@ class DB:
                 'wins INT UNSIGNED'},
             'connect_four_records': {
                 'moves VARCHAR(43) NOT NULL'},
-            'events': {
-                'datetime VARCHAR(11) NOT NULL',
-                'channel_id VARCHAR(18) NOT NULL',
-                'event VARCHAR(100) NOT NULL',
-                'text VARCHAR(300) NOT NULL',
-                'tags VARCHAR(300) NOT NULL'},
             'poll': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
@@ -138,7 +132,7 @@ class DB:
             if cnx is not None and cnx.is_connected():
                 cursor.close()
                 cnx.close()
-            if reconnect:
+            elif reconnect:
                 self.connect_database()
                 if repeat:
                     self.use_database(function, *args, repeat)

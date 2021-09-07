@@ -3,7 +3,9 @@ import discord
 from utils.misc import random_color, black_circle, white_circle
 
 # TODO see lists of users who voted with dropdown menu
-# TODO default time to clean up old pollchannel_id
+# TODO add date and time to poll embed, indicating
+#      when the poll will automatically end
+#      once a day check for these old polls and close them
 
 
 class Poll(Help):
@@ -11,6 +13,8 @@ class Poll(Help):
         super().__init__(name='poll')
         self.description = 'Create a poll to vote on.'
         self.synonyms = ['vote']
+        self.requires_database = True
+        self.interactions_require_database = True
         self.tokens = [black_circle, white_circle]
         self.tokens_count = 2
 
@@ -20,19 +24,26 @@ class Poll(Help):
             await msg.channel.warn(text='Add a question!')
             return
         question = msg.content.replace('{} '.format(args[0]), '', 1)
+        if len(question) >= 60:
+            await msg.channel.warn(
+                text='Can only add question shorter than 60 characters!')
+            return
         embed = discord.Embed(
             description='POLL - {}{}ND'.format(
                 question, (60 - len(question)) * '\u2000'),
             color=random_color())
-        embed.set_footer(text='* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Reply to this message to add a response.',
-            'Reply "remove <idx>" to remove a response by index.',
-            'Reply "question <new_question>" to change the question.',
-            'Reply "fix" to prevent further adding or removing responses.',
-            'Reply "end" to end the poll.',
-            ('Multiple responses can be added at once, separated with ";" ' +
-             '\n(example: "response1; remove 0; response2")')))
-        await msg.channel.send(embed=embed)
+        embed.set_footer(
+            text=('* {}\n* {}\n* {}\n* {}\n* {}\n* {}')
+            .format(
+                'Reply to this message to add a response.',
+                'Reply "remove <idx>" to remove a response by index.',
+                'Reply "question <new_question>" to change the question.',
+                'Reply "fix" to prevent further adding or removing responses.',
+                'Reply "end" to close the poll.',
+                ('Multiple responses can be added at once, separated ' +
+                    'with ";" \n(example: "response1; remove 0; response2")')))
+
+        msg = await msg.channel.send(embed=embed)
 
     def is_poll(self, msg):
         if (str(msg.channel.type) != 'text' or
@@ -66,6 +77,8 @@ class Poll(Help):
                  'end': self.end_poll,
                  'question': self.change_question}
         option = item[2]
+        if option is None:
+            return
         args = option.split()
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
@@ -75,7 +88,7 @@ class Poll(Help):
         await self.add_response(poll_msg, option)
 
     def get_response_name(self, text):
-        return text.split('\u3000')[0]
+        return text.split('\u3000')[0].strip()
 
     async def add_response(self, poll_msg, option):
         components = []
@@ -90,6 +103,7 @@ class Poll(Help):
                 if option == lbl.split('\u2000(')[0]:
                     return
                 components.append(discord.ui.Button(label=i2.label))
+        option = option.center(15, '\u2000')
         t = 42 + len(option)//2
         components.append(discord.ui.Button(
             label='{}\u3000{}'.format(
@@ -112,10 +126,14 @@ class Poll(Help):
             'can be added or removed.')
 
     async def change_question(self, poll_msg, option):
+        if len(option) >= 60:
+            await poll_msg.channel.warn(
+                text='Can only add question shorter than 60 characters!')
+            return
         marks = poll_msg.embeds[0].description.split()[-1]
         if marks in ('FND', 'END'):
             return
-        poll_msg.embeds[0].description = 'Poll - {}{}{}'.format(
+        poll_msg.embeds[0].description = 'POLL - {}{}{}'.format(
             option, (62 - len(marks) - len(option)) * '\u2000', marks)
         await poll_msg.edit(embed=poll_msg.embeds[0])
 

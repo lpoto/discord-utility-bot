@@ -397,7 +397,9 @@ class ConnectFour(Help):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg.channel.send(embed=embed_var)
+        await msg.channel.send(
+                embed=embed_var,
+                components=utils.delete_button())
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(

@@ -10,6 +10,7 @@ class Config(Help):
         self.description = "Change bot's settings."
         self.user_permissions = ['administrator']
         self.synonyms = ['settings', 'options']
+        self.requires_database = True
 
     async def execute_command(self, msg):
         # check if database connected

@@ -153,12 +153,6 @@ class MyClient(discord.Client):
         for cmd in self.bot.on_thread_message_commands:
             await cmd.on_thread_message(msg)
 
-    async def on_time(self, time, execute=True):
-        # event triggered when a threading timer
-        # reaches a certain commands user defined event time
-        for cmd in self.bot.on_time_commands:
-            await cmd.on_time(time, execute)
-
     async def on_member_join(self, member):
         # if server has welcome text set up
         # in database, send welcome text to default channel
@@ -213,6 +207,9 @@ class MyClient(discord.Client):
             return
         # call those commands that have on button click functions
         for cmd in self.bot.on_button_click_commands:
+            if (cmd.interactions_require_database and
+                    not self.bot.database.connected):
+                continue
             await cmd.on_button_click(
                 button,
                 msg,
@@ -226,4 +223,7 @@ class MyClient(discord.Client):
             return
         # call those commands that have on menu select functions
         for cmd in self.bot.on_menu_select_commands:
+            if (cmd.interactions_require_database and
+                    not self.bot.database.connected):
+                continue
             await cmd.on_menu_select(interaction, msg)

@@ -14,7 +14,8 @@ class Help:
         self.description = 'Get information about the commands.'
         self.bot_permissions = ['send_messages']
         self.user_permissions = ['send_messages']
-        self.channel_types = ['text']
+        self.requires_database = False
+        self.interactions_require_database = False
         self.embed_type = None
         self.game = False
         # on init add the created object to
@@ -37,7 +38,6 @@ class Help:
             self.additional_info(prefix),
             self.bot_permissions,
             self.user_permissions,
-            self.channel_types,
             self.synonyms
         ]
         return info

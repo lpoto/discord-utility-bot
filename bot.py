@@ -1,5 +1,6 @@
 import discord
 from utils.misc import Queue, colors
+from threading import Timer
 from utils.wrappers import EmbedWrapper
 from database import DB
 import commands as cmds
@@ -19,6 +20,7 @@ class Bot:
         # it has a ready Bot object
         self.ready = False
         self.queue = Queue(self)
+        self.timers = {}
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
@@ -48,12 +50,6 @@ class Bot:
                 c = C()
                 c.bot = self
                 self.add_command(c)
-            # if event command is ready, start timing for the scheduled
-            # events
-            if 'event' in self.commands:
-                await self.database.use_database(
-                    self.commands['event'].events_from_database)
-                await self.commands['event'].start_timer()
             self.ready = True
 
     def add_command(self, command):
@@ -103,11 +99,11 @@ class Bot:
 
     async def check_if_valid(self, command, msg) -> bool:
         """
-        Check if a command is allowd in message's channel type.
+        Check if a command is allowed for the user and for the bot.
         """
-        if str(msg.channel.type) not in command.channel_types:
+        if command.requires_database and not self.database.connected:
             await msg.channel.warn(
-                text='This command cannot be used in this channel type!')
+                    text='This command requires database connection!')
             return False
         # check for required permissions
         # and roles
@@ -163,8 +159,8 @@ class Bot:
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         synonyms = 'None'
-        if len(info[6]) > 0:
-            synonyms = ', '.join([prefix + i for i in info[6]])
+        if len(info[5]) > 0:
+            synonyms = ', '.join([prefix + i for i in info[5]])
         embed_var.add_field(
             name='synonyms',
             value=synonyms,
@@ -188,14 +184,12 @@ class Bot:
                 name='Roles that can use the command',
                 value='[{}]'.format(', '.join(roles)),
                 inline=False)
-            embed_var.add_field(
-                name='Allowed channel types',
-                value='[{}]'.format(', '.join(info[5])),
-                inline=False)
         return embed_var
 
     def clean_up(self):
         """Cancel multithreading functions."""
-        for cmd in self.commands.values():
-            cmd.clean_up()
+        for k, v in self.timers.items():
+            if isinstance(v, Timer) and v.is_alive():
+                v.cancel()
+        self.timers.clear()
         self.client = None
