@@ -14,17 +14,15 @@ class ClearChat(Help):
         args = msg.content.split()
         # don't allow purging in role-managing channel
         if len(args) < 2:
-            await msg.channel.send(
-                text='How many messages do you want to delete?',
-                delete_after=5)
+            await msg.channel.warn(
+                text='How many messages do you want to delete?')
             return
         count = 0
         try:
             count = int(args[1])
         except Exception:
-            await msg.channel.send(
-                text='Argument must be a number between 0 and 50!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Argument must be a number between 0 and 50!')
             return
         else:
             count = int(args[1])
@@ -33,27 +31,23 @@ class ClearChat(Help):
         # messages one by one, so deleting large amounts of messages might
         # take a while and cause problems
         if count > 50:
-            await msg.channel.send(
-                text='You cannot delete more than 50 messages at once!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='You cannot delete more than 50 messages at once!')
             return
         if count <= 0:
-            await msg.channel.send(
-                text='You must delete at least 1 message!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='You must delete at least 1 message!')
             return
         # purge the messages and send how many were actually deleted
         purged = len(await msg.channel.purge(
             limit=count + 1,
             check=self.purge_filter)) - 1
         if purged < 1:
-            await msg.channel.send(
-                text='Could not delete any messages.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Could not delete any messages.')
         else:
-            await msg.channel.send(
-                text='Deleted {count} messages.'.format(count=purged),
-                delete_after=5)
+            await msg.channel.notify(
+                text='Deleted {count} messages.'.format(count=purged))
 
     def purge_filter(self, msg):
         # don't delete pinned messages and polls

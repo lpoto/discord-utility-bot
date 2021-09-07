@@ -11,7 +11,7 @@ class Events(Help):
     def __init__(self):
         super().__init__(name='event')
         self.description = 'Set up events for bot to send notifications.'
-        self.synonyms = ['events']
+        self.synonyms = ['events', 'schedule']
         # dict {datetime: [(f1, args), (f2, args),...]}
         # functions to be called independently at certain times
         self.events = {}

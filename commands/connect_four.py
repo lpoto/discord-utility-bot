@@ -11,7 +11,7 @@ class ConnectFour(Help):
         super().__init__(name='connect-four')
         self.description = 'A game of connect-four between two users.'
         self.game = True
-        self.synonyms = ['connectfour', 'cf']
+        self.synonyms = ['connectfour', 'cf', 'fil', 'four-in-line']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = utils.black_circle
@@ -51,7 +51,7 @@ class ConnectFour(Help):
             user.name if not user.nick else user.nick,
             self.tokens[1])
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_connect_four:
             return
         if msg.is_info:
@@ -373,9 +373,8 @@ class ConnectFour(Help):
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is []:
-            await msg.channel.send(
-                text='No availible leaderboard.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='No availible leaderboard.')
             return
         embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',

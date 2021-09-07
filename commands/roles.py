@@ -1,6 +1,7 @@
 from commands.help import Help
 import discord
 from utils.misc import emojis, random_color
+from utils.wrappers import MessageWrapper
 
 
 class Roles(Help):
@@ -25,11 +26,11 @@ class Roles(Help):
 
     async def starting_embed(self, title, msg):
         embed_var = discord.Embed(
-                color=random_color(),
-                description='* {}\n* {}\n{}'.format(
-                    'Reply with a role to add it to the message.',
-                    'You can add multiple at once, separated with ";".',
-                    'Example: "role1;role2;role3"'))
+            color=random_color(),
+            description='* {}\n* {}\n{}'.format(
+                'Reply with a role to add it to the message.',
+                'You can add multiple at once, separated with ";".',
+                'Example: "role1;role2;role3"'))
         text = 'ROLES'
         if title:
             text += ' - ' + title
@@ -41,10 +42,20 @@ class Roles(Help):
         if not roles_message.is_roles:
             return
         for i in msg.content.split(';'):
-            await self.bot.queue.add_to_queue(
-                queue_id='rolesmessage:{}'.format(roles_message.id),
-                item=(i, roles_message.channel.id, roles_message.id),
-                function=self.roles_existing_message)
+            if len(i) == 0:
+                continue
+            try:
+                await self.bot.queue.add_to_queue(
+                    queue_id='rolesmessage:{}'.format(roles_message.id),
+                    item=(i, roles_message.channel.id, roles_message.id),
+                    function=self.roles_existing_message)
+            except ValueError as err:
+                if str(err) == 'could not find open space for item':
+                    await msg.channel.warn(
+                        'There can be only 5 rows of buttons!')
+                    return
+                else:
+                    raise ValueError(err)
 
     async def roles_existing_message(self, item):
         # function to process queue, editing existing message with roles
@@ -73,38 +84,41 @@ class Roles(Help):
         msg.embeds[0].description = None
         await msg.edit(embed=msg.embeds[0], components=components)
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_roles:
             return
-        role = await self.valid_role(button.label, msg)
+        await self.bot.queue.add_to_queue(
+            queue_id='rolesmessage:{}'.format(msg.id),
+            item=(msg.channel, msg.id, button, user, webhook),
+            function=self.handle_button_clicks)
+
+    async def handle_button_clicks(self, item):
+        channel = item[0]
+        msg = await channel.fetch_message(item[1])
+        if not msg or not msg.guild:
+            return
+        button = item[2]
+        user = item[3]
+        webhook = item[4]
+        role = await self.valid_role(button.label, msg, False)
         if role is None:
             return
         rl = user.get_role(role.id)
-        components1 = []
-        components2 = []
-        for i in msg.components:
-            for j in i.children:
-                components1.append(
-                        discord.ui.Button(label=j.label))
-                if j.label != button.label:
-                    components2.append(discord.ui.Button(
-                        label=j.label))
-                elif rl is None:
-                    components2.append(discord.ui.Button(
-                        label=j.label,
-                        style=discord.ButtonStyle.green))
-                else:
-                    components2.append(discord.ui.Button(
-                        label=j.label,
-                        style=discord.ButtonStyle.red))
+        txt = None
         if rl is None:
             await user.add_roles(role)
+            txt = 'Added role `{}`'.format(role.name)
         else:
             await user.remove_roles(role)
-        await msg.edit(embed=msg.embeds[0], components=components2)
-        await msg.edit(embed=msg.embeds[0], components=components1)
+            txt = 'Removed role `{}`'.format(role.name)
+        if txt is None:
+            return
+        perms = msg.channel.permissions(msg.guild.me, 'send_messages')
+        if perms is None or perms[0] is False:
+            return
+        await webhook.send(content=txt, ephemeral=True)
 
-    async def valid_role(self, pot_role, msg):
+    async def valid_role(self, pot_role, msg, reply=True):
         # check if role exists and if bot can add such a role
         role = None
         # search existing roles in server
@@ -112,16 +126,16 @@ class Roles(Help):
             if i.name == pot_role:
                 role = i
                 break
+        if role is None and not reply:
+            return
         if role is None:
-            await msg.channel.send(
-                text='Role `{}` does not exist!'.format(pot_role),
-                delete_after=5)
+            await msg.channel.warn(
+                text='Role `{}` does not exist!'.format(pot_role))
             return
         # don't sent default (@everyone) or integration roles
         if role.is_integration() or role.is_default():
-            await msg.channel.send(
-                text='Cannot add integration or default roles!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Cannot add integration or default roles!')
             return
         position = False
         # don't allow roles higher than bot's highest role
@@ -130,9 +144,9 @@ class Roles(Help):
                 position = True
                 break
         if not position:
-            await msg.channel.send(
-                text='This roles has higher position than my highest role!',
-                delete_after=5)
+            await msg.channel.warn(
+                'Role `{}` has higher position than my highest role!'.format(
+                    role.name))
             return
         # roles with these permissions not allowed
         not_allowed = [
@@ -144,9 +158,8 @@ class Roles(Help):
         ]
         for i in not_allowed:
             if dict(iter(role.permissions))[i]:
-                await msg.channel.send(
-                    text='Cannot manage roles with `{}` permission.'.format(i),
-                    delete_after=5)
+                await msg.channel.warn(
+                    text='Cannot manage roles with `{}` permission.'.format(i))
                 return
         return role
 
@@ -155,15 +168,13 @@ class Roles(Help):
         # save the removed reaction index in the hidden text,
         # so it can be reused
         if len(msg.embeds[0].fields) == 1:
-            await msg.channel.send(
-                text='Cannot remove the only role in the message!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Cannot remove the only role in the message!')
             return
         args = arg.split()
         if len(args) < 2:
-            await msg.channel.send(
-                text='Please provide a role you want to remove.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Please provide a role you want to remove.')
             return
         name = arg.replace('{} '.format(args[0]), '', 1)
         found = False
@@ -175,9 +186,8 @@ class Roles(Help):
                 else:
                     components.append(discord.ui.Button(label=j.label))
         if found is False:
-            await msg.channel.send(
-                text='There is no role `{}` in the message.'.format(name),
-                delete_after=5)
+            await msg.channel.warn(
+                text='There is no role `{}` in the message.'.format(name))
             return
         await msg.edit(embed=msg.embeds[0], components=components)
 

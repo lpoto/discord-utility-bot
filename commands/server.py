@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import emojis, colors
+from utils.misc import colors, delete_button
 from utils.wrappers import EmbedWrapper
 
 
@@ -8,6 +8,7 @@ class ServerInfo(Help):
     def __init__(self):
         super().__init__(name='server')
         self.description = 'Get server information.'
+        self.synonyms = ['guild']
 
     async def execute_command(self, msg):
         embed_var = await self.create_info_embed(msg)
@@ -15,7 +16,7 @@ class ServerInfo(Help):
             embed=embed_var,
             components=[
                 discord.ui.Button(label='config'),
-                discord.ui.Button(label='delete')])
+                delete_button()])
 
     async def create_info_embed(self, msg):
         # build embed with server info
@@ -72,14 +73,14 @@ class ServerInfo(Help):
             '\n\nClick "config" to see server configurations.')
         return embed_var
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_config:
             return
         await msg.edit(
             embed=await self.create_info_embed(msg),
             components=[
                 discord.ui.Button(label='config'),
-                discord.ui.Button(label='delete')])
+                delete_button()])
 
     def get_online_members(self, msg):
         count = 0

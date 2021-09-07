@@ -8,6 +8,7 @@ class Games(Help):
     def __init__(self):
         super().__init__(name='games')
         self.description = 'Show all games.'
+        self.synonyms = ['play', 'show-games', 'all-games']
 
     async def execute_command(self, msg):
         embed_var = EmbedWrapper(discord.Embed(
@@ -25,7 +26,9 @@ class Games(Help):
         await msg.channel.send(
             embed=embed_var, components=components)
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, webhook):
+        if not msg.is_games:
+            return
         if button.label in self.bot.commands:
             await self.bot.commands[button.label].execute_command(
                 msg, user)

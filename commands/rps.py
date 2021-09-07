@@ -1,5 +1,5 @@
 import discord
-from utils.misc import rps_emojis, random_color, delete_button
+from utils.misc import rps_emojis, random_color, delete_button, get_component
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -35,7 +35,7 @@ class Rps(Help):
             embed=dm_embed,
             components=components)
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_rps:
             return
         # check if rps dm message, then get channel id from
@@ -103,9 +103,10 @@ class Rps(Help):
             int(info['message_id']))
         if first_msg is None or len(first_msg.embeds) != 1:
             return
-        emoji1 = next(filter(
-            lambda x: x.style == discord.ButtonStyle.green,
-            *[i.children for i in first_msg.components])).emoji
+        emoji1 = get_component(discord.ButtonStyle.green, first_msg, 'style')
+        if not emoji1:
+            return
+        emoji1 = emoji1.emoji
         # compare the chosen options and get the winner of the game
         await self.game_results(
             user1, user2, emoji1, button.emoji.name,
@@ -207,9 +208,8 @@ class Rps(Help):
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is None or fetched is []:
-            await msg.channel.send(
-                text='No availible leaderboard.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='No availible leaderboard.')
             return
         embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',

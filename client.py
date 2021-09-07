@@ -4,7 +4,7 @@ import sys
 import os
 import logging
 import traceback
-from utils.wrappers import ChannelWrapper, MemberWrapper, MessageWrapper
+import utils.wrappers as wrappers
 import utils.misc as utils
 
 
@@ -14,12 +14,12 @@ class MyClient(discord.Client):
         self.bot = None
         self.handle_exit = None
 
-    def get_channel(self, channel_id) -> ChannelWrapper:
-        return ChannelWrapper(
+    def get_channel(self, channel_id) -> wrappers.ChannelWrapper:
+        return wrappers.ChannelWrapper(
             super().get_channel(int(channel_id)))
 
-    def get_user(self, user_id) -> MemberWrapper:
-        return MemberWrapper(super().get_user(int(user_id)))
+    def get_user(self, user_id) -> wrappers.MemberWrapper:
+        return wrappers.MemberWrapper(super().get_user(int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
         """Call a method matching the event recieved from discord."""
@@ -87,7 +87,7 @@ class MyClient(discord.Client):
             return
         # wrapp message and override default functions to avoid errors
         # and add additional functionality
-        msg = MessageWrapper(msg)
+        msg = wrappers.MessageWrapper(msg)
         if msg.reference is not None and msg.reference.message_id:
             referenced_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
@@ -126,7 +126,7 @@ class MyClient(discord.Client):
                 msg.content.split() is None or
                 len(msg.content.split()) < 1):
             return
-        msg = MessageWrapper(msg)
+        msg = wrappers.MessageWrapper(msg)
         if msg.reference is not None and msg.reference.message_id:
             referenced_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
@@ -147,8 +147,8 @@ class MyClient(discord.Client):
                 msg.content.split() is None or
                 len(msg.content.split()) < 1):
             return
-        msg = MessageWrapper(msg)
-        msg.channel.parent = ChannelWrapper(msg.channel.parent)
+        msg = wrappers.MessageWrapper(msg)
+        msg.channel.parent = wrappers.ChannelWrapper(msg.channel.parent)
         # run commands that have on thread message function
         for cmd in self.bot.on_thread_message_commands:
             await cmd.on_thread_message(msg)
@@ -182,7 +182,7 @@ class MyClient(discord.Client):
         # if server has welcome text set up
         # in database, send welcome text to default channel
         server = member.guild
-        default_channel = ChannelWrapper(server.system_channel)
+        default_channel = wrappers.ChannelWrapper(server.system_channel)
         # check if self.bot has send_messages permissions in defaut channel
         hello = await self.bot.database.get_welcome(server)
         if hello is None:
@@ -200,7 +200,7 @@ class MyClient(discord.Client):
             await interaction.response.defer()
         except discord.NotFound:
             pass
-        msg = MessageWrapper(interaction.message)
+        msg = wrappers.MessageWrapper(interaction.message)
         if interaction.data['component_type'] == 2:
             self.dispatch('button_click', interaction, msg)
             return
@@ -210,15 +210,19 @@ class MyClient(discord.Client):
 
     async def on_button_click(self, interaction, msg):
         # handle interaction when a button is clicked
-        button = next(filter(
-            lambda x: x.custom_id == interaction.data['custom_id'],
-            *[i.children for i in msg.components]))
+        button = utils.get_component(interaction.data['custom_id'], msg)
         if not button:
             return
+        webhook = interaction.followup
+        # if delete button was clicked and message is deletable
+        # (not pinned, and not marked with ND) delete it
         if button.label == 'delete':
             if msg.is_deletable:
                 await msg.edit(
-                    text='Message has been deleted.',
+                    text=None,
+                    embed=discord.Embed(
+                        color=utils.green_color,
+                        description='Message has been deleted!'),
                     components=[discord.ui.Button(
                                 label='delete',
                                 style=discord.ButtonStyle.green)],
@@ -229,9 +233,10 @@ class MyClient(discord.Client):
         # call those commands that have on button click functions
         for cmd in self.bot.on_button_click_commands:
             await cmd.on_button_click(
-                    button,
-                    msg,
-                    MemberWrapper(interaction.user))
+                button,
+                msg,
+                wrappers.MemberWrapper(interaction.user),
+                webhook)
 
     async def on_menu_select(self, interaction, msg):
         # handle interaction when a selection is made

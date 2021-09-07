@@ -8,7 +8,7 @@ class Hangman(Help):
     def __init__(self):
         super().__init__(name='hangman')
         self.description = 'A game of hangman.'
-        self.synonyms = ['hgmn', 'hm']
+        self.synonyms = ['hm']
         self.bot_permissions = ['send_messages',
                                 'send_messages_in_threads']
         self.embed_type = 'HANGMAN'
@@ -120,7 +120,7 @@ class Hangman(Help):
             return
         if referenced_msg.is_ended:
             # if is_ended, game was completed
-            await thread.send('Game ended! ({})'.format(
+            await thread.notify('Game ended! ({})'.format(
                 embed.title))
             # archive the thread
             await thread.edit(archived=True)

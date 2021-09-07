@@ -9,6 +9,7 @@ class Config(Help):
         super().__init__('config')
         self.description = "Change bot's settings."
         self.user_permissions = ['administrator']
+        self.synonyms = ['settings', 'options']
 
     async def execute_command(self, msg):
         # check if database connected
@@ -21,14 +22,12 @@ class Config(Help):
                             delete_button()])
             return
         if not self.bot.database.connected:
-            await msg.channel.send(
-                text='This command requires database connection!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='This command requires database connection!')
             return
         if len(args) < 2:
-            await msg.channel.send(
-                text='No arguments provided.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='No arguments provided.')
             return
         opts = {
             'prefix': self.set_prefix,
@@ -36,14 +35,12 @@ class Config(Help):
             'welcome': self.set_welcome,
         }
         if args[1] not in list(opts.keys()):
-            await msg.channel.send(
-                text='Invalid arguments.',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Invalid arguments.')
             return
         if len(args) < 3:
-            await msg.channel.send(
-                text='No argument to option: `{}`.'.format(args[1]),
-                delete_after=5)
+            await msg.channel.warn(
+                text='No argument to option: `{}`.'.format(args[1]))
             return
         # else edit configurations
         await self.edit_config(opts[args[1]], msg, args)
@@ -80,7 +77,7 @@ class Config(Help):
             '\n\nClick "server" to see server info.')
         return embed_var
 
-    async def on_button_click(self, button, msg, user):
+    async def on_button_click(self, button, msg, user, interaction):
         if not msg.is_server:
             return
         await msg.edit(
@@ -104,9 +101,8 @@ class Config(Help):
     async def set_prefix(self, cursor, msg, args):
         new_prefix = args[2]
         if len(new_prefix) > 5:
-            await msg.channel.send(
-                text='Prefix cannot be longer than 5 signs!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Prefix cannot be longer than 5 signs!')
             return
         await self.edit_sql(
             cursor,
@@ -118,41 +114,37 @@ class Config(Help):
             ("UPDATE prefix SET prefix = '{}' " +
                 "WHERE guild_id = '{}'").format(
                 new_prefix, msg.guild.id))
-        await msg.channel.send(
+        await msg.channel.notify(
             text='`Prefix` changed to `{}`.'.format(new_prefix))
 
     async def set_command(self, cursor, msg, args):
         if args[1] == 'command':
             if len(args) < 4:
-                await msg.channel.send(
-                    text='Too few arguments.',
-                    delete_after=5)
+                await msg.channel.warn(
+                    text='Too few arguments.')
                 return
         cmd = args[2]
         if cmd not in self.bot.commands:
-            await msg.channel.send(
-                text='Invalid command!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Invalid command!')
             return
         if len(cmd) > 50:
-            await msg.channel.send(
-                text='command name too long!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='command name too long!')
             return
         new_roles = msg.content.replace(
             '{} {} {} '.format(args[0], args[1], args[2]), '', 1)
         if new_roles != 'help' and len(new_roles) > 90:
-            await msg.channel.send(
-                text='Too many roles!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='Too many roles!')
             return
         if new_roles == 'remove':
             query = ("DELETE FROM commands WHERE guild_id = '{}' AND " +
                      "command = '{}'").format(
                 msg.guild.id, cmd)
             cursor.execute(query)
-            await msg.channel.send(
-                test=(
+            await msg.channel.notify(
+                text=(
                     'Removed roles for `{}`'
                 ).format(cmd))
             return
@@ -171,7 +163,7 @@ class Config(Help):
             ("UPDATE commands SET roles = '{}' " +
                 "WHERE guild_id = '{}' AND command = '{}'").format(
                 '<;>'.join(roles), msg.guild.id, cmd))
-        await msg.channel.send(
+        await msg.channel.notify(
             'Roles for `{}` changed to `{}`'
             .format(cmd, ', '.join(roles)))
 
@@ -181,9 +173,8 @@ class Config(Help):
             i = i.strip().lower()
             x = list(map(str.lower, guild_roles))
             if i not in x:
-                await msg.channel.send(
-                    text='Invalid role: {}'.format(i),
-                    delete_after=5)
+                await msg.channel.warn(
+                    text='Invalid role: {}'.format(i))
                 return
             roles.append(guild_roles[x.index(i)])
         return roles
@@ -199,7 +190,7 @@ class Config(Help):
             cursor = self.bot.database.cnx.cursor(buffered=True)
             cursor.execute(query)
             cursor.close()
-            await msg.channel.send(text='Removed `Welcome text`.')
+            await msg.channel.notify(text='Removed `Welcome text`.')
             return
         await self.edit_sql(
             cursor,
@@ -211,7 +202,7 @@ class Config(Help):
             ("UPDATE welcome SET welcome = '{}' " +
                 "WHERE guild_id = '{}'").format(
                 new_txt, msg.guild.id))
-        await msg.channel.send(
+        await msg.channel.notify(
             text='`Welcome text` changed to `{}`.'.format(new_txt))
 
     async def edit_sql(self, cursor, select, insert, update):

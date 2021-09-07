@@ -1,13 +1,5 @@
 import discord
-
-
-def encodeN(n, N, D="0123456789qwertyuiopasdfghjklzxc"):
-    return (encodeN(n//N, N)+D[n % N]).lstrip("0") if n > 0 else "0"
-
-
-def decode(n):
-    tmap = str.maketrans('qwertyuiopasdfghjklzxc', 'abcdefghijklmnopqrstuv')
-    return int(n.translate(tmap), 32)
+from utils.misc import red_color, green_color, encode32, decode32
 
 
 class MessageWrapper(discord.Message):
@@ -182,8 +174,7 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_rps(self):
-        return self.type_check('ROCK_PAPER_SCISSORS', [
-            EmbedWrapper.ENDED, EmbedWrapper.INFO])
+        return self.type_check('ROCK_PAPER_SCISSORS', EmbedWrapper.ENDED)
 
     @property
     def is_games(self):
@@ -226,13 +217,7 @@ class ChannelWrapper(object):
                 self.guild.me, 'send_messages')[0]):
             return
         if components is not None:
-            if not isinstance(components, list) and not isinstance(
-                    components, tuple):
-                components = [components]
-            if view is None:
-                view = discord.ui.View(timeout=None)
-            for i in components:
-                view.add_item(i)
+            view = build_view(components, view)
         msg = MessageWrapper(
             await self._wrapped_chnl.send(
                 content=text,
@@ -248,12 +233,30 @@ class ChannelWrapper(object):
                 await msg.react(i)
         return msg
 
+    async def warn(self, text, delete_after=None):
+        embed = discord.Embed(
+            color=red_color,
+            description=text)
+        d = delete_after
+        if str(self.type) == 'text' and delete_after is None:
+            d = 5
+        await self.send(embed=embed, delete_after=d)
+
+    async def notify(self, text, delete_after=None):
+        embed = discord.Embed(
+            color=green_color,
+            description=text)
+        d = delete_after
+        if str(self.type) == 'text' and delete_after is None:
+            d = 5
+        await self.send(embed=embed, delete_after=d)
+
     async def fetch_message(self, msg_id):
         return MessageWrapper(
             await self._wrapped_chnl.fetch_message(
                 int(msg_id)))
 
-    def permissions(self, member, perms):
+    def permissions(self, member, perms) -> (bool, str or None):
         if not isinstance(perms, list) and not isinstance(perms, tuple):
             perms = [perms]
         for i in perms:
@@ -269,6 +272,17 @@ class ChannelWrapper(object):
             if not self.permissions(self.guild.me, 'manage_channels')[0]:
                 return
         await self._wrapped_chnl.delete()
+
+
+def build_view(components, view=None):
+    if not isinstance(components, list) and not isinstance(
+            components, tuple):
+        components = [components]
+    if view is None:
+        view = discord.ui.View(timeout=None)
+    for i in components:
+        view.add_item(i)
+    return view
 
 
 class MemberWrapper(object):
@@ -391,7 +405,7 @@ class EmbedWrapper(discord.Embed):
                 if txt != '':
                     txt += '.'
                 if k != '-':
-                    txt += '{}{}'.format(k, encodeN(int(v), 32).lower())
+                    txt += '{}{}'.format(k, encode32(int(v), 32).lower())
                 else:
                     txt += '{}{}'.format(k, v)
         if not self.footer.text:
@@ -414,13 +428,13 @@ class EmbedWrapper(discord.Embed):
         text = text.split('.')
         for i in text:
             if len(i) > 1 and i[0] == 'u':
-                content['user_id'] = decode(i[1:])
+                content['user_id'] = decode32(i[1:])
             elif len(i) > 1 and i[0] == 'v':
-                content['user2_id'] = decode(i[1:])
+                content['user2_id'] = decode32(i[1:])
             elif len(i) > 1 and i[0] == 'c':
-                content['channel_id'] = decode(i[1:])
+                content['channel_id'] = decode32(i[1:])
             elif len(i) > 1 and i[0] == 'm':
-                content['message_id'] = decode(i[1:])
+                content['message_id'] = decode32(i[1:])
             elif len(i) > 1 and i[0] == '-':
                 content['extra'] = i[1:]
         return content

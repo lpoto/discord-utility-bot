@@ -144,9 +144,8 @@ class Bot:
         Check if a command is allowd in message's channel type.
         """
         if str(msg.channel.type) not in command.channel_types:
-            await msg.channel.send(
-                text='This command cannot be used in this channel type!',
-                delete_after=5)
+            await msg.channel.warn(
+                text='This command cannot be used in this channel type!')
             return False
         # check for required permissions
         # and roles
@@ -161,10 +160,9 @@ class Bot:
         p = msg.channel.permissions(
             msg.guild.me, command.bot_permissions)
         if not p[0]:
-            await msg.channel.send(
+            await msg.channel.warn(
                 text=('I need `{}` permission to use this command.'
-                      ).format(p[1]),
-                delete_after=5)
+                      ).format(p[1]))
             return False
         if msg.channel.permissions(msg.author, 'administrator')[0]:
             return True
@@ -177,21 +175,19 @@ class Bot:
             for i in required_roles:
                 if i in user_roles:
                     return True
-            await msg.channel.send(
+            await msg.channel.warn(
                 text=(
                     'This command can be used by the following roles:\n{}'
-                ).format(', '.join(required_roles)),
-                delete_after=5)
+                ).format(', '.join(required_roles)))
             return False
         # check if user has all the required permissions
         p = msg.channel.permissions(
             msg.author, command.user_permissions)
         if not p[0]:
-            await msg.channel.send(
+            await msg.channel.warn(
                 text=(
                     'You need `{}` permission to use this command.'
-                ).format(p[1]),
-                delete_after=5)
+                ).format(p[1]))
             return False
         return True
 

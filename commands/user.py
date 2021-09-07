@@ -8,6 +8,7 @@ class UserInfo(Help):
     def __init__(self):
         super().__init__(name='user')
         self.description = 'Get information about the user.'
+        self.synonyms = ['u', 'usr', 'member']
 
     async def execute_command(self, msg):
         args = msg.content.split()

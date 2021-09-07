@@ -8,12 +8,13 @@ class Poll(Help):
     def __init__(self):
         super().__init__(name='poll')
         self.description = 'Create a poll to vote on.'
+        self.synonyms = ['vote']
         self.token = '⦾'
 
     async def execute_command(self, msg):
         args = msg.content.split()
         if len(args) < 2:
-            await msg.channel.send(text='Add a question!', delete_after=5)
+            await msg.channel.warn(text='Add a question!')
             return
         question = msg.content.replace('{} '.format(args[0]), '', 1)
         m = await msg.channel.send(embed=self.starting_embed(question))
@@ -79,8 +80,9 @@ class Poll(Help):
         if not poll_msg.is_poll:
             return
         opts = msg.content.split(';')
-        opts.remove('')
         for o in opts:
+            if len(o) < 1:
+                continue
             await self.bot.queue.add_to_queue(
                 queue_id='pollmessage:{}'.format(poll_msg.id),
                 item=(poll_msg.channel.id, poll_msg.id, o.strip()),
@@ -107,9 +109,8 @@ class Poll(Help):
     async def add_response(self, poll_msg, option):
         if (len(poll_msg.embeds[0]) >= 6000 or
                 len(poll_msg.embeds[0].fields) >= len(emojis)):
-            await poll_msg.channel.send(
-                text='Maximum number of responses reached!',
-                delete_after=5)
+            await poll_msg.channel.warn(
+                text='Maximum number of responses reached!')
         marks = poll_msg.embeds[0].get_marks()
         if marks is not None and EmbedWrapper.FIXED in marks:
             return
@@ -136,10 +137,9 @@ class Poll(Help):
         poll_msg.embeds[0].mark(
             [EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
-        await poll_msg.channel.send(
+        await poll_msg.channel.notify(
             text='Poll has been fixed, no responses ' +
-            'can be added or removed.',
-            delete_after=5)
+            'can be added or removed.')
 
     async def change_question(self, poll_msg, option):
         marks = poll_msg.embeds[0].get_marks()
@@ -152,9 +152,8 @@ class Poll(Help):
         poll_msg.embeds[0].mark(
             [EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE])
         await poll_msg.edit(embed=poll_msg.embeds[0])
-        await poll_msg.channel.send(
-            text='Poll has been ended.',
-            delete_after=5)
+        await poll_msg.channel.notify(
+            text='Poll has been ended.')
 
     async def remove_response(self, poll_msg, option):
         marks = poll_msg.embeds[0].get_marks()
@@ -166,11 +165,14 @@ class Poll(Help):
                     option < 0):
                 raise ValueError
         except ValueError:
-            await poll_msg.channel.send(
+            if len(poll_msg.embeds[0].fields) == 0:
+                await poll_msg.channel.warn(
+                        'There are no responses in the poll!')
+                return
+            await poll_msg.channel.warn(
                 text=('Responses can only be removed by indexes ' +
                       'from `{}` to `{}`').format(
-                    0, len(poll_msg.embeds[0].fields) - 1),
-                delete_after=5)
+                    0, len(poll_msg.embeds[0].fields) - 1))
             return
         emoji = poll_msg.embeds[0].fields[option].value.split()[0]
         poll_msg.embeds[0].remove_field(option)

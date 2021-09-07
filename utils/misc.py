@@ -14,8 +14,13 @@ class Queue():
         self.bot = bot
         self.queues = {}
 
-    async def add_to_queue(self, queue_id, item, function=None):
-        self.queues.setdefault(queue_id, [False, deque([])])[1].append(item)
+    async def add_to_queue(self, queue_id, item, function=None, idx=None):
+        if idx is None:
+            self.queues.setdefault(
+                queue_id, [False, deque([])])[1].append(item)
+        else:
+            self.queues.setdefault(
+                queue_id, [False, deque([])])[1].insert(idx, item)
         # start clearing the queue immediately if function provided
         if function is not None:
             await self.clear_queue(queue_id, function, False)
@@ -34,6 +39,11 @@ class Queue():
             # and continue clearing
             try:
                 await function(item)
+            except ValueError as err:
+                if str(err) == 'could not find open space for item':
+                    raise ValueError('could not find open space for item')
+                else:
+                    self.bot.client.dispatch('error', err, *sys.exc_info())
             except Exception as err:
                 self.bot.client.dispatch('error', err, *sys.exc_info())
             finally:
@@ -45,11 +55,30 @@ class Queue():
                 del self.queues[queue_id]
 
 
+def get_component(req_attr, msg, attr='custom_id'):
+    for component in msg.components:
+        if not hasattr(component, 'children'):
+            continue
+        for b in component.children:
+            if hasattr(b, attr) and (
+                    getattr(b, attr) == req_attr):
+                return b
+
+
 def delete_button(row=None):
     return discord.ui.Button(
         style=discord.ButtonStyle.blurple,
         label='delete',
         row=row)
+
+
+def encode32(n, N, D="0123456789qwertyuiopasdfghjklzxc"):
+    return (encode32(n//N, N)+D[n % N]).lstrip("0") if n > 0 else "0"
+
+
+def decode32(n):
+    tmap = str.maketrans('qwertyuiopasdfghjklzxc', 'abcdefghijklmnopqrstuv')
+    return int(n.translate(tmap), 32)
 
 
 def random_color():
@@ -124,3 +153,6 @@ colors = [
     0xf75f1c,
     0x0099e1,
 ]
+green_color = 0x008e44
+red_color = 0xc30202
+blue_color = 0x0099e1
