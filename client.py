@@ -57,7 +57,7 @@ class MyClient(discord.Client):
             ex_type, ex, tb = sys.exc_info()
         x = traceback.format_list(traceback.extract_tb(tb))
         # 10008 -> unknown message, can ignore as mostly
-        # when deleting or reacting to already deleted message
+        # when deleting an already deleted message
         if 'error code: 10008' in str(ex):
             return
         result = ['{}({})\n{}'.format(str(ex_type.__name__), str(ex), 56*'-')]
@@ -152,25 +152,6 @@ class MyClient(discord.Client):
         # run commands that have on thread message function
         for cmd in self.bot.on_thread_message_commands:
             await cmd.on_thread_message(msg)
-
-    async def on_raw_reaction_add(self, payload):
-        if (payload.user_id == self.user.id or
-                (payload.emoji.name not in utils.emojis and
-                    payload.emoji.name not in utils.rps_emojis and
-                    payload.emoji.name not in utils.number_emojis and
-                    payload.emoji.name != utils.thumbs_up and
-                    payload.emoji.name != utils.cross and
-                    payload.emoji.name != utils.waste_basket)):
-            return
-        if payload.guild_id:
-            await self.bot.handle_raw_reactions(
-                payload, payload.event_type, False)
-        else:
-            await self.bot.handle_raw_reactions(
-                payload, payload.event_type, True)
-
-    async def on_raw_reaction_remove(self, payload):
-        self.dispatch('raw_reaction_add', payload)
 
     async def on_time(self, time, execute=True):
         # event triggered when a threading timer

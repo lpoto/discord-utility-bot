@@ -79,7 +79,7 @@ class Help:
         idx = list(self.bot.commands.keys()).index('help')
         embed_var = EmbedWrapper(discord.Embed(
             description='current prefix: [{}]'.format(prefix),
-            color=colors[idx % 8]),
+            color=colors[idx % 9]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         embed_var.description += (

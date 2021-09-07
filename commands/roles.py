@@ -1,7 +1,6 @@
 from commands.help import Help
 import discord
 from utils.misc import emojis, random_color
-from utils.wrappers import MessageWrapper
 
 
 class Roles(Help):
@@ -38,8 +37,19 @@ class Roles(Help):
         embed_var.set_footer(text=text)
         return embed_var
 
+    def is_roles(self, msg):
+        if (not len(msg.embeds) == 1 or
+                not str(msg.channel.type) == 'text' or not
+                msg.channel.guild.me.id == msg.author.id or
+                msg.embeds[0].title or not msg.embeds[0].footer
+                or not msg.embeds[0].footer.text or
+                msg.embeds[0].footer.text.split()[-1] != 'ND' or
+                msg.embeds[0].footer.text.split()[0] != 'ROLES'):
+            return False
+        return True
+
     async def on_reply(self, msg, roles_message):
-        if not roles_message.is_roles:
+        if not self.is_roles(roles_message):
             return
         for i in msg.content.split(';'):
             if len(i) == 0:
@@ -81,11 +91,14 @@ class Roles(Help):
                     return
                 components.append(discord.ui.Button(label=j.label))
         components.append(discord.ui.Button(label=rl.name))
-        msg.embeds[0].description = None
-        await msg.edit(embed=msg.embeds[0], components=components)
+        if msg.embeds[0].description:
+            msg.embeds[0].description = None
+            await msg.edit(embed=msg.embeds[0], components=components)
+        else:
+            await msg.edit(components=components)
 
     async def on_button_click(self, button, msg, user, webhook):
-        if not msg.is_roles:
+        if not self.is_roles(msg):
             return
         await self.bot.queue.add_to_queue(
             queue_id='rolesmessage:{}'.format(msg.id),
@@ -189,7 +202,7 @@ class Roles(Help):
             await msg.channel.warn(
                 text='There is no role `{}` in the message.'.format(name))
             return
-        await msg.edit(embed=msg.embeds[0], components=components)
+        await msg.edit(components=components)
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}'.format(

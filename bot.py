@@ -1,6 +1,6 @@
 import discord
 from utils.misc import Queue, colors
-from utils.wrappers import ChannelWrapper, EmbedWrapper
+from utils.wrappers import EmbedWrapper
 from database import DB
 import commands as cmds
 
@@ -26,8 +26,6 @@ class Bot:
         # lists containing commands with special functions
         # that need to be processes separately
         self.on_reply_commands = []
-        self.on_raw_reaction_commands = []
-        self.on_dm_reaction_commands = []
         self.on_dm_reply_commands = []
         self.on_time_commands = []
         self.on_thread_message_commands = []
@@ -64,8 +62,6 @@ class Bot:
         dictionary, when initializing a command object.
         """
         self.commands[command.name] = command
-        # if commands have on raw reaction or on message
-        # methods, add them to list
         if hasattr(command, 'on_reply'):
             self.on_reply_commands.append(command)
         if hasattr(command, 'on_thread_message'):
@@ -74,10 +70,6 @@ class Bot:
             self.on_button_click_commands.append(command)
         if hasattr(command, 'on_menu_select'):
             self.on_menu_select_commands.append(command)
-        if hasattr(command, 'on_raw_reaction'):
-            self.on_raw_reaction_commands.append(command)
-        if hasattr(command, 'on_dm_reaction'):
-            self.on_dm_reaction_commands.append(command)
         if hasattr(command, 'on_dm_reply'):
             self.on_dm_reply_commands.append(command)
         if hasattr(command, 'on_time'):
@@ -108,36 +100,6 @@ class Bot:
             # check if valid channel, permissions,...
             if await self.check_if_valid(cmd, msg) is True:
                 await cmd.execute_command(msg)
-
-    async def handle_raw_reactions(self, payload, reaction_type, dm):
-        """
-        Handle a payload recieved from a raw reaction event in
-        a discord server.
-        """
-        if dm:
-            # iterate through those commands that have
-            # on dm reaction function
-            for i in self.on_dm_reaction_commands:
-                await i.on_dm_reaction(payload)
-            return
-        guild = discord.utils.get(
-            self.client.guilds,
-            id=payload.guild_id)
-        if guild is None:
-            return
-        channel = ChannelWrapper(discord.utils.get(
-            guild.channels,
-            id=payload.channel_id))
-        if channel is None:
-            return
-        msg = await channel.fetch_message(payload.message_id)
-        # onnly listen for reactions on bot's messages
-        if msg.author.id != self.client.user.id:
-            return
-        # iterate through those commands that have
-        # on raw reaction functinon
-        for i in self.on_raw_reaction_commands:
-            await i.on_raw_reaction(msg, payload)
 
     async def check_if_valid(self, command, msg) -> bool:
         """
@@ -197,7 +159,7 @@ class Bot:
         embed_var = EmbedWrapper(discord.Embed(
             title='{}{}'.format(prefix, info[0]),
             description=info[1],
-            color=colors[idx]),
+            color=colors[idx % 9]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         synonyms = 'None'

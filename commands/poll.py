@@ -1,7 +1,9 @@
 from commands.help import Help
 import discord
-from utils.misc import emojis, random_color
-from utils.wrappers import EmbedWrapper
+from utils.misc import random_color, black_circle, white_circle
+
+# TODO see lists of users who voted with dropdown menu
+# TODO default time to clean up old pollchannel_id
 
 
 class Poll(Help):
@@ -9,7 +11,8 @@ class Poll(Help):
         super().__init__(name='poll')
         self.description = 'Create a poll to vote on.'
         self.synonyms = ['vote']
-        self.token = '⦾'
+        self.tokens = [black_circle, white_circle]
+        self.tokens_count = 2
 
     async def execute_command(self, msg):
         args = msg.content.split()
@@ -17,67 +20,32 @@ class Poll(Help):
             await msg.channel.warn(text='Add a question!')
             return
         question = msg.content.replace('{} '.format(args[0]), '', 1)
-        m = await msg.channel.send(embed=self.starting_embed(question))
-        m.is_poll
+        embed = discord.Embed(
+            description='POLL - {}{}ND'.format(
+                question, (60 - len(question)) * '\u2000'),
+            color=random_color())
+        embed.set_footer(text='* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
+            'Reply to this message to add a response.',
+            'Reply "remove <idx>" to remove a response by index.',
+            'Reply "question <new_question>" to change the question.',
+            'Reply "fix" to prevent further adding or removing responses.',
+            'Reply "end" to end the poll.',
+            ('Multiple responses can be added at once, separated with ";" ' +
+             '\n(example: "response1; remove 0; response2")')))
+        await msg.channel.send(embed=embed)
 
-    def response_format(self, emoji, count):
-        return '{}\u2000({}):\u2000\u2000{}'.format(
-            emoji, count, str(count * self.token))
-
-    def response_to_embed(
-            self, embed, response, emoji=None, count=0, index=None):
-        if emoji is None:
-            emoji = emojis[len(embed.fields)]
-        if index is None:
-            embed.add_field(
-                name='\u2000\u2000{}'.format(response),
-                value=self.response_format(emoji, count),
-                inline=False)
-        else:
-            embed.set_field_at(
-                index=index,
-                name='\u2000\u2000{}'.format(response),
-                value=self.response_format(emoji, count),
-                inline=False)
-        return embed
-
-    async def on_raw_reaction(self, poll_msg, payload):
-        if not poll_msg.is_poll:
-            return
-        emoji = payload.emoji.name
-        for idx, field in enumerate(poll_msg.embeds[0].fields):
-            if field.value.startswith(emoji):
-                await self.bot.queue.add_to_queue(
-                    queue_id='pollreaction:{}'.format(poll_msg.id),
-                    item=(poll_msg.channel.id, poll_msg.id, emoji, idx),
-                    function=self.edit_responses)
-
-    async def edit_responses(self, item):
-        channel = self.bot.client.get_channel(int(item[0]))
-        if channel is None:
-            return
-        poll_msg = await channel.fetch_message(int(item[1]))
-        if poll_msg is None:
-            return
-        emoji = item[2]
-        idx = item[3]
-        response = poll_msg.embeds[0].fields[idx].name
-        reacts = discord.utils.get(poll_msg.reactions, emoji=emoji)
-        count = 0
-        if reacts:
-            count = reacts.count
-            if reacts.me:
-                count -= 1
-        embed = self.response_to_embed(
-            embed=poll_msg.embeds[0],
-            response=response,
-            emoji=emoji,
-            count=count,
-            index=idx)
-        await poll_msg.edit(embed=embed)
+    def is_poll(self, msg):
+        if (str(msg.channel.type) != 'text' or
+                msg.author.id != msg.guild.me.id or
+                len(msg.embeds) != 1 or
+                not msg.embeds[0].description or
+                msg.embeds[0].description.split()[-1] not in ['ND', 'FND'] or
+                msg.embeds[0].description.split(' - ')[0] != 'POLL'):
+            return False
+        return True
 
     async def on_reply(self, msg, poll_msg):
-        if not poll_msg.is_poll:
+        if not self.is_poll(poll_msg):
             return
         opts = msg.content.split(';')
         for o in opts:
@@ -85,15 +53,13 @@ class Poll(Help):
                 continue
             await self.bot.queue.add_to_queue(
                 queue_id='pollmessage:{}'.format(poll_msg.id),
-                item=(poll_msg.channel.id, poll_msg.id, o.strip()),
+                item=(poll_msg.channel, poll_msg.id, o.strip()),
                 function=self.add_poll_info)
 
     async def add_poll_info(self, item):
-        channel = self.bot.client.get_channel(int(item[0]))
-        if channel is None:
-            return
+        channel = item[0]
         poll_msg = await channel.fetch_message(int(item[1]))
-        if poll_msg is None:
+        if poll_msg is None or not self.is_poll(poll_msg):
             return
         funcs = {'remove': self.remove_response,
                  'fix': self.fix_poll,
@@ -104,102 +70,203 @@ class Poll(Help):
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
             return await funcs[args[0]](poll_msg, v)
-        return await self.add_response(poll_msg, option)
+        if poll_msg.embeds[0].description[-3:] in ['END', 'FND']:
+            return
+        await self.add_response(poll_msg, option)
+
+    def get_response_name(self, text):
+        return text.split('\u3000')[0]
 
     async def add_response(self, poll_msg, option):
-        if (len(poll_msg.embeds[0]) >= 6000 or
-                len(poll_msg.embeds[0].fields) >= len(emojis)):
+        components = []
+        option = '\u2000'.join(option.split())
+        if len(option) > 30:
             await poll_msg.channel.warn(
-                text='Maximum number of responses reached!')
-        marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and EmbedWrapper.FIXED in marks:
+                text='Cannot add responses longer than 20 characters.')
             return
-        info = poll_msg.embeds[0].get_id()
-        emoji = emojis[len(poll_msg.embeds[0].fields)]
-        if info['extra']:
-            ftr = info['extra'].strip().split()
-            emoji = emojis[int(ftr[0])]
-            if len(ftr) > 1:
-                poll_msg.embeds[0].set_id(extra=' '.join(ftr[1:]))
-            else:
-                poll_msg.embeds[0].set_id()
-        embed = self.response_to_embed(
-            embed=poll_msg.embeds[0],
-            response=option,
-            emoji=emoji)
-        embed.description = None
-        await poll_msg.edit(embed=embed, reactions=emoji)
+        for i in poll_msg.components:
+            for i2 in i.children:
+                lbl = self.get_response_name(i2.label)
+                if option == lbl.split('\u2000(')[0]:
+                    return
+                components.append(discord.ui.Button(label=i2.label))
+        t = 42 + len(option)//2
+        components.append(discord.ui.Button(
+            label='{}\u3000{}'.format(
+                option, (t - len(option)) * '\u3000')))
+        if poll_msg.embeds[0].footer.text:
+            poll_msg.embeds[0].set_footer(text=discord.Embed.Empty)
+            await poll_msg.edit(
+                embed=poll_msg.embeds[0], components=components)
+            return
+        await poll_msg.edit(components=components)
 
     async def fix_poll(self, poll_msg, option):
-        marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and EmbedWrapper.FIXED in marks:
+        if poll_msg.embeds[0].description.split()[-1] != 'ND':
             return
-        poll_msg.embeds[0].mark(
-            [EmbedWrapper.FIXED, EmbedWrapper.NOT_DELETABLE])
+        poll_msg.embeds[0].description = poll_msg.embeds[
+            0].description[:-3] + 'FND'
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.notify(
             text='Poll has been fixed, no responses ' +
             'can be added or removed.')
 
     async def change_question(self, poll_msg, option):
-        marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and EmbedWrapper.FIXED in marks:
+        marks = poll_msg.embeds[0].description.split()[-1]
+        if marks in ('FND', 'END'):
             return
-        poll_msg.embeds[0].title = 'Q:\u2000' + option
+        poll_msg.embeds[0].description = 'Poll - {}{}{}'.format(
+            option, (62 - len(marks) - len(option)) * '\u2000', marks)
         await poll_msg.edit(embed=poll_msg.embeds[0])
 
     async def end_poll(self, poll_msg, option):
-        poll_msg.embeds[0].mark(
-            [EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE])
-        await poll_msg.edit(embed=poll_msg.embeds[0])
+        components = []
+        equals = []
+        max_len = 0
+        for i in poll_msg.components:
+            for i2 in i.children:
+                components.append(discord.ui.Button(
+                    label=i2.label))
+                x = len(i2.label.split('\u3000')[1].strip())
+                if x == max_len and max_len > 0:
+                    equals.append(len(components) - 1)
+                elif x > max_len:
+                    equals.clear()
+                    equals.append(len(components) - 1)
+                    max_len = x
+        if len(equals) == 1:
+            components[equals[0]].style = discord.ButtonStyle.blurple
+        elif len(equals) > 1:
+            for i in equals:
+                components[i].style = discord.ButtonStyle.blurple
+        poll_msg.embeds[0].description = poll_msg.embeds[
+            0].description[:-3] + 'END'
+        await poll_msg.edit(embed=poll_msg.embeds[0], components=components)
+        await self.bot.database.use_database(
+            self.delete_poll_from_db, poll_msg)
         await poll_msg.channel.notify(
             text='Poll has been ended.')
 
     async def remove_response(self, poll_msg, option):
-        marks = poll_msg.embeds[0].get_marks()
-        if marks is not None and EmbedWrapper.FIXED in marks:
+        if poll_msg.embeds[0].description[-3:] in ['FND', 'END']:
             return
+        c = sum(len(i.children) for i in poll_msg.components)
         try:
             option = int(option)
-            if (option >= len(poll_msg.embeds[0].fields) or
+            if (option >= c or
                     option < 0):
                 raise ValueError
         except ValueError:
-            if len(poll_msg.embeds[0].fields) == 0:
+            if len(poll_msg.components) == 0:
                 await poll_msg.channel.warn(
-                        'There are no responses in the poll!')
+                    'There are no responses in the poll!')
                 return
             await poll_msg.channel.warn(
                 text=('Responses can only be removed by indexes ' +
                       'from `{}` to `{}`').format(
-                    0, len(poll_msg.embeds[0].fields) - 1))
+                    0, len(c) - 1))
             return
-        emoji = poll_msg.embeds[0].fields[option].value.split()[0]
-        poll_msg.embeds[0].remove_field(option)
-        option = emojis.index(emoji)
-        info = poll_msg.embeds[0].get_id()['extra']
-        if not info:
-            poll_msg.embeds[0].set_id(extra=option)
-        else:
-            poll_msg.embeds[0].set_id(
-                extra=info + ' ' + str(option))
-        m = await poll_msg.edit(embed=poll_msg.embeds[0])
-        await m.remove_reaction(emoji)
+        components = []
+        count = 0
+        name = None
+        for i in poll_msg.components:
+            for i2 in i.children:
+                if count != option:
+                    components.append(discord.ui.Button(
+                        label=i2.label))
+                else:
+                    name = self.get_response_name(i2.label)
+                count += 1
+        await poll_msg.edit(
+            components=components)
+        if name is not None:
+            await poll_msg.channel.notify(
+                text='Response `{}` has been removed.'.format(name))
 
-    def starting_embed(self, question):
-        poll_embed = EmbedWrapper(discord.Embed(
-            title='Q:\u2000' + question,
-            color=random_color(),
-            description='* {}\n* {}\n* {}\n* {}\n* {}\n{}'.format(
-                'Reply to this message to add a response.',
-                'Reply "remove <idx>" to remove response with index <idx>.',
-                'Reply "fix" to disable adding or removing responses.',
-                'Reply "end" to finish the poll.',
-                'Multiple options can be added at once, separated with ";".\n',
-                'Example: "response1; response2; remove 0; response3;fix"')),
-            embed_type='POLL',
-            marks=EmbedWrapper.NOT_DELETABLE)
-        return poll_embed
+    async def on_button_click(self, button, msg, user, webhook):
+        if not self.is_poll(msg):
+            return
+        await self.bot.queue.add_to_queue(
+            queue_id='pollmessage:{}'.format(msg.id),
+            item=(msg.channel, msg.id, user, button),
+            function=self.handle_button_click)
+
+    async def handle_button_click(self, item):
+        channel = item[0]
+        msg = await channel.fetch_message(int(item[1]))
+        if msg is None:
+            return
+        user = item[2]
+        button = item[3]
+        x = button.label.split('\u3000')
+        add = await self.bot.database.use_database(
+            self.add_or_remove, x[0], msg, user.id)
+        components = []
+        for idx1, parent in enumerate(msg.components):
+            for idx2, v in enumerate(parent.children):
+                if v.label != button.label:
+                    components.append(discord.ui.Button(
+                        label=v.label))
+                    continue
+                y = x[1].strip()
+                if add:
+                    if len(y) > 0:
+                        y += y[-1]
+                    else:
+                        y += self.tokens[(idx1 + idx2) % self.tokens_count]
+                elif len(y) > 0:
+                    y = y[:-1]
+                x = x[0]
+                t = 42 + len(x) // 2
+                ln = len(x + y)
+                if ln >= t:
+                    t = ln + 1
+                components.append(
+                    discord.ui.Button(
+                        label='{}\u3000{}{}'.format(
+                            x, y,
+                            (t - len(x + y)) * '\u3000')))
+        if not isinstance(x, str):
+            return
+        await msg.edit(components=components)
+        if not add:
+            await self.bot.database.use_database(
+                self.delete_from_db, x, msg, user.id)
+        else:
+            await self.bot.database.use_database(
+                self.insert_to_db, x, msg, user.id)
+
+    async def add_or_remove(self, cursor, rsp, msg, user_id):
+        cursor.execute((
+            "SELECT * FROM poll WHERE guild_id = '{}' AND " +
+            "channel_id = '{}' AND " +
+            "message_id = '{}' AND user_id = '{}' AND response = '{}'"
+        ).format(
+            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return True
+        return False
+
+    async def delete_from_db(self, cursor, rsp, msg, user_id):
+        cursor.execute((
+            "DELETE FROM poll WHERE guild_id = '{}' AND " +
+            "channel_id = '{}' AND " +
+            "message_id = '{}' AND user_id = '{}' AND response = '{}'"
+        ).format(
+            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+
+    async def insert_to_db(self, cursor, rsp, msg, user_id):
+        cursor.execute((
+            "INSERT INTO poll (guild_id, channel_id, message_id, user_id, " +
+            "response) VALUES ('{}', '{}', '{}', '{}', '{}')").format(
+                msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+
+    async def delete_poll_from_db(self, cursor, msg):
+        cursor.execute((
+            "DELETE FROM poll WHERE guild_id = '{}' AND " +
+            "channel_id = '{}' AND message_id = '{}'").format(
+            msg.guild.id, msg.channel.id, msg.id))
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

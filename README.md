@@ -26,7 +26,6 @@ For more information type `-help` in discord channel, after adding the bot.
 	- Read Messages
 	- Send Messages
 	- Read Message History
-	- Add Reactions
 
 * optional:
 	- Manage Roles (adding and removing roles with reactions)

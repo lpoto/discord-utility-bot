@@ -36,32 +36,38 @@ class DB:
     def required_tables(self) -> dict:
         """All the required tables used by the bot."""
         return {
-            'prefix': [
+            'prefix': {
                 'guild_id VARCHAR(18) NOT NULL',
-                'prefix VARCHAR(5) NOT NULL'],
-            'commands': [
+                'prefix VARCHAR(5) NOT NULL'},
+            'commands': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'command VARCHAR(30) NOT NULL',
-                'roles VARCHAR(100) NOT NULL'],
-            'welcome': [
+                'roles VARCHAR(100) NOT NULL'},
+            'welcome': {
                 'guild_id VARCHAR(18) NOT NULL',
-                'welcome VARCHAR(50) NOT NULL'],
-            'rock_paper_scissors': [
-                'guild_id VARCHAR(18) NOT NULL',
-                'user_id VARCHAR(18) NOT NULL',
-                'wins INT UNSIGNED'],
-            'connect_four': [
+                'welcome VARCHAR(50) NOT NULL'},
+            'rock_paper_scissors': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'wins INT UNSIGNED'],
-            'connect_four_records': [
-                'moves VARCHAR(43) NOT NULL'],
-            'events': [
+                'wins INT UNSIGNED'},
+            'connect_four': {
+                'guild_id VARCHAR(18) NOT NULL',
+                'user_id VARCHAR(18) NOT NULL',
+                'wins INT UNSIGNED'},
+            'connect_four_records': {
+                'moves VARCHAR(43) NOT NULL'},
+            'events': {
                 'datetime VARCHAR(11) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
                 'event VARCHAR(100) NOT NULL',
                 'text VARCHAR(300) NOT NULL',
-                'tags VARCHAR(300) NOT NULL']
+                'tags VARCHAR(300) NOT NULL'},
+            'poll': {
+                'guild_id VARCHAR(18) NOT NULL',
+                'channel_id VARCHAR(18) NOT NULL',
+                'message_id VARCHAR(18) NOT NULL',
+                'user_id VARCHAR(18) NOT NULL',
+                'response VARCHAR(30) NOT NULL'}
         }
 
     async def connect_database(self, info=None):
@@ -142,13 +148,13 @@ class DB:
         those that do not."""
         tables = self.required_tables
         tbs = []
-        for i in tables.keys():
-            cursor.execute("SHOW TABLES LIKE '{}'".format(i))
+        for k, v in tables.items():
+            cursor.execute("SHOW TABLES LIKE '{}'".format(k))
             fetched = cursor.fetchone()
             if fetched is None:
                 cursor.execute("CREATE TABLE {} ({})".format(
-                    i, ', '.join(tables[i])))
-                txt2 = '   - {}'.format(i)
+                    k, ', '.join(v)))
+                txt2 = '   - {}'.format(k)
                 tbs.append(txt2)
         return tbs
 

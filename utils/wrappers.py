@@ -5,8 +5,8 @@ from utils.misc import red_color, green_color, encode32, decode32
 class MessageWrapper(discord.Message):
     """
     Wrapper for discord.Message that avoids permission errors,
-    adds additional functionality to editing, reacting, deleting and
-    removing reactions from messages and adds properties that check
+    adds additional functionality to editing and deleting 
+    messages and adds properties that check
     for specific message types based on EmbedWrapper embed types.
     """
 
@@ -29,50 +29,48 @@ class MessageWrapper(discord.Message):
 
     async def edit(
             self,
-            text=None,
-            embed=None,
+            text=False,
+            embed=False,
             delete_after=None,
-            reactions=None,
             view=None,
             components=None
     ):
         if view is not None or components is not None:
-            if view is None:
-                view = discord.ui.View(timeout=None)
-            if components is not None:
-                if (not isinstance(components, list) and
-                        not isinstance(components, tuple)):
-                    components = [components]
-                for i in components:
-                    view.add_item(i)
-            await self._wrapped_msg.edit(
-                content=text, embed=embed, delete_after=delete_after,
-                view=view)
+            view = build_view(components, view)
+            if text is False and embed is not False:
+                await self._wrapped_msg.edit(
+                    embed=embed, delete_after=delete_after,
+                    view=view)
+            elif embed is False and text is not False:
+                await self._wrapped_msg.edit(
+                    content=text, delete_after=delete_after,
+                    view=view)
+            elif embed is False and text is False:
+                await self._wrapped_msg.edit(
+                    delete_after=delete_after,
+                    view=view)
+            else:
+                await self._wrapped_msg.edit(
+                    content=text, embed=embed, delete_after=delete_after,
+                    view=view)
         else:
-            await self._wrapped_msg.edit(
-                content=text, embed=embed, delete_after=delete_after)
+            if text is False and embed is not False:
+                await self._wrapped_msg.edit(
+                    embed=embed, delete_after=delete_after)
+            elif embed is False and text is not False:
+                await self._wrapped_msg.edit(
+                    content=text, delete_after=delete_after)
+            elif embed is False and text is False:
+                await self._wrapped_msg.edit(
+                    delete_after=delete_after)
+            else:
+                await self._wrapped_msg.edit(
+                    content=text, embed=embed, delete_after=delete_after)
         for i in range(len(self._wrapped_msg.embeds)):
             if not isinstance(self._wrapped_msg.embeds[i], EmbedWrapper):
                 self._wrapped_msg.embeds[i] = EmbedWrapper(
                     self._wrapped_msg.embeds[i])
-        if reactions is not None:
-            if not isinstance(reactions, list) and not isinstance(
-                    reactions, tuple):
-                reactions = [reactions]
-            for i in reactions:
-                await self.react(emoji=i)
         return self
-
-    async def react(
-            self,
-            emoji):
-        if (str(self.channel.type) == 'text' and
-            not self.channel.permissions(
-                self.guild.me,
-                'add_reactions')):
-            return
-        await self._wrapped_msg.add_reaction(emoji)
-        return True
 
     async def delete(self, delay=None):
         if (self.author.id != self.guild.me.id and
@@ -84,56 +82,27 @@ class MessageWrapper(discord.Message):
         del self
         return True
 
-    async def remove_reaction(self, emoji, member=None):
-        if member is None:
-            if (self.channel.permissions(
-                    self.guild.me,
-                    'manage_messages')):
-                await self.clear_reaction(emoji)
-            else:
-                await self._wrapped_msg.remove_reaction(emoji, self.guild.me)
-            return
-        if (self.guild.me.id != member.id and
-                not self.channel.permissions(
-                    self.guild.me, 'manage_messages')):
-            return
-        await self._wrapped_msg.remove_reaction(emoji, member)
-
     # check the type of message based on its embed
-    def type_check(self, name, bad_marks=[], good_marks=[]):
-        if not isinstance(bad_marks, list) and not isinstance(
-                bad_marks, tuple):
-            bad_marks = [bad_marks]
-        if not isinstance(good_marks, list) and not isinstance(
-                good_marks, tuple):
-            good_marks = [good_marks]
+    def type_check(self, name, bad_marks=None, good_marks=None):
         if len(self.embeds) != 1:
             return False
         if not isinstance(self.embeds[0], EmbedWrapper):
             self.embeds[0] = EmbedWrapper(self.embeds[0])
         mks = self.embeds[0].get_marks()
-        if any(i in mks for i in bad_marks):
+        if name is not None and self.embeds[0].embed_type != name:
             return False
-        if any(i not in mks for i in good_marks):
-            return False
-        if name is None or self.embeds[0].embed_type == name:
-            return True
-        return False
-
-    @property
-    def is_poll(self):
-        return self.type_check('POLL', EmbedWrapper.ENDED)
-
-    @property
-    def is_roles(self):
-        if (not len(self.embeds) == 1 or
-                not str(self.channel.type) == 'text' or not
-                self.channel.guild.me.id == self.author.id or
-                self.embeds[0].title or not self.embeds[0].footer
-                or not self.embeds[0].footer.text or
-                self.embeds[0].footer.text.split()[-1] != 'ND' or
-                self.embeds[0].footer.text.split()[0] != 'ROLES'):
-            return False
+        if bad_marks is not None:
+            if not isinstance(bad_marks, list) and not isinstance(
+                    bad_marks, tuple):
+                bad_marks = [bad_marks]
+            if any(i in mks for i in bad_marks):
+                return False
+        if good_marks is not None:
+            if not isinstance(good_marks, list) and not isinstance(
+                    good_marks, tuple):
+                good_marks = [good_marks]
+            if any(i not in mks for i in good_marks):
+                return False
         return True
 
     @property
@@ -182,7 +151,8 @@ class MessageWrapper(discord.Message):
 
     @property
     def is_deletable(self):
-        if self.pinned or self.is_roles:
+        if (self.pinned or len(self.embeds) != 1 or
+                self.embeds[0].description[-2:] == 'ND'):
             return False
         if len(self.embeds) != 1:
             return True
@@ -192,7 +162,7 @@ class MessageWrapper(discord.Message):
 class ChannelWrapper(object):
     """
     Wrapper for discord.Channel that avoids permission errors
-    and allows adding reactions when sending a message.
+    and builds a view from list of components.
     """
 
     def __init__(self, chnl):
@@ -208,7 +178,6 @@ class ChannelWrapper(object):
             text=None,
             embed=None,
             delete_after=None,
-            reactions=None,
             file=None,
             view=None,
             components=None):
@@ -225,12 +194,6 @@ class ChannelWrapper(object):
                 delete_after=delete_after,
                 file=file,
                 view=view))
-        if reactions is not None:
-            if not isinstance(reactions, list) and not isinstance(
-                    reactions, tuple):
-                reactions = [reactions]
-            for i in reactions:
-                await msg.react(i)
         return msg
 
     async def warn(self, text, delete_after=None):
@@ -444,8 +407,8 @@ class EmbedWrapper(discord.Embed):
         mi = {
             cls.INFO: 'Informational',
             cls.ENDED: 'Ended, bot does not respond to the message.',
-            cls.FIXED: 'Fixed, only listening for reactions.',
-            cls.NOT_DELETABLE: ('Cannot delete with waste basket ' +
+            cls.FIXED: 'Fixed, only listening for interactions.',
+            cls.NOT_DELETABLE: ('Cannot delete with a delete button ' +
                                 'or clear command.')}
         if mark in mi:
             return mi[mark]

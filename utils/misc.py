@@ -6,7 +6,7 @@ import random
 
 class Queue():
     """
-    Create queues for messages constantly edited by reactions or replies
+    Create queues for messages constantly edited by buttons or replies
     to avoid duplicating or missing any of the edits.
     """
 
@@ -28,8 +28,8 @@ class Queue():
     async def clear_queue(self, queue_id, function, ignore_running):
         if queue_id not in self.queues:
             return
-        # clear messages or reaction in queue to avoid
-        # multiple instances of same command or reactions
+        # clear messages or interactions in queue to avoid
+        # multiple instances of same command or interactions
         if (queue_id in self.queues and
             (not self.queues[queue_id][0] or
              ignore_running) and len(self.queues[queue_id][1]) > 0):
@@ -87,22 +87,20 @@ def random_color():
 
 
 # emojis rock, paper, scissors
-rps_emojis = [
+rps_emojis = (
     u"\U0001FAA8",
     u"\U0001F5DE\U0000FE0F",
-    u"\U00002702\U0000FE0F"]
+    u"\U00002702\U0000FE0F")
 # thumbs up emoji
 thumbs_up = u"\U0001F44D"
-number_emojis = [u"\U00000031\U0000FE0F\U000020E3",
+number_emojis = (u"\U00000031\U0000FE0F\U000020E3",
                  u"\U00000032\U0000FE0F\U000020E3",
                  u"\U00000033\U0000FE0F\U000020E3",
                  u"\U00000034\U0000FE0F\U000020E3",
                  u"\U00000035\U0000FE0F\U000020E3",
                  u"\U00000036\U0000FE0F\U000020E3",
-                 u"\U00000037\U0000FE0F\U000020E3"]
-# emojis for polls, roles,...
-# 20 reactions is maximum (error otherwise)
-emojis = [
+                 u"\U00000037\U0000FE0F\U000020E3")
+emojis = (
     u"\U000026AA",
     u"\U0001F534",
     u"\U0001F535",
@@ -112,26 +110,11 @@ emojis = [
     u"\U0001F7E3",
     u"\U0001F7E4",
     u"\U000026AB",
-    u"\U00002B1C",
-    u"\U0001F7E5",
-    u"\U0001F7E6",
-    u"\U0001F7E7",
-    u"\U0001F7E8",
-    u"\U0001F7E9",
-    u"\U0001F7EA",
-    u"\U0001F7EB",
-    u"\U00002B1B",
-    u"\U0001F536",
-    u"\U0001F537"]
-
+)
 black_circle = u"\U000026AB"
 white_circle = u"\U000026AA"
-black_square = u"\U000026AB"
-white_square = u"\U00002B1C"
-
-cross = u"\U0000274C"
 # colors that match emoji colors by indexes
-colors = [
+colors = (
     0xffffff,
     0xc30202,
     0x0099e1,
@@ -141,18 +124,6 @@ colors = [
     0xa652bb,
     0xa5714e,
     0,
-    0xffffff,
-    0xc30202,
-    0x0099e1,
-    0xf75f1c,
-    0xf8c300,
-    0x008e44,
-    0xa652bb,
-    0xa5714e,
-    0,
-    0xf75f1c,
-    0x0099e1,
-]
+)
 green_color = 0x008e44
 red_color = 0xc30202
-blue_color = 0x0099e1
