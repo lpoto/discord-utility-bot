@@ -40,8 +40,10 @@ class Queue():
             try:
                 await function(item)
             except ValueError as err:
-                if str(err) == 'could not find open space for item':
-                    raise ValueError('could not find open space for item')
+                if str(err) in [
+                    'could not find open space for item',
+                        'item would not fit at row 4 (6 > 5 width)']:
+                    raise ValueError(err)
                 else:
                     self.bot.client.dispatch('error', err, *sys.exc_info())
             except Exception as err:

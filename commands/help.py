@@ -57,22 +57,22 @@ class Help:
             delete_button()]
         await msg.channel.send(embed=embed_var, components=components)
 
-    async def on_menu_select(self, interaction, interaction_msg):
-        if not interaction_msg.is_help or self.name != 'help':
+    async def on_menu_select(self, interaction, msg, user, webhook):
+        if not msg.is_help or self.name != 'help':
             return
         name = interaction.data['values'][0]
         if name == 'help':
-            await interaction_msg.edit(
+            await msg.edit(
                 embed=await self.help_embed(
-                    interaction_msg, self.bot.commands))
+                    msg, self.bot.commands))
             return
         cmd = self.bot.commands[name]
-        prefix = await self.bot.database.get_prefix(interaction_msg)
+        prefix = await self.bot.database.get_prefix(msg)
         new_embed = await self.bot.create_additional_help(
-            cmd.command_info(prefix), interaction_msg, prefix)
+            cmd.command_info(prefix), msg, prefix)
         new_embed.description += (
             '\n\nSelect help in the dropdown to return to help menu.')
-        await interaction_msg.edit(embed=new_embed)
+        await msg.edit(embed=new_embed)
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)

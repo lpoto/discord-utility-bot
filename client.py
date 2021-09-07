@@ -221,9 +221,14 @@ class MyClient(discord.Client):
         # in a dropdown menu
         if msg.is_ended:
             return
+        webhook = interaction.followup
         # call those commands that have on menu select functions
         for cmd in self.bot.on_menu_select_commands:
             if (cmd.interactions_require_database and
                     not self.bot.database.connected):
                 continue
-            await cmd.on_menu_select(interaction, msg)
+            await cmd.on_menu_select(
+                interaction,
+                msg,
+                wrappers.MemberWrapper(interaction.user),
+                webhook)
