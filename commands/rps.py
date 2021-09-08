@@ -1,113 +1,119 @@
 import discord
-from utils.misc import rps_emojis, random_color, delete_button, get_component
-from utils.wrappers import EmbedWrapper
+from utils.misc import rps_emojis, random_color, delete_button
+from utils.wrappers import EmbedWrapper, build_view
 from commands.help import Help
 
 
 class Rps(Help):
     def __init__(self):
         super().__init__(name='rock-paper-scissors')
-        self.synonyms = ['rps']
         self.description = 'A game of rock-paper-scissors between two users.'
         self.embed_type = 'ROCK_PAPER_SCISSORS'
+        self.emojis = {rps_emojis[i]: v for i, v in enumerate(['r', 'p', 's'])}
         self.game = True
 
-    async def execute_command(self, msg, user=None):
-        # show leaderboard
-        if user is None:
-            args = msg.content.split()
-            if len(args) > 1 and (args[1] == 'leaderboard' or args[1] == 'lb'):
-                await self.bot.database.use_database(
-                    self.show_leaderboard, msg)
-                return
-            user = msg.author
-        # send dm to the user who started the game and
-        # wait for him to react with one of the options
-        dm = await user.create_dm()
-        dm_embed = EmbedWrapper(discord.Embed(
-            description='Select one of the three options to start the game.',
+    async def execute_game(self, msg, user, webhook):
+        components = [discord.ui.Button(emoji=i) for i in rps_emojis]
+        view = build_view(components)
+        if view is None:
+            return
+        embed = EmbedWrapper(discord.Embed(
             color=random_color()),
             embed_type=self.embed_type,
-            marks=EmbedWrapper.NOT_DELETABLE)
-        dm_embed.set_id(channel_id=msg.channel.id)
-        components = [discord.ui.Button(emoji=i) for i in rps_emojis]
-        await dm.send(
-            embed=dm_embed,
-            components=components)
+            marks=EmbedWrapper.INFO,
+            info='Choose one of the options to start the game.')
+        await webhook.send(embed=embed, view=view, ephemeral=True)
+
+    async def execute_command(self, msg):
+        await self.bot.commands['games'].execute_command(msg)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_rps:
             return
-        # check if rps dm message, then get channel id from
-        # which the rps game was started
-        # then send new embed to that channel and wait for another
-        # opponent to join
-        # edit chosen emoji to embed's title
-        if str(msg.channel.type) == 'text':
-            await self.handle_button_click(
-                button, msg, user)
+        if button.emoji.name not in rps_emojis:
             return
-        await self.handle_dm_button_click(
-            button, msg, user)
+        if ('ephemeral', True) in msg.flags:
+            await self.ephemeral_button_click(button, msg, user, webhook)
+            return
+        game = await self.bot.database.use_database(
+            self.choice_from_database, msg)
+        choice1 = None
+        user1 = None
+        for i in game:
+            if len(i) == 1:
+                choice1 = list(self.emojis.keys())[
+                    list(self.emojis.values()).index(i)]
+                continue
+            if user1 is not None:
+                continue
+            try:
+                user1 = msg.guild.get_member(int(i))
+                if user1 is None:
+                    raise ValueError
+            except ValueError:
+                continue
+        if choice1 is None or user1 is None:
+            return
+        if user1.id == user.id:
+            return
+        await self.game_results(
+            user1, user, choice1, button.emoji.name,
+            msg)
+        await self.bot.database.use_database(
+            self.delete_from_database, msg)
 
-    async def handle_dm_button_click(self, button, interaction_msg, user):
-        embed = interaction_msg.embeds[0]
-        embed.mark(embed.ENDED)
+    async def ephemeral_button_click(self, button, msg, user, webhook):
+        msg.embeds[0].mark(EmbedWrapper.ENDED)
         components = []
-        embed.description = 'The game has been sent to the channel!'
-        for i in rps_emojis:
-            if str(i) == button.emoji.name:
-                components.append(discord.ui.Button(
-                    style=discord.ButtonStyle.green, emoji=i))
-            else:
-                components.append(discord.ui.Button(emoji=i))
-        await interaction_msg.edit(
-            embed=embed,
-            components=components)
-        # get channel id, message id from embed's footer
-        info = embed.get_id()
-        channel = self.bot.client.get_channel(info['channel_id'])
-        # create game embed and send it to channel where game was started
-        user = channel.guild.get_member(user.id)
+        idx = None
+        for i, v in enumerate(rps_emojis):
+            if v == button.emoji.name:
+                idx = i
+            components.append(discord.ui.Button(emoji=v))
+        components[idx].style = discord.ButtonStyle.green
+        # edit the ephemeral message through webhook
+        msg.embeds[0].set_info(None)
+        await webhook.edit_message(
+            message_id=msg.id,
+            embed=msg.embeds[0],
+            view=build_view(components))
+        # send a non ephemeral message to the channel so another user can join
         new_embed = EmbedWrapper(discord.Embed(
             title='{} is waiting for an opponent'.format(
                 user.name if not user.nick else user.nick),
             color=random_color()),
             embed_type=self.embed_type,
+            info='Select one of the options to join the game.',
             marks=EmbedWrapper.NOT_DELETABLE)
         # if user has nickname set up use nickname, else use username
-        new_embed.description = (
-            'Select one of the three options to join the game!')
-        new_embed.set_id(message_id=interaction_msg.id, user_id=user.id)
-        await channel.send(
+        components[idx].style = discord.ButtonStyle.gray
+        new_msg = await msg.channel.send(
             embed=new_embed,
-            components=[discord.ui.Button(emoji=i) for i in rps_emojis])
+            components=components)
+        await self.bot.database.use_database(
+            self.choice_to_database,
+            self.emojis[button.emoji.name],
+            new_msg, user.id)
 
-    async def handle_button_click(self, button, interaction_msg, user):
-        # await for rock paper or scissors reaction on the running game
-        # and get the user and the winner from the reaction
-        info = interaction_msg.embeds[0].get_id()
-        if str(user.id) == str(info['user_id']):
-            return
-        user = interaction_msg.guild.get_member(user.id)
-        # rps embed has user id and dm msg id in footer
-        # fetch the first msg from the dm and get first users choice from it
-        user1 = interaction_msg.guild.get_member(int(info['user_id']))
-        user2 = interaction_msg.guild.get_member(user.id)
-        if user1 is None or user2 is None:
-            return
-        first_msg = await user1.fetch_message(
-            int(info['message_id']))
-        if first_msg is None or len(first_msg.embeds) != 1:
-            return
-        emoji1 = get_component(discord.ButtonStyle.green, first_msg, 'style')
-        if not emoji1:
-            return
-        emoji1 = emoji1.emoji
-        # compare the chosen options and get the winner of the game
-        await self.game_results(
-            user1, user2, emoji1, button.emoji.name,
-            interaction_msg)
+    async def choice_to_database(self, cursor, choice, msg, user_id):
+        cursor.execute(
+            ("INSERT INTO rps_games " +
+             "(channel_id, message_id, user_id, choice) " +
+             "VALUES ('{}', '{}', '{}', '{}')").format(
+                msg.channel.id, msg.id, user_id, choice))
+
+    async def choice_from_database(self, cursor, msg):
+        cursor.execute(
+            ("SELECT * FROM rps_games " +
+             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                msg.channel.id, msg.id))
+        return cursor.fetchone()
+
+    async def delete_from_database(self, cursor, msg):
+        cursor.execute(
+            ("DELETE FROM rps_games " +
+             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                msg.channel.id, msg.id))
 
     async def add_winner(self, embed, msg,  info):
         embed.title = (
@@ -117,10 +123,11 @@ class Rps(Help):
             info['winner_emoji'], info['loser_emoji'])
         wins = await self.bot.database.use_database(
             self.wins_to_database, msg, info['winner_id'])
+        extra = None
         if wins is not None:
-            embed.description += '\n\n{} total wins: {}'.format(
+            extra = '{} total wins: {}\u3000'.format(
                 info['winner_name'], wins)
-        embed.set_id()
+        embed.set_info(extra)
         if info['winner_avatar']:
             embed.set_thumbnail(url=info['winner_avatar'])
         return embed
@@ -134,13 +141,11 @@ class Rps(Help):
         if user2.nick:
             user_names[1] = user2.nick
         # if same reactions -> draw
+        embed = msg.embeds[0]
         if emoji1 == emoji2:
-            new_embed = EmbedWrapper(discord.Embed(
-                title='{} and {} draw with {} vs {}!'.format(
-                    user_names[0], user_names[1], emoji1, emoji2)),
-                embed_type=self.embed_type,
-                marks=EmbedWrapper.ENDED)
-            await msg.edit(embed=new_embed)
+            embed.title = '{} and {} draw with {} vs {}!'.format(
+                user_names[0], user_names[1], emoji1, emoji2)
+            embed.set_info(None)
         else:
             info = {}
             # get winner
@@ -163,8 +168,8 @@ class Rps(Help):
                 info['winner_avatar'] = user2.avatar
                 info['loser_name'] = user_names[0]
                 info['loser_emoji'] = emoji1
-            new_embed = await self.add_winner(msg.embeds[0], msg, info)
-            new_embed.mark(new_embed.ENDED)
+            embed = await self.add_winner(embed, msg, info)
+        embed.mark(EmbedWrapper.ENDED)
         components = []
         for i in rps_emojis:
             if i == emoji2:
@@ -173,7 +178,7 @@ class Rps(Help):
             else:
                 components.append(discord.ui.Button(emoji=i))
         components.append(delete_button())
-        await msg.edit(embed=new_embed, components=components)
+        await msg.edit(embed=embed, components=components)
 
     async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count
@@ -195,16 +200,12 @@ class Rps(Help):
                      count, msg.guild.id, user_id))
         return count
 
-    async def show_leaderboard(self, cursor, msg):
-        # show guild members that played rps in order
-        # best to worst
+    async def leaderboard_embed(self, cursor, msg):
         cursor.execute(
             "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'"
             .format(msg.guild.id))
         fetched = cursor.fetchall()
-        if fetched is None or fetched is []:
-            await msg.channel.warn(
-                text='No availible leaderboard.')
+        if fetched is None or len(fetched) == 0:
             return
         embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',
@@ -227,14 +228,12 @@ class Rps(Help):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg.channel.send(
-            embed=embed_var,
-            components=delete_button())
+        return embed_var
 
     def additional_info(self, prefix):
-        return '{}\n{}\n{}\n{}'.format(
-            ('* Start the game with "{}rps", then react ' +
-             'with your choice in DM.').format(prefix),
-            '* Another user can join by reacting with one of three options.',
-            '* A record of wins will be kept.',
-            '* See leaderboard with "{}rps leaderboard"'.format(prefix))
+        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
+            'Typing this command open a games menu.',
+            'Clicking on this game in a games menu starts the game.',
+            'Select your choice in a message only you can see.',
+            'Then another selects his choice to play against you.',
+            'A record of wins is kept.')

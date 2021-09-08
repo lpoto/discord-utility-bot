@@ -1,6 +1,5 @@
 import discord
-from utils.misc import Queue, colors
-from threading import Timer
+from utils.misc import Queue, colors, delete_button
 from utils.wrappers import EmbedWrapper
 from database import DB
 import commands as cmds
@@ -20,7 +19,6 @@ class Bot:
         # it has a ready Bot object
         self.ready = False
         self.queue = Queue(self)
-        self.timers = {}
         # dictionary containing all command objects as
         # values and their names as keys
         self.commands = {}
@@ -75,7 +73,8 @@ class Bot:
 
     async def handle_message(self, msg, cmd, prefix):
         """
-        Handle a message sent by a user in a discord server.
+        Handle a message, that fits command format,
+        sent by a user in a discord server.
         """
         args = msg.content.split()
         if cmd in self.commands:
@@ -90,23 +89,21 @@ class Bot:
             await msg.channel.send(
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
-                components=discord.ui.Button(label='delete'))
+                components=delete_button())
         else:
-            # else execute the command
-            # check if valid channel, permissions,...
+            # each command has "execute_command" function
+            # that should be triggered when a message matches the command
             if await self.check_if_valid(cmd, msg) is True:
                 await cmd.execute_command(msg)
 
     async def check_if_valid(self, command, msg) -> bool:
         """
-        Check if a command is allowed for the user and for the bot.
+        Check if user and bot are allowed to use the command.
         """
         if command.requires_database and not self.database.connected:
             await msg.channel.warn(
                     text='This command requires database connection!')
             return False
-        # check for required permissions
-        # and roles
         return await self.check_permissions(command, msg)
 
     async def check_permissions(self, command, msg) -> bool:
@@ -125,7 +122,8 @@ class Bot:
         if msg.channel.permissions(msg.author, 'administrator')[0]:
             return True
         # if command has required roles set up, override default
-        # required permissions
+        # required permissions and only check if user has any of the
+        # set up roles
         required_roles = await self.database.get_required_roles(
             msg, command.name)
         user_roles = [i.name for i in msg.author.roles]
@@ -185,11 +183,3 @@ class Bot:
                 value='[{}]'.format(', '.join(roles)),
                 inline=False)
         return embed_var
-
-    def clean_up(self):
-        """Cancel multithreading functions."""
-        for k, v in self.timers.items():
-            if isinstance(v, Timer) and v.is_alive():
-                v.cancel()
-        self.timers.clear()
-        self.client = None

@@ -1,6 +1,6 @@
 from commands.help import Help
 import discord
-from utils.misc import emojis, random_color
+from utils.misc import random_color
 
 
 class Roles(Help):
@@ -19,9 +19,7 @@ class Roles(Help):
         embed_var = await self.starting_embed(title=title, msg=msg)
         if embed_var is None:
             return
-        await msg.channel.send(
-            embed=embed_var,
-            reactions=[emojis[i] for i in range(len(embed_var.fields))])
+        await msg.channel.send(embed=embed_var)
 
     async def starting_embed(self, title, msg):
         embed_var = discord.Embed(
@@ -51,9 +49,13 @@ class Roles(Help):
     async def on_reply(self, msg, roles_message):
         if not self.is_roles(roles_message):
             return
+        # multiple replies can be added at once separated with ";"
         for i in msg.content.split(';'):
+            # do not allow empty responses
             if len(i) == 0:
                 continue
+            # process adding resonses and such in a queue to avoid
+            # missing any of the edits
             try:
                 await self.bot.queue.add_to_queue(
                     queue_id='rolesmessage:{}'.format(roles_message.id),
@@ -68,7 +70,7 @@ class Roles(Help):
                     raise ValueError(err)
 
     async def roles_existing_message(self, item):
-        # function to process queue, editing existing message with roles
+        # function that is processed in a queue
         arg = item[0].strip()
         channel_id = item[1]
         msg_id = item[2]
@@ -100,6 +102,7 @@ class Roles(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not self.is_roles(msg):
             return
+        # process buttons in queue aswell
         await self.bot.queue.add_to_queue(
             queue_id='rolesmessage:{}'.format(msg.id),
             item=(msg.channel, msg.id, button, user, webhook),
@@ -134,7 +137,6 @@ class Roles(Help):
     async def valid_role(self, pot_role, msg, reply=True):
         # check if role exists and if bot can add such a role
         role = None
-        # search existing roles in server
         for i in msg.guild.roles:
             if i.name == pot_role:
                 role = i
@@ -177,9 +179,6 @@ class Roles(Help):
         return role
 
     async def remove_role_from_msg(self, msg, arg):
-        # remove role from message
-        # save the removed reaction index in the hidden text,
-        # so it can be reused
         if len(msg.embeds[0].fields) == 1:
             await msg.channel.warn(
                 text='Cannot remove the only role in the message!')

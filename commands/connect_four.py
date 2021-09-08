@@ -11,7 +11,6 @@ class ConnectFour(Help):
         super().__init__(name='connect-four')
         self.description = 'A game of connect-four between two users.'
         self.game = True
-        self.synonyms = ['connectfour', 'cf', 'fil', 'four-in-line']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = utils.black_circle
@@ -23,15 +22,8 @@ class ConnectFour(Help):
                 timer.cancel()
         self.timers = {}
 
-    async def execute_command(self, msg, user=None):
+    async def execute_game(self, msg, user, webhook):
         # if first word is lb or leaderboard show players with most wins
-        if user is None:
-            args = msg.content.split()
-            if len(args) > 1 and args[1] in ['lb', 'leaderboard']:
-                await self.bot.database.use_database(
-                    self.show_leaderboard, msg)
-                return
-            user = msg.author
         embed_var = EmbedWrapper(discord.Embed(
             description='{}\n{}'.format(
                 'Select a token to join or change the already selected token!',
@@ -50,6 +42,9 @@ class ConnectFour(Help):
             user.id,
             user.name if not user.nick else user.nick,
             self.tokens[1])
+
+    async def execute_command(self, msg):
+        await self.bot.commands['games'].execute_command(msg)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_connect_four:
@@ -79,9 +74,11 @@ class ConnectFour(Help):
         start = False
         if len(tks) == 2:
             tks.append('{}: {}'.format(name, token))
-            msg.embeds[0].set_id(user_id=user_id)
+            await self.bot.database.use_database(
+                self.add_game, msg, user_id, None)
         else:
-            x = msg.embeds[0].get_id()
+            x = await self.bot.database.use_database(
+                self.get_game, msg)
             u1_id = x['user_id']
             tkn = tks[2].split(': ')[-1]
             if token == tkn:
@@ -89,23 +86,26 @@ class ConnectFour(Help):
             if str(u1_id) == str(user_id):
                 tks[2] = '{}: {}'.format(name, token)
             elif x['user2_id']:
-                u2_id = x['user2_id']
+                u2_id = str(x['user2_id'])
                 if u2_id != str(user_id):
                     return
                 tks[3] = '{}: {}'.format(name, token)
             else:
                 tks.append('{}: {}'.format(name, token))
-                msg.embeds[0].set_id(user_id=u1_id, user2_id=user_id)
+                await self.bot.database.use_database(
+                    self.add_game, msg, x['user_id'], user_id)
                 msg.embeds[0].title = 'Starting in 5 seconds'
                 start = True
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
         if start:
-            self.timers[msg.id] = Timer(7, self.start_game, args=(msg,))
+            self.timers[msg.id] = Timer(7, self.start_game, args=(
+                msg, x['user_id'], user_id))
             self.timers[msg.id].start()
 
     async def remove_selected_token(self, msg, user_id):
-        x = msg.embeds[0].get_id()
+        x = await self.bot.database.use_database(
+            self.get_game, msg)
         if (not x['user_id'] and not x['user2_id']):
             return
         if (msg.id in self.timers and
@@ -116,10 +116,12 @@ class ConnectFour(Help):
         idx = None
         if str(user_id) == str(x['user_id']):
             idx = 0
-            msg.embeds[0].set_id(user_id=x['user2_id'])
+            await self.bot.database.use_database(
+                self.add_game, msg, x['user2_id'], None)
         elif str(user_id) == str(x['user2_id']):
             idx = 1
-            msg.embeds[0].set_id(user_id=x['user_id'])
+            await self.bot.database.use_database(
+                self.add_game, msg, x['user_id'], None)
         if idx is None:
             return
         tks = msg.embeds[0].description.split('\n')
@@ -128,14 +130,13 @@ class ConnectFour(Help):
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
 
-    def start_game(self, msg):
+    def start_game(self, msg, user1_id, user2_id):
         if msg.id in self.timers:
             self.timers[msg.id] = False
         tks = msg.embeds[0].description.split('\n')[1:]
         # create an empty grid and wait for players to start playing
-        x = msg.embeds[0].get_id()
-        user1 = msg.guild.get_member(int(x['user_id']))
-        user2 = msg.guild.get_member(int(x['user2_id']))
+        user1 = msg.guild.get_member(int(user1_id))
+        user2 = msg.guild.get_member(int(user2_id))
         if user1 is None or user2 is None:
             return
         user1 = (user1.id, user1.name if not user1.nick else user1.nick)
@@ -162,11 +163,12 @@ class ConnectFour(Help):
         msg = item[1]
         user = msg.guild.get_member(item[2].id)
         embed = msg.embeds[0]
-        x = embed.get_id()
+        x = await self.bot.database.use_database(
+            self.get_game, msg)
         if not x['user_id'] or not x['user2_id']:
             return
-        user1 = msg.guild.get_member(x['user_id'])
-        user2 = msg.guild.get_member(x['user2_id'])
+        user1 = msg.guild.get_member(int(x['user_id']))
+        user2 = msg.guild.get_member(int(x['user2_id']))
         token = embed.description.split('\n')[0].split(': ')[-1]
         tks = embed.title.replace('!', '').split(' vs ')
         token1 = tks[0][-1]
@@ -205,7 +207,7 @@ class ConnectFour(Help):
                     moves, grid, turn,
                     True, color=embed.color)
                 await msg.edit(
-                        embed=embed_var, components=utils.delete_button())
+                    embed=embed_var, components=utils.delete_button())
             else:
                 embed_var = self.build_embed(
                     msg.embeds[0], user1, user2, token1, token2,
@@ -253,6 +255,8 @@ class ConnectFour(Help):
                     users[0][1], wins)
         await self.bot.database.use_database(
             self.moves_to_database, ''.join([str(i) for i in moves]))
+        await self.bot.database.use_database(
+            self.add_game, msg, None, None, True)
         return embed_var
 
     def build_embed(
@@ -340,6 +344,34 @@ class ConnectFour(Help):
                 break
         return grid
 
+    async def get_game(self, cursor, msg):
+        cursor.execute(("SELECT * FROM connect_four_games WHERE " +
+                        "channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return
+        info = {}
+        for i in fetched:
+            if i[:2] == '1u':
+                info['user_id'] = None if len(i[2:]) != 18 else i[2:]
+            if i[:2] == '2u':
+                info['user2_id'] = None if len(i[2:]) != 18 else i[2:]
+        return info
+
+    async def add_game(self, cursor, msg, u1_id, u2_id, delete_only=False):
+        cursor.execute(("DELETE FROM connect_four_games WHERE " +
+                        "channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
+        if delete_only:
+            return
+        cursor.execute(("INSERT INTO connect_four_games " +
+                        "(channel_id, message_id, user1_id, user2_id)" +
+                        "VALUES ('{}', '{}', '{}', '{}')").format(
+            msg.channel.id, msg.id,
+            '1u' + ('' if u1_id is None else str(u1_id)),
+            '2u' + ('' if u2_id is None else str(u2_id))))
+
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database
         cursor.execute((
@@ -365,22 +397,19 @@ class ConnectFour(Help):
             ("INSERT INTO connect_four_records (moves) VALUES ('{}')"
              ).format(moves))
 
-    async def show_leaderboard(self, cursor, msg):
-        # show guild members that played fil in order
-        # best to worst
+    async def leaderboard_embed(self, cursor, msg):
         cursor.execute(
             "SELECT * FROM connect_four WHERE guild_id = '{}'"
             .format(msg.guild.id))
         fetched = cursor.fetchall()
-        if fetched is []:
-            await msg.channel.warn(
-                text='No availible leaderboard.')
+        if fetched is None or len(fetched) == 0:
             return
         embed_var = EmbedWrapper(discord.Embed(
             title='Leaderboard',
             color=utils.random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO)
+        print(fetched)
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i[1]))
@@ -397,14 +426,14 @@ class ConnectFour(Help):
             embed_var.add_field(
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
-        await msg.channel.send(
-                embed=embed_var,
-                components=utils.delete_button())
+        return embed_var
 
     def additional_info(self, prefix):
-        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Start the game with "{}cf".'.format(prefix),
-            'You and another user then select a preffered token.',
-            'Play the game by selecting buttons with numbers from 1 to 7.',
-            'A record of moves and wins will be kept.',
-            'See leaderboard with "{}cf leaderboard".'.format(prefix))
+        return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
+            'Typing this command open a games menu.',
+            'Clicking on this game in a games menu starts the game.',
+            'Select a token you want to use in the game.',
+            'Another user selects his token.',
+            'You can leave the game in token selection.',
+            'You can forfeit the game when it starts.',
+            'A record of wins is kept.')

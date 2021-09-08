@@ -1,25 +1,21 @@
 import discord
 from utils.misc import random_color, delete_button
-from utils.wrappers import EmbedWrapper, MemberWrapper
+from utils.wrappers import EmbedWrapper
 from commands.help import Help
+
+# TODO save wins to database, leaderboard
 
 
 class Hangman(Help):
     def __init__(self):
         super().__init__(name='hangman')
         self.description = 'A game of hangman.'
-        self.synonyms = ['hm']
         self.bot_permissions = ['send_messages',
                                 'send_messages_in_threads']
         self.embed_type = 'HANGMAN'
         self.game = True
 
-    async def execute_command(self, msg, user=None):
-        # sent a dm to the user who started the game
-        # msg author if game was started with a typed command
-        # else user if game was started from games command
-        if user is None:
-            user = msg.author
+    async def execute_game(self, msg, user, webhook):
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
             description=('Reply to this message with a word or ' +
@@ -28,8 +24,11 @@ class Hangman(Help):
             color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.NOT_DELETABLE,
-            channel_id=str(msg.channel.id))
+            info=str(msg.channel.id))
         await dm.send(embed=dm_embed)
+
+    async def execute_command(self, msg):
+        await self.bot.commands['games'].execute_command(msg)
 
     async def on_dm_reply(self, msg, referenced_msg):
         # User need to reply to the dm message with a word
@@ -39,21 +38,21 @@ class Hangman(Help):
                 referenced_msg.embeds[0].title or
                 len(msg.content) > 30):
             return
-        for c in msg.content.strip():
-            x = ord(c.upper())
+        word = msg.content.strip().upper()
+        for c in word:
+            x = ord(c)
             if (x < 65 or x > 90) and x != 32:
                 return
-        referenced_msg.embeds[0].description = msg.content.strip().upper()
-        referenced_msg.embeds[0].mark(EmbedWrapper.ENDED)
-        await referenced_msg.edit(embed=referenced_msg.embeds[0])
-        ch_id = referenced_msg.embeds[0].get_id()['channel_id']
+        ch_id = referenced_msg.embeds[0].get_info()
         channel = self.bot.client.get_channel(int(ch_id))
         if not channel:
             return
+        referenced_msg.embeds[0].set_info(word)
+        referenced_msg.embeds[0].mark(EmbedWrapper.ENDED)
+        await referenced_msg.edit(embed=referenced_msg.embeds[0])
         msg_info = {
             'user_id': msg.author.id,
-            'message_id': referenced_msg.id,
-            'channel_id': None}
+            'word': word}
         guild = channel.guild
         if not guild:
             return
@@ -63,6 +62,8 @@ class Hangman(Help):
         embed = await self.game_embed(guild, msg_info, msg.author.id)
         m = await channel.send(embed=embed)
         thread = await m.create_thread(name='HANGMAN')
+        await self.bot.database.use_database(
+            self.word_to_database, m, msg.author.id, word)
         await thread.send(
             'Guess the word!\n ' +
             'All messages in this thread containing: ' +
@@ -82,13 +83,9 @@ class Hangman(Help):
                 ord(c.strip().upper()) > 90 or ord(
                     c.strip().upper()) < 65 for c in x):
             return
-        hm_message = await msg.channel.parent.fetch_message(
-            msg.channel.id)
-        if hm_message is None or not hm_message.is_hangman:
-            return
         for i in x:
             await self.bot.queue.add_to_queue(
-                queue_id='hmmessage:{}'.format(hm_message.id),
+                queue_id='hmmessage:{}'.format(msg.channel.parent.id),
                 item=(
                     msg.channel.parent.id,
                     msg.id,
@@ -107,9 +104,10 @@ class Hangman(Help):
         if not referenced_msg.is_hangman:
             return
         letter = item[3]
-        msg_info = referenced_msg.embeds[0].get_id()
-        if str(msg_info['user_id']) == str(msg.author.id):
-            return
+        msg_info = await self.bot.database.use_database(
+            self.word_from_database, referenced_msg)
+        # if str(msg_info['user_id']) == str(msg.author.id):
+        #    return
         embed = await self.game_embed(
             referenced_msg.guild,
             msg_info,
@@ -133,18 +131,13 @@ class Hangman(Help):
 
     async def get_word(self, guild, info, chars, full=False) -> (str, bool):
         # Search for the word in the game author's dm
-        user = MemberWrapper(guild.get_member(int(info['user_id'])))
-        if user is None:
-            return
-        msg = await user.fetch_message(int(info['message_id']))
-        if not msg:
-            return
-        word = msg.embeds[0].description
+        info_word = info['word']
         if full:
-            return word
+            return info_word
         # replace unknown characters (except spaces) with '_'
-        word = ' '.join([i if i in chars or i == ' ' else r'\_' for i in word])
-        return (word, word == ' '.join([i for i in msg.embeds[0].description]))
+        word = ' '.join(
+            [i if i in chars or i == ' ' else r'\_' for i in info_word])
+        return (word, word == ' '.join([i for i in info_word]))
 
     async def game_embed(
             self, guild, msg_info, u_id, char=None, msg=None) -> EmbedWrapper:
@@ -183,21 +176,18 @@ class Hangman(Help):
             return await self.end_embed(
                 winner=False,
                 embed=embed,
-                user_id=msg_info['user_id'],
+                msg_info=msg_info,
                 msg=msg)
         if phase >= 7:
             return await self.end_embed(
-                winner=True, embed=embed, user_id=msg_info['user_id'], msg=msg)
+                winner=True, embed=embed, msg_info=msg_info, msg=msg)
         embed.description += '\n\nGuess the word in this message\'s thread!'
-        embed.set_id(
-            user_id=msg_info['user_id'],
-            message_id=msg_info['message_id'],
-            channel_id=msg_info['channel_id'])
         return embed
 
-    async def end_embed(self, winner, embed, user_id, msg) -> EmbedWrapper:
+    async def end_embed(self, winner, embed, msg_info, msg) -> EmbedWrapper:
+        user_id = msg_info['user_id']
         user = msg.guild.get_member(int(user_id))
-        embed.title = await self.get_word(msg.guild, embed.get_id(), [], True)
+        embed.title = await self.get_word(msg.guild, msg_info, [], True)
         if user:
             if winner:
                 embed.description = '{} wins!\n\n{}'.format(
@@ -207,7 +197,8 @@ class Hangman(Help):
                 embed.description = '{} loses!\n\n{}'.format(
                     user.name if not user.nick else user.nick,
                     embed.description)
-        embed.set_id()
+        await self.bot.database.use_database(
+            self.delete_from_database, msg)
         embed.mark(EmbedWrapper.ENDED)
         return embed
 
@@ -240,12 +231,52 @@ class Hangman(Help):
         pic[phases[phase][0]] = phases[phase][1]
         return pic
 
+    async def word_to_database(self, cursor, msg, user_id, word):
+        cursor.execute(
+            ("INSERT INTO hangman_games " +
+             "(channel_id, message_id, user_id, word) " +
+             "VALUES ('{}', '{}', '{}', '{}')").format(
+                msg.channel.id, msg.id, user_id, word))
+
+    async def word_from_database(self, cursor, msg):
+        cursor.execute(
+            ("SELECT * FROM hangman_games " +
+             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                msg.channel.id, msg.id))
+        x = cursor.fetchone()
+        if x is None:
+            return
+        info = {'user_id': None, 'word': None}
+        user = None
+        for i in x:
+            f = False
+            if not user:
+                try:
+                    user = msg.guild.get_member(int(i))
+                    f = True
+                    if not user:
+                        raise ValueError()
+                    info['user_id'] = user.id
+                except ValueError:
+                    pass
+            if not f:
+                info['word'] = i
+        return info
+
+    async def delete_from_database(self, cursor, msg):
+        cursor.execute(
+            ("DELETE FROM hangman_games " +
+             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                msg.channel.id, msg.id))
+
+    async def leaderboard_embed(self, cursor, msg):
+        return
+
     def additional_info(self, prefix):
-        return '{}\n{}\n{}\n{}'.format(
-            ('* Start the game with "{}hm", then reply ' +
-             'with a word in DM.').format(prefix),
-            '* You can use letters from A-Z (case insensitive).',
-            '* A new thread will be started where other users can guess '
-            'the word by typing letters.',
-            '* Multiple letters can be guessed at a time ' +
-            'separated with " " (example: "a B c d ...")')
+        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
+            'Typing this command open a games menu.',
+            'Clicking on this game in a games menu starts the game.',
+            'You receive a dm, where you reply with a word (or multiple).',
+            'Only letter A-z can be used (case insensitive).',
+            'The game will be started in a new thread, where ' +
+            'other users can guess the word.')

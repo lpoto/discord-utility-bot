@@ -18,6 +18,7 @@ class Poll(Help):
         self.tokens_count = 2
 
     def info_menu(self, components):
+        # build a dropdown menu that contains all the responses
         if components is None or len(components) < 1:
             return None
         options = []
@@ -70,9 +71,11 @@ class Poll(Help):
             return
         opts = msg.content.split(';')
         for o in opts:
+            # don't allow empty replies
             if len(o) < 1:
                 continue
             try:
+                # handle replies in a queue
                 await self.bot.queue.add_to_queue(
                     queue_id='pollmessage:{}'.format(poll_msg.id),
                     item=(poll_msg.channel, poll_msg.id, o.strip()),
@@ -82,12 +85,15 @@ class Poll(Help):
                     'could not find open space for item',
                         'item would not fit at row 4 (6 > 5 width)']:
                     await msg.channel.warn(
-                            'Maximum number of responses reached!')
+                        'Maximum number of responses reached!')
                     return
                 else:
                     raise ValueError(err)
 
     async def add_poll_info(self, item):
+        # if reply does not contain any of the keywords
+        # add a response to the poll, else
+        # do whatever it is supposed to do
         channel = item[0]
         poll_msg = await channel.fetch_message(int(item[1]))
         if poll_msg is None or not self.is_poll(poll_msg):
@@ -125,12 +131,14 @@ class Poll(Help):
                 lbl = self.get_response_name(i2.label)
                 if option == lbl.split('\u2000(')[0]:
                     return
-                components.append(discord.ui.Button(label=i2.label))
+                components.append(discord.ui.Button(label=i2.label,
+                                                    row=len(components) // 4))
         option = option.center(15, '\u2000')
-        t = 42 + len(option)//2
+        t = 45 + len(option)//2
         components.append(discord.ui.Button(
             label='{}\u3000{}'.format(
-                option, (t - len(option)) * '\u3000')))
+                option, (t - len(option)) * '\u3000'),
+            row=len(components) // 4))
         x = self.info_menu(components)
         if x is not None:
             components.append(x)
@@ -172,7 +180,8 @@ class Poll(Help):
                 if not isinstance(i2, discord.Button):
                     continue
                 components.append(discord.ui.Button(
-                    label=i2.label))
+                    label=i2.label,
+                    row=len(components) // 4))
                 x = len(i2.label.split('\u3000')[1].strip())
                 if x == max_len and max_len > 0:
                     equals.append(len(components) - 1)
@@ -221,7 +230,8 @@ class Poll(Help):
                     continue
                 if count != option:
                     components.append(discord.ui.Button(
-                        label=i2.label))
+                        label=i2.label,
+                        row=len(components)//4))
                 else:
                     name = self.get_response_name(i2.label)
                 count += 1
@@ -237,6 +247,8 @@ class Poll(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not self.is_poll(msg):
             return
+        # process adding tokens and removing tokens to the responses
+        # in a queue, so we avoid losing any edits
         await self.bot.queue.add_to_queue(
             queue_id='pollmessage:{}'.format(msg.id),
             item=(msg.channel, msg.id, user, button),
@@ -259,7 +271,8 @@ class Poll(Help):
                     continue
                 if v.label != button.label:
                     components.append(discord.ui.Button(
-                        label=v.label))
+                        label=v.label,
+                        row=len(components) // 4))
                     continue
                 y = x[1].strip()
                 if add:
@@ -270,7 +283,7 @@ class Poll(Help):
                 elif len(y) > 0:
                     y = y[:-1]
                 x = x[0]
-                t = 42 + len(x) // 2
+                t = 45 + len(x) // 2
                 ln = len(x + y)
                 if ln >= t:
                     t = ln + 1
@@ -278,7 +291,8 @@ class Poll(Help):
                     discord.ui.Button(
                         label='{}\u3000{}{}'.format(
                             x, y,
-                            (t - len(x + y)) * '\u3000')))
+                            (t - len(x + y)) * '\u3000'),
+                        row=len(components) // 4))
         if not isinstance(x, str):
             return
         i = self.info_menu(components)
@@ -297,12 +311,12 @@ class Poll(Help):
             return
         name = interaction.data['values'][0]
         users = await self.bot.database.use_database(
-                self.users_who_voted, name, msg)
+            self.users_who_voted, name, msg)
         if len(users) == 0:
             return
         embed = discord.Embed(
-                title=name,
-                color=random_color())
+            title=name,
+            color=random_color())
         y = None
         k = 0
         for i in users:
@@ -360,8 +374,8 @@ class Poll(Help):
         cursor.execute((
             "INSERT INTO poll (guild_id, channel_id, message_id, user_id, " +
             "response) VALUES (\"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
-            ).format(
-                msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+        ).format(
+            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
 
     async def delete_poll_from_db(self, cursor, msg):
         cursor.execute((

@@ -198,9 +198,7 @@ class MyClient(discord.Client):
                     embed=discord.Embed(
                         color=utils.green_color,
                         description='Message has been deleted!'),
-                    components=[discord.ui.Button(
-                                label='delete',
-                                style=discord.ButtonStyle.green)],
+                    components=[],
                     delete_after=2)
             return
         if msg.is_ended:

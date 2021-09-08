@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from mysql.connector import pooling, Error
 import os
 
@@ -15,6 +16,8 @@ class DB:
 
     @property
     def connected(self) -> bool:
+        # determine wether bot is connected
+        # to a database
         cnx = self.connection_object
         if cnx is None:
             return False
@@ -50,12 +53,28 @@ class DB:
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
                 'wins INT UNSIGNED'},
+            'rps_games': {
+                'channel_id VARCHAR(18) NOT NULL',
+                'message_id VARCHAR(18) NOT NULL',
+                'user_id VARCHAR(18) NOT NULL',
+                'choice VARCHAR(18) NOT NULL',
+                },
             'connect_four': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
                 'wins INT UNSIGNED'},
+            'connect_four_games': {
+                'channel_id VARCHAR(18) NOT NULL',
+                'message_id VARCHAR(18) NOT NULL',
+                'user1_id VARCHAR(20) NOT NULL',
+                'user2_id VARCHAR(20) NOT NULL'},
             'connect_four_records': {
                 'moves VARCHAR(43) NOT NULL'},
+            'hangman_games': {
+                'channel_id VARCHAR(18) NOT NULL',
+                'message_id VARCHAR(18) NOT NULL',
+                'user_id VARCHAR(18) NOT NULL',
+                'word VARCHAR(30) NOT NULL'},
             'poll': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
@@ -68,12 +87,13 @@ class DB:
         """Connect a MySQL database from provided info."""
         info = info if info is not None else self.get_info
         cnx = None
-        # if database is given, connect
         if info is None:
             logging.info(msg='No database info provided.')
             self.name = None
             return
         try:
+            # create a pool as the bot is accessing the
+            # database quite often
             self.connection_pool = pooling.MySQLConnectionPool(
                 pool_name='pool',
                 pool_size=5,
@@ -91,6 +111,8 @@ class DB:
             cursor = cnx.cursor()
             cursor.execute('select database();')
             result = cursor.fetchone()[0]
+            # if any of the required tables are missing
+            # create new tables
             t = await self.use_database(self.create_tables)
             logging.info(msg='Database: {}'.format(result))
             if t is not None and len(t) > 0:
@@ -108,6 +130,7 @@ class DB:
             cnx.close()
 
     async def use_database(self, function, *args, repeat=True):
+        # always use this command to edit database
         cnx = None
         cnx = self.connection_object
         reconnect = False
@@ -116,9 +139,9 @@ class DB:
                 return
             cursor = cnx.cursor(buffered=True)
             result = None
-            try:
+            if asyncio.iscoroutinefunction(function):
                 result = await function(cursor, *args)
-            except TypeError:
+            else:
                 result = function(cursor, *args)
             cnx.commit()
             cursor.close()

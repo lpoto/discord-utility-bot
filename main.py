@@ -19,13 +19,9 @@ logging.basicConfig(
 
 
 def handle_exit(client, bot, tasks, disconnected=False):
-    """
-    Handle running tasks and clean up Bot's multithreading
-    functions on Client disconnect.
-    """
     if disconnected:
         logging.warning(msg='Disconnected\n')
-    bot.clean_up()  # kill threading.Timers etc.
+    bot.client = None
     t = client.loop.create_task(client.close())
     client.loop.run_until_complete(t)
     tasks.add(t)

@@ -1,5 +1,5 @@
 import discord
-from utils.misc import red_color, green_color, encode32, decode32
+from utils.misc import red_color, green_color
 
 
 class MessageWrapper(discord.Message):
@@ -285,12 +285,8 @@ class EmbedWrapper(discord.Embed):
             self,
             embed,
             embed_type=None,
-            marks=(),
-            channel_id=None,
-            message_id=None,
-            user_id=None,
-            user2_id=None,
-            extra=None):
+            marks=None,
+            info=None):
         self._wrapped_embed = embed
         self.embed_type = self.get_type(embed_type)
         self.marks = [
@@ -298,15 +294,10 @@ class EmbedWrapper(discord.Embed):
             EmbedWrapper.ENDED,
             EmbedWrapper.INFO,
             EmbedWrapper.NOT_DELETABLE]
-        self.mark(marks=marks)
-        if any(i is not None for i in [
-                channel_id, message_id, user_id, user2_id, extra]):
-            self.set_id(
-                message_id=message_id,
-                channel_id=channel_id,
-                user_id=user_id,
-                user2_id=user2_id,
-                extra=extra)
+        if marks is not None:
+            self.mark(marks=marks)
+        if info is not None:
+            self.set_info(info, marks)
 
     def __getattr__(self, attr):
         if attr in self.__dict__:
@@ -321,7 +312,7 @@ class EmbedWrapper(discord.Embed):
         self.set_author(name=embed_type)
         return embed_type
 
-    def mark(self, marks=[]):
+    def mark(self, marks):
         if not isinstance(marks, list) and not isinstance(marks, tuple):
             marks = [marks]
         if self.embed_type is None:
@@ -331,19 +322,16 @@ class EmbedWrapper(discord.Embed):
             return
         if len(marks) == 0:
             return self
-        text = '' if not self.footer.text else self.footer.text
+        text = self.get_info()
         mks = ''.join(marks)
-        if not self.footer.text:
-            self._wrapped_embed.set_footer(text='@ @{}'.format(mks))
-            return self
-        x = text.split('@')[1:]
-        self._wrapped_embed.set_footer(text='@{} @{}'.format(
-            x[0][:-1], mks))
+        if not text:
+            self._wrapped_embed.set_footer(text='@{}'.format(mks))
+            return
+        self.set_info(text, marks)
         return self
 
     def get_marks(self):
-        if (not self.footer.text or '@' not in self.footer.text
-                or self.footer.text.count('@') == 1):
+        if (not self.footer.text or '@' not in self.footer.text):
             return []
         x = self.footer.text.split('@')[-1].strip()
         if len(x) > 5:
@@ -354,55 +342,30 @@ class EmbedWrapper(discord.Embed):
                 mks.append(i)
         return mks
 
-    def set_id(
+    def set_info(
             self,
-            user_id=None,
-            user2_id=None,
-            channel_id=None,
-            message_id=None,
-            extra=None):
-        content = {'u': user_id, 'v': user2_id,
-                   'c': channel_id, 'm': message_id,
-                   '-': extra}
-        txt = ''
-        for k, v in content.items():
-            if v is not None:
-                if txt != '':
-                    txt += '.'
-                if k != '-':
-                    txt += '{}{}'.format(k, encode32(int(v), 32).lower())
-                else:
-                    txt += '{}{}'.format(k, v)
-        if not self.footer.text:
-            self._wrapped_embed.set_footer(text=txt)
-        else:
-            if '@' not in self.footer.text or self.footer.text.count('@') == 1:
-                self._wrapped_embed.set_footer(text='@' + txt)
-            else:
-                x = self.footer.text.split('@')[-1]
-                self._wrapped_embed.set_footer(
-                    text='@{} @{}'.format(
-                        txt, x))
-
-    def get_id(self) -> dict:
-        content = {'user_id': None, 'user2_id': None,
-                   'channel_id': None, 'message_id': None, 'extra': None}
-        text = self._wrapped_embed.footer.text.split('@')[1][:-1].strip()
+            text=None,
+            marks=None):
+        if marks is None:
+            marks = self.get_marks()
         if text is None:
-            return content
-        text = text.split('.')
-        for i in text:
-            if len(i) > 1 and i[0] == 'u':
-                content['user_id'] = decode32(i[1:])
-            elif len(i) > 1 and i[0] == 'v':
-                content['user2_id'] = decode32(i[1:])
-            elif len(i) > 1 and i[0] == 'c':
-                content['channel_id'] = decode32(i[1:])
-            elif len(i) > 1 and i[0] == 'm':
-                content['message_id'] = decode32(i[1:])
-            elif len(i) > 1 and i[0] == '-':
-                content['extra'] = i[1:]
-        return content
+            self._wrapped_embed.set_footer(
+                    text='@' + ''.join(marks))
+        else:
+            self._wrapped_embed.set_footer(
+                    text=text + '\n@' + ''.join(marks))
+
+    def get_info(self) -> str or None:
+        if (self._wrapped_embed.footer.text is discord.Embed.Empty or
+                '@' not in self._wrapped_embed.footer.text):
+            return
+        text = self._wrapped_embed.footer.text.split('@')
+        if len(text) < 2:
+            return
+        text = text[0][::-1].replace(('@' + text[-1])[::-1], '', 1)[::-1]
+        if len(text) > 0 and text[-1] == '\n':
+            text = text[:-1]
+        return text
 
     @classmethod
     def mark_info(cls, mark):

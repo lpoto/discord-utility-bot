@@ -27,11 +27,12 @@ class Help:
     def additional_info(self, prefix) -> str:
         """ Informations about the command, more detailed
         than the command's description."""
+        # child classes override this function
         return '* There is no additional information.'
 
     def command_info(self, prefix) -> list:
-        # detailed information about
-        # the command
+        # gather all the information about the command
+        # to be used in command's help embed
         info = [
             self.name,
             self.description,
@@ -58,6 +59,10 @@ class Help:
         await msg.channel.send(embed=embed_var, components=components)
 
     async def on_menu_select(self, interaction, msg, user, webhook):
+        # this is triggered when a user selects something in
+        # a dropdown menu
+        # Allows iterating all the commands' help embeds from
+        # the help command
         if not msg.is_help or self.name != 'help':
             return
         name = interaction.data['values'][0]
