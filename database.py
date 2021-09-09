@@ -37,7 +37,9 @@ class DB:
 
     @property
     def required_tables(self) -> dict:
-        """All the required tables used by the bot."""
+        """
+        All the required tables used by the bot.
+        """
         return {
             'prefix': {
                 'guild_id VARCHAR(18) NOT NULL',
@@ -82,19 +84,29 @@ class DB:
                 'response VARCHAR(30) NOT NULL'},
             'deleting_messages': {
                 'channel_id VARCHAR(18) NOT NULL',
-                'message_id VARCHAR(18) NOT NULL'
-                }
+                'message_id VARCHAR(18) NOT NULL',
+                'time VARCHAR(8) NOT NULL'
+            }
         }
 
     @property
     def deletable_messages_databases(self):
-        return ['hangman_games',
-                'rps_games',
-                'connect_four_games',
-                'deleting_messages']
+        """
+        Databases from which the message info should
+        be removed when the message is deleted.
+        """
+        return [
+            'hangman_games',
+            'rps_games',
+            'connect_four_games',
+            'poll',
+            'deleting_messages',
+        ]
 
     async def connect_database(self, info=None):
-        """Connect a MySQL database from provided info."""
+        """
+        Connect a MySQL database from provided info.
+        """
         info = info if info is not None else self.get_info
         cnx = None
         if info is None:
@@ -140,6 +152,11 @@ class DB:
             cnx.close()
 
     async def use_database(self, function, *args, repeat=True):
+        """
+        Pass connection_object().cursor() to a function that
+        edits the database. Commit changes and close cursor on
+        successful call.
+        """
         # always use this command to edit database
         cnx = None
         cnx = self.connection_object
@@ -171,8 +188,10 @@ class DB:
                     self.use_database(function, *args, repeat)
 
     async def create_tables(self, cursor) -> list:
-        """Check if all the required tables exist, and create
-        those that do not."""
+        """
+        Check if all the required tables exist, and create
+        those that do not.
+        """
         tables = self.required_tables
         tbs = []
         for k, v in tables.items():
@@ -186,7 +205,9 @@ class DB:
         return tbs
 
     async def get_prefix(self, msg) -> str:
-        """Fetch a prefix used in message's server from database."""
+        """
+        Fetch a prefix used in message's server from database.
+        """
         prefix = await self.use_database(
             self.prefix_from_database, msg)
         if prefix is None:
@@ -194,20 +215,26 @@ class DB:
         return prefix
 
     async def get_welcome(self, server) -> str or None:
-        """Get the text that the bot should send when a new member
-        joins the server."""
+        """
+        Get the text that the bot should send when a new member
+        joins the server.
+        """
         # get guild's welcome text from database
         return await self.use_database(self.welcome_from_database, server)
 
     async def get_required_roles(self, msg, command) -> list or None:
-        """ Get the roles that are allowed to use the command in
-        a message's discord server"""
+        """
+        Get the roles that are allowed to use the command in
+        a message's discord server
+        """
         return await self.use_database(
             self.required_roles_from_database, msg, command)
 
     async def roles_for_all_commands(self, msg) -> str or None:
-        """ Return all the commands that have required roles set
-        up in the message's discord server."""
+        """
+        Return all the commands that have required roles set
+        up in the message's discord server.
+        """
         return await self.use_database(
             self.roles_for_all_commands_from_database, msg)
 

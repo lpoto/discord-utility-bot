@@ -26,8 +26,10 @@ class Help:
         pass
 
     def additional_info(self, prefix) -> str:
-        """ Informations about the command, more detailed
-        than the command's description."""
+        """
+        Informations about the command, more detailed
+        than the command's description.
+        """
         # child classes override this function
         return '* There is no additional information.'
 
@@ -48,8 +50,10 @@ class Help:
         return info
 
     async def execute_command(self, msg):
-        """Function called when a message in a discord channel
-        starts with the prefix and the command's name."""
+        """
+        Function called when a message in a discord channel
+        starts with the prefix and the command's name.
+        """
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return

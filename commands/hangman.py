@@ -132,6 +132,8 @@ class Hangman(Help):
 
     async def get_word(self, guild, info, chars, full=False) -> (str, bool):
         # Search for the word in the game author's dm
+        if info is None:
+            return
         info_word = info['word']
         if full:
             return info_word

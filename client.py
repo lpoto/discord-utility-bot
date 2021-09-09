@@ -22,7 +22,9 @@ class MyClient(discord.Client):
         return wrappers.MemberWrapper(super().get_user(int(user_id)))
 
     async def _run_event(self, coro, event_name, *args, **kwargs):
-        """Call a method matching the event recieved from discord."""
+        """
+        Call a method matching the event recieved from discord.
+        """
         try:
             if event_name != 'on_ready' and not self.bot.ready:
                 return
@@ -233,8 +235,8 @@ class MyClient(discord.Client):
 
     async def on_raw_message_delete(self, msg):
         if msg.cached_message:
-            m=msg.cached_message
-            if (len(m.embeds) < 1 or 
+            m = msg.cached_message
+            if (len(m.embeds) < 1 or
                     str(m.channel.type) not in ['text', 'public_thread'] or
                     m.guild.me.id != m.author.id):
                 return
