@@ -104,7 +104,7 @@ class Bot:
         """
         if command.requires_database and not self.database.connected:
             await msg.channel.warn(
-                    text='This command requires database connection!')
+                text='This command requires database connection!')
             return False
         return await self.check_permissions(command, msg)
 
@@ -189,19 +189,18 @@ class Bot:
                 inline=False)
         return embed_var
 
-    async def timed_delete(self, msg, time_in_seconds=60, reschedule=False):
+    async def timed_delete(self, msg, hours=24, reschedule=False):
         """
         Delete messages after time. Save the scheduled message
         to the database, so it is deleted even if the bot
         restarts.
         """
-        time = time_in_seconds * 60 * 24
         if msg.pinned:
             return
-        await msg.delete(delay=time)
+        await msg.delete(delay=hours * 60 * 60)
         if not reschedule:
             await self.database.use_database(
-                    self.message_to_deleting_database, msg)
+                self.message_to_deleting_database, msg, hours)
 
     async def handle_deleted_messages(self, msg_id, channel_id):
         """
@@ -210,7 +209,7 @@ class Bot:
         """
         # clear the deleted message from the databases
         await self.database.use_database(
-                self.delete_message_from_databases, msg_id, channel_id)
+            self.delete_message_from_databases, msg_id, channel_id)
         channel = self.client.get_channel(channel_id)
         if (channel is None or channel.threads is None or
                 len(channel.threads) == 0):
@@ -232,10 +231,11 @@ class Bot:
                  "WHERE channel_id = '{}' AND message_id = '{}'").format(
                     i, channel_id, msg_id))
 
-    async def message_to_deleting_database(self, cursor, msg):
+    async def message_to_deleting_database(self, cursor, msg, time):
         # save message to database when scheduled for deletion
         # so it is deleted even if bot is restarted during the timing
-        cur_time = datetime.now().strftime('%d:%m:%H')
+        cur_time = (datetime.now() + timedelta(hours=time)
+                    ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO deleting_messages (channel_id, message_id, time)" +
                 "VALUES ('{}', '{}', '{}')").format(
@@ -260,12 +260,13 @@ class Bot:
         for i in entry:
             if e_type == 'time' and len(i) == 8:
                 now = datetime.strptime(datetime.now(
-                    ).strftime("%d:%m:%H"), "%d:%m:%H")
+                ).strftime("%d:%m:%H"), "%d:%m:%H")
                 then = datetime.strptime(i, "%d:%m:%H")
-                tdelta = now - then
+                tdelta = then - now
                 if tdelta.days < 0 or tdelta.seconds < 0:
                     return 0
-                return (24 * 60 * 60) - tdelta.seconds
+                hours = tdelta.days * 24 + tdelta.seconds / (3600)
+                return hours
             elif e_type == 'channel' and len(i) == 18:
                 channel = self.client.get_channel(int(i))
                 if channel is None:

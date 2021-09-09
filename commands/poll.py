@@ -4,7 +4,7 @@ from utils.misc import random_color, black_circle, white_circle
 
 # TODO add date and time to poll embed, indicating
 #      when the poll will automatically end
-#      once a day check for these old polls and close them
+#      set up timers to end polls
 
 
 class Poll(Help):
