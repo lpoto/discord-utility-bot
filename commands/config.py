@@ -116,7 +116,8 @@ class Config(Help):
                 "WHERE guild_id = '{}'").format(
                 new_prefix, msg.guild.id))
         await msg.channel.notify(
-            text='`Prefix` changed to `{}`.'.format(new_prefix))
+            text='`Prefix` changed to `{}`.'.format(new_prefix),
+            delete_after=False)
 
     async def set_command(self, cursor, msg, args):
         if args[1] == 'command':
@@ -147,7 +148,8 @@ class Config(Help):
             await msg.channel.notify(
                 text=(
                     'Removed roles for `{}`'
-                ).format(cmd))
+                ).format(cmd),
+                delete_after=False)
             return
         guild_roles = [i.name for i in msg.guild.roles]
         roles = await self.valid_roles(msg, new_roles, guild_roles)
@@ -166,7 +168,8 @@ class Config(Help):
                 '<;>'.join(roles), msg.guild.id, cmd))
         await msg.channel.notify(
             'Roles for `{}` changed to `{}`'
-            .format(cmd, ', '.join(roles)))
+            .format(cmd, ', '.join(roles)),
+            delete_after=False)
 
     async def valid_roles(self, msg, new_roles, guild_roles):
         roles = []
@@ -191,7 +194,9 @@ class Config(Help):
             cursor = self.bot.database.cnx.cursor(buffered=True)
             cursor.execute(query)
             cursor.close()
-            await msg.channel.notify(text='Removed `Welcome text`.')
+            await msg.channel.notify(
+                    text='Removed `Welcome text`.',
+                    delete_after=False)
             return
         await self.edit_sql(
             cursor,
@@ -204,7 +209,8 @@ class Config(Help):
                 "WHERE guild_id = '{}'").format(
                 new_txt, msg.guild.id))
         await msg.channel.notify(
-            text='`Welcome text` changed to `{}`.'.format(new_txt))
+            text='`Welcome text` changed to `{}`.'.format(new_txt),
+            delete_after=False)
 
     async def edit_sql(self, cursor, select, insert, update):
         cursor.execute(select)

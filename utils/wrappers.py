@@ -214,6 +214,8 @@ class ChannelWrapper(object):
         d = delete_after
         if str(self.type) == 'text' and delete_after is None:
             d = 5
+        elif delete_after is False or delete_after == -1:
+            d = None
         await self.send(embed=embed, delete_after=d)
 
     async def fetch_message(self, msg_id):
@@ -350,10 +352,10 @@ class EmbedWrapper(discord.Embed):
             marks = self.get_marks()
         if text is None:
             self._wrapped_embed.set_footer(
-                    text='@' + ''.join(marks))
+                text='@' + ''.join(marks))
         else:
             self._wrapped_embed.set_footer(
-                    text=text + '\n@' + ''.join(marks))
+                text=text + '\n@' + ''.join(marks))
 
     def get_info(self) -> str or None:
         if (self._wrapped_embed.footer.text is discord.Embed.Empty or
