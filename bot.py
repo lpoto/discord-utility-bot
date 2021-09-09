@@ -49,6 +49,7 @@ class Bot:
                 c.bot = self
                 self.add_command(c)
             self.ready = True
+        await self.database.use_database(self.restart_deleting_timers)
 
     def add_command(self, command):
         """
@@ -183,3 +184,62 @@ class Bot:
                 value='[{}]'.format(', '.join(roles)),
                 inline=False)
         return embed_var
+
+    async def timed_delete(self, msg, time=(24 * 60 * 60)):
+        """
+        Delete messages after time, and clear their info
+        from databases.
+        """
+        if msg.pinned:
+            return
+        await msg.delete(delay=time)
+        await self.database.use_database(
+                self.message_to_deleting_database, msg)
+
+    async def handle_deleted_messages(self, msg_id, channel_id):
+        # clear the deleted message from the databases
+        await self.database.use_database(
+                self.delete_message_from_databases, msg_id, channel_id)
+        channel = self.client.get_channel(channel_id)
+        if (channel is None or channel.threads is None or
+                len(channel.threads) == 0):
+            return
+        # if message has any threads owned by the bot, archive them
+        threads = [t for t in channel.threads if (
+            not t.archived and
+            t.owner_id == self.client.user.id and
+            t.id == msg_id)]
+        for i in threads:
+            await i.edit(archived=True)
+
+    async def delete_message_from_databases(self, cursor, msg_id, channel_id):
+        for i in self.database.deletable_messages_databases:
+            cursor.execute(
+                ("DELETE FROM {} " +
+                 "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                    i, channel_id, msg_id))
+
+    async def message_to_deleting_database(self, cursor, msg):
+        # save message to database when scheduled for deletion
+        # so it is deleted even if bot is restarted during the timing
+        cursor.execute(
+            ("INSERT INTO deleting_messages (channel_id, message_id)" +
+                "VALUES ('{}', '{}')").format(
+                msg.channel.id, msg.id))
+
+    async def restart_deleting_timers(self, cursor):
+        cursor.execute('SELECT * FROM deleting_messages')
+        fetched = cursor.fetchall()
+        for i in fetched:
+            channel = self.client.get_channel(int(i[0]))
+            msg = None
+            if channel is None:
+                channel = self.client.get_channel(int(i[1]))
+                if channel is None:
+                    continue
+                msg = await channel.fetch_message(int(i[0]))
+            else:
+                msg = await channel.fetch_message(int(i[1]))
+            if msg is None:
+                continue
+            await self.timed_delete(msg, 10)

@@ -230,3 +230,16 @@ class MyClient(discord.Client):
                 msg,
                 wrappers.MemberWrapper(interaction.user),
                 webhook)
+
+    async def on_raw_message_delete(self, msg):
+        if msg.cached_message:
+            m=msg.cached_message
+            if (len(m.embeds) < 1 or 
+                    str(m.channel.type) not in ['text', 'public_thread'] or
+                    m.guild.me.id != m.author.id):
+                return
+            e = m.embeds[0]
+            if (not e.title and not e.author and not e.footer.text and
+                    e.description != 'Message has been deleted!'):
+                return
+        await self.bot.handle_deleted_messages(msg.message_id, msg.channel_id)

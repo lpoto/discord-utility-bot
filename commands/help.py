@@ -17,6 +17,7 @@ class Help:
         self.requires_database = False
         self.interactions_require_database = False
         self.embed_type = None
+        self.game_menu = False
         self.game = False
         # on init add the created object to
         # Bot's commands dictionary
@@ -33,10 +34,13 @@ class Help:
     def command_info(self, prefix) -> list:
         # gather all the information about the command
         # to be used in command's help embed
+        add_inf = self.additional_info(prefix)
+        if self.game_menu or self.game:
+            add_inf += '\n\n* Games messages are deleted after 24 hours.'
         info = [
             self.name,
             self.description,
-            self.additional_info(prefix),
+            add_inf,
             self.bot_permissions,
             self.user_permissions,
             self.synonyms

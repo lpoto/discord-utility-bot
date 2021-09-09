@@ -37,6 +37,7 @@ class ConnectFour(Help):
         components.append(discord.ui.Button(
             label='leave', row=1, style=discord.ButtonStyle.primary))
         m = await msg.channel.send(embed=embed_var, components=components)
+        await self.bot.timed_delete(m)
         await self.select_tokens(
             m,
             user.id,

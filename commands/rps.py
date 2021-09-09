@@ -90,6 +90,7 @@ class Rps(Help):
         new_msg = await msg.channel.send(
             embed=new_embed,
             components=components)
+        await self.bot.timed_delete(new_msg)
         await self.bot.database.use_database(
             self.choice_to_database,
             self.emojis[button.emoji.name],

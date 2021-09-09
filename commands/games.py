@@ -9,6 +9,7 @@ class Games(Help):
         super().__init__(name='games')
         self.description = 'Show all games.'
         self.requires_database = True
+        self.game_menu = True
         self.interactions_require_database = True
         self.synonyms = ['play', 'rps', 'cf', 'hm']
 

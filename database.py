@@ -58,7 +58,7 @@ class DB:
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
                 'choice VARCHAR(18) NOT NULL',
-                },
+            },
             'connect_four': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
@@ -76,12 +76,22 @@ class DB:
                 'user_id VARCHAR(18) NOT NULL',
                 'word VARCHAR(30) NOT NULL'},
             'poll': {
-                'guild_id VARCHAR(18) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'response VARCHAR(30) NOT NULL'}
+                'response VARCHAR(30) NOT NULL'},
+            'deleting_messages': {
+                'channel_id VARCHAR(18) NOT NULL',
+                'message_id VARCHAR(18) NOT NULL'
+                }
         }
+
+    @property
+    def deletable_messages_databases(self):
+        return ['hangman_games',
+                'rps_games',
+                'connect_four_games',
+                'deleting_messages']
 
     async def connect_database(self, info=None):
         """Connect a MySQL database from provided info."""

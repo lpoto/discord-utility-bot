@@ -61,6 +61,7 @@ class Hangman(Help):
         # Open a thread where letters can be guessed
         embed = await self.game_embed(guild, msg_info, msg.author.id)
         m = await channel.send(embed=embed)
+        await self.bot.timed_delete(m)
         thread = await m.create_thread(name='HANGMAN')
         await self.bot.database.use_database(
             self.word_to_database, m, msg.author.id, word)
@@ -106,8 +107,8 @@ class Hangman(Help):
         letter = item[3]
         msg_info = await self.bot.database.use_database(
             self.word_from_database, referenced_msg)
-        # if str(msg_info['user_id']) == str(msg.author.id):
-        #    return
+        if str(msg_info['user_id']) == str(msg.author.id):
+            return
         embed = await self.game_embed(
             referenced_msg.guild,
             msg_info,

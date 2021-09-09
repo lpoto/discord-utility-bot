@@ -73,13 +73,13 @@ class MessageWrapper(discord.Message):
         return self
 
     async def delete(self, delay=None):
-        if (self.author.id != self.guild.me.id and
+        if (str(self.channel.type) not in ['text', 'public_thread'] or
+                self.author.id != self.guild.me.id and
             not self.channel.permissions(
                 self.guild.me,
-                'send_messages')):
-            return
+                'manage_messages')):
+            return False
         await self._wrapped_msg.delete(delay=delay)
-        del self
         return True
 
     # check the type of message based on its embed

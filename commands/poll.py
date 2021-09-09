@@ -94,6 +94,8 @@ class Poll(Help):
         # if reply does not contain any of the keywords
         # add a response to the poll, else
         # do whatever it is supposed to do
+        if item[2] is None:
+            return
         channel = item[0]
         poll_msg = await channel.fetch_message(int(item[1]))
         if poll_msg is None or not self.is_poll(poll_msg):
@@ -103,8 +105,6 @@ class Poll(Help):
                  'end': self.end_poll,
                  'question': self.change_question}
         option = item[2]
-        if option is None:
-            return
         args = option.split()
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
@@ -343,20 +343,20 @@ class Poll(Help):
 
     async def users_who_voted(self, cursor, rsp, msg):
         cursor.execute((
-            "SELECT * FROM poll WHERE guild_id = \"{}\" AND " +
+            "SELECT * FROM poll WHERE " +
             "channel_id = \"{}\" AND message_id = \"{}\" AND response = \"{}\""
         ).format(
-            msg.guild.id, msg.channel.id, msg.id, rsp))
+            msg.channel.id, msg.id, rsp))
         fetched = cursor.fetchall()
         return fetched
 
     async def add_or_remove(self, cursor, rsp, msg, user_id):
         cursor.execute((
-            "SELECT * FROM poll WHERE guild_id = \"{}\" AND " +
+            "SELECT * FROM poll WHERE " +
             "channel_id = \"{}\" AND " +
             "message_id = \"{}\" AND user_id = \"{}\" AND response = \"{}\""
         ).format(
-            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+            msg.channel.id, msg.id, user_id, rsp))
         fetched = cursor.fetchone()
         if fetched is None:
             return True
@@ -364,24 +364,24 @@ class Poll(Help):
 
     async def delete_from_db(self, cursor, rsp, msg, user_id):
         cursor.execute((
-            "DELETE FROM poll WHERE guild_id = \"{}\" AND " +
+            "DELETE FROM poll WHERE " +
             "channel_id = \"{}\" AND " +
             "message_id = \"{}\" AND user_id = \"{}\" AND response = \"{}\""
         ).format(
-            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+            msg.channel.id, msg.id, user_id, rsp))
 
     async def insert_to_db(self, cursor, rsp, msg, user_id):
         cursor.execute((
-            "INSERT INTO poll (guild_id, channel_id, message_id, user_id, " +
-            "response) VALUES (\"{}\", \"{}\", \"{}\", \"{}\", \"{}\")"
+            "INSERT INTO poll (channel_id, message_id, user_id, " +
+            "response) VALUES (\"{}\", \"{}\", \"{}\", \"{}\")"
         ).format(
-            msg.guild.id, msg.channel.id, msg.id, user_id, rsp))
+            msg.channel.id, msg.id, user_id, rsp))
 
     async def delete_poll_from_db(self, cursor, msg):
         cursor.execute((
-            "DELETE FROM poll WHERE guild_id = \"{}\" AND " +
+            "DELETE FROM poll WHERE " +
             "channel_id = \"{}\" AND message_id = \"{}\"").format(
-            msg.guild.id, msg.channel.id, msg.id))
+            msg.channel.id, msg.id))
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
