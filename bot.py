@@ -281,3 +281,8 @@ class Bot:
                 if msg is None:
                     continue
                 return msg
+
+    def clean_up(self):
+        self.client = None
+        for cmd in self.commands.values():
+            cmd.clean_up()
