@@ -1,7 +1,7 @@
 # Discord utility bot
 A discord bot written in python, intended for managing smaller discord servers.
 
-[Invite link](https://discord.com/oauth2/authorize?client_id=763366736586080257&scope=bot&permissions=268512320)
+[Invite link](https://discord.com/oauth2/authorize?client_id=763366736586080257&scope=bot&permissions=268512256)
 
 ## features
 
@@ -27,8 +27,8 @@ For more information type `-help` in discord channel, after adding the bot.
 	- Read Message History
 
 * optional:
-	- Manage Roles (adding and removing roles with reactions)
-	- Manage Messages (clearing chat, removing reactions when hosting games,...)
+	- Manage Roles (adding and removing roles with buttons)
+	- Manage Messages (clearing chat)
 	
 ## using the code
 
