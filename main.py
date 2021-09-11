@@ -66,7 +66,11 @@ def new_client(client=None, bot=None) -> MyClient:
         loop=None if client is None else client.loop,
         intents=discord.Intents.all())
     if bot is None:
-        bot = Bot(os.environ.get('DEFAULT_PREFIX'))
+        prefix = os.environ.get('DEFAULT_PREFIX')
+        if prefix is None:
+            raise Exception('Missing DEFAULT_PREFIX')
+            return
+        bot = Bot(prefix)
     bot.client = client
     client.bot = bot
     client.handle_exit = handle_exit
@@ -78,7 +82,12 @@ def run_bot(DISCORD_TOKEN):
     Run the bot in a loop while handling exits, reconnects
     and exceptions
     """
+    if DISCORD_TOKEN is None:
+        raise Exception('Missing DISCORD_TOKEN')
+        return
     client = new_client()
+    if client is None:
+        return
     client.loop.set_exception_handler(handle_exceptions)
     while True:
         try:

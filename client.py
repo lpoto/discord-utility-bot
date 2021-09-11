@@ -234,6 +234,7 @@ class MyClient(discord.Client):
                 webhook)
 
     async def on_raw_message_delete(self, msg):
+        # clean up message's info from database when deleted
         if msg.cached_message:
             m = msg.cached_message
             if (len(m.embeds) < 1 or
@@ -245,3 +246,19 @@ class MyClient(discord.Client):
                     e.description != 'Message has been deleted!'):
                 return
         await self.bot.handle_deleted_messages(msg.message_id, msg.channel_id)
+
+    async def on_raw_bulk_message_delete(self, payload):
+        # clean up bulk deleted message's info from
+        # database when deleted
+        for i in payload.message_ids:
+            c_m = [msg for msg in payload.cached_messages if msg.id == i]
+            c_m = None if len(c_m) == 0 else c_m[0]
+            data = {
+                'id': i,
+                'channel_id': payload.channel_id,
+                'guild_id': payload.guild_id,
+                'cached_message': None
+            }
+            event = discord.RawMessageDeleteEvent(data)
+            event.cached_message = c_m
+            self.dispatch('raw_message_delete', event)
