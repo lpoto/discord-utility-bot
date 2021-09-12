@@ -209,7 +209,7 @@ class Rps(Help):
             user = msg.guild.get_member(int(i[2]))
             if user is None:
                 continue
-            users[user] = i[0]
+            users[user] = i[3]
         users = {k: v for k, v in sorted(
             users.items(), key=lambda item: item[1], reverse=True)}
         i = 1

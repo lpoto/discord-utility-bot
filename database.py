@@ -41,34 +41,34 @@ class DB:
         All the required tables used by the bot.
         """
         return {
-            'prefix': {
+            'prefix': [
                 'guild_id VARCHAR(18) NOT NULL',
-                'prefix VARCHAR(5) NOT NULL'},
-            'commands': {
+                'prefix VARCHAR(5) NOT NULL'],
+            'commands': [
                 'guild_id VARCHAR(18) NOT NULL',
                 'command VARCHAR(30) NOT NULL',
-                'roles VARCHAR(100) NOT NULL'},
-            'welcome': {
+                'roles VARCHAR(100) NOT NULL'],
+            'welcome': [
                 'guild_id VARCHAR(18) NOT NULL',
-                'welcome VARCHAR(50) NOT NULL'},
-            'wins': {
+                'welcome VARCHAR(50) NOT NULL'],
+            'wins': [
                 'game VARCHAR(20) NOT NULL',
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'wins INT UNSIGNED'},
-            'messages': {
+                'wins INT UNSIGNED'],
+            'messages': [
                 'type VARCHAR(20) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'info VARCHAR(30) NOT NULL'},
-            'connect_four_records': {
-                'moves VARCHAR(43) NOT NULL'},
-            'deleting_messages': {
+                'info VARCHAR(30) NOT NULL'],
+            'connect_four_records': [
+                'moves VARCHAR(43) NOT NULL'],
+            'deleting_messages': [
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'time VARCHAR(8) NOT NULL'
-            }
+            ]
         }
 
     @property
