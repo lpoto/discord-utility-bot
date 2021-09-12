@@ -254,8 +254,9 @@ class ConnectFour(Help):
             if wins is not None:
                 embed_var.description += '\n\n{} total wins: {}'.format(
                     users[0][1], wins)
-        await self.bot.database.use_database(
-            self.moves_to_database, ''.join([str(i) for i in moves]))
+        if not forfeit:
+            await self.bot.database.use_database(
+                self.moves_to_database, ''.join([str(i) for i in moves]))
         await self.bot.database.use_database(
             self.add_game, msg, None, None, True)
         return embed_var
@@ -353,8 +354,8 @@ class ConnectFour(Help):
         if fetched is None:
             return
         info = {
-                'user_id': None if fetched[2] == 'None' else fetched[2],
-                'user2_id': None if fetched[3] == 'None' else fetched[3]
+                'user_id': None if fetched[3] == 'None' else fetched[3],
+                'user2_id': None if fetched[4] == 'None' else fetched[4]
                 }
         return info
 

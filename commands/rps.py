@@ -37,10 +37,9 @@ class Rps(Help):
             return
         game = await self.bot.database.use_database(
             self.choice_from_database, msg)
-        choice1 = None
-        user1 = msg.guild.get_member(int(game[2]))
+        user1 = msg.guild.get_member(int(game[3]))
         choice1 = list(self.emojis.keys())[
-                list(self.emojis.values()).index(game[3])]
+                list(self.emojis.values()).index(game[4])]
         if choice1 is None or user1 is None:
             return
         if user1.id == user.id:

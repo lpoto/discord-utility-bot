@@ -255,8 +255,8 @@ class Hangman(Help):
         if x is None:
             return
         return {
-            'user_id': x[2],
-            'word': x[3]
+            'user_id': x[3],
+            'word': x[4]
         }
 
     async def delete_from_database(self, cursor, msg):
