@@ -346,50 +346,49 @@ class ConnectFour(Help):
         return grid
 
     async def get_game(self, cursor, msg):
-        cursor.execute(("SELECT * FROM connect_four_games WHERE " +
-                        "channel_id = '{}' AND message_id = '{}'").format(
+        cursor.execute(("SELECT * FROM messages WHERE type = 'connect_Four'" +
+                        " AND channel_id = '{}' AND message_id = '{}'").format(
             msg.channel.id, msg.id))
         fetched = cursor.fetchone()
         if fetched is None:
             return
-        info = {}
-        for i in fetched:
-            if i[:2] == '1u':
-                info['user_id'] = None if len(i[2:]) != 18 else i[2:]
-            if i[:2] == '2u':
-                info['user2_id'] = None if len(i[2:]) != 18 else i[2:]
+        info = {
+                'user_id': None if fetched[2] == 'None' else fetched[2],
+                'user2_id': None if fetched[3] == 'None' else fetched[3]
+                }
         return info
 
     async def add_game(self, cursor, msg, u1_id, u2_id, delete_only=False):
-        cursor.execute(("DELETE FROM connect_four_games WHERE " +
+        cursor.execute(("DELETE FROM messages WHERE " +
                         "channel_id = '{}' AND message_id = '{}'").format(
             msg.channel.id, msg.id))
         if delete_only:
             return
-        cursor.execute(("INSERT INTO connect_four_games " +
-                        "(channel_id, message_id, user1_id, user2_id)" +
-                        "VALUES ('{}', '{}', '{}', '{}')").format(
-            msg.channel.id, msg.id,
-            '1u' + ('' if u1_id is None else str(u1_id)),
-            '2u' + ('' if u2_id is None else str(u2_id))))
+        cursor.execute(
+            ("INSERT INTO messages " +
+             "(type, channel_id, message_id, user_id, info)" +
+             "VALUES ('connect_four', '{}', '{}', '{}', '{}')"
+             ).format(msg.channel.id, msg.id, u1_id, u2_id))
 
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database
         cursor.execute((
-            "SELECT * FROM connect_four WHERE guild_id = '{}' AND" +
-            " user_id = '{}'").format(guild_id, user_id))
+            "SELECT * FROM wins WHERE game = 'connect_four' AND" +
+            " guild_id = '{}' AND user_id = '{}'").format(
+                guild_id, user_id))
         fetched = cursor.fetchone()
         count = 1
         if fetched is None:
             cursor.execute(
-                ("INSERT INTO connect_four (guild_id, user_id, " +
-                 "wins) VALUES ('{}', '{}', 1)").format(
+                ("INSERT INTO wins (game, guild_id, user_id, " +
+                 "wins) VALUES ('connect_four', '{}', '{}', 1)").format(
                     guild_id, user_id))
         else:
             count = fetched[2] + 1
             cursor.execute(
-                ("UPDATE connect_four SET wins = {} WHERE " +
-                 "guild_id = '{}' and user_id = '{}'").format(
+                ("UPDATE wins SET wins = {} WHERE " +
+                 "game = 'connect_four' AND guild_id = '{}' " +
+                 "AND user_id = '{}'").format(
                      count, guild_id, user_id))
         return count
 
@@ -399,9 +398,10 @@ class ConnectFour(Help):
              ).format(moves))
 
     async def leaderboard_embed(self, cursor, msg):
-        cursor.execute(
-            "SELECT * FROM connect_four WHERE guild_id = '{}'"
-            .format(msg.guild.id))
+        cursor.execute((
+            "SELECT * FROM wins WHERE game = 'connect_four' " +
+            "AND guild_id = '{}'"
+        ).format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is None or len(fetched) == 0:
             return
@@ -410,13 +410,12 @@ class ConnectFour(Help):
             color=utils.random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO)
-        print(fetched)
         users = {}
         for i in fetched:
-            user = msg.guild.get_member(int(i[1]))
+            user = msg.guild.get_member(int(i[2]))
             if user is None:
                 continue
-            users[user] = i[2]
+            users[user] = i[0]
         users = {k: v for k, v in sorted(
             users.items(), key=lambda item: item[1], reverse=True)}
         i = 1

@@ -3,8 +3,6 @@ from utils.misc import random_color, delete_button
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
-# TODO save wins to database, leaderboard
-
 
 class Hangman(Help):
     def __init__(self):
@@ -196,6 +194,13 @@ class Hangman(Help):
                 embed.description = '{} wins!\n\n{}'.format(
                     user.name if not user.nick else user.nick,
                     embed.description)
+                wins = await self.bot.database.use_database(
+                    self.wins_to_database, msg, user.id)
+                if wins is not None:
+                    extra = '{} total wins: {}\u3000'.format(
+                        user.name if not user.nick else user.nick,
+                        wins)
+                    embed.set_info(extra)
             else:
                 embed.description = '{} loses!\n\n{}'.format(
                     user.name if not user.nick else user.nick,
@@ -236,50 +241,87 @@ class Hangman(Help):
 
     async def word_to_database(self, cursor, msg, user_id, word):
         cursor.execute(
-            ("INSERT INTO hangman_games " +
-             "(channel_id, message_id, user_id, word) " +
-             "VALUES ('{}', '{}', '{}', '{}')").format(
+            ("INSERT INTO messages " +
+             "(type, channel_id, message_id, user_id, info) " +
+             "VALUES ('hangman', '{}', '{}', '{}', '{}')").format(
                 msg.channel.id, msg.id, user_id, word))
 
     async def word_from_database(self, cursor, msg):
         cursor.execute(
-            ("SELECT * FROM hangman_games " +
-             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+            ("SELECT * FROM messages WHERE type = 'hangman' AND " +
+             "channel_id = '{}' AND message_id = '{}'").format(
                 msg.channel.id, msg.id))
         x = cursor.fetchone()
         if x is None:
             return
-        info = {'user_id': None, 'word': None}
-        user = None
-        for i in x:
-            f = False
-            if not user:
-                try:
-                    user = msg.guild.get_member(int(i))
-                    f = True
-                    if not user:
-                        raise ValueError()
-                    info['user_id'] = user.id
-                except ValueError:
-                    pass
-            if not f:
-                info['word'] = i
-        return info
+        return {
+            'user_id': x[2],
+            'word': x[3]
+        }
 
     async def delete_from_database(self, cursor, msg):
         cursor.execute(
-            ("DELETE FROM hangman_games " +
+            ("DELETE FROM messages " +
              "WHERE channel_id = '{}' AND message_id = '{}'").format(
                 msg.channel.id, msg.id))
 
+    async def wins_to_database(self, cursor, msg, user_id):
+        # add a win for the user to the database and return total win count
+        cursor.execute((
+            "SELECT * FROM wins WHERE game = 'hangman' AND" +
+            " guild_id = '{}' AND user_id = '{}'").format(
+                msg.guild.id, user_id))
+        fetched = cursor.fetchone()
+        count = 1
+        if fetched is None:
+            cursor.execute(
+                ("INSERT INTO wins (game, guild_id, user_id, " +
+                 "wins) VALUES ('hangman', '{}', '{}', 1)").format(
+                    msg.guild.id, user_id))
+        else:
+            count = fetched[0] + 1
+            cursor.execute(
+                ("UPDATE wins SET wins = {} WHERE game = 'hangman' AND " +
+                 "guild_id = '{}' and user_id = '{}'").format(
+                     count, msg.guild.id, user_id))
+        return count
+
     async def leaderboard_embed(self, cursor, msg):
-        return
+        cursor.execute(
+            "SELECT * FROM wins WHERE game = 'hangman' AND guild_id = '{}'"
+            .format(msg.guild.id))
+        fetched = cursor.fetchall()
+        if fetched is None or len(fetched) == 0:
+            return
+        embed_var = EmbedWrapper(discord.Embed(
+            title='Leaderboard',
+            color=random_color()),
+            embed_type=self.embed_type,
+            marks=EmbedWrapper.INFO)
+        users = {}
+        for i in fetched:
+            user = msg.guild.get_member(int(i[2]))
+            if user is None:
+                continue
+            users[user] = i[0]
+        users = {k: v for k, v in sorted(
+            users.items(), key=lambda item: item[1], reverse=True)}
+        i = 1
+        for u, w in users.items():
+            if i > 10:
+                break
+            name = u.name if not u.nick else u.nick
+            embed_var.add_field(
+                name='{}.  {}'.format(i, name), value=w, inline=False)
+            i += 1
+        return embed_var
 
     def additional_info(self, prefix):
-        return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
+        return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
             'Typing this command open a games menu.',
             'Clicking on this game in a games menu starts the game.',
             'You receive a dm, where you reply with a word (or multiple).',
             'Only letter A-z can be used (case insensitive).',
             'The game will be started in a new thread, where ' +
-            'other users can guess the word.')
+            'other users can guess the word.',
+            'A record of wins is kept.')

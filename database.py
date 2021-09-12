@@ -51,37 +51,19 @@ class DB:
             'welcome': {
                 'guild_id VARCHAR(18) NOT NULL',
                 'welcome VARCHAR(50) NOT NULL'},
-            'rock_paper_scissors': {
+            'wins': {
+                'game VARCHAR(20) NOT NULL',
                 'guild_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
                 'wins INT UNSIGNED'},
-            'rps_games': {
+            'messages': {
+                'type VARCHAR(20) NOT NULL',
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'choice VARCHAR(18) NOT NULL',
-            },
-            'connect_four': {
-                'guild_id VARCHAR(18) NOT NULL',
-                'user_id VARCHAR(18) NOT NULL',
-                'wins INT UNSIGNED'},
-            'connect_four_games': {
-                'channel_id VARCHAR(18) NOT NULL',
-                'message_id VARCHAR(18) NOT NULL',
-                'user1_id VARCHAR(20) NOT NULL',
-                'user2_id VARCHAR(20) NOT NULL'},
+                'info VARCHAR(30) NOT NULL'},
             'connect_four_records': {
                 'moves VARCHAR(43) NOT NULL'},
-            'hangman_games': {
-                'channel_id VARCHAR(18) NOT NULL',
-                'message_id VARCHAR(18) NOT NULL',
-                'user_id VARCHAR(18) NOT NULL',
-                'word VARCHAR(30) NOT NULL'},
-            'poll': {
-                'channel_id VARCHAR(18) NOT NULL',
-                'message_id VARCHAR(18) NOT NULL',
-                'user_id VARCHAR(18) NOT NULL',
-                'response VARCHAR(30) NOT NULL'},
             'deleting_messages': {
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
@@ -96,10 +78,7 @@ class DB:
         be removed when the message is deleted.
         """
         return [
-            'hangman_games',
-            'rps_games',
-            'connect_four_games',
-            'poll',
+            'messages',
             'deleting_messages',
         ]
 

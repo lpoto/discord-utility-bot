@@ -38,20 +38,9 @@ class Rps(Help):
         game = await self.bot.database.use_database(
             self.choice_from_database, msg)
         choice1 = None
-        user1 = None
-        for i in game:
-            if len(i) == 1:
-                choice1 = list(self.emojis.keys())[
-                    list(self.emojis.values()).index(i)]
-                continue
-            if user1 is not None:
-                continue
-            try:
-                user1 = msg.guild.get_member(int(i))
-                if user1 is None:
-                    raise ValueError
-            except ValueError:
-                continue
+        user1 = msg.guild.get_member(int(game[2]))
+        choice1 = list(self.emojis.keys())[
+                list(self.emojis.values()).index(game[3])]
         if choice1 is None or user1 is None:
             return
         if user1.id == user.id:
@@ -98,21 +87,22 @@ class Rps(Help):
 
     async def choice_to_database(self, cursor, choice, msg, user_id):
         cursor.execute(
-            ("INSERT INTO rps_games " +
-             "(channel_id, message_id, user_id, choice) " +
-             "VALUES ('{}', '{}', '{}', '{}')").format(
-                msg.channel.id, msg.id, user_id, choice))
+            ("INSERT INTO messages " +
+             "(type, channel_id, message_id, user_id, info) " +
+             "VALUES ('{}', '{}', '{}', '{}', '{}')").format(
+                'rps', msg.channel.id, msg.id, user_id, choice))
 
     async def choice_from_database(self, cursor, msg):
         cursor.execute(
-            ("SELECT * FROM rps_games " +
-             "WHERE channel_id = '{}' AND message_id = '{}'").format(
+            ("SELECT * FROM messages " +
+             "WHERE type = 'rps' AND channel_id = '{}' AND message_id = '{}'"
+             ).format(
                 msg.channel.id, msg.id))
         return cursor.fetchone()
 
     async def delete_from_database(self, cursor, msg):
         cursor.execute(
-            ("DELETE FROM rps_games " +
+            ("DELETE FROM messages " +
              "WHERE channel_id = '{}' AND message_id = '{}'").format(
                 msg.channel.id, msg.id))
 
@@ -184,26 +174,27 @@ class Rps(Help):
     async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count
         cursor.execute((
-            "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}' AND" +
-            " user_id = '{}'").format(msg.guild.id, user_id))
+            "SELECT * FROM wins WHERE game = 'rps' AND" +
+            " guild_id = '{}' AND user_id = '{}'").format(
+                msg.guild.id, user_id))
         fetched = cursor.fetchone()
         count = 1
         if fetched is None:
             cursor.execute(
-                ("INSERT INTO rock_paper_scissors (guild_id, user_id, " +
-                 "wins) VALUES ('{}', '{}', 1)").format(
+                ("INSERT INTO wins (game, guild_id, user_id, " +
+                 "wins) VALUES ('rps', '{}', '{}', 1)").format(
                     msg.guild.id, user_id))
         else:
-            count = fetched[2] + 1
+            count = fetched[0] + 1
             cursor.execute(
-                ("UPDATE rock_paper_scissors SET wins = {} WHERE " +
+                ("UPDATE wins SET wins = {} WHERE game = 'rps' AND " +
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, msg.guild.id, user_id))
         return count
 
     async def leaderboard_embed(self, cursor, msg):
         cursor.execute(
-            "SELECT * FROM rock_paper_scissors WHERE guild_id = '{}'"
+            "SELECT * FROM wins WHERE game = 'rps' AND guild_id = '{}'"
             .format(msg.guild.id))
         fetched = cursor.fetchall()
         if fetched is None or len(fetched) == 0:
@@ -215,10 +206,10 @@ class Rps(Help):
             marks=EmbedWrapper.INFO)
         users = {}
         for i in fetched:
-            user = msg.guild.get_member(int(i[1]))
+            user = msg.guild.get_member(int(i[2]))
             if user is None:
                 continue
-            users[user] = i[2]
+            users[user] = i[0]
         users = {k: v for k, v in sorted(
             users.items(), key=lambda item: item[1], reverse=True)}
         i = 1

@@ -241,10 +241,6 @@ class MyClient(discord.Client):
                     str(m.channel.type) not in ['text', 'public_thread'] or
                     m.guild.me.id != m.author.id):
                 return
-            e = m.embeds[0]
-            if (not e.title and not e.author and not e.footer.text and
-                    e.description != 'Message has been deleted!'):
-                return
         await self.bot.handle_deleted_messages(msg.message_id, msg.channel_id)
 
     async def on_raw_bulk_message_delete(self, payload):
