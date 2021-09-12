@@ -1,5 +1,6 @@
 import discord
 from utils.misc import rps_emojis, random_color, delete_button
+from datetime import datetime, timedelta
 from utils.wrappers import EmbedWrapper, build_view
 from commands.help import Help
 
@@ -78,18 +79,20 @@ class Rps(Help):
         new_msg = await msg.channel.send(
             embed=new_embed,
             components=components)
-        await self.bot.timed_delete(new_msg)
         await self.bot.database.use_database(
             self.choice_to_database,
             self.emojis[button.emoji.name],
             new_msg, user.id)
 
     async def choice_to_database(self, cursor, choice, msg, user_id):
+        cur_time = (datetime.now() + timedelta(hours=24)
+                    ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
-             "(type, channel_id, message_id, user_id, info) " +
-             "VALUES ('{}', '{}', '{}', '{}', '{}')").format(
-                'rps', msg.channel.id, msg.id, user_id, choice))
+             "(type, channel_id, message_id, user_id, info, deletion_time) " +
+             "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
+                'rps', msg.channel.id, msg.id, user_id, choice, cur_time))
+        await msg.delete(delay=24 * 3600)
 
     async def choice_from_database(self, cursor, msg):
         cursor.execute(
@@ -100,10 +103,9 @@ class Rps(Help):
         return cursor.fetchone()
 
     async def delete_from_database(self, cursor, msg):
-        cursor.execute(
-            ("DELETE FROM messages " +
-             "WHERE channel_id = '{}' AND message_id = '{}'").format(
-                msg.channel.id, msg.id))
+        cursor.execute(("UPDATE messages SET type = 'deleting' WHERE " +
+                        "channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
 
     async def add_winner(self, embed, msg,  info):
         embed.title = (

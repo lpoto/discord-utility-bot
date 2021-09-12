@@ -1,5 +1,6 @@
 import discord
 from threading import Timer
+from datetime import datetime, timedelta
 import asyncio
 import utils.misc as utils
 from utils.wrappers import EmbedWrapper
@@ -37,7 +38,6 @@ class ConnectFour(Help):
         components.append(discord.ui.Button(
             label='leave', row=1, style=discord.ButtonStyle.primary))
         m = await msg.channel.send(embed=embed_var, components=components)
-        await self.bot.timed_delete(m)
         await self.select_tokens(
             m,
             user.id,
@@ -258,7 +258,7 @@ class ConnectFour(Help):
             await self.bot.database.use_database(
                 self.moves_to_database, ''.join([str(i) for i in moves]))
         await self.bot.database.use_database(
-            self.add_game, msg, None, None, True)
+            self.delete_game, msg)
         return embed_var
 
     def build_embed(
@@ -354,22 +354,35 @@ class ConnectFour(Help):
         if fetched is None:
             return
         info = {
-                'user_id': None if fetched[3] == 'None' else fetched[3],
-                'user2_id': None if fetched[4] == 'None' else fetched[4]
-                }
+            'user_id': None if fetched[3] == 'None' else fetched[3],
+            'user2_id': None if fetched[4] == 'None' else fetched[4]
+        }
         return info
 
-    async def add_game(self, cursor, msg, u1_id, u2_id, delete_only=False):
-        cursor.execute(("DELETE FROM messages WHERE " +
+    async def delete_game(self, cursor, msg):
+        cursor.execute(("UPDATE messages SET type = 'deleting' WHERE " +
                         "channel_id = '{}' AND message_id = '{}'").format(
             msg.channel.id, msg.id))
-        if delete_only:
+
+    async def add_game(self, cursor, msg, u1_id, u2_id):
+        cursor.execute(("SELECT * FROM messages WHERE type = 'connect_four' " +
+                        "AND channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
+        fetched = cursor.fetchone()
+        if fetched is not None:
+            cursor.execute(
+                ("UPDATE messages SET user_id = '{}', info = '{}'" +
+                 " WHERE channel_id = '{}' AND message_id = '{}'").format(
+                    u1_id, u2_id, msg.channel.id, msg.id))
             return
+        cur_time = (datetime.now() + timedelta(hours=24)
+                    ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
-             "(type, channel_id, message_id, user_id, info)" +
-             "VALUES ('connect_four', '{}', '{}', '{}', '{}')"
-             ).format(msg.channel.id, msg.id, u1_id, u2_id))
+             "(type, channel_id, message_id, user_id, info, deletion_time)" +
+             "VALUES ('connect_four', '{}', '{}', '{}', '{}', '{}')"
+             ).format(msg.channel.id, msg.id, u1_id, u2_id, cur_time))
+        await msg.delete(delay=24 * 3600)
 
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database

@@ -61,26 +61,11 @@ class DB:
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'info VARCHAR(30) NOT NULL'],
+                'info VARCHAR(30) NOT NULL',
+                'deletion_time VARCHAR(8)'],
             'connect_four_records': [
                 'moves VARCHAR(43) NOT NULL'],
-            'deleting_messages': [
-                'channel_id VARCHAR(18) NOT NULL',
-                'message_id VARCHAR(18) NOT NULL',
-                'time VARCHAR(8) NOT NULL'
-            ]
         }
-
-    @property
-    def deletable_messages_databases(self):
-        """
-        Databases from which the message info should
-        be removed when the message is deleted.
-        """
-        return [
-            'messages',
-            'deleting_messages',
-        ]
 
     async def connect_database(self, info=None):
         """

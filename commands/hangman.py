@@ -1,5 +1,6 @@
 import discord
 from utils.misc import random_color, delete_button
+from datetime import timedelta, datetime
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -59,7 +60,6 @@ class Hangman(Help):
         # Open a thread where letters can be guessed
         embed = await self.game_embed(guild, msg_info, msg.author.id)
         m = await channel.send(embed=embed)
-        await self.bot.timed_delete(m)
         thread = await m.create_thread(name='HANGMAN')
         await self.bot.database.use_database(
             self.word_to_database, m, msg.author.id, word)
@@ -240,11 +240,14 @@ class Hangman(Help):
         return pic
 
     async def word_to_database(self, cursor, msg, user_id, word):
+        cur_time = (datetime.now() + timedelta(hours=24)
+                    ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
-             "(type, channel_id, message_id, user_id, info) " +
-             "VALUES ('hangman', '{}', '{}', '{}', '{}')").format(
-                msg.channel.id, msg.id, user_id, word))
+             "(type, channel_id, message_id, user_id, info, deletion_time) " +
+             "VALUES ('hangman', '{}', '{}', '{}', '{}', '{}')").format(
+                msg.channel.id, msg.id, user_id, word, cur_time))
+        await msg.delete(delay=24 * 3600)
 
     async def word_from_database(self, cursor, msg):
         cursor.execute(
@@ -260,10 +263,9 @@ class Hangman(Help):
         }
 
     async def delete_from_database(self, cursor, msg):
-        cursor.execute(
-            ("DELETE FROM messages " +
-             "WHERE channel_id = '{}' AND message_id = '{}'").format(
-                msg.channel.id, msg.id))
+        cursor.execute(("UPDATE messages SET type = 'deleting' WHERE " +
+                        "channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
 
     async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count

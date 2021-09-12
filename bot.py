@@ -189,19 +189,6 @@ class Bot:
                 inline=False)
         return embed_var
 
-    async def timed_delete(self, msg, hours=24, reschedule=False):
-        """
-        Delete messages after time. Save the scheduled message
-        to the database, so it is deleted even if the bot
-        restarts.
-        """
-        if msg.pinned:
-            return
-        await msg.delete(delay=hours * 60 * 60)
-        if not reschedule:
-            await self.database.use_database(
-                self.message_to_deleting_database, msg, hours)
-
     async def handle_deleted_messages(self, msg_id, channel_id):
         """
         Clear deleted message's info from databases.
@@ -209,7 +196,7 @@ class Bot:
         """
         # clear the deleted message from the databases
         await self.database.use_database(
-            self.delete_message_from_databases, msg_id, channel_id)
+            self.delete_message_from_database, msg_id, channel_id)
         channel = self.client.get_channel(channel_id)
         if (channel is None or channel.threads is None or
                 len(channel.threads) == 0):
@@ -222,65 +209,37 @@ class Bot:
         for i in threads:
             await i.edit(archived=True)
 
-    async def delete_message_from_databases(self, cursor, msg_id, channel_id):
+    async def delete_message_from_database(self, cursor, msg_id, channel_id):
         # delete message info from all the tables that have entries
         # containing info about exactly one message
-        for i in self.database.deletable_messages_databases:
-            cursor.execute(
-                ("DELETE FROM {} " +
-                 "WHERE channel_id = '{}' AND message_id = '{}'").format(
-                    i, channel_id, msg_id))
-
-    async def message_to_deleting_database(self, cursor, msg, time):
-        # save message to database when scheduled for deletion
-        # so it is deleted even if bot is restarted during the timing
-        cur_time = (datetime.now() + timedelta(hours=time)
-                    ).strftime('%d:%m:%H')
         cursor.execute(
-            ("INSERT INTO deleting_messages (channel_id, message_id, time)" +
-                "VALUES ('{}', '{}', '{}')").format(
-                msg.channel.id, msg.id, cur_time))
+            ("DELETE FROM messages " +
+                "WHERE channel_id = '{}' AND message_id = '{}'").format(
+                    channel_id, msg_id))
 
     async def restart_deleting_timers(self, cursor):
         # on initializing the bot, reschedule the deletion of the
-        # messages in the deleting_messages table
-        cursor.execute('SELECT * FROM deleting_messages')
+        # messages
+        cursor.execute(
+                'SELECT * FROM messages WHERE deletion_time IS NOT NULL')
         fetched = cursor.fetchall()
         for i in fetched:
-            time = await self.get_from_entry(i, 'time')
-            channel = await self.get_from_entry(i, 'channel')
-            if channel is None or time is None:
+            hours = None
+            now = datetime.strptime(datetime.now(
+            ).strftime("%d:%m:%H"), "%d:%m:%H")
+            then = datetime.strptime(i[5], "%d:%m:%H")
+            tdelta = then - now
+            if tdelta.days < 0 or tdelta.seconds < 0:
+                hours = 0
+            else:
+                hours = tdelta.days * 24 + tdelta.seconds / (3600)
+            channel = self.client.get_channel(int(i[1]))
+            if channel is None or hours is None:
                 continue
-            msg = await self.get_from_entry(i, 'message', channel)
+            msg = await channel.fetch_message(int(i[2]))
             if msg is None:
                 continue
-            await self.timed_delete(msg, time, reschedule=True)
-
-    async def get_from_entry(self, entry, e_type, channel=None):
-        for i in entry:
-            if e_type == 'time' and len(i) == 8:
-                now = datetime.strptime(datetime.now(
-                ).strftime("%d:%m:%H"), "%d:%m:%H")
-                then = datetime.strptime(i, "%d:%m:%H")
-                tdelta = then - now
-                if tdelta.days < 0 or tdelta.seconds < 0:
-                    return 0
-                hours = tdelta.days * 24 + tdelta.seconds / (3600)
-                return hours
-            elif e_type == 'channel' and len(i) == 18:
-                channel = self.client.get_channel(int(i))
-                if channel is None:
-                    continue
-                return channel
-            elif e_type == 'message' and channel and len(i) == 18:
-                msg = None
-                try:
-                    msg = await channel.fetch_message(int(i))
-                except Exception:
-                    continue
-                if msg is None:
-                    continue
-                return msg
+            await msg.delete(delay=hours * 3600)
 
     def clean_up(self):
         self.client = None
