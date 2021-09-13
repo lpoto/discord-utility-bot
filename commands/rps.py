@@ -179,6 +179,7 @@ class Rps(Help):
             " guild_id = '{}' AND user_id = '{}'").format(
                 msg.guild.id, user_id))
         fetched = cursor.fetchone()
+        print(fetched)
         count = 1
         if fetched is None:
             cursor.execute(
@@ -186,7 +187,7 @@ class Rps(Help):
                  "wins) VALUES ('rps', '{}', '{}', 1)").format(
                     msg.guild.id, user_id))
         else:
-            count = fetched[0] + 1
+            count = fetched[3] + 1
             cursor.execute(
                 ("UPDATE wins SET wins = {} WHERE game = 'rps' AND " +
                  "guild_id = '{}' and user_id = '{}'").format(

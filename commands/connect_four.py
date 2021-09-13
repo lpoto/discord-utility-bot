@@ -398,7 +398,7 @@ class ConnectFour(Help):
                  "wins) VALUES ('connect_four', '{}', '{}', 1)").format(
                     guild_id, user_id))
         else:
-            count = fetched[2] + 1
+            count = fetched[3] + 1
             cursor.execute(
                 ("UPDATE wins SET wins = {} WHERE " +
                  "game = 'connect_four' AND guild_id = '{}' " +
