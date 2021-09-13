@@ -60,7 +60,7 @@ class Config(Help):
             embed = msg.embeds[0]
             if msg.embeds[0].title == 'prefix':
                 embed.description = 'Current: `{}`'.format(
-                        self.bot.database.default_prefix)
+                    self.bot.database.default_prefix)
             else:
                 embed.description = 'Current: `None`'
             await msg.edit(embed=embed)
@@ -141,22 +141,36 @@ class Config(Help):
         ]
         await msg.edit(embed=embed, components=components)
 
-    async def roles_command_embed(self, command, msg):
+    async def roles_command_embed(
+            self, command, msg, start=0, end=20, redo=False):
         embed = msg.embeds[0]
-        embed.title += ' - ' + command
-        roles = await self.bot.database.get_required_roles(msg, command)
-        if roles is None or len(roles) == 0:
-            embed.description = 'Current: `None`'
-        else:
-            embed.description = 'Current:\n{}'.format(
-                ',\n'.join(['`{}`'.format(r) for r in roles]))
-        embed.set_info(
-            '* Select roles that should be able to use the command.\n' +
-            '* Click on "default" to reset them.\n' +
-            '* Click on "commit" to save changes.'
-        )
-        options = [discord.SelectOption(label=k.name) for k in (
-            msg.guild.roles)]
+        if not redo:
+            embed.title += ' - ' + command
+            roles = await self.bot.database.get_required_roles(msg, command)
+            if roles is None or len(roles) == 0:
+                embed.description = 'Current: `None`'
+            else:
+                embed.description = 'Current:\n{}'.format(
+                    ',\n'.join(['`{}`'.format(r) for r in roles]))
+            embed.set_info(
+                '* Select roles that should be able to use the command.\n' +
+                '* Click on "default" to reset them.\n' +
+                '* Click on "commit" to save changes.'
+            )
+        guild_roles = [r.name for r in msg.guild.roles]
+        options = []
+        for i in range(start, end + 1):
+            if i >= len(guild_roles):
+                break
+            options.append(discord.SelectOption(label=guild_roles[i]))
+        if start > 0:
+            options.append(discord.SelectOption(
+                label='~ page {}'.format((start // 21)),
+                description='See the previous page of guild roles.'))
+        if len(guild_roles) > end:
+            options.append(discord.SelectOption(
+                label='~ page {}'.format(((start // 21) + 2)),
+                description='See the next page of guild roles.'))
         components = [
             discord.ui.Select(
                 placeholder='Select roles',
@@ -200,6 +214,14 @@ class Config(Help):
             return
         if embed.title.startswith('roles - '):
             role = interaction.data['values'][0]
+            if role.startswith('~ page'):
+                x = int(role.replace('~ page ', '')) - 1
+                await self.roles_command_embed(
+                    embed.title.replace('roles - ', ''),
+                    msg, x * 21,
+                    x * 21 + 20,
+                    True)
+                return
             if embed.description == 'Current: `None`':
                 embed.description = 'Current:\n`{}`'.format(role)
             else:
@@ -270,5 +292,5 @@ class Config(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}'.format(
-                'Initialize config with "{}config"'.format(prefix),
-                'Follow the instructions to change the settings.')
+            'Initialize config with "{}config"'.format(prefix),
+            'Follow the instructions to change the settings.')
