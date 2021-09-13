@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import delete_button
+from utils.misc import delete_button, random_color
 from utils.wrappers import EmbedWrapper
 
 
@@ -29,7 +29,8 @@ class Config(Help):
     @property
     def general_embed(self) -> (EmbedWrapper, list):
         embed_var = EmbedWrapper(discord.Embed(
-            description=''),
+            description='',
+            color=random_color()),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO,
             info=('* Select the option you want to modify.\n' +
@@ -157,7 +158,7 @@ class Config(Help):
                 '* Click on "default" to reset them.\n' +
                 '* Click on "commit" to save changes.'
             )
-        guild_roles = [r.name for r in msg.guild.roles]
+        guild_roles = [r.name for r in msg.guild.roles][::-1]
         options = []
         for i in range(start, end + 1):
             if i >= len(guild_roles):

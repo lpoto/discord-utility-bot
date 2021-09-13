@@ -211,7 +211,7 @@ class DB:
 
     async def required_roles_from_database(self, cursor, guild_id, command):
         cursor.execute((
-            "SELECT * FROM config WHERE option = 'welcome_text' " +
+            "SELECT * FROM config WHERE option = 'roles' " +
             "AND guild_id = '{}' AND info2 = '{}'").format(
             guild_id, command))
         fetched = cursor.fetchall()
