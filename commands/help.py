@@ -13,12 +13,10 @@ class Help:
         self.name = name
         self.description = 'Get information about the commands.'
         self.bot_permissions = ['send_messages']
-        self.user_permissions = ['send_messages']
+        self.user_permissions = None
         self.requires_database = False
         self.interactions_require_database = False
         self.embed_type = None
-        self.game_menu = False
-        self.game = False
         # on init add the created object to
         # Bot's commands dictionary
 
@@ -37,7 +35,7 @@ class Help:
         # gather all the information about the command
         # to be used in command's help embed
         add_inf = self.additional_info(prefix)
-        if self.game_menu or self.game:
+        if self.name in self.bot.games.keys() or self.name == 'games':
             add_inf += '\n\n* Games messages are deleted after 24 hours.'
         info = [
             self.name,
@@ -49,7 +47,7 @@ class Help:
         ]
         return info
 
-    async def execute_command(self, msg):
+    async def execute_command(self, msg, only_return=False):
         """
         Function called when a message in a discord channel
         starts with the prefix and the command's name.
@@ -57,14 +55,23 @@ class Help:
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
-        options = []
-        for i in embed_var.fields[:-1]:
-            options.append(discord.SelectOption(label=i.name))
-        options.append(discord.SelectOption(label=self.name))
-        components = [discord.ui.Select(
-            placeholder='Select a command', options=options),
+        options1 = [discord.SelectOption(
+            label=i) for i in self.bot.commands.keys() if (
+                i != self.name)]
+        options2 = [discord.SelectOption(
+            label=i) for i in self.bot.games.keys()]
+        options1.append(discord.SelectOption(label=self.name))
+        components = [
+            discord.ui.Select(
+                placeholder='Select a command', options=options1),
+            discord.ui.Select(
+                placeholder='Select a game', options=options2),
+            discord.ui.Button(label='config'),
             delete_button()]
-        await msg.channel.send(embed=embed_var, components=components)
+        if not only_return:
+            await msg.channel.send(embed=embed_var, components=components)
+        else:
+            return (embed_var, components)
 
     async def on_menu_select(self, interaction, msg, user, webhook):
         # this is triggered when a user selects something in
@@ -79,38 +86,45 @@ class Help:
                 embed=await self.help_embed(
                     msg, self.bot.commands))
             return
-        cmd = self.bot.commands[name]
+        cmd = None
+        if name in self.bot.commands:
+            cmd = self.bot.commands[name]
+        elif name in self.bot.games:
+            cmd = self.bot.games[name]
+        else:
+            return
         prefix = await self.bot.database.get_prefix(msg)
         new_embed = await self.bot.create_additional_help(
             cmd.command_info(prefix), msg, prefix)
-        new_embed.description += (
-            '\n\nSelect help in the dropdown to return to help menu.')
+        new_embed.set_info(
+                'Select help in the commands dropdown to return to help menu.')
         await msg.edit(embed=new_embed)
+
+    async def on_button_click(self, button, msg, user, webhook):
+        if not msg.is_help:
+            return
+        config_info = self.bot.commands['config'].general_embed
+        await msg.edit(embed=config_info[0], components=config_info[1])
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)
         idx = list(self.bot.commands.keys()).index('help')
         embed_var = EmbedWrapper(discord.Embed(
-            description='current prefix: [{}]'.format(prefix),
+            description='current prefix: `{}`'.format(prefix),
             color=colors[idx % 9]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         embed_var.description += (
-            "\n\nselect a command or type " +
-            '"{}<command> help" in the chat for details ' +
-            'about the command (synonyms, permissions,...)').format(
+            '\n\n* Click on "config" for more on bot\'s configurations ' +
+            'in this server.' +
+            "\n\n* select a command or a game for details " +
+            '(synonyms, permissions, usage...)').format(
             prefix)
-        for k, v in commands.items():
-            if k == 'help':
-                continue
-            embed_var.add_field(
-                name=k,
-                value=v.description)
         txt = ''
         for i in embed_var.marks:
             txt += '{}{}-\u3000{}\n'.format(
                 i, '\u3000' * (3 - len(i)), embed_var.mark_info(i))
-        txt += ('(Marks shown at the bottom of the embed ' +
-                '(after the second "@"))')
-        embed_var.add_field(name='* Marks', value=txt, inline=False)
+        embed_var.set_info(
+                'Marks are shown at the bottom left of the embed (after "@")')
+        embed_var.add_field(name='Marks', value=txt, inline=False)
         return embed_var

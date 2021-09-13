@@ -9,10 +9,9 @@ class Hangman(Help):
     def __init__(self):
         super().__init__(name='hangman')
         self.description = 'A game of hangman.'
-        self.bot_permissions = ['send_messages',
-                                'send_messages_in_threads']
+        self.synonyms = ['hm']
+        self.bot_permissions = ['send_messages']
         self.embed_type = 'HANGMAN'
-        self.game = True
 
     async def execute_game(self, msg, user, webhook):
         dm = await user.create_dm()
@@ -27,7 +26,8 @@ class Hangman(Help):
         await dm.send(embed=dm_embed)
 
     async def execute_command(self, msg):
-        await self.bot.commands['games'].execute_command(msg)
+        prefix = await self.bot.database.get_prefix(msg)
+        await self.bot.handle_message(msg, 'games', prefix)
 
     async def on_dm_reply(self, msg, referenced_msg):
         # User need to reply to the dm message with a word
@@ -320,10 +320,10 @@ class Hangman(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Typing this command open a games menu.',
-            'Clicking on this game in a games menu starts the game.',
+            'Typing this command open a game menu.',
+            'Clicking on this game in a game menu starts the game.',
             'You receive a dm, where you reply with a word (or multiple).',
-            'Only letter A-z can be used (case insensitive).',
-            'The game will be started in a new thread, where ' +
+            'Only letters A-z can be used (case insensitive).',
+            'The game is started in a new thread, where ' +
             'other users can guess the word.',
             'A record of wins is kept.')

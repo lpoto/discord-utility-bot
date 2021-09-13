@@ -32,13 +32,23 @@ class Config(Help):
             description=''),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO,
-            info='Select the option you want to modify.')
+            info=('* Select the option you want to modify.\n' +
+                  '* Select "help" to open help menu.'))
         components = [discord.ui.Button(label=i) for i in self.options.keys()]
-        components.append(delete_button())
+        components.append(discord.ui.Button(label='help', row=4))
+        components.append(delete_button(4))
         return (embed_var, components)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_config:
+            return
+        x = await self.bot.check_permissions(self, msg, user, False)
+        if not x:
+            return
+        if button.label == 'help' and not msg.embeds[0].title:
+            info = await self.bot.commands['help'].execute_command(
+                msg, only_return=True)
+            await msg.edit(embed=info[0], components=info[1])
             return
         if not msg.embeds[0].title:
             return await self.options[button.label](button.label, msg)
@@ -48,7 +58,11 @@ class Config(Help):
             return
         if button.label == 'default':
             embed = msg.embeds[0]
-            embed.description = 'Current: `None`'
+            if msg.embeds[0].title == 'prefix':
+                embed.description = 'Current: `{}`'.format(
+                        self.bot.database.default_prefix)
+            else:
+                embed.description = 'Current: `None`'
             await msg.edit(embed=embed)
         if button.label == 'commit':
             x = msg.embeds[0].title.split(' - ')
@@ -196,7 +210,7 @@ class Config(Help):
                     return
                 rls.append(role)
                 embed.description = 'Current:\n{}'.format(
-                        ',\n'.join(['`{}`'.format(x) for x in rls]))
+                    ',\n'.join(['`{}`'.format(x) for x in rls]))
             await msg.edit(embed=embed)
 
     async def reset_option(self, cursor, option, guild_id, info2=None):
@@ -255,4 +269,6 @@ class Config(Help):
         return roles
 
     def additional_info(self, prefix):
-        pass
+        return '* {}\n* {}'.format(
+                'Initialize config with "{}config"'.format(prefix),
+                'Follow the instructions to change the settings.')

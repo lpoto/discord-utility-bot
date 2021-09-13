@@ -9,9 +9,8 @@ class Games(Help):
         super().__init__(name='games')
         self.description = 'Show all games.'
         self.requires_database = True
-        self.game_menu = True
         self.interactions_require_database = True
-        self.synonyms = ['play', 'rps', 'cf', 'hm']
+        self.synonyms = ['play']
 
     async def execute_command(self, msg):
         embed_var = EmbedWrapper(discord.Embed(
@@ -23,10 +22,9 @@ class Games(Help):
             10 * '\u2000')
         components = []
         options = []
-        for k, v in self.bot.commands.items():
-            if v.game:
-                options.append(discord.SelectOption(label=k))
-                components.append(discord.ui.Button(label=k))
+        for k, v in self.bot.games.items():
+            options.append(discord.SelectOption(label=k))
+            components.append(discord.ui.Button(label=k))
         components.append(delete_button())
         components.append(
                 discord.ui.Select(
@@ -38,8 +36,8 @@ class Games(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_games:
             return
-        if button.label in self.bot.commands:
-            await self.bot.commands[button.label].execute_game(
+        if button.label in self.bot.games:
+            await self.bot.games[button.label].execute_game(
                 msg, user, webhook)
 
     async def on_menu_select(self, interaction, msg, user, webhook):
@@ -47,7 +45,7 @@ class Games(Help):
             return
         name = interaction.data['values'][0]
         embed = await self.bot.database.use_database(
-                self.bot.commands[name].leaderboard_embed, msg)
+                self.bot.games[name].leaderboard_embed, msg)
         if embed is None:
             await webhook.send(
                     content='No availible leaderboard.',

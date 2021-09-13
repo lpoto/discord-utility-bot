@@ -9,9 +9,9 @@ class Rps(Help):
     def __init__(self):
         super().__init__(name='rock-paper-scissors')
         self.description = 'A game of rock-paper-scissors between two users.'
+        self.synonyms = ['rps']
         self.embed_type = 'ROCK_PAPER_SCISSORS'
         self.emojis = {rps_emojis[i]: v for i, v in enumerate(['r', 'p', 's'])}
-        self.game = True
 
     async def execute_game(self, msg, user, webhook):
         components = [discord.ui.Button(emoji=i) for i in rps_emojis]
@@ -26,7 +26,8 @@ class Rps(Help):
         await webhook.send(embed=embed, view=view, ephemeral=True)
 
     async def execute_command(self, msg):
-        await self.bot.commands['games'].execute_command(msg)
+        prefix = await self.bot.database.get_prefix(msg)
+        await self.bot.handle_message(msg, 'games', prefix)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_rps:
@@ -40,7 +41,7 @@ class Rps(Help):
             self.choice_from_database, msg)
         user1 = msg.guild.get_member(int(game[3]))
         choice1 = list(self.emojis.keys())[
-                list(self.emojis.values()).index(game[4])]
+            list(self.emojis.values()).index(game[4])]
         if choice1 is None or user1 is None:
             return
         if user1.id == user.id:
@@ -226,8 +227,8 @@ class Rps(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Typing this command open a games menu.',
-            'Clicking on this game in a games menu starts the game.',
+            'Typing this command open a game menu.',
+            'Clicking on this game in a game menu starts the game.',
             'Select your choice in a message only you can see.',
-            'Then another selects his choice to play against you.',
+            'Then another makes his choice to play against you.',
             'A record of wins is kept.')

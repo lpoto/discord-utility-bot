@@ -1,9 +1,10 @@
 import discord
-from datetime import datetime, timedelta
+from datetime import datetime
 from utils.misc import Queue, colors, delete_button
 from utils.wrappers import EmbedWrapper
 from database import DB
 import commands as cmds
+import games as gms
 
 
 class Bot:
@@ -24,6 +25,7 @@ class Bot:
         # values and their names as keys
         self.commands = {}
         self.commands_synonyms = {}
+        self.games = {}
         # lists containing commands with special functions
         # that need to be processes separately
         self.on_reply_commands = []
@@ -49,15 +51,23 @@ class Bot:
                 c = C()
                 c.bot = self
                 self.add_command(c)
+            for C in list([cls for cls in gms.__dict__.values()
+                           if isinstance(cls, type)]):
+                c = C()
+                c.bot = self
+                self.add_command(c, True)
             self.ready = True
         await self.database.use_database(self.restart_deleting_timers)
 
-    def add_command(self, command):
+    def add_command(self, command, game=False):
         """
         Add a command object to Bot object's commands
         dictionary, when initializing a command object.
         """
-        self.commands[command.name] = command
+        if not game:
+            self.commands[command.name] = command
+        else:
+            self.games[command.name] = command
         if hasattr(command, 'on_reply'):
             self.on_reply_commands.append(command)
         if hasattr(command, 'on_thread_message'):
@@ -81,6 +91,8 @@ class Bot:
         args = msg.content.split()
         if cmd in self.commands:
             cmd = self.commands[cmd]
+        elif cmd in self.games:
+            cmd = self.games[cmd]
         elif cmd in self.commands_synonyms:
             cmd = self.commands_synonyms[cmd]
         else:
@@ -106,9 +118,9 @@ class Bot:
             await msg.channel.warn(
                 text='This command requires database connection!')
             return False
-        return await self.check_permissions(command, msg)
+        return await self.check_permissions(command, msg, msg.author)
 
-    async def check_permissions(self, command, msg) -> bool:
+    async def check_permissions(self, command, msg, user, reply=True) -> bool:
         """
         Check if bot and user have all the required permissions to use the
         command in message's channel.
@@ -117,35 +129,38 @@ class Bot:
         p = msg.channel.permissions(
             msg.guild.me, command.bot_permissions)
         if not p[0]:
-            await msg.channel.warn(
-                text=('I need `{}` permission to use this command.'
-                      ).format(p[1]))
+            if reply:
+                await msg.channel.warn(
+                    text=('I need `{}` permission to use this command.'
+                          ).format(p[1]))
             return False
-        if msg.channel.permissions(msg.author, 'administrator')[0]:
+        if msg.channel.permissions(user, 'administrator')[0]:
             return True
         # if command has required roles set up, override default
         # required permissions and only check if user has any of the
         # set up roles
         required_roles = await self.database.get_required_roles(
             msg, command.name)
-        user_roles = [i.name for i in msg.author.roles]
+        user_roles = [i.name for i in user.roles]
         if required_roles is not None:
             for i in required_roles:
                 if i in user_roles:
                     return True
-            await msg.channel.warn(
-                text=(
-                    'This command can be used by the following roles:\n{}'
-                ).format(', '.join(required_roles)))
+            if reply:
+                await msg.channel.warn(
+                    text=(
+                        'This command can be used by the following roles:\n{}'
+                    ).format(', '.join(required_roles)))
             return False
         # check if user has all the required permissions
         p = msg.channel.permissions(
-            msg.author, command.user_permissions)
+            user, command.user_permissions)
         if not p[0]:
-            await msg.channel.warn(
-                text=(
-                    'You need `{}` permission to use this command.'
-                ).format(p[1]))
+            if reply:
+                await msg.channel.warn(
+                    text=(
+                        'You need `{}` permission to use this command.'
+                    ).format(p[1]))
             return False
         return True
 
@@ -154,7 +169,8 @@ class Bot:
         Return command's information in an embed.
         (description, synonyms, additional_info, bot/user permissions, roles)
         """
-        idx = list(self.commands.keys()).index(info[0])
+        idx = (list(self.commands.keys()) + list(self.games.keys())
+               ).index(info[0])
         embed_var = EmbedWrapper(discord.Embed(
             title='{}{}'.format(prefix, info[0]),
             description=info[1],
@@ -177,10 +193,11 @@ class Bot:
             value='[{}]'.format(', '.join(info[3])),
             inline=False)
         roles = await self.database.get_required_roles(msg, info[0])
-        if roles is None:
+        if roles is None or len(roles) == 0:
             embed_var.add_field(
                 name='Required permissions for user',
-                value='[{}]'.format(', '.join(info[4])),
+                value=None if info[4] is None else '[{}]'.format(
+                    ', '.join(info[4])),
                 inline=False)
         else:
             embed_var.add_field(
@@ -221,7 +238,7 @@ class Bot:
         # on initializing the bot, reschedule the deletion of the
         # messages
         cursor.execute(
-                'SELECT * FROM messages WHERE deletion_time IS NOT NULL')
+            'SELECT * FROM messages WHERE deletion_time IS NOT NULL')
         fetched = cursor.fetchall()
         for i in fetched:
             hours = None
@@ -243,5 +260,5 @@ class Bot:
 
     def clean_up(self):
         self.client = None
-        for cmd in self.commands.values():
+        for cmd in list(self.commands.values()) + list(self.games.values()):
             cmd.clean_up()

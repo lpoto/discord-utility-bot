@@ -8,7 +8,7 @@ class Roles(Help):
         super().__init__(name='roles')
         self.description = 'Add or remove roles with button clicks.'
         self.bot_permissions = ['send_messages', 'manage_roles']
-        self.user_permissions = ['send_messages', 'manage_roles']
+        self.user_permissions = ['manage_roles']
         self.roles_queue = {}
 
     async def execute_command(self, msg):

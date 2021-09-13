@@ -11,7 +11,7 @@ class ConnectFour(Help):
     def __init__(self):
         super().__init__(name='connect-four')
         self.description = 'A game of connect-four between two users.'
-        self.game = True
+        self.synonyms = ['cf']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
         self.empty_grid_element = utils.black_circle
@@ -45,7 +45,8 @@ class ConnectFour(Help):
             self.tokens[1])
 
     async def execute_command(self, msg):
-        await self.bot.commands['games'].execute_command(msg)
+        prefix = await self.bot.database.get_prefix(msg)
+        await self.bot.handle_message(msg, 'games', prefix)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_connect_four:
@@ -444,8 +445,8 @@ class ConnectFour(Help):
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Typing this command open a games menu.',
-            'Clicking on this game in a games menu starts the game.',
+            'Typing this command open a game menu.',
+            'Clicking on this game in a game menu starts the game.',
             'Select a token you want to use in the game.',
             'Another user selects his token.',
             'You can leave the game in token selection.',

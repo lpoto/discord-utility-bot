@@ -8,7 +8,7 @@ class ClearChat(Help):
         self.synonyms = ['delete', 'clean', 'purge']
         self.description = 'Clear from 1 to 50 messages in chat.'
         self.bot_permissions = ['send_messages', 'manage_messages']
-        self.user_permissions = ['send_messages', 'manage_messages']
+        self.user_permissions = ['manage_messages']
 
     async def execute_command(self, msg):
         args = msg.content.split()
