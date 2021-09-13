@@ -41,16 +41,6 @@ class DB:
         All the required tables used by the bot.
         """
         return {
-            'prefix': [
-                'guild_id VARCHAR(18) NOT NULL',
-                'prefix VARCHAR(5) NOT NULL'],
-            'commands': [
-                'guild_id VARCHAR(18) NOT NULL',
-                'command VARCHAR(30) NOT NULL',
-                'roles VARCHAR(100) NOT NULL'],
-            'welcome': [
-                'guild_id VARCHAR(18) NOT NULL',
-                'welcome VARCHAR(50) NOT NULL'],
             'wins': [
                 'game VARCHAR(20) NOT NULL',
                 'guild_id VARCHAR(18) NOT NULL',
@@ -63,6 +53,11 @@ class DB:
                 'user_id VARCHAR(18) NOT NULL',
                 'info VARCHAR(30) NOT NULL',
                 'deletion_time VARCHAR(8)'],
+            'config': [
+                'option VARCHAR(20) NOT NULL',
+                'guild_id VARCHAR(18) NOT NULL',
+                'info VARCHAR(100) NOT NULL',
+                'info2 VARCHAR(50)'],
             'connect_four_records': [
                 'moves VARCHAR(43) NOT NULL'],
         }
@@ -173,7 +168,7 @@ class DB:
         Fetch a prefix used in message's server from database.
         """
         prefix = await self.use_database(
-            self.prefix_from_database, msg)
+            self.prefix_from_database, msg.guild.id)
         if prefix is None:
             return self.default_prefix
         return prefix
@@ -184,7 +179,7 @@ class DB:
         joins the server.
         """
         # get guild's welcome text from database
-        return await self.use_database(self.welcome_from_database, server)
+        return await self.use_database(self.welcome_from_database, server.id)
 
     async def get_required_roles(self, msg, command) -> list or None:
         """
@@ -192,56 +187,34 @@ class DB:
         a message's discord server
         """
         return await self.use_database(
-            self.required_roles_from_database, msg, command)
+            self.required_roles_from_database, msg.guild.id, command)
 
-    async def roles_for_all_commands(self, msg) -> str or None:
-        """
-        Return all the commands that have required roles set
-        up in the message's discord server.
-        """
-        return await self.use_database(
-            self.roles_for_all_commands_from_database, msg)
-
-    async def prefix_from_database(self, cursor, msg):
-        query = "SELECT * FROM prefix WHERE guild_id = '{}'".format(
-            msg.guild.id)
-        cursor.execute(query)
+    async def prefix_from_database(self, cursor, guild_id):
+        cursor.execute((
+            "SELECT * FROM config WHERE option = 'prefix' " +
+            "AND guild_id = '{}'").format(
+            guild_id))
         fetched = cursor.fetchone()
         if fetched is None:
             return self.default_prefix
-        return fetched[1]
+        return fetched[2]
 
-    async def welcome_from_database(self, cursor, server):
-        query = "SELECT * FROM welcome WHERE guild_id = '{}'".format(
-            server.id)
-        cursor.execute(query)
+    async def welcome_from_database(self, cursor, guild_id):
+        cursor.execute((
+            "SELECT * FROM config WHERE option = 'welcome_text' " +
+            "AND guild_id = '{}'").format(
+            guild_id))
         fetched = cursor.fetchone()
         if fetched is None:
             return None
-        return fetched[1]
+        return fetched[2]
 
-    async def required_roles_from_database(self, cursor, msg, command):
-        query = ("SELECT * FROM commands WHERE guild_id = '{}' AND " +
-                 "command = '{}'").format(
-            msg.guild.id, command)
-        cursor.execute(query)
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return None
-        return fetched[2].split('<;>')
-
-    async def roles_for_all_commands_from_database(self, cursor, msg):
-        cursor.execute(
-            "SELECT * FROM commands WHERE guild_id = '{}'".format(
-                msg.guild.id))
+    async def required_roles_from_database(self, cursor, guild_id, command):
+        cursor.execute((
+            "SELECT * FROM config WHERE option = 'welcome_text' " +
+            "AND guild_id = '{}' AND info2 = '{}'").format(
+            guild_id, command))
         fetched = cursor.fetchall()
-        if fetched is None or fetched == []:
-            return
-        prefix = await self.get_prefix(msg)
-        txt = ''
-        for idx, val in enumerate(fetched):
-            txt += '{}{}: [{}]'.format(
-                prefix, val[1], ', '.join(val[2].split('<;>')))
-            if idx < len(fetched) - 1:
-                txt += ',\n'
-        return txt
+        if fetched is None:
+            return None
+        return [x[2] for x in fetched]

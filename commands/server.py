@@ -14,9 +14,7 @@ class ServerInfo(Help):
         embed_var = await self.create_info_embed(msg)
         await msg.channel.send(
             embed=embed_var,
-            components=[
-                discord.ui.Button(label='config'),
-                delete_button()])
+            components=[delete_button()])
 
     async def create_info_embed(self, msg):
         # build embed with server info
@@ -72,15 +70,6 @@ class ServerInfo(Help):
         embed_var.description += (
             '\n\nClick "config" to see server configurations.')
         return embed_var
-
-    async def on_button_click(self, button, msg, user, webhook):
-        if not msg.is_config:
-            return
-        await msg.edit(
-            embed=await self.create_info_embed(msg),
-            components=[
-                discord.ui.Button(label='config'),
-                delete_button()])
 
     def get_online_members(self, msg):
         count = 0

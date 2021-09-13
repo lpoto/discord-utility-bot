@@ -35,5 +35,5 @@
 ## Running the bot
 Run the following command in your bot's root directory:
 ```
-	python main.py
+	python3 main.py
 ```
