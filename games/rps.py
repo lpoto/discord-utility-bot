@@ -180,7 +180,6 @@ class Rps(Help):
             " guild_id = '{}' AND user_id = '{}'").format(
                 msg.guild.id, user_id))
         fetched = cursor.fetchone()
-        print(fetched)
         count = 1
         if fetched is None:
             cursor.execute(

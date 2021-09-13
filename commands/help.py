@@ -117,7 +117,7 @@ class Help:
         embed_var.description += (
             '\n\n* Click on "config" for more on bot\'s configurations ' +
             'in this server.' +
-            "\n\n* select a command or a game for details " +
+            "\n* select a command or a game for details " +
             '(synonyms, permissions, usage...)').format(
             prefix)
         txt = ''

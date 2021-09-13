@@ -8,10 +8,10 @@ A discord bot written in python, intended for managing smaller discord servers.
 * Adding and removing roles with button clicks,
 * hosting polls,
 * clearing chat,
-* providing server and user info,
-* hosting rock-paper-scissors games,
-* hosting connect-four games,
-* hosting hangman games,
+* hosting games:
+	- rock-paper-scissors,
+	- connect-four,
+	- hangman
 * Customizable: 
 	- prefix,
 	- welcome text,

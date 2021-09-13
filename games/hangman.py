@@ -100,11 +100,14 @@ class Hangman(Help):
             return
         msg = await thread.fetch_message(int(item[1]))
         referenced_msg = await chnl.fetch_message(int(item[2]))
-        if not referenced_msg.is_hangman:
+        if (msg is None or referenced_msg is None or
+                not referenced_msg.is_hangman):
             return
         letter = item[3]
         msg_info = await self.bot.database.use_database(
             self.word_from_database, referenced_msg)
+        if msg_info is None:
+            return
         if str(msg_info['user_id']) == str(msg.author.id):
             return
         embed = await self.game_embed(
