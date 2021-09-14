@@ -189,6 +189,14 @@ class DB:
         return await self.use_database(
             self.required_roles_from_database, msg.guild.id, command)
 
+    async def get_deletion_time(self, msg):
+        """
+        Get the time before the games messages are deleted
+        in the messages's discord server.
+        """
+        return await self.use_database(
+                self.deletion_time_from_database, msg.guild.id)
+
     async def prefix_from_database(self, cursor, guild_id):
         cursor.execute((
             "SELECT * FROM config WHERE option = 'prefix' " +
@@ -218,3 +226,12 @@ class DB:
         if fetched is None:
             return None
         return [x[2] for x in fetched]
+
+    async def deletion_time_from_database(self, cursor, guild_id):
+        cursor.execute((
+            "SELECT * FROM config WHERE option = 'deletion_time' " +
+            "AND guild_id = '{}'").format(guild_id))
+        fetched = cursor.fetchone()
+        if fetched is None:
+            return 24
+        return int(fetched[2])

@@ -7,7 +7,7 @@ from commands.help import Help
 
 class Rps(Help):
     def __init__(self):
-        super().__init__(name='rock-paper-scissors')
+        super().__init__(name='rock_paper_scissors')
         self.description = 'A game of rock-paper-scissors between two users.'
         self.synonyms = ['rps']
         self.embed_type = 'ROCK_PAPER_SCISSORS'
@@ -86,14 +86,16 @@ class Rps(Help):
             new_msg, user.id)
 
     async def choice_to_database(self, cursor, choice, msg, user_id):
-        cur_time = (datetime.now() + timedelta(hours=24)
+        time = await self.bot.database.get_deletion_time(msg)
+        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
              "(type, channel_id, message_id, user_id, info, deletion_time) " +
              "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
                 'rps', msg.channel.id, msg.id, user_id, choice, cur_time))
-        await msg.delete(delay=24 * 3600)
+        await msg.delete(
+                delay=time * 3600)
 
     async def choice_from_database(self, cursor, msg):
         cursor.execute(

@@ -370,14 +370,16 @@ class ConnectFour(Help):
                  " WHERE channel_id = '{}' AND message_id = '{}'").format(
                     u1_id, u2_id, msg.channel.id, msg.id))
             return
-        cur_time = (datetime.now() + timedelta(hours=24)
+        time = await self.bot.database.get_deletion_time(msg)
+        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
              "(type, channel_id, message_id, user_id, info, deletion_time)" +
              "VALUES ('connect_four', '{}', '{}', '{}', '{}', '{}')"
              ).format(msg.channel.id, msg.id, u1_id, u2_id, cur_time))
-        await msg.delete(delay=24 * 3600)
+        await msg.delete(
+                delay=time * 3600)
 
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database

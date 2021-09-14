@@ -35,7 +35,11 @@ class Config(Help):
             'roles': (
                 'Which roles are allowed to use a command.',
                 self.roles_embed,
-                None)
+                None),
+            'deletion_time': (
+                'Time before the games messages are deleted.',
+                self.deletion_time_embed,
+                24)
         }
 
     @property
@@ -45,7 +49,8 @@ class Config(Help):
                 self.modify_prefix_embed,
                 self.modify_welcome_text_embed},
             'on_menu_select': {
-                self.modify_roles_embed}
+                self.modify_roles_embed,
+                self.modify_deletion_time_embed}
         }
 
     @property
@@ -138,10 +143,10 @@ class Config(Help):
             info = msg.embeds[0].description.replace('Current:', '', 1).strip()
             txt = '{}'.format(name) if not info2 else '`{} - {}`'.format(
                 name, info2)
-            if info == '`None`':
+            if str(info[1:][:-1]) == str(self.options[name][2]):
                 await self.bot.database.use_database(
                     self.reset_option, name, msg.guild.id, info2)
-                await msg.channel.notify('Removed settings for {}'.format(
+                await msg.channel.notify('Removed settings for `{}`'.format(
                     txt), delete_after=False)
                 return
             info = [(x[1:][:-2] if x[-1] == ',' else x[1:][:-1]
@@ -301,6 +306,51 @@ class Config(Help):
                 rls.append(role)
                 embed.description = 'Current:\n{}'.format(
                     ',\n'.join(['`{}`'.format(x) for x in rls]))
+            await msg.edit(embed=embed)
+
+    async def deletion_time_embed(self, label, msg, s=21, e=41, restart=False):
+        embed = msg.embeds[0]
+        if not restart:
+            embed.title = label
+            time = await self.bot.database.get_deletion_time(msg)
+            embed.description = 'Current: `{}`'.format(time)
+            embed.set_info(
+                '* Edit the time after the games messages are deleted.'
+            )
+        options = [discord.SelectOption(label=i) for i in range(s, e)]
+        if e > 1:
+            options.append(discord.SelectOption(
+                label='~ page {}'.format((s - 1) // 20),
+                description='See the previous page of deletion times.'))
+        if e < 121:
+            options.append(discord.SelectOption(
+                label='~ page {}'.format((s - 1) // 20 + 2),
+                description='See the next page of deletion times.'))
+        components = [
+            discord.ui.Select(
+                placeholder='Select a deletion time.',
+                options=options),
+            discord.ui.Button(label='back'),
+            discord.ui.Button(label='default'),
+            discord.ui.Button(label='commit'),
+            delete_button()
+        ]
+        await msg.edit(embed=embed, components=components)
+
+    async def modify_deletion_time_embed(self, interaction, msg):
+        embed = msg.embeds[0]
+        if embed.title == 'deletion_time':
+            time = interaction.data['values'][0]
+            if time.startswith('~ page'):
+                x = int(time.replace('~ page ', '')) - 1
+                await self.deletion_time_embed(
+                    embed.title,
+                    msg,
+                    x * 20 + 1,
+                    x * 20 + 21,
+                    True)
+                return
+            embed.description = 'Current: `{}`'.format(time)
             await msg.edit(embed=embed)
 
     # ------------------------------------------------------ modifying database

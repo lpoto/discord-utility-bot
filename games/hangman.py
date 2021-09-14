@@ -240,14 +240,16 @@ class Hangman(Help):
         return pic
 
     async def word_to_database(self, cursor, msg, user_id, word):
-        cur_time = (datetime.now() + timedelta(hours=24)
+        time = await self.bot.database.get_deletion_time(msg)
+        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(
             ("INSERT INTO messages " +
              "(type, channel_id, message_id, user_id, info, deletion_time) " +
              "VALUES ('hangman', '{}', '{}', '{}', '{}', '{}')").format(
                 msg.channel.id, msg.id, user_id, word, cur_time))
-        await msg.delete(delay=24 * 3600)
+        await msg.delete(
+                delay=time * 3600)
 
     async def word_from_database(self, cursor, msg):
         cursor.execute(

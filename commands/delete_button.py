@@ -6,7 +6,7 @@ from utils.wrappers import EmbedWrapper
 
 class DeleteButton(Help):
     def __init__(self):
-        super().__init__(name='delete-button')
+        super().__init__(name='delete_button')
         self.description = (
             'Delete a bot\'s message by clicking on a delete button.')
         self.bot_permissions = None
