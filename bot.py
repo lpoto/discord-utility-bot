@@ -172,26 +172,29 @@ class Bot:
         """
         idx = (list(self.commands.keys()) + list(self.games.keys())
                ).index(info[0])
+        title = info[0]
+        if self.commands[info[0]].executable:
+            title = prefix + title
         embed_var = EmbedWrapper(discord.Embed(
-            title='{}{}'.format(prefix, info[0]),
+            title=title,
             description=info[1],
             color=colors[idx % 9]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
-        synonyms = 'None'
         if len(info[5]) > 0:
             synonyms = ', '.join([prefix + i for i in info[5]])
-        embed_var.add_field(
-            name='synonyms',
-            value=synonyms,
-            inline=False)
+            embed_var.add_field(
+                name='synonyms',
+                value=synonyms,
+                inline=False)
         embed_var.add_field(
             name='Additional info',
             value=info[2],
             inline=False)
         embed_var.add_field(
             name='Required permissions for bot',
-            value='[{}]'.format(', '.join(info[3])),
+            value=None if info[3] is None else '[{}]'.format(
+                ', '.join(info[3])),
             inline=False)
         roles = await self.database.get_required_roles(msg, info[0])
         if roles is None or len(roles) == 0:
@@ -233,7 +236,7 @@ class Bot:
         else:
             # each command has "execute_command" function
             # that should be triggered when a message matches the command
-            if await self.check_if_valid(cmd, msg) is True:
+            if cmd.executable and await self.check_if_valid(cmd, msg) is True:
                 await cmd.execute_command(msg)
 
     async def handle_reply(self, channel, msg, ref_msg_id):
@@ -285,6 +288,8 @@ class Bot:
         Clear deleted message's info from databases.
         Archive any threads the bot started on the message.
         """
+        if not self.database.connected:
+            return
         # clear the deleted message from the databases
         await self.database.use_database(
             self.delete_message_from_database, msg_id, channel_id)

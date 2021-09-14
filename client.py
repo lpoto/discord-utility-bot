@@ -195,14 +195,8 @@ class MyClient(discord.Client):
         # if delete button was clicked and message is deletable
         # (not pinned, and not marked with ND) delete it
         if button.label == 'delete':
-            if hasattr(msg, 'is_deletable') and msg.is_deletable:
-                await msg.edit(
-                    text=None,
-                    embed=discord.Embed(
-                        color=utils.green_color,
-                        description='Message has been deleted!'),
-                    components=[],
-                    delete_after=2)
+            await self.bot.commands['delete-button'].execute_command(
+                    msg, interaction.user, interaction.followup)
             return
         if msg.is_ended:
             return

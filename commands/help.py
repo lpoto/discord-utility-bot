@@ -14,6 +14,7 @@ class Help:
         self.description = 'Get information about the commands.'
         self.bot_permissions = ['send_messages']
         self.user_permissions = None
+        self.executable = True
         self.requires_database = False
         self.interactions_require_database = False
         self.embed_type = None

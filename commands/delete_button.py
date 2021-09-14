@@ -1,0 +1,37 @@
+import discord
+from commands.help import Help
+from utils.misc import green_color
+from utils.wrappers import EmbedWrapper
+
+
+class DeleteButton(Help):
+    def __init__(self):
+        super().__init__(name='delete-button')
+        self.description = (
+            'Delete a bot\'s message by clicking on a delete button.')
+        self.bot_permissions = None
+        self.user_permissions = ['manage_messages']
+        self.executable = False
+
+    async def execute_command(self, msg, user=None, webhook=None):
+        if (str(msg.channel.type) != 'text' or
+                not webhook or not user or
+                msg.author.id != msg.guild.me.id or
+                not hasattr(msg, 'is_deletable') or
+                not msg.is_deletable):
+            return
+        x = await self.bot.check_permissions(self, msg, user, webhook)
+        if not x:
+            return
+        await msg.edit(text=None,
+                       embed=discord.Embed(
+                           color=green_color,
+                           description='Message has been deleted!'),
+                       components=[],
+                       delete_after=2)
+
+    def additional_info(self, prefix):
+        return '* {}\n* {}'.format(
+            'Pinned messages will not be deleted.',
+            'Messages with "{}" mark will not be deleted.'.format(
+                EmbedWrapper.NOT_DELETABLE))

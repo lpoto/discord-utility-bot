@@ -142,7 +142,7 @@ class Config(Help):
                 await self.bot.database.use_database(
                     self.reset_option, name, msg.guild.id, info2)
                 await msg.channel.notify('Removed settings for {}'.format(
-                    txt))
+                    txt), delete_after=False)
                 return
             info = [(x[1:][:-2] if x[-1] == ',' else x[1:][:-1]
                      ) for x in info.split('\n') if len(x.strip()) != 0]
