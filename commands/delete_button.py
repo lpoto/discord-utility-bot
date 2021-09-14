@@ -17,8 +17,14 @@ class DeleteButton(Help):
         if (str(msg.channel.type) != 'text' or
                 not webhook or not user or
                 msg.author.id != msg.guild.me.id or
-                not hasattr(msg, 'is_deletable') or
-                not msg.is_deletable):
+                not hasattr(msg, 'is_deletable')):
+            return
+        if msg.pinned and webhook:
+            await webhook.send(
+                    'This message is pinned!',
+                    ephemeral=True)
+            return
+        if not msg.is_deletable:
             return
         x = await self.bot.check_permissions(self, msg, user, webhook)
         if not x:
