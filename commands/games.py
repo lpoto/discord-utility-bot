@@ -1,6 +1,6 @@
 import discord
 from utils.wrappers import EmbedWrapper
-from utils.misc import random_color, delete_button
+from utils.misc import colors, delete_button
 from commands.help import Help
 
 
@@ -12,10 +12,12 @@ class Games(Help):
         self.interactions_require_database = True
         self.synonyms = ['play']
 
-    async def execute_command(self, msg):
+    async def execute_command(self, msg, return_only=False):
+        color = colors[list(self.bot.commands.keys()).index(
+            self.name) % 9]
         embed_var = EmbedWrapper(discord.Embed(
             description='',
-            color=random_color()),
+            color=color),
             embed_type='GAMES',
             marks=EmbedWrapper.INFO,
             info='Click on the game to start it.' +
@@ -25,17 +27,25 @@ class Games(Help):
         for k, v in self.bot.games.items():
             options.append(discord.SelectOption(label=k))
             components.append(discord.ui.Button(label=k))
-        components.append(delete_button())
         components.append(
                 discord.ui.Select(
                     placeholder='See leaderboards.',
                     options=options))
-        await msg.channel.send(
-            embed=embed_var, components=components)
+        components.append(discord.ui.Button(label='help', row=4))
+        components.append(delete_button(4))
+        if not return_only:
+            await msg.channel.send(
+                embed=embed_var, components=components)
+            return
+        return (embed_var, components)
 
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_games:
             return
+        if button.label == 'help':
+            help_info = await self.bot.commands['help'].execute_command(
+                    msg, True)
+            await msg.edit(embed=help_info[0], components=help_info[1])
         if button.label in self.bot.games:
             await self.bot.games[button.label].execute_game(
                 msg, user, webhook)

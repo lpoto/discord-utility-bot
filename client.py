@@ -37,7 +37,7 @@ class MyClient(discord.Client):
         except Exception:
             self.dispatch('error', event_name, *sys.exc_info())
 
-#  -------------------------- events -------------------------
+#  -------------------------------------------------------------- client events
 
     async def on_ready(self):
         if self.user:
@@ -114,13 +114,15 @@ class MyClient(discord.Client):
             return
 
     async def on_reply(self, msg, referenced_msg):
-        # functions that should be processed separately
         if referenced_msg.author.id != self.user.id:
             return
-        # iterate through those commands in linked list that
-        # have on_reply function
-        for i in self.bot.on_reply_commands:
-            await i.on_reply(msg, referenced_msg)
+        # process replies in a queue to avoid missing edits
+        await self.bot.queue.add_to_queue(
+            'reply:{}'.format(msg.id),
+            msg.channel,
+            msg,
+            referenced_msg.id,
+            function=self.bot.handle_reply)
 
     async def on_dm(self, msg):
         # handle messages sent in private chats
@@ -190,7 +192,6 @@ class MyClient(discord.Client):
         button = utils.get_component(interaction.data['custom_id'], msg)
         if not button:
             return
-        webhook = interaction.followup
         # if delete button was clicked and message is deletable
         # (not pinned, and not marked with ND) delete it
         if button.label == 'delete':
@@ -205,33 +206,31 @@ class MyClient(discord.Client):
             return
         if msg.is_ended:
             return
-        # call those commands that have on button click functions
-        for cmd in self.bot.on_button_click_commands:
-            if (cmd.interactions_require_database and
-                    not self.bot.database.connected):
-                continue
-            await cmd.on_button_click(
-                button,
-                msg,
-                wrappers.MemberWrapper(interaction.user),
-                webhook)
+        # process button_click in a queue to avoid
+        # missing any of the edits
+        await self.bot.queue.add_to_queue(
+            'click:{}'.format(msg.id),
+            msg.channel,
+            msg.id,
+            interaction,
+            button,
+            None if not msg.flags.ephemeral else msg,
+            function=self.bot.handle_button_click)
 
     async def on_menu_select(self, interaction, msg):
         # handle interaction when a selection is made
         # in a dropdown menu
         if msg.is_ended:
             return
-        webhook = interaction.followup
-        # call those commands that have on menu select functions
-        for cmd in self.bot.on_menu_select_commands:
-            if (cmd.interactions_require_database and
-                    not self.bot.database.connected):
-                continue
-            await cmd.on_menu_select(
-                interaction,
-                msg,
-                wrappers.MemberWrapper(interaction.user),
-                webhook)
+        # process menu_selection in a queue to avoid
+        # missing any of the edits
+        await self.bot.queue.add_to_queue(
+            'select:{}'.format(msg.id),
+            msg.channel,
+            msg.id,
+            interaction,
+            None if not msg.flags.ephemeral else msg,
+            function=self.bot.handle_menu_select)
 
     async def on_raw_message_delete(self, msg):
         # clean up message's info from database when deleted

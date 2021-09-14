@@ -75,11 +75,8 @@ class Poll(Help):
             if len(o) < 1:
                 continue
             try:
-                # handle replies in a queue
-                await self.bot.queue.add_to_queue(
-                    queue_id='pollmessage:{}'.format(poll_msg.id),
-                    item=(poll_msg.channel, poll_msg.id, o.strip()),
-                    function=self.add_poll_info)
+                await self.add_poll_info(
+                        poll_msg.channel, poll_msg.id, o.strip())
             except ValueError as err:
                 if str(err) in [
                     'could not find open space for item',
@@ -90,23 +87,18 @@ class Poll(Help):
                 else:
                     raise ValueError(err)
 
-    async def add_poll_info(self, item):
+    async def add_poll_info(self, channel, poll_msg_id, option):
         # if reply does not contain any of the keywords
         # add a response to the poll, else
         # do whatever it is supposed to do
-        if item is None or item[2] is None:
-            return
-        channel = item[0]
-        poll_msg = await channel.fetch_message(int(item[1]))
-        if poll_msg is None or not self.is_poll(poll_msg):
+        poll_msg = await channel.fetch_message(int(poll_msg_id))
+        if (poll_msg is None or not self.is_poll(poll_msg)
+                or option is None):
             return
         funcs = {'remove': self.remove_response,
                  'fix': self.fix_poll,
                  'end': self.end_poll,
                  'question': self.change_question}
-        option = item[2]
-        if option is None:
-            return
         args = option.split()
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
@@ -249,20 +241,6 @@ class Poll(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not self.is_poll(msg):
             return
-        # process adding tokens and removing tokens to the responses
-        # in a queue, so we avoid losing any edits
-        await self.bot.queue.add_to_queue(
-            queue_id='pollmessage:{}'.format(msg.id),
-            item=(msg.channel, msg.id, user, button),
-            function=self.handle_button_click)
-
-    async def handle_button_click(self, item):
-        channel = item[0]
-        msg = await channel.fetch_message(int(item[1]))
-        if msg is None:
-            return
-        user = item[2]
-        button = item[3]
         x = button.label.split('\u3000')
         add = await self.bot.database.use_database(
             self.add_or_remove, x[0].strip(), msg, user.id)

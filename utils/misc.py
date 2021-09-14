@@ -14,13 +14,13 @@ class Queue():
         self.bot = bot
         self.queues = {}
 
-    async def add_to_queue(self, queue_id, item, function=None, idx=None):
+    async def add_to_queue(self, queue_id, *args, function=None, idx=None):
         if idx is None:
             self.queues.setdefault(
-                queue_id, [False, deque([])])[1].append(item)
+                queue_id, [False, deque([])])[1].append(args)
         else:
             self.queues.setdefault(
-                queue_id, [False, deque([])])[1].insert(idx, item)
+                queue_id, [False, deque([])])[1].insert(idx, args)
         # start clearing the queue immediately if function provided
         if function is not None:
             await self.clear_queue(queue_id, function, False)
@@ -34,11 +34,11 @@ class Queue():
             (not self.queues[queue_id][0] or
              ignore_running) and len(self.queues[queue_id][1]) > 0):
             self.queues[queue_id][0] = True
-            item = self.queues[queue_id][1].popleft()
+            args = self.queues[queue_id][1].popleft()
             # catch exceptions triggered when clearing the queue
             # and continue clearing
             try:
-                await function(item)
+                await function(*args)
             except ValueError as err:
                 if str(err) in [
                     'could not find open space for item',

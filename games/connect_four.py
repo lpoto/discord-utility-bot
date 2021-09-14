@@ -66,10 +66,7 @@ class ConnectFour(Help):
             return
         if (button.label == 'forfeit' or
                 button.emoji.name in utils.number_emojis):
-            await self.bot.queue.add_to_queue(
-                queue_id='connectfour:{}'.format(msg.id),
-                item=(button, msg, user),
-                function=self.play_game)
+            await self.play_game(button, msg, user)
 
     async def select_tokens(self, msg, user_id, name, token):
         tks = msg.embeds[0].description.split('\n')
@@ -160,10 +157,7 @@ class ConnectFour(Help):
         if msg.id in self.timers:
             del self.timers[msg.id]
 
-    async def play_game(self, item):
-        button = item[0]
-        msg = item[1]
-        user = msg.guild.get_member(item[2].id)
+    async def play_game(self, button, msg, user):
         embed = msg.embeds[0]
         x = await self.bot.database.use_database(
             self.get_game, msg)

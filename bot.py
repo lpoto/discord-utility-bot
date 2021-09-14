@@ -1,7 +1,7 @@
 import discord
 from datetime import datetime
 from utils.misc import Queue, colors, delete_button
-from utils.wrappers import EmbedWrapper
+from utils.wrappers import EmbedWrapper, MemberWrapper
 from database import DB
 import commands as cmds
 import games as gms
@@ -83,32 +83,13 @@ class Bot:
         for i in command.synonyms:
             self.commands_synonyms[i] = command
 
-    async def handle_message(self, msg, cmd, prefix):
+    def clean_up(self):
         """
-        Handle a message, that fits command format,
-        sent by a user in a discord server.
+        Clean up commands threading timers etc.
         """
-        args = msg.content.split()
-        if cmd in self.commands:
-            cmd = self.commands[cmd]
-        elif cmd in self.games:
-            cmd = self.games[cmd]
-        elif cmd in self.commands_synonyms:
-            cmd = self.commands_synonyms[cmd]
-        else:
-            return
-        # if 2nd word is help send additional info
-        # about the command
-        if len(args) > 1 and args[1] == 'help':
-            await msg.channel.send(
-                embed=await self.create_additional_help(
-                    cmd.command_info(prefix), msg, prefix),
-                components=delete_button())
-        else:
-            # each command has "execute_command" function
-            # that should be triggered when a message matches the command
-            if await self.check_if_valid(cmd, msg) is True:
-                await cmd.execute_command(msg)
+        self.client = None
+        for cmd in list(self.commands.values()) + list(self.games.values()):
+            cmd.clean_up()
 
     async def check_if_valid(self, command, msg) -> bool:
         """
@@ -206,6 +187,79 @@ class Bot:
                 inline=False)
         return embed_var
 
+    # ---------------------------------------------------- handle client events
+
+    async def handle_message(self, msg, cmd, prefix):
+        """
+        Handle a message, that fits command format,
+        sent by a user in a discord server.
+        """
+        args = msg.content.split()
+        if cmd in self.commands:
+            cmd = self.commands[cmd]
+        elif cmd in self.games:
+            cmd = self.games[cmd]
+        elif cmd in self.commands_synonyms:
+            cmd = self.commands_synonyms[cmd]
+        else:
+            return
+        # if 2nd word is help send additional info
+        # about the command
+        if len(args) > 1 and args[1] == 'help':
+            await msg.channel.send(
+                embed=await self.create_additional_help(
+                    cmd.command_info(prefix), msg, prefix),
+                components=delete_button())
+        else:
+            # each command has "execute_command" function
+            # that should be triggered when a message matches the command
+            if await self.check_if_valid(cmd, msg) is True:
+                await cmd.execute_command(msg)
+
+    async def handle_reply(self, channel, msg, ref_msg_id):
+        referenced_msg = await channel.fetch_message(int(ref_msg_id))
+        if msg is None or referenced_msg is None:
+            return
+        for i in self.on_reply_commands:
+            await i.on_reply(msg, referenced_msg)
+
+    async def handle_button_click(
+            self, channel, msg_id, interaction, button, msg=None):
+        # function handling button_clicks in a queue
+        msg = msg if msg is not None else (
+            await channel.fetch_message(int(msg_id)))
+        if msg is None:
+            return
+        webhook = interaction.followup
+        # call those commands that have on button click functions
+        for cmd in self.on_button_click_commands:
+            if (cmd.interactions_require_database and
+                    not self.database.connected):
+                continue
+            await cmd.on_button_click(
+                button,
+                msg,
+                MemberWrapper(interaction.user),
+                webhook)
+
+    async def handle_menu_select(self, channel, msg_id, interaction, msg=None):
+        # function for menu selection handled in a queue
+        msg = msg if msg is not None else (
+            await channel.fetch_message(int(msg_id)))
+        if not msg:
+            return
+        webhook = interaction.followup
+        # call those commands that have on menu select functions
+        for cmd in self.on_menu_select_commands:
+            if (cmd.interactions_require_database and
+                    not self.database.connected):
+                continue
+            await cmd.on_menu_select(
+                interaction,
+                msg,
+                MemberWrapper(interaction.user),
+                webhook)
+
     async def handle_deleted_messages(self, msg_id, channel_id):
         """
         Clear deleted message's info from databases.
@@ -257,8 +311,3 @@ class Bot:
             if msg is None:
                 continue
             await msg.delete(delay=hours * 3600)
-
-    def clean_up(self):
-        self.client = None
-        for cmd in list(self.commands.values()) + list(self.games.values()):
-            cmd.clean_up()

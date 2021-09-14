@@ -84,26 +84,23 @@ class Hangman(Help):
             return
         for i in x:
             await self.bot.queue.add_to_queue(
-                queue_id='hmmessage:{}'.format(msg.channel.parent.id),
-                item=(
-                    msg.channel.parent.id,
-                    msg.id,
-                    msg.channel.id,
-                    i.strip()),
+                'hangman:{}'.format(msg.channel.parent.id),
+                msg.channel.parent,
+                msg.channel,
+                msg.id,
+                msg.channel.id,
+                i.strip(),
                 function=self.guess_letter)
 
-    async def guess_letter(self, item):
+    async def guess_letter(self, channel, thread, msg_id, ref_msg_id, letter):
         # edit the hangman's embed based on guessed letter
-        chnl = self.bot.client.get_channel(int(item[0]))
-        thread = self.bot.client.get_channel(int(item[2]))
-        if chnl is None or thread is None:
+        if channel is None or thread is None:
             return
-        msg = await thread.fetch_message(int(item[1]))
-        referenced_msg = await chnl.fetch_message(int(item[2]))
+        msg = await thread.fetch_message(int(msg_id))
+        referenced_msg = await channel.fetch_message(int(ref_msg_id))
         if (msg is None or referenced_msg is None or
                 not referenced_msg.is_hangman):
             return
-        letter = item[3]
         msg_info = await self.bot.database.use_database(
             self.word_from_database, referenced_msg)
         if msg_info is None:

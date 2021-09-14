@@ -1,6 +1,6 @@
 import discord
 from commands.help import Help
-from utils.misc import delete_button, random_color
+from utils.misc import delete_button, colors
 from utils.wrappers import EmbedWrapper
 
 
@@ -50,9 +50,11 @@ class Config(Help):
 
     @property
     def general_embed(self) -> (EmbedWrapper, list):
+        color = colors[list(self.bot.commands.keys()).index(
+            self.name) % 9]
         embed_var = EmbedWrapper(discord.Embed(
             description='',
-            color=random_color()),
+            color=color),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO,
             info=('* Select the option you want to modify.\n' +

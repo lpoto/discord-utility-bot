@@ -66,6 +66,7 @@ class Help:
                 placeholder='Select a command', options=options1),
             discord.ui.Select(
                 placeholder='Select a game', options=options2),
+            discord.ui.Button(label='games'),
             discord.ui.Button(label='config'),
             delete_button()]
         if not only_return:
@@ -103,8 +104,13 @@ class Help:
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_help:
             return
-        config_info = self.bot.commands['config'].general_embed
-        await msg.edit(embed=config_info[0], components=config_info[1])
+        if button.label == 'config':
+            config_info = self.bot.commands['config'].general_embed
+            await msg.edit(embed=config_info[0], components=config_info[1])
+        elif button.label == 'games':
+            games_info = await self.bot.commands['games'].execute_command(
+                    msg, True)
+            await msg.edit(embed=games_info[0], components=games_info[1])
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)

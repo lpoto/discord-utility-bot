@@ -9,7 +9,6 @@ class Roles(Help):
         self.description = 'Add or remove roles with button clicks.'
         self.bot_permissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['manage_roles']
-        self.roles_queue = {}
 
     async def execute_command(self, msg):
         args = msg.content.split()
@@ -54,13 +53,9 @@ class Roles(Help):
             # do not allow empty responses
             if len(i) == 0:
                 continue
-            # process adding resonses and such in a queue to avoid
-            # missing any of the edits
             try:
-                await self.bot.queue.add_to_queue(
-                    queue_id='rolesmessage:{}'.format(roles_message.id),
-                    item=(i, roles_message.channel.id, roles_message.id),
-                    function=self.roles_existing_message)
+                await self.roles_existing_message(
+                        i.strip(), roles_message)
             except ValueError as err:
                 if str(err) == 'could not find open space for item':
                     await msg.channel.warn(
@@ -69,17 +64,7 @@ class Roles(Help):
                 else:
                     raise ValueError(err)
 
-    async def roles_existing_message(self, item):
-        # function that is processed in a queue
-        arg = item[0].strip()
-        channel_id = item[1]
-        msg_id = item[2]
-        channel = self.bot.client.get_channel(int(channel_id))
-        if channel is None:
-            return
-        msg = await channel.fetch_message(int(msg_id))
-        if msg is None:
-            return
+    async def roles_existing_message(self, arg, msg):
         if arg.startswith('remove '):
             await self.remove_role_from_msg(msg, arg)
             return
@@ -102,20 +87,6 @@ class Roles(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not self.is_roles(msg):
             return
-        # process buttons in queue aswell
-        await self.bot.queue.add_to_queue(
-            queue_id='rolesmessage:{}'.format(msg.id),
-            item=(msg.channel, msg.id, button, user, webhook),
-            function=self.handle_button_clicks)
-
-    async def handle_button_clicks(self, item):
-        channel = item[0]
-        msg = await channel.fetch_message(item[1])
-        if not msg or not msg.guild:
-            return
-        button = item[2]
-        user = item[3]
-        webhook = item[4]
         role = await self.valid_role(button.label, msg, False)
         if role is None:
             return
