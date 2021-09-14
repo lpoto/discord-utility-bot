@@ -57,8 +57,7 @@ class Config(Help):
             color=color),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO,
-            info=('* Select the option you want to modify.\n' +
-                  '* Select "help" to open help menu.'))
+            info='* Select the option you want to modify.\n')
         opts = self.options
         options = [discord.SelectOption(
             label=k, description=v[0]) for k, v in opts.items()]
@@ -75,11 +74,8 @@ class Config(Help):
             return
         # user should have all the required permissions to modify
         # config
-        x = await self.bot.check_permissions(self, msg, user, False)
+        x = await self.bot.check_permissions(self, msg, user, webhook)
         if not x:
-            await webhook.send(
-                'You are missing the required permissions.',
-                ephemeral=True)
             return
         embed = msg.embeds[0]
         # if  there is no title the embed is general_embed
@@ -112,11 +108,8 @@ class Config(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_config:
             return
-        x = await self.bot.check_permissions(self, msg, user, False)
+        x = await self.bot.check_permissions(self, msg, user, webhook)
         if not x:
-            await webhook.send(
-                'You are missing the required permissions.',
-                ephemeral=True)
             return
         # return to the help menu by clicking on the help button
         if button.label == 'help' and not msg.embeds[0].title:
@@ -228,8 +221,9 @@ class Config(Help):
         embed.set_info(
             '* Edit which roles are allowed to use the command.'
         )
-        options = [discord.SelectOption(label=k) for k in (
-            self.bot.commands.keys()) if k != 'help']
+        options = [discord.SelectOption(
+            label=k, description=v.description) for k, v in (
+            self.bot.commands.items()) if v.name != 'help']
         components = [
             discord.ui.Select(
                 placeholder='Select a command',

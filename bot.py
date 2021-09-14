@@ -101,20 +101,26 @@ class Bot:
             return False
         return await self.check_permissions(command, msg, msg.author)
 
-    async def check_permissions(self, command, msg, user, reply=True) -> bool:
+    async def check_permissions(self, command, msg, user, wh=None) -> bool:
         """
         Check if bot and user have all the required permissions to use the
         command in message's channel.
         """
         # check bot's permissions
-        p = msg.channel.permissions(
-            msg.guild.me, command.bot_permissions)
-        if not p[0]:
-            if reply:
-                await msg.channel.warn(
-                    text=('I need `{}` permission to use this command.'
-                          ).format(p[1]))
-            return False
+        if (command.bot_permissions is not None and
+                len(command.bot_permissions) > 0):
+            p = msg.channel.permissions(
+                msg.guild.me, command.bot_permissions)
+            if not p[0]:
+                if wh is None:
+                    await msg.channel.warn(
+                        text=('I need `{}` permission to use this command.'
+                              ).format(p[1]))
+                elif wh:
+                    await wh.send(
+                        ('I need `{}` permission to use this command.'
+                         ).format(p[1]), ephemeral=True)
+                return False
         if msg.channel.permissions(user, 'administrator')[0]:
             return True
         # if command has required roles set up, override default
@@ -123,25 +129,39 @@ class Bot:
         required_roles = await self.database.get_required_roles(
             msg, command.name)
         user_roles = [i.name for i in user.roles]
-        if required_roles is not None:
+        if required_roles is not None and len(required_roles) > 0:
             for i in required_roles:
                 if i in user_roles:
                     return True
-            if reply:
+            if wh is None:
                 await msg.channel.warn(
                     text=(
                         'This command can be used by the following roles:\n{}'
-                    ).format(', '.join(required_roles)))
+                    ).format(
+                        ', '.join(['`{}`'.format(i) for i in required_roles])))
+            elif wh:
+                await wh.send(
+                    ('This command can be used by the following roles:\n{}'
+                     ).format(
+                        ', '.join(['`{}`'.format(i) for i in required_roles])),
+                    ephemeral=True)
             return False
         # check if user has all the required permissions
+        if command.user_permissions is None or len(
+                command.user_permissions) == 0:
+            return True
         p = msg.channel.permissions(
             user, command.user_permissions)
         if not p[0]:
-            if reply:
+            if wh is None:
                 await msg.channel.warn(
                     text=(
                         'You need `{}` permission to use this command.'
                     ).format(p[1]))
+            elif wh:
+                await wh.send(
+                    ('You need `{}` permission to use this command.'
+                     ).format(p[1]), ephemeral=True)
             return False
         return True
 

@@ -56,11 +56,14 @@ class Help:
         if embed_var is None:
             return
         options1 = [discord.SelectOption(
-            label=i) for i in self.bot.commands.keys() if (
-                i != self.name)]
+            label=k, description=v.description
+            ) for k, v in self.bot.commands.items() if (
+                v.name != self.name)]
         options2 = [discord.SelectOption(
-            label=i) for i in self.bot.games.keys()]
-        options1.append(discord.SelectOption(label=self.name))
+            label=k, description=v.description
+            ) for k, v in self.bot.games.items()]
+        options1.append(discord.SelectOption(
+            label=self.name, description=self.description))
         components = [
             discord.ui.Select(
                 placeholder='Select a command', options=options1),
@@ -102,9 +105,13 @@ class Help:
         await msg.edit(embed=new_embed)
 
     async def on_button_click(self, button, msg, user, webhook):
-        if not msg.is_help:
+        if not msg.is_help or self.name != 'help':
             return
         if button.label == 'config':
+            x = await self.bot.check_permissions(
+                    self.bot.commands['config'], msg, user, webhook)
+            if not x:
+                return
             config_info = self.bot.commands['config'].general_embed
             await msg.edit(embed=config_info[0], components=config_info[1])
         elif button.label == 'games':
