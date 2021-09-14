@@ -77,10 +77,8 @@ class Config(Help):
     async def on_menu_select(self, interaction, msg, user, webhook):
         if not msg.is_config:
             return
-        # user should have all the required permissions to modify
-        # config
-        x = await self.bot.check_permissions(self, msg, user, webhook)
-        if not x:
+        if not await self.bot.check_permissions(
+                self, msg, user, webhook):
             return
         embed = msg.embeds[0]
         # if  there is no title the embed is general_embed
@@ -99,12 +97,9 @@ class Config(Help):
         if (not referenced_msg.is_config or
                 not referenced_msg.embeds[0].title):
             return
-        embed = referenced_msg.embeds[0]
-        if embed.title in self.options:
-            x = await self.bot.check_permissions(
-                self, referenced_msg, msg.author, False)
-            if not x:
-                return
+        if not await self.bot.check_permissions(
+                self, referenced_msg, msg.author, False):
+            return
         # modify the options that match the title and
         # are modified by replying to the message
         for i in self.modify_options['on_reply']:
@@ -113,8 +108,8 @@ class Config(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_config:
             return
-        x = await self.bot.check_permissions(self, msg, user, webhook)
-        if not x:
+        if not await self.bot.check_permissions(
+                self, msg, user, webhook):
             return
         # return to the help menu by clicking on the help button
         if button.label == 'help' and not msg.embeds[0].title:

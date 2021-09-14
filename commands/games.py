@@ -42,6 +42,9 @@ class Games(Help):
     async def on_button_click(self, button, msg, user, webhook):
         if not msg.is_games:
             return
+        if not await self.bot.check_permissions(
+                self, msg, user, webhook):
+            return
         if button.label == 'help':
             help_info = await self.bot.commands['help'].execute_command(
                     msg, True)
@@ -52,6 +55,9 @@ class Games(Help):
 
     async def on_menu_select(self, interaction, msg, user, webhook):
         if not msg.is_games:
+            return
+        if not await self.bot.check_permissions(
+                self, msg, user, webhook):
             return
         name = interaction.data['values'][0]
         embed = await self.bot.database.use_database(

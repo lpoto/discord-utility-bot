@@ -3,10 +3,6 @@ from datetime import datetime, timedelta
 import discord
 from utils.misc import random_color, black_circle, white_circle
 
-# TODO add date and time to poll embed, indicating
-#      when the poll will automatically end
-#      set up timers to end polls
-
 
 class Poll(Help):
     def __init__(self):
@@ -75,6 +71,9 @@ class Poll(Help):
 
     async def on_reply(self, msg, poll_msg):
         if not self.is_poll(poll_msg):
+            return
+        if not await self.bot.check_permissions(
+                self, poll_msg, msg.author, None):
             return
         opts = msg.content.split(';')
         for o in opts:
@@ -297,6 +296,9 @@ class Poll(Help):
 
     async def on_menu_select(self, interaction, msg, user, webhook):
         if not self.is_poll(msg, True):
+            return
+        if not await self.bot.check_permissions(
+                self, msg, user, webhook):
             return
         name = interaction.data['values'][0]
         users = await self.bot.database.use_database(

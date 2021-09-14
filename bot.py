@@ -247,8 +247,8 @@ class Bot:
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
         if msg is None or referenced_msg is None:
             return
-        for i in self.on_reply_commands:
-            await i.on_reply(msg, referenced_msg)
+        for cmd in self.on_reply_commands:
+            await cmd.on_reply(msg, referenced_msg)
 
     async def handle_button_click(
             self, channel, msg_id, interaction, button, msg=None):
@@ -263,10 +263,11 @@ class Bot:
             if (cmd.interactions_require_database and
                     not self.database.connected):
                 continue
+            user = MemberWrapper(interaction.user)
             await cmd.on_button_click(
                 button,
                 msg,
-                MemberWrapper(interaction.user),
+                user,
                 webhook)
 
     async def handle_menu_select(self, channel, msg_id, interaction, msg=None):
@@ -281,10 +282,11 @@ class Bot:
             if (cmd.interactions_require_database and
                     not self.database.connected):
                 continue
+            user = MemberWrapper(interaction.user)
             await cmd.on_menu_select(
                 interaction,
                 msg,
-                MemberWrapper(interaction.user),
+                user,
                 webhook)
 
     async def handle_deleted_messages(self, msg_id, channel_id):
