@@ -1,4 +1,5 @@
 from commands.help import Help
+from datetime import datetime, timedelta
 import discord
 from utils.misc import random_color, black_circle, white_circle
 
@@ -54,15 +55,21 @@ class Poll(Help):
                 ('Multiple responses can be added at once, separated ' +
                     'with ";" \n(example: "response1; remove 0; response2")')))
 
-        await msg.channel.send(embed=embed)
+        m = await msg.channel.send(embed=embed)
+        await self.bot.database.use_database(
+                self.new_poll_to_database, m)
 
-    def is_poll(self, msg):
+    def is_poll(self, msg, partly_endeded=False):
         if (str(msg.channel.type) != 'text' or
                 msg.author.id != msg.guild.me.id or
                 len(msg.embeds) != 1 or
                 not msg.embeds[0].description or
-                msg.embeds[0].description.split()[-1] not in ['ND', 'FND'] or
                 msg.embeds[0].description.split(' - ')[0] != 'POLL'):
+            return False
+        x = ['ND', 'FND']
+        if partly_endeded:
+            x.append('AND')
+        if msg.embeds[0].description.split()[-1] not in x:
             return False
         return True
 
@@ -103,7 +110,7 @@ class Poll(Help):
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
             return await funcs[args[0]](poll_msg, v)
-        if poll_msg.embeds[0].description[-3:] in ['END', 'FND']:
+        if poll_msg.embeds[0].description[-3:] in ['AND', 'FND']:
             return
         await self.add_response(poll_msg, option)
 
@@ -159,7 +166,7 @@ class Poll(Help):
                 text='Can only add question shorter than 60 characters!')
             return
         marks = poll_msg.embeds[0].description.split()[-1]
-        if marks in ('FND', 'END'):
+        if marks in ('FND', 'AND'):
             return
         poll_msg.embeds[0].description = 'POLL - {}{}{}'.format(
             option, (62 - len(marks) - len(option)) * '\u2000', marks)
@@ -172,6 +179,10 @@ class Poll(Help):
         for i in poll_msg.components:
             for i2 in i.children:
                 if not isinstance(i2, discord.Button):
+                    components.append(
+                            discord.ui.Select(
+                                placeholder=i2.placeholder,
+                                options=i2.options))
                     continue
                 components.append(discord.ui.Button(
                     label=i2.label,
@@ -189,15 +200,13 @@ class Poll(Help):
             for i in equals:
                 components[i].style = discord.ButtonStyle.blurple
         poll_msg.embeds[0].description = poll_msg.embeds[
-            0].description[:-3] + 'END'
+            0].description[:-3] + 'AND'
         await poll_msg.edit(embed=poll_msg.embeds[0], components=components)
-        await self.bot.database.use_database(
-            self.delete_poll_from_db, poll_msg)
         await poll_msg.channel.notify(
             text='Poll has been ended.')
 
     async def remove_response(self, poll_msg, option):
-        if poll_msg.embeds[0].description[-3:] in ['FND', 'END']:
+        if poll_msg.embeds[0].description[-3:] in ['FND', 'AND']:
             return
         c = sum(len(i.children) for i in poll_msg.components)
         try:
@@ -287,12 +296,12 @@ class Poll(Help):
                 self.insert_to_db, x.strip(), msg, user.id)
 
     async def on_menu_select(self, interaction, msg, user, webhook):
-        if not self.is_poll(msg):
+        if not self.is_poll(msg, True):
             return
         name = interaction.data['values'][0]
         users = await self.bot.database.use_database(
             self.users_who_voted, name, msg)
-        if len(users) == 0:
+        if users is None or len(users) == 0:
             return
         embed = discord.Embed(
             title=name,
@@ -300,7 +309,7 @@ class Poll(Help):
         y = None
         k = 0
         for i in users:
-            user = msg.guild.get_member(int(i[2]))
+            user = msg.guild.get_member(int(i[3]))
             if user is None:
                 continue
             x = user.name
@@ -315,7 +324,7 @@ class Poll(Help):
 
     async def users_who_voted(self, cursor, rsp, msg):
         cursor.execute((
-            "SELECT * FROM messages WHERE type = 'poll'" +
+            "SELECT * FROM messages WHERE type = 'poll' AND " +
             "channel_id = \"{}\" AND message_id = \"{}\" AND info = \"{}\""
         ).format(
             msg.channel.id, msg.id, rsp))
@@ -349,11 +358,17 @@ class Poll(Help):
         ).format(
             msg.channel.id, msg.id, user_id, rsp))
 
-    async def delete_poll_from_db(self, cursor, msg):
-        cursor.execute((
-            "DELETE FROM messages WHERE " +
-            "channel_id = \"{}\" AND message_id = \"{}\"").format(
-            msg.channel.id, msg.id))
+    async def new_poll_to_database(self, cursor, msg):
+        time = await self.bot.database.get_deletion_time(msg, self.name)
+        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
+                    ).strftime('%d:%m:%H')
+        cursor.execute(
+            ("INSERT INTO messages " +
+             "(type, channel_id, message_id, user_id, info, deletion_time) " +
+             "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
+                'poll', msg.channel.id, msg.id, None, None, cur_time))
+        await msg.delete(
+                delay=time * 3600)
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

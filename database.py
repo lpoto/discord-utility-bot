@@ -5,9 +5,10 @@ import os
 
 
 class DB:
-    def __init__(self, default_prefix):
+    def __init__(self, default_prefix, default_deletion_times):
         self.connection_pool = None
         self.default_prefix = default_prefix
+        self.default_deletion_times = default_deletion_times
 
     @property
     def connection_object(self) -> None or pooling.PooledMySQLConnection:
@@ -189,13 +190,13 @@ class DB:
         return await self.use_database(
             self.required_roles_from_database, msg.guild.id, command)
 
-    async def get_deletion_time(self, msg):
+    async def get_deletion_time(self, msg, msg_type):
         """
         Get the time before the games messages are deleted
         in the messages's discord server.
         """
         return await self.use_database(
-                self.deletion_time_from_database, msg.guild.id)
+            self.deletion_time_from_database, msg.guild.id, msg_type)
 
     async def prefix_from_database(self, cursor, guild_id):
         cursor.execute((
@@ -227,11 +228,12 @@ class DB:
             return None
         return [x[2] for x in fetched]
 
-    async def deletion_time_from_database(self, cursor, guild_id):
+    async def deletion_time_from_database(self, cursor, guild_id, msg_type):
         cursor.execute((
             "SELECT * FROM config WHERE option = 'deletion_time' " +
-            "AND guild_id = '{}'").format(guild_id))
+            "AND guild_id = '{}' AND info2 = '{}'").format(
+                guild_id, msg_type))
         fetched = cursor.fetchone()
         if fetched is None:
-            return 24
+            return self.default_deletion_times[msg_type]
         return int(fetched[2])

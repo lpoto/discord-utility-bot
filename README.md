@@ -15,7 +15,8 @@ A discord bot written in python, intended for managing smaller discord servers.
 * Customizable: 
 	- prefix,
 	- welcome text,
-	- which roles are allowed to use a command
+	- which roles are allowed to use a command,
+	- time before the auto-deleting messages are deleted
 
 For more information type `-help` in discord channel, after adding the bot.
 

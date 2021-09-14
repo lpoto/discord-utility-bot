@@ -36,8 +36,10 @@ class Help:
         # gather all the information about the command
         # to be used in command's help embed
         add_inf = self.additional_info(prefix)
-        if self.name in self.bot.games.keys() or self.name == 'games':
-            add_inf += '\n\n* Games messages are deleted after 24 hours.'
+        if self.name in list(self.bot.games.keys()) + ['games', 'poll']:
+            add_inf += (
+                '\n\n* {} messages are deleted after some time.'
+            ).format(self.name)
         info = [
             self.name,
             self.description,
@@ -53,16 +55,18 @@ class Help:
         Function called when a message in a discord channel
         starts with the prefix and the command's name.
         """
+        if not self.name == 'help':
+            return
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
         options1 = [discord.SelectOption(
             label=k, description=v.description
-            ) for k, v in self.bot.commands.items() if (
-                v.name != self.name)]
+        ) for k, v in self.bot.commands.items() if (
+            v.name != self.name)]
         options2 = [discord.SelectOption(
             label=k, description=v.description
-            ) for k, v in self.bot.games.items()]
+        ) for k, v in self.bot.games.items()]
         options1.append(discord.SelectOption(
             label=self.name, description=self.description))
         components = [
@@ -102,7 +106,7 @@ class Help:
         new_embed = await self.bot.create_additional_help(
             cmd.command_info(prefix), msg, prefix)
         new_embed.set_info(
-                'Select help in the commands dropdown to return to help menu.')
+            'Select help in the commands dropdown to return to help menu.')
         await msg.edit(embed=new_embed)
 
     async def on_button_click(self, button, msg, user, webhook):
@@ -110,14 +114,14 @@ class Help:
             return
         if button.label == 'config':
             x = await self.bot.check_permissions(
-                    self.bot.commands['config'], msg, user, webhook)
+                self.bot.commands['config'], msg, user, webhook)
             if not x:
                 return
             config_info = self.bot.commands['config'].general_embed
             await msg.edit(embed=config_info[0], components=config_info[1])
         elif button.label == 'games':
             games_info = await self.bot.commands['games'].execute_command(
-                    msg, True)
+                msg, True)
             await msg.edit(embed=games_info[0], components=games_info[1])
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
@@ -139,6 +143,6 @@ class Help:
             txt += '{}{}-\u3000{}\n'.format(
                 i, '\u3000' * (3 - len(i)), embed_var.mark_info(i))
         embed_var.set_info(
-                'Marks are shown at the bottom left of the embed (after "@")')
+            'Marks are shown at the bottom left of the embed (after "@")')
         embed_var.add_field(name='Marks', value=txt, inline=False)
         return embed_var

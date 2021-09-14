@@ -240,7 +240,7 @@ class Hangman(Help):
         return pic
 
     async def word_to_database(self, cursor, msg, user_id, word):
-        time = await self.bot.database.get_deletion_time(msg)
+        time = await self.bot.database.get_deletion_time(msg, self.name)
         cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(

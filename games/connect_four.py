@@ -370,7 +370,7 @@ class ConnectFour(Help):
                  " WHERE channel_id = '{}' AND message_id = '{}'").format(
                     u1_id, u2_id, msg.channel.id, msg.id))
             return
-        time = await self.bot.database.get_deletion_time(msg)
+        time = await self.bot.database.get_deletion_time(msg, self.name)
         cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(

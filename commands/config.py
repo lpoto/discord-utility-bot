@@ -37,9 +37,9 @@ class Config(Help):
                 self.roles_embed,
                 None),
             'deletion_time': (
-                'Time before the games messages are deleted.',
+                'Time before the auto-deleting messages are deleted.',
                 self.deletion_time_embed,
-                24)
+                self.bot.database.default_deletion_times)
         }
 
     @property
@@ -130,8 +130,11 @@ class Config(Help):
         # default button should reset the option to its default value
         if button.label == 'default':
             embed = msg.embeds[0]
-            name = embed.title.split(' - ')[0]
+            z = embed.title.split(' - ')
+            name = z[0]
             default_value = self.options[name][2]
+            if isinstance(default_value, dict):
+                default_value = default_value[z[1]]
             embed.description = 'Current: `{}`'.format(default_value)
             await msg.edit(embed=embed)
         # commit button should save the modified settings to database
@@ -143,7 +146,10 @@ class Config(Help):
             info = msg.embeds[0].description.replace('Current:', '', 1).strip()
             txt = '{}'.format(name) if not info2 else '`{} - {}`'.format(
                 name, info2)
-            if str(info[1:][:-1]) == str(self.options[name][2]):
+            opt = self.options[name][2]
+            if ((isinstance(opt, dict) and
+                str(info[1:][:-1]) == str(opt[x[1]])) or
+                    str(info[1:][:-1]) == str(opt)):
                 await self.bot.database.use_database(
                     self.reset_option, name, msg.guild.id, info2)
                 await msg.channel.notify('Removed settings for `{}`'.format(
@@ -310,19 +316,38 @@ class Config(Help):
 
     async def deletion_time_embed(self, label, msg, s=21, e=41, restart=False):
         embed = msg.embeds[0]
-        if not restart:
-            embed.title = label
-            time = await self.bot.database.get_deletion_time(msg)
+        embed.title = label
+        embed.set_info(
+            '* Select a type of message you want to edit the time for.')
+        options = [discord.SelectOption(
+            label=k) for k in self.options[label][2].keys()]
+        components = [
+            discord.ui.Select(
+                placeholder='Select a type of message.',
+                options=options),
+            discord.ui.Button(label='back'),
+            discord.ui.Button(label='default'),
+            discord.ui.Button(label='commit'),
+            delete_button()
+        ]
+        await msg.edit(embed=embed, components=components)
+
+    async def deletion_time_type_embed(self, m_type, msg, s=21, e=41, r=False):
+        embed = msg.embeds[0]
+        if not r:
+            embed.title += ' - {}'.format(m_type)
+            time = await self.bot.database.get_deletion_time(msg, m_type)
             embed.description = 'Current: `{}`'.format(time)
             embed.set_info(
-                '* Edit the time after the games messages are deleted.'
+                '* Edit the time after `{}` messages are deleted.'.format(
+                    m_type)
             )
         options = [discord.SelectOption(label=i) for i in range(s, e)]
         if e > 1:
             options.append(discord.SelectOption(
                 label='~ page {}'.format((s - 1) // 20),
                 description='See the previous page of deletion times.'))
-        if e < 121:
+        if e < 161:
             options.append(discord.SelectOption(
                 label='~ page {}'.format((s - 1) // 20 + 2),
                 description='See the next page of deletion times.'))
@@ -340,17 +365,22 @@ class Config(Help):
     async def modify_deletion_time_embed(self, interaction, msg):
         embed = msg.embeds[0]
         if embed.title == 'deletion_time':
-            time = interaction.data['values'][0]
-            if time.startswith('~ page'):
-                x = int(time.replace('~ page ', '')) - 1
-                await self.deletion_time_embed(
-                    embed.title,
+            name = interaction.data['values'][0]
+            await self.deletion_time_type_embed(name, msg)
+            return
+        if embed.title.startswith('deletion_time - '):
+            name = embed.title.replace('deletion_time - ', '', 1)
+            if name.startswith('~ page'):
+                x = int(name.replace('~ page ', '')) - 1
+                await self.deletion_time_type_embed(
+                    name,
                     msg,
                     x * 20 + 1,
                     x * 20 + 21,
                     True)
                 return
-            embed.description = 'Current: `{}`'.format(time)
+            val = interaction.data['values'][0]
+            embed.description = 'Current: `{}`'.format(val)
             await msg.edit(embed=embed)
 
     # ------------------------------------------------------ modifying database

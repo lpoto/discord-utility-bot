@@ -42,9 +42,6 @@ class Bot:
         initialize all the commands.
         """
         self.client = client
-        if self.database is None:
-            self.database = DB(self.default_prefix)
-        await self.database.connect_database()
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()
                            if isinstance(cls, type)]):
@@ -57,6 +54,13 @@ class Bot:
                 c.bot = self
                 self.add_command(c, True)
             self.ready = True
+        if self.database is None:
+            def_del_vals = {k: 24 for k in self.games}
+            def_del_vals['poll'] = 160
+            self.database = DB(
+                    self.default_prefix,
+                    def_del_vals)
+            await self.database.connect_database()
         await self.database.use_database(self.restart_deleting_timers)
 
     def add_command(self, command, game=False):

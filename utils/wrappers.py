@@ -282,6 +282,7 @@ class EmbedWrapper(discord.Embed):
     ENDED = 'E'
     NOT_DELETABLE = 'ND'
     INFO = 'I'
+    PARTLY_ENDED = 'A'
 
     def __init__(
             self,
@@ -373,8 +374,9 @@ class EmbedWrapper(discord.Embed):
     def mark_info(cls, mark):
         mi = {
             cls.INFO: 'Informational',
-            cls.ENDED: 'Ended, bot does not respond to the message.',
             cls.FIXED: 'Fixed, only listening for interactions.',
+            cls.ENDED: 'Ended, bot does not respond to the message.',
+            cls.PARTLY_ENDED: 'Ended, but some interactions still work.',
             cls.NOT_DELETABLE: ('Cannot delete with a delete button ' +
                                 'or clear command.')}
         if mark in mi:

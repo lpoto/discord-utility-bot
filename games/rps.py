@@ -86,7 +86,7 @@ class Rps(Help):
             new_msg, user.id)
 
     async def choice_to_database(self, cursor, choice, msg, user_id):
-        time = await self.bot.database.get_deletion_time(msg)
+        time = await self.bot.database.get_deletion_time(msg, self.name)
         cur_time = (datetime.now() + timedelta(hours=time + 0.5)
                     ).strftime('%d:%m:%H')
         cursor.execute(
