@@ -8,7 +8,7 @@ class DeleteButton(Help):
     def __init__(self):
         super().__init__(name='delete_button')
         self.description = (
-            'Delete a bot\'s message by clicking on a delete button.')
+            'Delete a bot\'s message with a button click.')
         self.bot_permissions = None
         self.user_permissions = ['manage_messages']
         self.executable = False

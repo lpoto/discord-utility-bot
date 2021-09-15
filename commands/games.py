@@ -7,7 +7,7 @@ from commands.help import Help
 class Games(Help):
     def __init__(self):
         super().__init__(name='games')
-        self.description = 'Show all games.'
+        self.description = 'A menu for starting games and seeing leaderboards.'
         self.requires_database = True
         self.interactions_require_database = True
         self.synonyms = ['play']

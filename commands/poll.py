@@ -7,7 +7,7 @@ from utils.misc import random_color, black_circle, white_circle
 class Poll(Help):
     def __init__(self):
         super().__init__(name='poll')
-        self.description = 'Create a poll to vote on.'
+        self.description = 'Create a poll for users to vote on.'
         self.synonyms = ['vote']
         self.requires_database = True
         self.interactions_require_database = True

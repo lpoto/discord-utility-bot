@@ -10,7 +10,7 @@ from commands.help import Help
 class ConnectFour(Help):
     def __init__(self):
         super().__init__(name='connect_four')
-        self.description = 'A game of connect_four between two users.'
+        self.description = 'A connection game between two players.'
         self.synonyms = ['cf']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]

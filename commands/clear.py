@@ -6,7 +6,7 @@ class ClearChat(Help):
     def __init__(self):
         super().__init__(name='clear')
         self.synonyms = ['delete', 'clean', 'purge']
-        self.description = 'Clear from 1 to 50 messages in chat.'
+        self.description = 'Bulk delete 1-50 messages in a text channel.'
         self.bot_permissions = ['send_messages', 'manage_messages']
         self.user_permissions = ['manage_messages']
 

@@ -7,7 +7,7 @@ from utils.wrappers import EmbedWrapper
 class Config(Help):
     def __init__(self):
         super().__init__('config')
-        self.description = "Change bot's settings."
+        self.description = "Manage bot's configurations in this server."
         self.user_permissions = ['administrator']
         self.synonyms = ['settings', 'options']
         self.embed_type = 'CONFIG'

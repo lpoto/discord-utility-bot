@@ -8,7 +8,7 @@ from commands.help import Help
 class Hangman(Help):
     def __init__(self):
         super().__init__(name='hangman')
-        self.description = 'A game of hangman.'
+        self.description = 'A guessing game for two or more players.'
         self.synonyms = ['hm']
         self.bot_permissions = ['send_messages']
         self.embed_type = 'HANGMAN'

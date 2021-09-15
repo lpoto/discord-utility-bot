@@ -8,7 +8,7 @@ from commands.help import Help
 class Rps(Help):
     def __init__(self):
         super().__init__(name='rock_paper_scissors')
-        self.description = 'A game of rock-paper-scissors between two users.'
+        self.description = 'A simple game of choice between two players.'
         self.synonyms = ['rps']
         self.embed_type = 'ROCK_PAPER_SCISSORS'
         self.emojis = {rps_emojis[i]: v for i, v in enumerate(['r', 'p', 's'])}
