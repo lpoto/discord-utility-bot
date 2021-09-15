@@ -250,6 +250,8 @@ class Bot:
             await x[button.label][0](
                     msg, MemberWrapper(interaction.user), webhook)
             return
+        if msg.is_ended:
+            return
         if msg is None:
             return
         # call those commands that have on button click functions
@@ -273,6 +275,8 @@ class Bot:
             await x[interaction.data['values'][0]][0](
                     msg, MemberWrapper(interaction.user), webhook)
             await msg.edit(text='')
+            return
+        if msg.is_ended:
             return
         # call those commands that have on menu select functions
         for method in sum(self.special_methods['OnMenuSelect'].values(), []):

@@ -76,14 +76,17 @@ class MyClient(discord.Client):
         # match any of the commands
         # if so push them to queue, to be processed one by one
         # dispatch different events based on message type
+        if (msg.author.id == self.user.id or
+                msg.content.split() is None or
+                len(msg.content.split()) < 1):
+            return
         if str(msg.channel.type) == 'private':
             self.dispatch('dm', msg)
             return
         if str(msg.channel.type) == 'public_thread':
             self.dispatch('thread_message', msg)
             return
-        if (msg.author.id == self.user.id or
-                str(msg.channel.type) != 'text'):
+        if str(msg.channel.type) != 'text':
             return
         # wrapp message and override default functions to avoid errors
         # and add additional functionality
@@ -125,10 +128,6 @@ class MyClient(discord.Client):
 
     async def on_dm(self, msg):
         # handle messages sent in private chats
-        if (msg.author.id == self.user.id or
-                msg.content.split() is None or
-                len(msg.content.split()) < 1):
-            return
         msg = wrappers.MessageWrapper(msg)
         if msg.reference is not None and msg.reference.message_id:
             referenced_msg = await msg.channel.fetch_message(
@@ -146,8 +145,6 @@ class MyClient(discord.Client):
 
     async def on_thread_message(self, msg):
         # handle messages sent in threads
-        if msg.author.id == self.user.id:
-            return
         msg = wrappers.MessageWrapper(msg)
         msg.channel.parent = wrappers.ChannelWrapper(msg.channel.parent)
         # run commands that have on thread message function
@@ -192,8 +189,6 @@ class MyClient(discord.Client):
             return
         # if delete button was clicked and message is deletable
         # (not pinned, and not marked with ND) delete it
-        if msg.is_ended:
-            return
         # process button_click in a queue to avoid
         # missing any of the edits
         await self.bot.queue.add_to_queue(
@@ -208,8 +203,6 @@ class MyClient(discord.Client):
     async def on_menu_select(self, interaction, msg):
         # handle interaction when a selection is made
         # in a dropdown menu
-        if msg.is_ended:
-            return
         # process menu_selection in a queue to avoid
         # missing any of the edits
         await self.bot.queue.add_to_queue(
