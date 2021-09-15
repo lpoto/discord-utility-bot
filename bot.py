@@ -1,7 +1,10 @@
 import discord
+from collections import defaultdict
+from functools import partial
 from datetime import datetime
 from utils.misc import Queue, colors, delete_button
 from utils.wrappers import EmbedWrapper, MemberWrapper
+import utils.decorators as decorators
 from database import DB
 import commands as cmds
 import games as gms
@@ -17,6 +20,11 @@ class Bot:
         self.client = None
         self.database = None
         self.default_prefix = default_prefix
+        self.default_deletion_times = {
+            'poll': 160,
+            'rock_paper_scissors': 24,
+            'connect_four': 24,
+            'hangman': 24}
         # discord.Client will not trigger events until
         # it has a ready Bot object
         self.ready = False
@@ -26,14 +34,9 @@ class Bot:
         self.commands = {}
         self.commands_synonyms = {}
         self.games = {}
+        self.special_methods = defaultdict(lambda: defaultdict(list))
         # lists containing commands with special functions
         # that need to be processes separately
-        self.on_reply_commands = []
-        self.on_dm_reply_commands = []
-        self.on_time_commands = []
-        self.on_thread_message_commands = []
-        self.on_button_click_commands = []
-        self.on_menu_select_commands = []
 
     async def initialize(self, client):
         """
@@ -42,6 +45,11 @@ class Bot:
         initialize all the commands.
         """
         self.client = client
+        if self.database is None:
+            self.database = DB(
+                self.default_prefix,
+                self.default_deletion_times)
+            await self.database.connect_database()
         if not self.ready:
             for C in list([cls for cls in cmds.__dict__.values()
                            if isinstance(cls, type)]):
@@ -54,13 +62,6 @@ class Bot:
                 c.bot = self
                 self.add_command(c, True)
             self.ready = True
-        if self.database is None:
-            def_del_vals = {k: 24 for k in self.games}
-            def_del_vals['poll'] = 160
-            self.database = DB(
-                self.default_prefix,
-                def_del_vals)
-            await self.database.connect_database()
         await self.database.use_database(self.restart_deleting_timers)
 
     def add_command(self, command, game=False):
@@ -72,38 +73,37 @@ class Bot:
             self.commands[command.name] = command
         else:
             self.games[command.name] = command
-        if hasattr(command, 'on_reply'):
-            self.on_reply_commands.append(command)
-        if hasattr(command, 'on_thread_message'):
-            self.on_thread_message_commands.append(command)
-        if hasattr(command, 'on_button_click'):
-            self.on_button_click_commands.append(command)
-        if hasattr(command, 'on_menu_select'):
-            self.on_menu_select_commands.append(command)
-        if hasattr(command, 'on_dm_reply'):
-            self.on_dm_reply_commands.append(command)
-        if hasattr(command, 'on_time'):
-            self.on_time_commands.append(command)
         for i in command.synonyms:
             self.commands_synonyms[i] = command
+        for Dec in list([dec for dec in decorators.__dict__.values()
+                         if isinstance(dec, type)]):
+            if not hasattr(Dec, 'methods'):
+                continue
+            for v in Dec.methods(command).values():
+                if command.name != 'help' and v._method.__name__.startswith(
+                        '__'):
+                    continue
+                self.special_methods[Dec.__name__][command.name].append(
+                        partial(v, command))
 
     def clean_up(self):
         """
         Clean up commands threading timers etc.
         """
         self.client = None
-        for cmd in list(self.commands.values()) + list(self.games.values()):
-            cmd.clean_up()
+        for method in sum(self.special_methods['CleanUp'].values(), []):
+            method()
 
-    async def check_if_valid(self, command, msg) -> bool:
+    async def check_if_valid(self, command, msg, user, wh=None) -> bool:
         """
         Check if user and bot are allowed to use the command.
         """
         if command.requires_database and not self.database.connected:
             await msg.channel.warn(
-                text='This command requires database connection!')
+                text='This command requires database connection!',
+                webhook=wh)
             return False
-        return await self.check_permissions(command, msg, msg.author)
+        return await self.check_permissions(command, msg, user, wh)
 
     async def check_permissions(self, command, msg, user, wh=None) -> bool:
         """
@@ -116,14 +116,10 @@ class Bot:
             p = msg.channel.permissions(
                 msg.guild.me, command.bot_permissions)
             if not p[0]:
-                if wh is None:
-                    await msg.channel.warn(
-                        text=('I need `{}` permission to use this command.'
-                              ).format(p[1]))
-                elif wh:
-                    await wh.send(
-                        ('I need `{}` permission to use this command.'
-                         ).format(p[1]), ephemeral=True)
+                await msg.channel.warn(
+                    text=('I need `{}` permission to use this command.'
+                          ).format(p[1]),
+                    webhook=wh)
                 return False
         if msg.channel.permissions(user, 'administrator')[0]:
             return True
@@ -134,21 +130,14 @@ class Bot:
             msg, command.name)
         user_roles = [i.name for i in user.roles]
         if required_roles is not None and len(required_roles) > 0:
-            for i in required_roles:
-                if i in user_roles:
-                    return True
-            if wh is None:
-                await msg.channel.warn(
-                    text=(
-                        'This command can be used by the following roles:\n{}'
-                    ).format(
-                        ', '.join(['`{}`'.format(i) for i in required_roles])))
-            elif wh:
-                await wh.send(
-                    ('This command can be used by the following roles:\n{}'
-                     ).format(
-                        ', '.join(['`{}`'.format(i) for i in required_roles])),
-                    ephemeral=True)
+            if any(i in required_roles for i in user_roles):
+                return True
+            await msg.channel.warn(
+                text=(
+                    'This command can be used by the following roles:\n`{}`'
+                ).format(
+                    ', '.join(required_roles)),
+                webhook=wh)
             return False
         # check if user has all the required permissions
         if command.user_permissions is None or len(
@@ -157,15 +146,11 @@ class Bot:
         p = msg.channel.permissions(
             user, command.user_permissions)
         if not p[0]:
-            if wh is None:
-                await msg.channel.warn(
-                    text=(
-                        'You need `{}` permission to use this command.'
-                    ).format(p[1]))
-            elif wh:
-                await wh.send(
-                    ('You need `{}` permission to use this command.'
-                     ).format(p[1]), ephemeral=True)
+            await msg.channel.warn(
+                text=(
+                    'You need `{}` permission to use this command.'
+                ).format(p[1]),
+                webhook=wh)
             return False
         return True
 
@@ -227,6 +212,7 @@ class Bot:
         if cmd in self.commands:
             cmd = self.commands[cmd]
         elif cmd in self.games:
+            print(cmd)
             cmd = self.games[cmd]
         elif cmd in self.commands_synonyms:
             cmd = self.commands_synonyms[cmd]
@@ -234,43 +220,46 @@ class Bot:
             return
         # if 2nd word is help send additional info
         # about the command
-        if len(args) > 1 and args[1] == 'help':
+        if len(args) > 1 and args[1] in ['h', 'help']:
             await msg.channel.send(
                 embed=await self.create_additional_help(
                     cmd.command_info(prefix), msg, prefix),
                 components=delete_button())
-        else:
-            # each command has "execute_command" function
-            # that should be triggered when a message matches the command
-            if cmd.executable and await self.check_if_valid(cmd, msg) is True:
-                await cmd.execute_command(msg)
+            return
+        # each command has "execute_command" function
+        # that should be triggered when a message matches the command
+        for method in self.special_methods['ExecuteCommand'][cmd.name]:
+            if await self.check_if_valid(cmd, msg, msg.author) is True:
+                await method(msg)
 
     async def handle_reply(self, channel, msg, ref_msg_id):
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
         if msg is None or referenced_msg is None:
             return
-        for cmd in self.on_reply_commands:
-            await cmd.on_reply(msg, referenced_msg)
+        for method in sum(self.special_methods['OnReply'].values(), []):
+            await method(msg, referenced_msg)
 
     async def handle_button_click(
             self, channel, msg_id, interaction, button, msg=None):
         # function handling button_clicks in a queue
         msg = msg if msg is not None else (
             await channel.fetch_message(int(msg_id)))
+        webhook = interaction.followup
+        x = self.special_methods['ExecuteWithInteraction']
+        if button.label in x:
+            await x[button.label][0](
+                    msg, MemberWrapper(interaction.user), webhook)
+            return
         if msg is None:
             return
-        webhook = interaction.followup
         # call those commands that have on button click functions
-        for cmd in self.on_button_click_commands:
-            if (cmd.interactions_require_database and
-                    not self.database.connected):
-                continue
-            user = MemberWrapper(interaction.user)
-            await cmd.on_button_click(
-                button,
-                msg,
-                user,
-                webhook)
+        # await v(button, msg, MemberWrapper(interaction.user, webhook))
+        for method in sum(self.special_methods['OnButtonClick'].values(), []):
+            await method(
+                    button,
+                    msg,
+                    MemberWrapper(interaction.user),
+                    webhook)
 
     async def handle_menu_select(self, channel, msg_id, interaction, msg=None):
         # function for menu selection handled in a queue
@@ -279,16 +268,18 @@ class Bot:
         if not msg:
             return
         webhook = interaction.followup
+        x = self.special_methods['ExecuteWithInteraction']
+        if interaction.data['values'][0] in x:
+            await x[interaction.data['values'][0]][0](
+                    msg, MemberWrapper(interaction.user), webhook)
+            await msg.edit(text='')
+            return
         # call those commands that have on menu select functions
-        for cmd in self.on_menu_select_commands:
-            if (cmd.interactions_require_database and
-                    not self.database.connected):
-                continue
-            user = MemberWrapper(interaction.user)
-            await cmd.on_menu_select(
+        for method in sum(self.special_methods['OnMenuSelect'].values(), []):
+            await method(
                 interaction,
                 msg,
-                user,
+                MemberWrapper(interaction.user),
                 webhook)
 
     async def handle_deleted_messages(self, msg_id, channel_id):

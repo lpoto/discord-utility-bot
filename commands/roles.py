@@ -1,6 +1,7 @@
 from commands.help import Help
 import discord
 from utils.misc import random_color
+from utils.decorators import OnReply, OnButtonClick, ExecuteCommand
 
 
 class Roles(Help):
@@ -10,7 +11,8 @@ class Roles(Help):
         self.bot_permissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['manage_roles']
 
-    async def execute_command(self, msg):
+    @ExecuteCommand
+    async def empty_roles_message_to_channel(self, msg):
         args = msg.content.split()
         title = None
         if len(args) > 1:
@@ -45,7 +47,8 @@ class Roles(Help):
             return False
         return True
 
-    async def on_reply(self, msg, roles_message):
+    @OnReply
+    async def manage_roles_in_message(self, msg, roles_message):
         if not self.is_roles(roles_message):
             return
         # multiple replies can be added at once separated with ";"
@@ -55,7 +58,7 @@ class Roles(Help):
                 continue
             try:
                 await self.roles_existing_message(
-                        i.strip(), roles_message)
+                        i.strip(), roles_message.channel, roles_message.id)
             except ValueError as err:
                 if str(err) == 'could not find open space for item':
                     await msg.channel.warn(
@@ -64,7 +67,10 @@ class Roles(Help):
                 else:
                     raise ValueError(err)
 
-    async def roles_existing_message(self, arg, msg):
+    async def roles_existing_message(self, arg, channel, msg_id):
+        msg = await channel.fetch_message(int(msg_id))
+        if not msg:
+            return
         if arg.startswith('remove '):
             await self.remove_role_from_msg(msg, arg)
             return
@@ -84,7 +90,8 @@ class Roles(Help):
         else:
             await msg.edit(components=components)
 
-    async def on_button_click(self, button, msg, user, webhook):
+    @OnButtonClick
+    async def add_remove_role(self, button, msg, user, webhook):
         if not self.is_roles(msg):
             return
         role = await self.valid_role(button.label, msg, False)

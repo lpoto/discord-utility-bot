@@ -1,6 +1,7 @@
 import discord
 from utils.misc import random_color, delete_button
 from datetime import timedelta, datetime
+import utils.decorators as decorators
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -13,7 +14,8 @@ class Hangman(Help):
         self.bot_permissions = ['send_messages']
         self.embed_type = 'HANGMAN'
 
-    async def execute_game(self, msg, user, webhook):
+    @decorators.ExecuteWithInteraction
+    async def send_dm_to_user(self, msg, user, webhook):
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
             description=('Reply to this message with a word or ' +
@@ -25,11 +27,13 @@ class Hangman(Help):
             info=str(msg.channel.id))
         await dm.send(embed=dm_embed)
 
-    async def execute_command(self, msg):
-        prefix = await self.bot.database.get_prefix(msg)
-        await self.bot.handle_message(msg, 'games', prefix)
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+                msg, False)
 
-    async def on_dm_reply(self, msg, referenced_msg):
+    @decorators.OnDmReply
+    async def choose_word(self, msg, referenced_msg):
         # User need to reply to the dm message with a word
         # with max length of 30 characters
         # only allow ASCII characters from 65 to 90 (case insensitive)
@@ -70,7 +74,8 @@ class Hangman(Help):
             '\n* Multiple single letters (example `a B c`)' +
             '\nwill be counted as guesses to the game!')
 
-    async def on_thread_message(self, msg):
+    @decorators.OnThreadMessage
+    async def guesses_from_thread(self, msg):
         # all users except the one who started the game
         # can guess letters in a game's thread
         if msg.channel.name != 'HANGMAN':

@@ -2,6 +2,7 @@ from commands.help import Help
 from datetime import datetime, timedelta
 import discord
 from utils.misc import random_color, black_circle, white_circle
+import utils.decorators as decorators
 
 
 class Poll(Help):
@@ -26,7 +27,8 @@ class Poll(Help):
             placeholder='Responses info', options=options,
             row=4)
 
-    async def execute_command(self, msg):
+    @decorators.ExecuteCommand
+    async def send_empty_poll_to_channel(self, msg):
         args = msg.content.split()
         if len(args) < 2:
             await msg.channel.warn(text='Add a question!')
@@ -69,11 +71,11 @@ class Poll(Help):
             return False
         return True
 
-    async def on_reply(self, msg, poll_msg):
+    @decorators.OnReply
+    async def manage_poll_info(self, msg, poll_msg):
         if not self.is_poll(poll_msg):
             return
-        if not await self.bot.check_permissions(
-                self, poll_msg, msg.author, None):
+        if await self.bot.check_if_valid(self, msg, msg.author) is False:
             return
         opts = msg.content.split(';')
         for o in opts:
@@ -246,7 +248,8 @@ class Poll(Help):
             await poll_msg.channel.notify(
                 text='Response `{}` has been removed.'.format(name))
 
-    async def on_button_click(self, button, msg, user, webhook):
+    @decorators.OnButtonClick
+    async def add_remove_response(self, button, msg, user, webhook):
         if not self.is_poll(msg):
             return
         x = button.label.split('\u3000')
@@ -294,11 +297,11 @@ class Poll(Help):
             await self.bot.database.use_database(
                 self.insert_to_db, x.strip(), msg, user.id)
 
-    async def on_menu_select(self, interaction, msg, user, webhook):
+    @decorators.OnMenuSelect
+    async def show_response_info(self, interaction, msg, user, webhook):
         if not self.is_poll(msg, True):
             return
-        if not await self.bot.check_permissions(
-                self, msg, user, webhook):
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         name = interaction.data['values'][0]
         users = await self.bot.database.use_database(

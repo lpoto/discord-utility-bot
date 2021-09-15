@@ -3,6 +3,7 @@ from threading import Timer
 from datetime import datetime, timedelta
 import asyncio
 import utils.misc as utils
+import utils.decorators as decorators
 from utils.wrappers import EmbedWrapper
 from commands.help import Help
 
@@ -17,13 +18,9 @@ class ConnectFour(Help):
         self.empty_grid_element = utils.black_circle
         self.timers = {}
 
-    def clean_up(self):
-        for timer in self.timers.values():
-            if timer is not None and timer.is_alive():
-                timer.cancel()
-        self.timers = {}
 
-    async def execute_game(self, msg, user, webhook):
+    @decorators.ExecuteWithInteraction
+    async def start_the_game(self, msg, user, webhook):
         # if first word is lb or leaderboard show players with most wins
         embed_var = EmbedWrapper(discord.Embed(
             description='{}\n{}'.format(
@@ -44,11 +41,13 @@ class ConnectFour(Help):
             user.name if not user.nick else user.nick,
             self.tokens[1])
 
-    async def execute_command(self, msg):
-        prefix = await self.bot.database.get_prefix(msg)
-        await self.bot.handle_message(msg, 'games', prefix)
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+            msg, False)
 
-    async def on_button_click(self, button, msg, user, webhook):
+    @decorators.OnButtonClick
+    async def determine_game_state(self, button, msg, user, webhook):
         if not msg.is_connect_four:
             return
         if msg.is_info:
@@ -438,6 +437,13 @@ class ConnectFour(Help):
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
         return embed_var
+
+    @decorators.CleanUp
+    def kill_threading_timers(self):
+        for timer in self.timers.values():
+            if timer is not None and timer.is_alive():
+                timer.cancel()
+        self.timers = {}
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

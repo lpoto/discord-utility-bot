@@ -1,4 +1,5 @@
 from commands.help import Help
+from utils.decorators import ExecuteCommand
 from utils.wrappers import MessageWrapper
 
 
@@ -10,7 +11,8 @@ class ClearChat(Help):
         self.bot_permissions = ['send_messages', 'manage_messages']
         self.user_permissions = ['manage_messages']
 
-    async def execute_command(self, msg):
+    @ExecuteCommand
+    async def purge_messages_in_channel(self, msg):
         args = msg.content.split()
         # don't allow purging in role-managing channel
         if len(args) < 2:

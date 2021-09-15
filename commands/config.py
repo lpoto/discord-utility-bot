@@ -2,6 +2,10 @@ import discord
 from commands.help import Help
 from utils.misc import delete_button, colors
 from utils.wrappers import EmbedWrapper
+import utils.decorators as decorators
+
+# TODO make sure server has no roles with names
+#    in ['delete', 'config', '~ page ?', 'help', ...]
 
 
 class Config(Help):
@@ -14,9 +18,17 @@ class Config(Help):
         self.requires_database = True
         self.interactions_require_database = True
 
-    async def execute_command(self, msg):
+    @decorators.ExecuteCommand
+    async def send_general_config_message(self, msg):
         info = self.general_embed
         await msg.channel.send(embed=info[0], components=info[1])
+
+    @decorators.ExecuteWithInteraction
+    async def edit_message_to_config_message(self, msg, user, webhook):
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
+            return
+        info = self.general_embed
+        await msg.edit(embed=info[0], components=info[1])
 
     @property
     def options(self) -> dict:
@@ -27,7 +39,7 @@ class Config(Help):
             'prefix': (
                 'Affix placed in front of the command names.',
                 self.prefix_embed,
-                self.bot.database.default_prefix),
+                self.bot.default_prefix),
             'welcome_text': (
                 'Text sent when a member join the server.',
                 self.welcome_text_embed,
@@ -39,7 +51,7 @@ class Config(Help):
             'deletion_time': (
                 'Time before the auto-deleting messages are deleted.',
                 self.deletion_time_embed,
-                self.bot.database.default_deletion_times)
+                self.bot.default_deletion_times)
         }
 
     @property
@@ -75,11 +87,11 @@ class Config(Help):
         ]
         return (embed_var, components)
 
-    async def on_menu_select(self, interaction, msg, user, webhook):
+    @decorators.OnMenuSelect
+    async def modify_from_dropdown(self, interaction, msg, user, webhook):
         if not msg.is_config:
             return
-        if not await self.bot.check_permissions(
-                self, msg, user, webhook):
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         embed = msg.embeds[0]
         # if  there is no title the embed is general_embed
@@ -94,29 +106,23 @@ class Config(Help):
         for i in self.modify_options['on_menu_select']:
             await i(interaction, msg)
 
-    async def on_reply(self, msg, referenced_msg):
+    @decorators.OnReply
+    async def modify_option_on_reply(self, msg, referenced_msg):
         if (not referenced_msg.is_config or
                 not referenced_msg.embeds[0].title):
             return
-        if not await self.bot.check_permissions(
-                self, referenced_msg, msg.author, False):
+        if await self.bot.check_if_valid(self, msg, msg.author) is False:
             return
         # modify the options that match the title and
         # are modified by replying to the message
         for i in self.modify_options['on_reply']:
             await i(msg, referenced_msg)
 
-    async def on_button_click(self, button, msg, user, webhook):
+    @decorators.OnButtonClick
+    async def change_embed_on_click(self, button, msg, user, webhook):
         if not msg.is_config:
             return
-        if not await self.bot.check_permissions(
-                self, msg, user, webhook):
-            return
-        # return to the help menu by clicking on the help button
-        if button.label == 'help' and not msg.embeds[0].title:
-            info = await self.bot.commands['help'].execute_command(
-                msg, only_return=True)
-            await msg.edit(embed=info[0], components=info[1])
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         # button back should return you back to general_embed
         if button.label == 'back':

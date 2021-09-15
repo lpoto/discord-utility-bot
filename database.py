@@ -118,7 +118,6 @@ class DB:
         successful call.
         """
         # always use this command to edit database
-        cnx = None
         cnx = self.connection_object
         reconnect = False
         try:
@@ -143,7 +142,7 @@ class DB:
                 cursor.close()
                 cnx.close()
             elif reconnect:
-                self.connect_database()
+                await self.connect_database()
                 if repeat:
                     self.use_database(function, *args, repeat)
 
@@ -190,7 +189,7 @@ class DB:
         return await self.use_database(
             self.required_roles_from_database, msg.guild.id, command)
 
-    async def get_deletion_time(self, msg, msg_type):
+    async def get_deletion_time(self, msg, msg_type) -> int or None:
         """
         Get the time before the games messages are deleted
         in the messages's discord server.
@@ -204,9 +203,7 @@ class DB:
             "AND guild_id = '{}'").format(
             guild_id))
         fetched = cursor.fetchone()
-        if fetched is None:
-            return self.default_prefix
-        return fetched[2]
+        return self.default_prefix if fetched is None else fetched[2]
 
     async def welcome_from_database(self, cursor, guild_id):
         cursor.execute((
@@ -214,9 +211,7 @@ class DB:
             "AND guild_id = '{}'").format(
             guild_id))
         fetched = cursor.fetchone()
-        if fetched is None:
-            return None
-        return fetched[2]
+        return None if fetched is None else fetched[2]
 
     async def required_roles_from_database(self, cursor, guild_id, command):
         cursor.execute((
@@ -224,9 +219,7 @@ class DB:
             "AND guild_id = '{}' AND info2 = '{}'").format(
             guild_id, command))
         fetched = cursor.fetchall()
-        if fetched is None:
-            return None
-        return [x[2] for x in fetched]
+        return None if fetched is None else [x[2] for x in fetched]
 
     async def deletion_time_from_database(self, cursor, guild_id, msg_type):
         cursor.execute((
@@ -234,6 +227,5 @@ class DB:
             "AND guild_id = '{}' AND info2 = '{}'").format(
                 guild_id, msg_type))
         fetched = cursor.fetchone()
-        if fetched is None:
-            return self.default_deletion_times[msg_type]
-        return int(fetched[2])
+        return self.default_deletion_times[
+                msg_type] if fetched is None else int(fetched[2])

@@ -1,6 +1,7 @@
 import discord
 from utils.misc import rps_emojis, random_color, delete_button
 from datetime import datetime, timedelta
+import utils.decorators as decorators
 from utils.wrappers import EmbedWrapper, build_view
 from commands.help import Help
 
@@ -13,7 +14,8 @@ class Rps(Help):
         self.embed_type = 'ROCK_PAPER_SCISSORS'
         self.emojis = {rps_emojis[i]: v for i, v in enumerate(['r', 'p', 's'])}
 
-    async def execute_game(self, msg, user, webhook):
+    @decorators.ExecuteWithInteraction
+    async def start_the_game(self, msg, user, webhook):
         components = [discord.ui.Button(emoji=i) for i in rps_emojis]
         view = build_view(components)
         if view is None:
@@ -25,11 +27,13 @@ class Rps(Help):
             info='Choose one of the options to start the game.')
         await webhook.send(embed=embed, view=view, ephemeral=True)
 
-    async def execute_command(self, msg):
-        prefix = await self.bot.database.get_prefix(msg)
-        await self.bot.handle_message(msg, 'games', prefix)
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+            msg, False)
 
-    async def on_button_click(self, button, msg, user, webhook):
+    @decorators.OnButtonClick
+    async def user_selection(self, button, msg, user, webhook):
         if not msg.is_rps:
             return
         if button.emoji.name not in rps_emojis:
@@ -95,7 +99,7 @@ class Rps(Help):
              "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
                 'rps', msg.channel.id, msg.id, user_id, choice, cur_time))
         await msg.delete(
-                delay=time * 3600)
+            delay=time * 3600)
 
     async def choice_from_database(self, cursor, msg):
         cursor.execute(

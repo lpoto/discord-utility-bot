@@ -5,7 +5,7 @@ from utils.misc import red_color, green_color
 class MessageWrapper(discord.Message):
     """
     Wrapper for discord.Message that avoids permission errors,
-    adds additional functionality to editing and deleting 
+    adds additional functionality to editing and deleting
     messages and adds properties that check
     for specific message types based on EmbedWrapper embed types.
     """
@@ -198,7 +198,10 @@ class ChannelWrapper(object):
                 view=view))
         return msg
 
-    async def warn(self, text, delete_after=None):
+    async def warn(self, text, webhook=None, delete_after=None):
+        if webhook:
+            await webhook.send(text, ephemeral=True)
+            return
         embed = discord.Embed(
             color=red_color,
             description=text)

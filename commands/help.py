@@ -1,6 +1,7 @@
 import discord
 from utils.misc import colors, delete_button
 from utils.wrappers import EmbedWrapper
+import utils.decorators as decorators
 
 
 class Help:
@@ -20,9 +21,6 @@ class Help:
         self.embed_type = None
         # on init add the created object to
         # Bot's commands dictionary
-
-    def clean_up(self):
-        pass
 
     def additional_info(self, prefix) -> str:
         """
@@ -50,13 +48,12 @@ class Help:
         ]
         return info
 
-    async def execute_command(self, msg, only_return=False):
+    @decorators.ExecuteCommand
+    async def __send_help_to_channel(self, msg, only_return=False):
         """
         Function called when a message in a discord channel
         starts with the prefix and the command's name.
         """
-        if not self.name == 'help':
-            return
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
@@ -82,12 +79,15 @@ class Help:
         else:
             return (embed_var, components)
 
-    async def on_menu_select(self, interaction, msg, user, webhook):
-        # this is triggered when a user selects something in
-        # a dropdown menu
-        # Allows iterating all the commands' help embeds from
-        # the help command
-        if not msg.is_help or self.name != 'help':
+    @decorators.ExecuteWithInteraction
+    async def __edit_message_to_help(self, msg, user, webhook):
+        info = await self.__send_help_to_channel(
+                self, msg=msg, only_return=True)
+        await msg.edit(embed=info[0], components=info[1])
+
+    @decorators.OnMenuSelect
+    async def __additional_help(self, interaction, msg, user, webhook):
+        if not msg.is_help:
             return
         name = interaction.data['values'][0]
         if name == 'help':
@@ -108,21 +108,6 @@ class Help:
         new_embed.set_info(
             'Select help in the commands dropdown to return to help menu.')
         await msg.edit(embed=new_embed)
-
-    async def on_button_click(self, button, msg, user, webhook):
-        if not msg.is_help or self.name != 'help':
-            return
-        if button.label == 'config':
-            x = await self.bot.check_permissions(
-                self.bot.commands['config'], msg, user, webhook)
-            if not x:
-                return
-            config_info = self.bot.commands['config'].general_embed
-            await msg.edit(embed=config_info[0], components=config_info[1])
-        elif button.label == 'games':
-            games_info = await self.bot.commands['games'].execute_command(
-                msg, True)
-            await msg.edit(embed=games_info[0], components=games_info[1])
 
     async def help_embed(self, msg, commands) -> EmbedWrapper:
         prefix = await self.bot.database.get_prefix(msg)

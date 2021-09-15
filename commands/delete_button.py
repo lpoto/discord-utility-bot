@@ -1,19 +1,21 @@
 import discord
 from commands.help import Help
 from utils.misc import green_color
+from utils.decorators import ExecuteWithInteraction
 from utils.wrappers import EmbedWrapper
 
 
 class DeleteButton(Help):
     def __init__(self):
-        super().__init__(name='delete_button')
+        super().__init__(name='delete')
         self.description = (
             'Delete a bot\'s message with a button click.')
         self.bot_permissions = None
         self.user_permissions = ['manage_messages']
         self.executable = False
 
-    async def execute_command(self, msg, user=None, webhook=None):
+    @ExecuteWithInteraction
+    async def delete_message(self, msg, user=None, webhook=None):
         if (str(msg.channel.type) != 'text' or
                 not webhook or not user or
                 msg.author.id != msg.guild.me.id or
@@ -21,8 +23,8 @@ class DeleteButton(Help):
             return
         if msg.pinned and webhook:
             await webhook.send(
-                    'This message is pinned!',
-                    ephemeral=True)
+                'This message is pinned!',
+                ephemeral=True)
             return
         if not msg.is_deletable:
             return

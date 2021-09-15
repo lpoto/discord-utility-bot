@@ -1,6 +1,7 @@
 import discord
 from utils.wrappers import EmbedWrapper
 from utils.misc import colors, delete_button
+import utils.decorators as decorators
 from commands.help import Help
 
 
@@ -12,7 +13,8 @@ class Games(Help):
         self.interactions_require_database = True
         self.synonyms = ['play']
 
-    async def execute_command(self, msg, return_only=False):
+    @decorators.ExecuteCommand
+    async def send_game_menu_to_channel(self, msg, return_only=False):
         color = colors[list(self.bot.commands.keys()).index(
             self.name) % 9]
         embed_var = EmbedWrapper(discord.Embed(
@@ -31,55 +33,45 @@ class Games(Help):
             options2.append(discord.SelectOption(
                 label=k + ' - leaderboard'))
         components = [
-                discord.ui.Select(
-                    placeholder='Select a game',
-                    options=options1),
-                discord.ui.Select(
-                    placeholder='Select a leaderboard',
-                    options=options2),
-                discord.ui.Button(label='help'),
-                delete_button()
-            ]
+            discord.ui.Select(
+                placeholder='Select a game',
+                options=options1),
+            discord.ui.Select(
+                placeholder='Select a leaderboard',
+                options=options2),
+            discord.ui.Button(label='help'),
+            delete_button()
+        ]
         if not return_only:
             await msg.channel.send(
                 embed=embed_var, components=components)
             return
         return (embed_var, components)
 
-    async def on_button_click(self, button, msg, user, webhook):
-        if not msg.is_games:
+    @decorators.ExecuteWithInteraction
+    async def edit_message_to_game_menu(self, msg, user, webhook):
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
-        if not await self.bot.check_permissions(
-                self, msg, user, webhook):
-            return
-        if button.label == 'help':
-            help_info = await self.bot.commands['help'].execute_command(
-                    msg, True)
-            await msg.edit(embed=help_info[0], components=help_info[1])
-        if button.label in self.bot.games:
-            await self.bot.games[button.label].execute_game(
-                msg, user, webhook)
-            await msg.edit(embed=msg.embeds[0])
+        info = await self.send_game_menu_to_channel(self, msg, True)
+        await msg.edit(embed=info[0], components=info[1])
 
-    async def on_menu_select(self, interaction, msg, user, webhook):
+    @decorators.OnMenuSelect
+    async def start_game_or_leaderboard(self, interaction, msg, user, webhook):
         if not msg.is_games:
             return
-        if not await self.bot.check_permissions(
-                self, msg, user, webhook):
+        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         name = interaction.data['values'][0]
         if ' - leaderboard' in name:
             name = name.replace(' - leaderboard', '', 1)
             embed = await self.bot.database.use_database(
-                    self.bot.games[name].leaderboard_embed, msg)
+                self.bot.games[name].leaderboard_embed, msg)
             if embed is None:
                 await webhook.send(
-                        content='No availible leaderboard.',
-                        ephemeral=True)
+                    content='No availible leaderboard.',
+                    ephemeral=True)
             else:
                 await webhook.send(embed=embed, ephemeral=True)
-        elif name in self.bot.games:
-            await self.bot.games[name].execute_game(msg, user, webhook)
         await msg.edit(text='')
 
     def additional_info(self, prefix):

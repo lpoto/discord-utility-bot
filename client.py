@@ -83,9 +83,7 @@ class MyClient(discord.Client):
             self.dispatch('thread_message', msg)
             return
         if (msg.author.id == self.user.id or
-                str(msg.channel.type) != 'text' or
-                msg.content.split() is None or
-                len(msg.content.split()) < 1):
+                str(msg.channel.type) != 'text'):
             return
         # wrapp message and override default functions to avoid errors
         # and add additional functionality
@@ -95,11 +93,11 @@ class MyClient(discord.Client):
                 msg.reference.message_id)
             if referenced_msg is not None:
                 self.dispatch('reply', msg, referenced_msg)
-                return
+            return
         # allow calling help with default prefix, even if a different
         # prefix is set
-        if msg.content == "{prefix}help".format(
-                prefix=self.bot.default_prefix):
+        if msg.content.startswith("{prefix}help".format(
+                prefix=self.bot.default_prefix)):
             await self.bot.handle_message(
                 msg, 'help', self.bot.default_prefix)
             return
@@ -109,6 +107,7 @@ class MyClient(discord.Client):
         cmd = msg.content.split()[0][len(prefix):]
         if (msg.content[: len(prefix)] == prefix and
                 (cmd in self.bot.commands or
+                    cmd in self.bot.games or
                     cmd in self.bot.commands_synonyms)):
             await self.bot.handle_message(msg, cmd, prefix)
             return
@@ -136,26 +135,25 @@ class MyClient(discord.Client):
                 msg.reference.message_id)
             if referenced_msg is not None:
                 self.dispatch('dm_reply', msg, referenced_msg)
-                return
+            return
 
     async def on_dm_reply(self, msg, referenced_msg):
         if referenced_msg.author.id != self.user.id:
             return
         # call commands that have on_dm_reply function
-        for i in self.bot.on_dm_reply_commands:
-            await i.on_dm_reply(msg, referenced_msg)
+        for method in sum(self.bot.special_methods['OnDmReply'].values(), []):
+            await method(msg, referenced_msg)
 
     async def on_thread_message(self, msg):
         # handle messages sent in threads
-        if (msg.author.id == self.user.id or
-                msg.content.split() is None or
-                len(msg.content.split()) < 1):
+        if msg.author.id == self.user.id:
             return
         msg = wrappers.MessageWrapper(msg)
         msg.channel.parent = wrappers.ChannelWrapper(msg.channel.parent)
         # run commands that have on thread message function
-        for cmd in self.bot.on_thread_message_commands:
-            await cmd.on_thread_message(msg)
+        for method in sum(
+                self.bot.special_methods['OnThreadMessage'].values(), []):
+            await method(msg)
 
     async def on_member_join(self, member):
         # if server has welcome text set up
@@ -194,10 +192,6 @@ class MyClient(discord.Client):
             return
         # if delete button was clicked and message is deletable
         # (not pinned, and not marked with ND) delete it
-        if button.label == 'delete':
-            await self.bot.commands['delete_button'].execute_command(
-                    msg, interaction.user, interaction.followup)
-            return
         if msg.is_ended:
             return
         # process button_click in a queue to avoid
