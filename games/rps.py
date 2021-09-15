@@ -16,6 +16,8 @@ class Rps(Help):
 
     @decorators.ExecuteWithInteraction
     async def start_the_game(self, msg, user, webhook):
+        # when rps is selected in games menu send an ephemeral message
+        # in which the first user can make his choice
         components = [discord.ui.Button(emoji=i) for i in rps_emojis]
         view = build_view(components)
         if view is None:
@@ -29,11 +31,17 @@ class Rps(Help):
 
     @decorators.ExecuteCommand
     async def send_game_menu(self, msg):
+        # if rps is called via command in the chat,
+        # send a game menu from which you can start the rps game
         await self.bot.special_methods['ExecuteCommand']['games'][0](
             msg, False)
 
     @decorators.OnButtonClick
     async def user_selection(self, button, msg, user, webhook):
+        # if message is ephemeral, it means the first user is making his choice
+        # if the message is not ephemeral, the first user has already chosen
+        # and the second user, that is not the same as the first user, must
+        # make his choice
         if not msg.is_rps:
             return
         if button.emoji.name not in rps_emojis:
@@ -50,6 +58,10 @@ class Rps(Help):
             return
         if user1.id == user.id:
             return
+        # after the second user has chosen, compare the choices
+        # and change the game's type in database to "deleting"
+        # so it auto deletes after time, but does not respond
+        # to rps interactions
         await self.game_results(
             user1, user, choice1, button.emoji.name,
             msg)
@@ -66,6 +78,7 @@ class Rps(Help):
             components.append(discord.ui.Button(emoji=v))
         components[idx].style = discord.ButtonStyle.green
         # edit the ephemeral message through webhook
+        # change the selected button to green
         msg.embeds[0].set_info(None)
         await webhook.edit_message(
             message_id=msg.id,
@@ -89,52 +102,11 @@ class Rps(Help):
             self.emojis[button.emoji.name],
             new_msg, user.id)
 
-    async def choice_to_database(self, cursor, choice, msg, user_id):
-        time = await self.bot.database.get_deletion_time(msg, self.name)
-        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
-                    ).strftime('%d:%m:%H')
-        cursor.execute(
-            ("INSERT INTO messages " +
-             "(type, channel_id, message_id, user_id, info, deletion_time) " +
-             "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
-                'rps', msg.channel.id, msg.id, user_id, choice, cur_time))
-        await msg.delete(
-            delay=time * 3600)
-
-    async def choice_from_database(self, cursor, msg):
-        cursor.execute(
-            ("SELECT * FROM messages " +
-             "WHERE type = 'rps' AND channel_id = '{}' AND message_id = '{}'"
-             ).format(
-                msg.channel.id, msg.id))
-        return cursor.fetchone()
-
-    async def delete_from_database(self, cursor, msg):
-        cursor.execute(("UPDATE messages SET type = 'deleting' WHERE " +
-                        "channel_id = '{}' AND message_id = '{}'").format(
-            msg.channel.id, msg.id))
-
-    async def add_winner(self, embed, msg,  info):
-        embed.title = (
-            '{} wins against {}!').format(
-            info['winner_name'], info['loser_name'])
-        embed.description = '{} against {}'.format(
-            info['winner_emoji'], info['loser_emoji'])
-        wins = await self.bot.database.use_database(
-            self.wins_to_database, msg, info['winner_id'])
-        extra = None
-        if wins is not None:
-            extra = '{} total wins: {}\u3000'.format(
-                info['winner_name'], wins)
-        embed.set_info(extra)
-        if info['winner_avatar']:
-            embed.set_thumbnail(url=info['winner_avatar'])
-        return embed
-
     async def game_results(self, user1, user2, emoji1, emoji2, msg):
         # find the winner of the game
         # edit the existing game message accordingly
         user_names = [user1.name, user2.name]
+        # if nicknames are set up use nicknames
         if user1.nick:
             user_names[0] = user1.nick
         if user2.nick:
@@ -178,6 +150,54 @@ class Rps(Help):
                 components.append(discord.ui.Button(emoji=i))
         components.append(delete_button())
         await msg.edit(embed=embed, components=components)
+
+    async def add_winner(self, embed, msg,  info):
+        # show in title who won against who with
+        # what against what
+        embed.title = (
+            '{} wins against {}!').format(
+            info['winner_name'], info['loser_name'])
+        embed.description = '{} against {}'.format(
+            info['winner_emoji'], info['loser_emoji'])
+        wins = await self.bot.database.use_database(
+            self.wins_to_database, msg, info['winner_id'])
+        extra = None
+        # if database connnection, fetch wins from database
+        # and add wins to footer info
+        if wins is not None:
+            extra = '{} total wins: {}\u3000'.format(
+                info['winner_name'], wins)
+        embed.set_info(extra)
+        if info['winner_avatar']:
+            embed.set_thumbnail(url=info['winner_avatar'])
+        return embed
+
+    async def choice_to_database(self, cursor, choice, msg, user_id):
+        time = await self.bot.database.get_deletion_time(msg, self.name)
+        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
+                    ).strftime('%d:%m:%H')
+        cursor.execute(
+            ("INSERT INTO messages " +
+             "(type, channel_id, message_id, user_id, info, deletion_time) " +
+             "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
+                'rps', msg.channel.id, msg.id, user_id, choice, cur_time))
+        await msg.delete(
+            delay=time * 3600)
+
+    async def choice_from_database(self, cursor, msg):
+        cursor.execute((
+            "SELECT * FROM messages " +
+            "WHERE type = 'rps' AND channel_id = '{}' AND message_id = '{}'"
+        ).format(
+            msg.channel.id, msg.id))
+        return cursor.fetchone()
+
+    async def delete_from_database(self, cursor, msg):
+        # only update the type to "deleting"
+        cursor.execute((
+            "UPDATE messages SET type = 'deleting' WHERE " +
+            "channel_id = '{}' AND message_id = '{}'").format(
+            msg.channel.id, msg.id))
 
     async def wins_to_database(self, cursor, msg, user_id):
         # add a win for the user to the database and return total win count

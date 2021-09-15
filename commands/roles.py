@@ -1,7 +1,13 @@
 from commands.help import Help
 import discord
 from utils.misc import random_color
+from utils.wrappers import EmbedWrapper
 from utils.decorators import OnReply, OnButtonClick, ExecuteCommand
+
+# TODO when sending a new roles message, it should have a dropdown
+#      with all of the guild's roles, selecting them will add them
+#      to the message, and then commiting will remove the dropdown
+#      replying can reopen the dropdown
 
 
 class Roles(Help):
@@ -13,43 +19,38 @@ class Roles(Help):
 
     @ExecuteCommand
     async def empty_roles_message_to_channel(self, msg):
+        # send a message to the channel, containing the
+        # information on how to add roles to the message
+        # name of the message can be added to the command (prefixroles <name>)
         args = msg.content.split()
         title = None
         if len(args) > 1:
             title = msg.content.replace('{} '.format(args[0]), '', 1)
+            if len(title) > 60:
+                await msg.channel.warn(
+                        'Cannot add titles longer than 60 characters!')
+                return
         embed_var = await self.starting_embed(title=title, msg=msg)
         if embed_var is None:
             return
         await msg.channel.send(embed=embed_var)
 
     async def starting_embed(self, title, msg):
-        embed_var = discord.Embed(
-            color=random_color(),
-            description='* {}\n* {}\n{}'.format(
+        m = EmbedWrapper.NOT_DELETABLE
+        text = 'ROLES' if title is None else 'ROLES - {}'.format(title)
+        embed_var = EmbedWrapper(discord.Embed(
+            color=random_color()),
+            info='* {}\n* {}\n{}'.format(
                 'Reply with a role to add it to the message.',
                 'You can add multiple at once, separated with ";".',
-                'Example: "role1;role2;role3"'))
-        text = 'ROLES'
-        if title:
-            text += ' - ' + title
-        text = text + (70 - len(text)) * '\u2000' + 'ND'
-        embed_var.set_footer(text=text)
+                'Example: "role1;role2;role3"'),
+            embed_type='{}{}{}'.format(
+                text, (60 - len(text + m)) * '\u2000', m))
         return embed_var
-
-    def is_roles(self, msg):
-        if (not len(msg.embeds) == 1 or
-                not str(msg.channel.type) == 'text' or not
-                msg.channel.guild.me.id == msg.author.id or
-                msg.embeds[0].title or not msg.embeds[0].footer
-                or not msg.embeds[0].footer.text or
-                msg.embeds[0].footer.text.split()[-1] != 'ND' or
-                msg.embeds[0].footer.text.split()[0] != 'ROLES'):
-            return False
-        return True
 
     @OnReply
     async def manage_roles_in_message(self, msg, roles_message):
-        if not self.is_roles(roles_message):
+        if not roles_message.is_roles:
             return
         # multiple replies can be added at once separated with ";"
         for i in msg.content.split(';'):
@@ -58,7 +59,7 @@ class Roles(Help):
                 continue
             try:
                 await self.roles_existing_message(
-                        i.strip(), roles_message.channel, roles_message.id)
+                    i.strip(), roles_message.channel, roles_message.id)
             except ValueError as err:
                 if str(err) == 'could not find open space for item':
                     await msg.channel.warn(
@@ -84,15 +85,15 @@ class Roles(Help):
                     return
                 components.append(discord.ui.Button(label=j.label))
         components.append(discord.ui.Button(label=rl.name))
-        if msg.embeds[0].description:
-            msg.embeds[0].description = None
+        if msg.embeds[0].footer.text:
+            msg.embeds[0].set_footer(text=discord.Embed.Empty)
             await msg.edit(embed=msg.embeds[0], components=components)
         else:
             await msg.edit(components=components)
 
     @OnButtonClick
     async def add_remove_role(self, button, msg, user, webhook):
-        if not self.is_roles(msg):
+        if not msg.is_roles:
             return
         role = await self.valid_role(button.label, msg, False)
         if role is None:
@@ -123,12 +124,12 @@ class Roles(Help):
             return
         if role is None:
             await msg.channel.warn(
-                text='Role `{}` does not exist!'.format(pot_role))
+                content='Role `{}` does not exist!'.format(pot_role))
             return
         # don't sent default (@everyone) or integration roles
         if role.is_integration() or role.is_default():
             await msg.channel.warn(
-                text='Cannot add integration or default roles!')
+                content='Cannot add integration or default roles!')
             return
         position = False
         # don't allow roles higher than bot's highest role
@@ -152,19 +153,20 @@ class Roles(Help):
         for i in not_allowed:
             if dict(iter(role.permissions))[i]:
                 await msg.channel.warn(
-                    text='Cannot manage roles with `{}` permission.'.format(i))
+                    content='Cannot manage roles with `{}` permission.'.format(
+                        i))
                 return
         return role
 
     async def remove_role_from_msg(self, msg, arg):
         if len(msg.embeds[0].fields) == 1:
             await msg.channel.warn(
-                text='Cannot remove the only role in the message!')
+                content='Cannot remove the only role in the message!')
             return
         args = arg.split()
         if len(args) < 2:
             await msg.channel.warn(
-                text='Please provide a role you want to remove.')
+                content='Please provide a role you want to remove.')
             return
         name = arg.replace('{} '.format(args[0]), '', 1)
         found = False
@@ -177,7 +179,7 @@ class Roles(Help):
                     components.append(discord.ui.Button(label=j.label))
         if found is False:
             await msg.channel.warn(
-                text='There is no role `{}` in the message.'.format(name))
+                content='There is no role `{}` in the message.'.format(name))
             return
         await msg.edit(components=components)
 

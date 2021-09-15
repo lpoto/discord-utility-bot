@@ -34,10 +34,12 @@ class Help:
         # gather all the information about the command
         # to be used in command's help embed
         add_inf = self.additional_info(prefix)
+        # if this type of message deletes after time,
+        # add this information to the embed
         if self.name in list(self.bot.games.keys()) + ['games', 'poll']:
             add_inf += (
-                '\n\n* {} messages are deleted after some time.'
-            ).format(self.name)
+                '\n\n* {} messages are deleted after {} hours.'
+            ).format(self.name, self.bot.default_deletion_times[self.name])
         info = [
             self.name,
             self.description,
@@ -54,6 +56,11 @@ class Help:
         Function called when a message in a discord channel
         starts with the prefix and the command's name.
         """
+        # send the help to the channel, add dropdown with all the
+        # availible commands
+        # and a dropdown with all the availible games
+        # selecting one of those should open the selected command's
+        # help embed
         embed_var = await self.help_embed(msg, self.bot.commands)
         if embed_var is None:
             return
@@ -81,8 +88,10 @@ class Help:
 
     @decorators.ExecuteWithInteraction
     async def __edit_message_to_help(self, msg, user, webhook):
+        # help can be oppened by clicking on a "help" button
+        # on a bot's message
         info = await self.__send_help_to_channel(
-                self, msg=msg, only_return=True)
+            self, msg=msg, only_return=True)
         await msg.edit(embed=info[0], components=info[1])
 
     @decorators.OnMenuSelect

@@ -15,6 +15,11 @@ class Games(Help):
 
     @decorators.ExecuteCommand
     async def send_game_menu_to_channel(self, msg, return_only=False):
+        # send a game menu to the channel
+        # add a dropdown with all availible games, selecting one of them
+        # will start the game
+        # add a dropdown with all the games' leaderboards
+        # selecting one of those will send you an ephemeral leaderboard
         color = colors[list(self.bot.commands.keys()).index(
             self.name) % 9]
         embed_var = EmbedWrapper(discord.Embed(
@@ -50,6 +55,8 @@ class Games(Help):
 
     @decorators.ExecuteWithInteraction
     async def edit_message_to_game_menu(self, msg, user, webhook):
+        # games menu can be oppened by clicking on a "games" button
+        # on a bot's message (help message)
         if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         info = await self.send_game_menu_to_channel(self, msg, True)
@@ -57,6 +64,9 @@ class Games(Help):
 
     @decorators.OnMenuSelect
     async def start_game_or_leaderboard(self, interaction, msg, user, webhook):
+        # determine whether a leaderboard was selected
+        # if a game was selected, it will be started from that game's
+        # decorators.@ExecuteWithInteraction method
         if not msg.is_games:
             return
         if await self.bot.check_if_valid(self, msg, user, webhook) is False:
@@ -72,7 +82,7 @@ class Games(Help):
                     ephemeral=True)
             else:
                 await webhook.send(embed=embed, ephemeral=True)
-        await msg.edit(text='')
+        await msg.edit(content='')
 
     def additional_info(self, prefix):
         return ('* Click on the button with the name of the game ' +

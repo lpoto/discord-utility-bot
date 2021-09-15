@@ -18,10 +18,10 @@ class ConnectFour(Help):
         self.empty_grid_element = utils.black_circle
         self.timers = {}
 
-
     @decorators.ExecuteWithInteraction
     async def start_the_game(self, msg, user, webhook):
-        # if first word is lb or leaderboard show players with most wins
+        # if connect_four is selected in a game menu, send a
+        # message where two users can select the color of their tokens
         embed_var = EmbedWrapper(discord.Embed(
             description='{}\n{}'.format(
                 'Select a token to join or change the already selected token!',
@@ -43,11 +43,18 @@ class ConnectFour(Help):
 
     @decorators.ExecuteCommand
     async def send_game_menu(self, msg):
+        # if cf is called from the chat, send a game menu from which
+        # the game can be started
         await self.bot.special_methods['ExecuteCommand']['games'][0](
             msg, False)
 
     @decorators.OnButtonClick
     async def determine_game_state(self, button, msg, user, webhook):
+        # if less than two tokens are selected, tha game is still in
+        # token selection, so add the selected token for the player
+        # when both tokens are selected, start the game in "5" seconds
+        # during the 5 seconds, a user can still leave and the timer
+        # is cancelled
         if not msg.is_connect_four:
             return
         if msg.is_info:
@@ -96,12 +103,15 @@ class ConnectFour(Help):
                 start = True
         msg.embeds[0].description = '\n'.join(tks)
         await msg.edit(embed=msg.embeds[0])
+        # if both tokens are selected, start the timer for the game to start
         if start:
             self.timers[msg.id] = Timer(7, self.start_game, args=(
                 msg, x['user_id'], user_id))
             self.timers[msg.id].start()
 
     async def remove_selected_token(self, msg, user_id):
+        # remove the  token for the user that left the game
+        # if both tokens were selected, stop the timer
         x = await self.bot.database.use_database(
             self.get_game, msg)
         if (not x['user_id'] and not x['user2_id']):
@@ -129,6 +139,8 @@ class ConnectFour(Help):
         await msg.edit(embed=msg.embeds[0])
 
     def start_game(self, msg, user1_id, user2_id):
+        # send an embed with empty connect_four grid and wait
+        # for further interactions
         if msg.id in self.timers:
             self.timers[msg.id] = False
         tks = msg.embeds[0].description.split('\n')[1:]
@@ -157,6 +169,8 @@ class ConnectFour(Help):
             del self.timers[msg.id]
 
     async def play_game(self, button, msg, user):
+        # insert the token in to the selected column
+        # and check for winner or draw
         embed = msg.embeds[0]
         x = await self.bot.database.use_database(
             self.get_game, msg)
@@ -227,6 +241,9 @@ class ConnectFour(Help):
             draw,
             color,
             forfeit=False):
+        # the embed once the game has finished
+        # show in title who won agains who
+        # if database connection show wins of the winner in the footer info
         users = (user1, user2) if on_move == 0 else (user2, user1)
         embed_var = EmbedWrapper(discord.Embed(
             description='Game completed\n\n{}'.format(self.grid_text(grid)),
@@ -354,6 +371,7 @@ class ConnectFour(Help):
         return info
 
     async def delete_game(self, cursor, msg):
+        # only update type to deleting
         cursor.execute(("UPDATE messages SET type = 'deleting' WHERE " +
                         "channel_id = '{}' AND message_id = '{}'").format(
             msg.channel.id, msg.id))
@@ -378,7 +396,7 @@ class ConnectFour(Help):
              "VALUES ('connect_four', '{}', '{}', '{}', '{}', '{}')"
              ).format(msg.channel.id, msg.id, u1_id, u2_id, cur_time))
         await msg.delete(
-                delay=time * 3600)
+            delay=time * 3600)
 
     async def wins_to_database(self, cursor, user_id, guild_id):
         # add a players win to database

@@ -16,6 +16,9 @@ class DeleteButton(Help):
 
     @ExecuteWithInteraction
     async def delete_message(self, msg, user=None, webhook=None):
+        # when a delete button is pressed, if the message is
+        # deletable, edit it to a "msg was deleted" notification
+        # and delete it after 2 seconds
         if (str(msg.channel.type) != 'text' or
                 not webhook or not user or
                 msg.author.id != msg.guild.me.id or
@@ -31,7 +34,7 @@ class DeleteButton(Help):
         x = await self.bot.check_permissions(self, msg, user, webhook)
         if not x:
             return
-        await msg.edit(text=None,
+        await msg.edit(content=None,
                        embed=discord.Embed(
                            color=green_color,
                            description='Message has been deleted!'),

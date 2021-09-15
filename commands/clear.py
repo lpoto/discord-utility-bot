@@ -14,31 +14,31 @@ class ClearChat(Help):
     @ExecuteCommand
     async def purge_messages_in_channel(self, msg):
         args = msg.content.split()
-        # don't allow purging in role-managing channel
+        # only 1 - 50 messages can be deleted at once
+        # messages older than 14 days cannot be bulk deleted, so they
+        # will be deleted normaly one after another (much slower)
+        # deleting more than 50 messages older than 14 days
+        # would take a while and cause problems
         if len(args) < 2:
             await msg.channel.warn(
-                text='How many messages do you want to delete?')
+                content='How many messages do you want to delete?')
             return
         count = 0
         try:
             count = int(args[1])
         except Exception:
             await msg.channel.warn(
-                text='Argument must be a number between 0 and 50!')
+                content='Argument must be a number between 0 and 50!')
             return
         else:
             count = int(args[1])
-        # allow deleting only between 1 and 50 messages
-        # ... if messages are older than 14 days bot will have to delete
-        # messages one by one, so deleting large amounts of messages might
-        # take a while and cause problems
         if count > 50:
             await msg.channel.warn(
-                text='You cannot delete more than 50 messages at once!')
+                content='You cannot delete more than 50 messages at once!')
             return
         if count <= 0:
             await msg.channel.warn(
-                text='You must delete at least 1 message!')
+                content='You must delete at least 1 message!')
             return
         # purge the messages and send how many were actually deleted
         purged = len(await msg.channel.purge(
@@ -46,13 +46,14 @@ class ClearChat(Help):
             check=self.purge_filter)) - 1
         if purged < 1:
             await msg.channel.warn(
-                text='Could not delete any messages.')
+                content='Could not delete any messages.')
         else:
             await msg.channel.notify(
-                text='Deleted {count} messages.'.format(count=purged))
+                content='Deleted {count} messages.'.format(count=purged))
 
     def purge_filter(self, msg):
-        # don't delete pinned messages and polls
+        # don't delete pinned messages and
+        # messages marked with NOT DELETABLE
         if not isinstance(msg, MessageWrapper):
             msg = MessageWrapper(msg)
         if not hasattr(msg, 'is_deletable'):

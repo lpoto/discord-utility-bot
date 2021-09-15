@@ -29,7 +29,7 @@ class MessageWrapper(discord.Message):
 
     async def edit(
             self,
-            text=False,
+            content=False,
             embed=False,
             delete_after=None,
             view=None,
@@ -37,35 +37,35 @@ class MessageWrapper(discord.Message):
     ):
         if view is not None or components is not None:
             view = build_view(components, view)
-            if text is False and embed is not False:
+            if content is False and embed is not False:
                 await self._wrapped_msg.edit(
                     embed=embed, delete_after=delete_after,
                     view=view)
-            elif embed is False and text is not False:
+            elif embed is False and content is not False:
                 await self._wrapped_msg.edit(
-                    content=text, delete_after=delete_after,
+                    content=content, delete_after=delete_after,
                     view=view)
-            elif embed is False and text is False:
+            elif embed is False and content is False:
                 await self._wrapped_msg.edit(
                     delete_after=delete_after,
                     view=view)
             else:
                 await self._wrapped_msg.edit(
-                    content=text, embed=embed, delete_after=delete_after,
+                    content=content, embed=embed, delete_after=delete_after,
                     view=view)
         else:
-            if text is False and embed is not False:
+            if content is False and embed is not False:
                 await self._wrapped_msg.edit(
                     embed=embed, delete_after=delete_after)
-            elif embed is False and text is not False:
+            elif embed is False and content is not False:
                 await self._wrapped_msg.edit(
-                    content=text, delete_after=delete_after)
-            elif embed is False and text is False:
+                    content=content, delete_after=delete_after)
+            elif embed is False and content is False:
                 await self._wrapped_msg.edit(
                     delete_after=delete_after)
             else:
                 await self._wrapped_msg.edit(
-                    content=text, embed=embed, delete_after=delete_after)
+                    content=content, embed=embed, delete_after=delete_after)
         for i in range(len(self._wrapped_msg.embeds)):
             if not isinstance(self._wrapped_msg.embeds[i], EmbedWrapper):
                 self._wrapped_msg.embeds[i] = EmbedWrapper(
@@ -84,12 +84,20 @@ class MessageWrapper(discord.Message):
 
     # check the type of message based on its embed
     def type_check(self, name, bad_marks=None, good_marks=None):
-        if len(self.embeds) != 1:
+        if (len(self.embeds) != 1 or
+            (self.guild and
+             self.guild.me.id != self.author.id)):
             return False
         if not isinstance(self.embeds[0], EmbedWrapper):
             self.embeds[0] = EmbedWrapper(self.embeds[0])
-        mks = self.embeds[0].get_marks()
-        if name is not None and self.embeds[0].embed_type != name:
+        embed = self.embeds[0]
+        mks = None
+        if (embed.author.name and
+                embed.author.name.split()[0] in ['ROLES', 'POLL']):
+            mks = embed.author.name.split()[-1]
+        else:
+            mks = embed.get_marks()
+        if name is not None and embed.embed_type != name:
             return False
         if bad_marks is not None:
             if not isinstance(bad_marks, list) and not isinstance(
@@ -105,51 +113,77 @@ class MessageWrapper(discord.Message):
                 return False
         return True
 
-    @property
+    @ property
     def is_connect_four(self):
         return self.type_check('CONNECT_FOUR', EmbedWrapper.ENDED)
 
-    @property
+    @ property
     def is_hangman(self):
         return self.type_check('HANGMAN', EmbedWrapper.ENDED)
 
-    @property
+    @ property
     def is_event(self):
         return self.type_check('EVENT', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
-    @property
+    @ property
     def is_help(self):
         return self.type_check('HELP', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
-    @property
+    @ property
     def is_server(self):
         return self.type_check('SERVER', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
-    @property
+    @ property
     def is_config(self):
         return self.type_check('CONFIG', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
-    @property
+    @ property
     def is_fixed(self):
         return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.FIXED)
 
-    @property
+    @ property
     def is_ended(self):
         return self.type_check(None, good_marks=EmbedWrapper.ENDED)
 
-    @property
+    @ property
     def is_info(self):
         return self.type_check(None, EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
-    @property
+    @ property
     def is_rps(self):
         return self.type_check('ROCK_PAPER_SCISSORS', EmbedWrapper.ENDED)
 
-    @property
+    @ property
     def is_games(self):
         return self.type_check('GAMES', EmbedWrapper.ENDED, EmbedWrapper.INFO)
 
     @property
+    def is_poll(self):
+        return self.type_check(
+            'POLL',
+            (EmbedWrapper.ENDED, EmbedWrapper.PARTLY_ENDED),
+            EmbedWrapper.NOT_DELETABLE)
+
+    @property
+    def is_roles(self):
+        return self.type_check(
+            'ROLES',
+            EmbedWrapper.ENDED,
+            EmbedWrapper.NOT_DELETABLE)
+
+    @property
+    def is_fixed_poll(self):
+        return self.type_check(
+            'POLL',
+            None,
+            EmbedWrapper.FIXED)
+
+    @property
+    def is_partial_poll(self):
+        return self.type_check(
+            'POLL', EmbedWrapper.ENDED, EmbedWrapper.NOT_DELETABLE)
+
+    @ property
     def is_deletable(self):
         if len(self._wrapped_msg.embeds) != 1:
             return True
@@ -177,7 +211,7 @@ class ChannelWrapper(object):
 
     async def send(
             self,
-            text=None,
+            content=None,
             embed=None,
             delete_after=None,
             file=None,
@@ -191,29 +225,29 @@ class ChannelWrapper(object):
             view = build_view(components, view)
         msg = MessageWrapper(
             await self._wrapped_chnl.send(
-                content=text,
+                content=content,
                 embed=embed,
                 delete_after=delete_after,
                 file=file,
                 view=view))
         return msg
 
-    async def warn(self, text, webhook=None, delete_after=None):
+    async def warn(self, content, webhook=None, delete_after=None):
         if webhook:
-            await webhook.send(text, ephemeral=True)
+            await webhook.send(content, ephemeral=True)
             return
         embed = discord.Embed(
             color=red_color,
-            description=text)
+            description=content)
         d = delete_after
         if str(self.type) == 'text' and delete_after is None:
             d = 5
         await self.send(embed=embed, delete_after=d)
 
-    async def notify(self, text, delete_after=None):
+    async def notify(self, content, delete_after=None):
         embed = discord.Embed(
             color=green_color,
-            description=text)
+            description=content)
         d = delete_after
         if str(self.type) == 'text' and delete_after is None:
             d = 5
@@ -317,7 +351,7 @@ class EmbedWrapper(discord.Embed):
         elif embed_type is None:
             return
         self.set_author(name=embed_type)
-        return embed_type
+        return embed_type.split()[0]
 
     def mark(self, marks):
         if not isinstance(marks, list) and not isinstance(marks, tuple):
@@ -351,16 +385,16 @@ class EmbedWrapper(discord.Embed):
 
     def set_info(
             self,
-            text=None,
+            content=None,
             marks=None):
         if marks is None:
             marks = self.get_marks()
-        if text is None:
+        if content is None:
             self._wrapped_embed.set_footer(
                 text='@' + ''.join(marks))
         else:
             self._wrapped_embed.set_footer(
-                text=text + '\n@' + ''.join(marks))
+                text=content + '\n@' + ''.join(marks))
 
     def get_info(self) -> str or None:
         if (self._wrapped_embed.footer.text is discord.Embed.Empty or

@@ -20,11 +20,16 @@ class Config(Help):
 
     @decorators.ExecuteCommand
     async def send_general_config_message(self, msg):
+        # send a general settings embed from which
+        # the user can select a type of setting he wants
+        # to see or modify
         info = self.general_embed
         await msg.channel.send(embed=info[0], components=info[1])
 
     @decorators.ExecuteWithInteraction
     async def edit_message_to_config_message(self, msg, user, webhook):
+        # config can also be opened by clicking on a config button
+        # on a bot's message (help message)
         if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         info = self.general_embed
@@ -168,7 +173,7 @@ class Config(Help):
                 self.option_to_database, name, msg.guild.id, info, info2)
             await msg.channel.notify(txt, delete_after=False)
 
-    # ------------------------------- options' embeds and their modified embeds
+    # --------------------------- options' embeds and their modification embeds
 
     async def prefix_embed(self, label, msg):
         embed = msg.embeds[0]
@@ -261,7 +266,8 @@ class Config(Help):
             embed.set_info(
                 '* Select roles that should be able to use the command.\n' +
                 '* Click on "default" to reset the setting,' +
-                ' or "commit" to save the\u2000changes.'
+                ' or "commit" to save the\u2000changes.\n' +
+                '* Clicking on an already selected role will remove it.'
             )
         guild_roles = [r.name for r in msg.guild.roles][::-1]
         options = []
@@ -311,10 +317,14 @@ class Config(Help):
                 rls = [(x[1:][:-2] if x[-1] == ',' else x[1:][:-1]
                         ) for x in info.split('\n') if len(x.strip()) != 0]
                 if role in rls:
-                    return
-                rls.append(role)
-                embed.description = 'Current:\n{}'.format(
-                    ',\n'.join(['`{}`'.format(x) for x in rls]))
+                    rls.remove(role)
+                else:
+                    rls.append(role)
+                if len(rls) == 0:
+                    embed.description = 'Current: `None`'
+                else:
+                    embed.description = 'Current:\n{}'.format(
+                        ',\n'.join(['`{}`'.format(x) for x in rls]))
             await msg.edit(embed=embed)
 
     async def deletion_time_embed(self, label, msg, s=21, e=41, restart=False):

@@ -2,7 +2,11 @@ from commands.help import Help
 from datetime import datetime, timedelta
 import discord
 from utils.misc import random_color, black_circle, white_circle
+from utils.wrappers import EmbedWrapper
 import utils.decorators as decorators
+
+# TODO what to do if too many people vote and the length
+#      of a button label exceedes 80 characters
 
 
 class Poll(Help):
@@ -29,19 +33,23 @@ class Poll(Help):
 
     @decorators.ExecuteCommand
     async def send_empty_poll_to_channel(self, msg):
+        # send a poll with only question added
+        # to the channel and add info on adding responses
         args = msg.content.split()
         if len(args) < 2:
-            await msg.channel.warn(text='Add a question!')
+            await msg.channel.warn(content='Add a question!')
             return
         question = msg.content.replace('{} '.format(args[0]), '', 1)
         if len(question) >= 60:
             await msg.channel.warn(
-                text='Can only add question shorter than 60 characters!')
+                content='Can only add question shorter than 60 characters!')
             return
-        embed = discord.Embed(
-            description='POLL - {}{}ND'.format(
-                question, (60 - len(question)) * '\u2000'),
-            color=random_color())
+        embed = EmbedWrapper(
+            discord.Embed(color=random_color()),
+            embed_type='POLL - {}{}{}'.format(
+                question,
+                (59 - len(question)) * '\u2000',
+                EmbedWrapper.NOT_DELETABLE))
         embed.set_footer(
             text=('* {}\n* {}\n* {}\n* {}\n* {}\n* {}')
             .format(
@@ -55,9 +63,10 @@ class Poll(Help):
 
         m = await msg.channel.send(embed=embed)
         await self.bot.database.use_database(
-                self.new_poll_to_database, m)
+            self.new_poll_to_database, m)
 
     def is_poll(self, msg, partly_endeded=False):
+        # check if the message is a poll message
         if (str(msg.channel.type) != 'text' or
                 msg.author.id != msg.guild.me.id or
                 len(msg.embeds) != 1 or
@@ -73,10 +82,17 @@ class Poll(Help):
 
     @decorators.OnReply
     async def manage_poll_info(self, msg, poll_msg):
-        if not self.is_poll(poll_msg):
+        # add or remove responses
+        # fix poll -> no more responses can be added or removed
+        # end poll -> button clicks don't work anymore
+        # but you can still select the response in dropdown to see who voted
+        if not poll_msg.is_poll:
             return
+        # check if the user who replied has the required permissions
         if await self.bot.check_if_valid(self, msg, msg.author) is False:
             return
+        # many options may be added at once separated with ";"
+        # process them one by one
         opts = msg.content.split(';')
         for o in opts:
             # don't allow empty replies
@@ -84,8 +100,9 @@ class Poll(Help):
                 continue
             try:
                 await self.add_poll_info(
-                        poll_msg.channel, poll_msg.id, o.strip())
+                    poll_msg.channel, poll_msg.id, o.strip())
             except ValueError as err:
+                # there can only be 5 rows of buttons and dropdowns
                 if str(err) in [
                     'could not find open space for item',
                         'item would not fit at row 4 (6 > 5 width)']:
@@ -100,8 +117,9 @@ class Poll(Help):
         # add a response to the poll, else
         # do whatever it is supposed to do
         poll_msg = await channel.fetch_message(int(poll_msg_id))
-        if (poll_msg is None or not self.is_poll(poll_msg)
-                or option is None):
+        if (poll_msg is None or not poll_msg.is_poll or
+                (option != 'end' and poll_msg.is_fixed_poll) or
+                option is None):
             return
         funcs = {'remove': self.remove_response,
                  'fix': self.fix_poll,
@@ -111,8 +129,6 @@ class Poll(Help):
         if args[0] in funcs:
             v = option.replace('{} '.format(args[0]), '', 1)
             return await funcs[args[0]](poll_msg, v)
-        if poll_msg.embeds[0].description[-3:] in ['AND', 'FND']:
-            return
         await self.add_response(poll_msg, option)
 
     def get_response_name(self, text):
@@ -124,7 +140,7 @@ class Poll(Help):
         option = '\u2000'.join(option.split())
         if len(option) > 30:
             await poll_msg.channel.warn(
-                text='Cannot add responses longer than 20 characters.')
+                content='Cannot add responses longer than 20 characters.')
             return
         for i in poll_msg.components:
             for i2 in i.children:
@@ -152,19 +168,22 @@ class Poll(Help):
         await poll_msg.edit(components=components)
 
     async def fix_poll(self, poll_msg, option):
-        if poll_msg.embeds[0].description.split()[-1] != 'ND':
+        if poll_msg.embeds[0].author.name.split()[
+                -1] != EmbedWrapper.NOT_DELETABLE:
             return
-        poll_msg.embeds[0].description = poll_msg.embeds[
-            0].description[:-3] + 'FND'
+        # no more responses can be added or removed
+        m = EmbedWrapper.FIXED + EmbedWrapper.NOT_DELETABLE
+        poll_msg.embeds[0].set_author(
+            name=poll_msg.embeds[0].author.name[:-len(m)] + m)
         await poll_msg.edit(embed=poll_msg.embeds[0])
         await poll_msg.channel.notify(
-            text='Poll has been fixed, no responses ' +
+            content='Poll has been fixed, no responses ' +
             'can be added or removed.')
 
     async def change_question(self, poll_msg, option):
         if len(option) >= 60:
             await poll_msg.channel.warn(
-                text='Can only add question shorter than 60 characters!')
+                content='Can only add question shorter than 60 characters!')
             return
         marks = poll_msg.embeds[0].description.split()[-1]
         if marks in ('FND', 'AND'):
@@ -181,9 +200,9 @@ class Poll(Help):
             for i2 in i.children:
                 if not isinstance(i2, discord.Button):
                     components.append(
-                            discord.ui.Select(
-                                placeholder=i2.placeholder,
-                                options=i2.options))
+                        discord.ui.Select(
+                            placeholder=i2.placeholder,
+                            options=i2.options))
                     continue
                 components.append(discord.ui.Button(
                     label=i2.label,
@@ -200,11 +219,12 @@ class Poll(Help):
         elif len(equals) > 1:
             for i in equals:
                 components[i].style = discord.ButtonStyle.blurple
-        poll_msg.embeds[0].description = poll_msg.embeds[
-            0].description[:-3] + 'AND'
+        m = EmbedWrapper.PARTLY_ENDED + EmbedWrapper.NOT_DELETABLE
+        poll_msg.embeds[0].set_author(
+            name=poll_msg.embeds[0].author.name[:-len(m)] + m)
         await poll_msg.edit(embed=poll_msg.embeds[0], components=components)
         await poll_msg.channel.notify(
-            text='Poll has been ended.')
+            content='Poll has been ended.')
 
     async def remove_response(self, poll_msg, option):
         if poll_msg.embeds[0].description[-3:] in ['FND', 'AND']:
@@ -221,7 +241,7 @@ class Poll(Help):
                     'There are no responses in the poll!')
                 return
             await poll_msg.channel.warn(
-                text=('Responses can only be removed by indexes ' +
+                content=('Responses can only be removed by indexes ' +
                       'from `{}` to `{}`').format(
                     0, len(c) - 1))
             return
@@ -246,11 +266,14 @@ class Poll(Help):
             components=components)
         if name is not None:
             await poll_msg.channel.notify(
-                text='Response `{}` has been removed.'.format(name))
+                content='Response `{}` has been removed.'.format(name))
 
     @decorators.OnButtonClick
     async def add_remove_response(self, button, msg, user, webhook):
-        if not self.is_poll(msg):
+        # when a user click on a response, determine whether he already voted
+        # for this response (from database)
+        # if he voted remove his vote, else add another vote
+        if not msg.is_poll:
             return
         x = button.label.split('\u3000')
         add = await self.bot.database.use_database(
@@ -299,8 +322,10 @@ class Poll(Help):
 
     @decorators.OnMenuSelect
     async def show_response_info(self, interaction, msg, user, webhook):
-        if not self.is_poll(msg, True):
+        if not msg.is_partial_poll:
             return
+        # when selecting one of the responses in a dropdown,
+        # see the number of votes and the users who voted
         if await self.bot.check_if_valid(self, msg, user, webhook) is False:
             return
         name = interaction.data['values'][0]
@@ -373,7 +398,7 @@ class Poll(Help):
              "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
                 'poll', msg.channel.id, msg.id, None, None, cur_time))
         await msg.delete(
-                delay=time * 3600)
+            delay=time * 3600)
 
     def additional_info(self, prefix):
         return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

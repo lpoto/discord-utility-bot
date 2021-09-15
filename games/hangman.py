@@ -16,6 +16,8 @@ class Hangman(Help):
 
     @decorators.ExecuteWithInteraction
     async def send_dm_to_user(self, msg, user, webhook):
+        # send a dm to user, to which he can reply with a word
+        # or multiple words
         dm = await user.create_dm()
         dm_embed = EmbedWrapper(discord.Embed(
             description=('Reply to this message with a word or ' +
@@ -29,13 +31,14 @@ class Hangman(Help):
 
     @decorators.ExecuteCommand
     async def send_game_menu(self, msg):
+        # if command is called from chat, send a game menu, from which
+        # the game can be started
         await self.bot.special_methods['ExecuteCommand']['games'][0](
                 msg, False)
 
     @decorators.OnDmReply
     async def choose_word(self, msg, referenced_msg):
-        # User need to reply to the dm message with a word
-        # with max length of 30 characters
+        # A replied word or words cannot be longer than 30 characters
         # only allow ASCII characters from 65 to 90 (case insensitive)
         if (not referenced_msg.is_hangman or
                 referenced_msg.embeds[0].title or
@@ -134,19 +137,21 @@ class Hangman(Help):
         await referenced_msg.edit(embed=embed)
 
     async def get_word(self, guild, info, chars, full=False) -> (str, bool):
-        # Search for the word in the game author's dm
+        # fetch the word from database
+        # hide characters that are not spaces and haven't been guessed
+        # with "_"
         if info is None:
             return
         info_word = info['word']
         if full:
             return info_word
-        # replace unknown characters (except spaces) with '_'
         word = ' '.join(
             [i if i in chars or i == ' ' else r'\_' for i in info_word])
         return (word, word == ' '.join([i for i in info_word]))
 
     async def game_embed(
             self, guild, msg_info, u_id, char=None, msg=None) -> EmbedWrapper:
+        # create an embed for the current state of the game
         embed = None
         chars = []
         phase = 0
@@ -191,6 +196,10 @@ class Hangman(Help):
         return embed
 
     async def end_embed(self, winner, embed, msg_info, msg) -> EmbedWrapper:
+        # an embed once the game ends
+        # show whether the user who started the game won or lost
+        # if he won and database is connected, show his total wins
+        # in embeds footer
         user_id = msg_info['user_id']
         user = msg.guild.get_member(int(user_id))
         embed.title = await self.get_word(msg.guild, msg_info, [], True)
@@ -216,6 +225,7 @@ class Hangman(Help):
         return embed
 
     def picture(self, phase=0, guessed_chars=[]) -> dict:
+        # recursively build build the game phase
         phases = {
             1: (1, '\u2000│/' + 7 * '\u2000' + '|'),
             2: (2, '\u2000│' + 8 * '\u2000' + '0'),

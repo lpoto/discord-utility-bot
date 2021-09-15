@@ -84,7 +84,7 @@ class Bot:
                         '__'):
                     continue
                 self.special_methods[Dec.__name__][command.name].append(
-                        partial(v, command))
+                    partial(v, command))
 
     def clean_up(self):
         """
@@ -100,7 +100,7 @@ class Bot:
         """
         if command.requires_database and not self.database.connected:
             await msg.channel.warn(
-                text='This command requires database connection!',
+                content='This command requires database connection!',
                 webhook=wh)
             return False
         return await self.check_permissions(command, msg, user, wh)
@@ -117,8 +117,8 @@ class Bot:
                 msg.guild.me, command.bot_permissions)
             if not p[0]:
                 await msg.channel.warn(
-                    text=('I need `{}` permission to use this command.'
-                          ).format(p[1]),
+                    content=('I need `{}` permission to use this command.'
+                             ).format(p[1]),
                     webhook=wh)
                 return False
         if msg.channel.permissions(user, 'administrator')[0]:
@@ -133,7 +133,7 @@ class Bot:
             if any(i in required_roles for i in user_roles):
                 return True
             await msg.channel.warn(
-                text=(
+                content=(
                     'This command can be used by the following roles:\n`{}`'
                 ).format(
                     ', '.join(required_roles)),
@@ -147,7 +147,7 @@ class Bot:
             user, command.user_permissions)
         if not p[0]:
             await msg.channel.warn(
-                text=(
+                content=(
                     'You need `{}` permission to use this command.'
                 ).format(p[1]),
                 webhook=wh)
@@ -248,7 +248,7 @@ class Bot:
         x = self.special_methods['ExecuteWithInteraction']
         if button.label in x:
             await x[button.label][0](
-                    msg, MemberWrapper(interaction.user), webhook)
+                msg, MemberWrapper(interaction.user), webhook)
             return
         if msg.is_ended:
             return
@@ -258,10 +258,10 @@ class Bot:
         # await v(button, msg, MemberWrapper(interaction.user, webhook))
         for method in sum(self.special_methods['OnButtonClick'].values(), []):
             await method(
-                    button,
-                    msg,
-                    MemberWrapper(interaction.user),
-                    webhook)
+                button,
+                msg,
+                MemberWrapper(interaction.user),
+                webhook)
 
     async def handle_menu_select(self, channel, msg_id, interaction, msg=None):
         # function for menu selection handled in a queue
@@ -273,8 +273,8 @@ class Bot:
         x = self.special_methods['ExecuteWithInteraction']
         if interaction.data['values'][0] in x:
             await x[interaction.data['values'][0]][0](
-                    msg, MemberWrapper(interaction.user), webhook)
-            await msg.edit(text='')
+                msg, MemberWrapper(interaction.user), webhook)
+            await msg.edit(content='')
             return
         if msg.is_ended:
             return
