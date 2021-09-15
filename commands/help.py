@@ -133,9 +133,9 @@ class Help:
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
         embed_var.description += (
-            '\n\n* Click on "config" for more on bot\'s configurations ' +
+            '\n\n* Click on "config" for more on bot\'s settings ' +
             'in this server.' +
-            "\n* select a command or a game for details " +
+            "\n* Select a command or a game for details \n\u3000" +
             '(synonyms, permissions, usage...)').format(
             prefix)
         txt = ''

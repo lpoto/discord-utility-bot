@@ -62,13 +62,14 @@ class Config(Help):
             color=color),
             embed_type=self.embed_type,
             marks=EmbedWrapper.INFO,
-            info='* Select the option you want to modify.\n')
+            info=('* Select an option to modify it, or to see it\'s' +
+                  ' current setting for this server.'))
         opts = self.options
         options = [discord.SelectOption(
             label=k, description=v[0]) for k, v in opts.items()]
         components = [
             discord.ui.Select(
-                placeholder='Select option', options=options),
+                placeholder='Select an option', options=options),
             discord.ui.Button(label='help', row=4),
             delete_button(4)
         ]
@@ -170,8 +171,8 @@ class Config(Help):
         embed.description = 'Current: `{}`'.format(prefix)
         embed.set_info(
             '* Reply with a new prefix to change it.\n' +
-            '* Click on "default" to reset it to the default prefix.\n' +
-            '* Click on "commit" to save changes.'
+            '* Click on "default" to reset the setting,' +
+            ' or "commit" to save the\u2000changes.'
         )
         components = [
             discord.ui.Button(label='back'),
@@ -200,8 +201,8 @@ class Config(Help):
         embed.description = 'Current: `{}`'.format(w_text)
         embed.set_info(
             '* Reply with a new text to change it.\n' +
-            '* Click on "default" to reset it to the default welcome text.\n' +
-            '* Click on "commit" to save changes.'
+            '* Click on "default" to reset the setting,' +
+            ' or "commit" to save the\u2000changes.'
         )
         components = [
             discord.ui.Button(label='back'),
@@ -225,7 +226,8 @@ class Config(Help):
         embed = msg.embeds[0]
         embed.title = label
         embed.set_info(
-            '* Edit which roles are allowed to use the command.'
+            '* Select one of the commands to see or change the ' +
+            'roles allowed to use it.'
         )
         options = [discord.SelectOption(
             label=k, description=v.description) for k, v in (
@@ -252,8 +254,8 @@ class Config(Help):
                     ',\n'.join(['`{}`'.format(r) for r in roles]))
             embed.set_info(
                 '* Select roles that should be able to use the command.\n' +
-                '* Click on "default" to reset them.\n' +
-                '* Click on "commit" to save changes.'
+                '* Click on "default" to reset the setting,' +
+                ' or "commit" to save the\u2000changes.'
             )
         guild_roles = [r.name for r in msg.guild.roles][::-1]
         options = []
@@ -313,7 +315,8 @@ class Config(Help):
         embed = msg.embeds[0]
         embed.title = label
         embed.set_info(
-            '* Select a type of message you want to edit the time for.')
+            '* Select one of the message types to see or ' +
+            'edit it\'s current deletion time.')
         options = [discord.SelectOption(
             label=k) for k in self.options[label][2].keys()]
         components = [
@@ -334,8 +337,10 @@ class Config(Help):
             time = await self.bot.database.get_deletion_time(msg, m_type)
             embed.description = 'Current: `{}`'.format(time)
             embed.set_info(
-                '* Edit the time after `{}` messages are deleted.'.format(
-                    m_type)
+                '* Edit the time after "{}" messages are deleted.\n'.format(
+                    m_type) +
+                '* Click on "default" to reset the setting,' +
+                ' or "commit" to save the\u2000changes.'
             )
         options = [discord.SelectOption(label=i) for i in range(s, e)]
         if e > 1:

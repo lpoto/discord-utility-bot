@@ -20,19 +20,26 @@ class Games(Help):
             color=color),
             embed_type='GAMES',
             marks=EmbedWrapper.INFO,
-            info='Click on the game to start it.' +
-            10 * '\u2000')
-        components = []
-        options = []
+            info='Select a game you want to play, or a ' +
+            'game\'s leaderboard you want to see.')
+        options1 = []
+        options2 = []
         for k, v in self.bot.games.items():
-            options.append(discord.SelectOption(label=k))
-            components.append(discord.ui.Button(label=k))
-        components.append(
+            options1.append(discord.SelectOption(
+                label=k,
+                description=v.description))
+            options2.append(discord.SelectOption(
+                label=k + ' - leaderboard'))
+        components = [
                 discord.ui.Select(
-                    placeholder='See leaderboards.',
-                    options=options))
-        components.append(discord.ui.Button(label='help', row=4))
-        components.append(delete_button(4))
+                    placeholder='Select a game',
+                    options=options1),
+                discord.ui.Select(
+                    placeholder='Select a leaderboard',
+                    options=options2),
+                discord.ui.Button(label='help'),
+                delete_button()
+            ]
         if not return_only:
             await msg.channel.send(
                 embed=embed_var, components=components)
@@ -52,6 +59,7 @@ class Games(Help):
         if button.label in self.bot.games:
             await self.bot.games[button.label].execute_game(
                 msg, user, webhook)
+            await msg.edit(embed=msg.embeds[0])
 
     async def on_menu_select(self, interaction, msg, user, webhook):
         if not msg.is_games:
@@ -60,14 +68,19 @@ class Games(Help):
                 self, msg, user, webhook):
             return
         name = interaction.data['values'][0]
-        embed = await self.bot.database.use_database(
-                self.bot.games[name].leaderboard_embed, msg)
-        if embed is None:
-            await webhook.send(
-                    content='No availible leaderboard.',
-                    ephemeral=True)
-            return
-        await webhook.send(embed=embed, ephemeral=True)
+        if ' - leaderboard' in name:
+            name = name.replace(' - leaderboard', '', 1)
+            embed = await self.bot.database.use_database(
+                    self.bot.games[name].leaderboard_embed, msg)
+            if embed is None:
+                await webhook.send(
+                        content='No availible leaderboard.',
+                        ephemeral=True)
+            else:
+                await webhook.send(embed=embed, ephemeral=True)
+        elif name in self.bot.games:
+            await self.bot.games[name].execute_game(msg, user, webhook)
+        await msg.edit(text='')
 
     def additional_info(self, prefix):
         return ('* Click on the button with the name of the game ' +

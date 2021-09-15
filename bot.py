@@ -58,8 +58,8 @@ class Bot:
             def_del_vals = {k: 24 for k in self.games}
             def_del_vals['poll'] = 160
             self.database = DB(
-                    self.default_prefix,
-                    def_del_vals)
+                self.default_prefix,
+                def_del_vals)
             await self.database.connect_database()
         await self.database.use_database(self.restart_deleting_timers)
 
@@ -177,7 +177,9 @@ class Bot:
         idx = (list(self.commands.keys()) + list(self.games.keys())
                ).index(info[0])
         title = info[0]
-        if self.commands[info[0]].executable:
+        if ((info[0] in self.commands and
+                self.commands[info[0]].executable) or
+                (info[0] in self.games and self.games[info[0]].executable)):
             title = prefix + title
         embed_var = EmbedWrapper(discord.Embed(
             title=title,

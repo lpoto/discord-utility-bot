@@ -295,6 +295,7 @@ class EmbedWrapper(discord.Embed):
         self.marks = [
             EmbedWrapper.FIXED,
             EmbedWrapper.ENDED,
+            EmbedWrapper.PARTLY_ENDED,
             EmbedWrapper.INFO,
             EmbedWrapper.NOT_DELETABLE]
         if marks is not None:
