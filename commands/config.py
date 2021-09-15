@@ -324,8 +324,6 @@ class Config(Help):
                 placeholder='Select a type of message.',
                 options=options),
             discord.ui.Button(label='back'),
-            discord.ui.Button(label='default'),
-            discord.ui.Button(label='commit'),
             delete_button()
         ]
         await msg.edit(embed=embed, components=components)

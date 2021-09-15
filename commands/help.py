@@ -132,12 +132,12 @@ class Help:
             color=colors[idx % 9]),
             embed_type='HELP',
             marks=EmbedWrapper.INFO)
-        embed_var.description += (
-            '\n\n* Click on "config" for more on bot\'s settings ' +
+        embed_var.description += ((
+            "\n\n* Select a command or a game for details \n\u3000" +
+            '(synonyms, permissions, usage...)').format(prefix) +
+            '\n* Click on "config" for more on bot\'s settings ' +
             'in this server.' +
-            "\n* Select a command or a game for details \n\u3000" +
-            '(synonyms, permissions, usage...)').format(
-            prefix)
+            '\n* Click on "games" to open a game menu.')
         txt = ''
         for i in embed_var.marks:
             txt += '{}{}-\u3000{}\n'.format(
