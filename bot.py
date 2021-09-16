@@ -68,6 +68,8 @@ class Bot:
         """
         Add a command object to Bot object's commands
         dictionary, when initializing a command object.
+        Add command's methods with decorators to
+        special_methods dictionary.
         """
         if not game:
             self.commands[command.name] = command
@@ -107,8 +109,8 @@ class Bot:
 
     async def check_permissions(self, command, msg, user, wh=None) -> bool:
         """
-        Check if bot and user have all the required permissions to use the
-        command in message's channel.
+        Check if bot and user have all the required permissions
+        or roles to use the command in message's channel.
         """
         # check bot's permissions
         if (command.bot_permissions is not None and

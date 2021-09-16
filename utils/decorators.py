@@ -24,7 +24,8 @@ class ExecuteCommand(object):
 class ExecuteWithInteraction(object):
     """
     Commands' instance methods, called when a
-    interaction mathing the command's name has happened.
+    clicked button's label or a selected dropdown
+    option matches the command's name.
     """
 
     def __init__(self, method):
@@ -41,7 +42,7 @@ class ExecuteWithInteraction(object):
 class OnButtonClick(object):
     """
     Commands' instance methods, called when a
-    button on a bot's message is clicked.
+    button on an active bot's message is clicked.
     """
 
     def __init__(self, method):
@@ -58,7 +59,7 @@ class OnButtonClick(object):
 class OnMenuSelect(object):
     """
     Commands' instance methods, called when a
-    dropdown menu option on a bot's message
+    dropdown menu option on an active bot's message
     is selected.
     """
 
@@ -76,7 +77,7 @@ class OnMenuSelect(object):
 class OnReply(object):
     """
     Commands' instance methods, called when a
-    bot's message receives a reply in a discord text channel.
+    bot's active message receives a reply in a discord text channel.
     """
 
     def __init__(self, method):
@@ -93,7 +94,7 @@ class OnReply(object):
 class OnDmReply(object):
     """
     Commands' instance methods, called when a
-    bot's message receives a reply in a private discord channel.
+    bot's active message receives a reply in a private discord channel.
     """
 
     def __init__(self, method):
@@ -110,7 +111,7 @@ class OnDmReply(object):
 class OnThreadMessage(object):
     """
     Commands' instance methods, called when a
-    message is sent in a thread.
+    message is sent in a public thread started by the bot.
     """
 
     def __init__(self, method):

@@ -147,6 +147,9 @@ class MyClient(discord.Client):
         # handle messages sent in threads
         msg = wrappers.MessageWrapper(msg)
         msg.channel.parent = wrappers.ChannelWrapper(msg.channel.parent)
+        parent_msg = await msg.channel.parent.fetch_message(msg.channel.id)
+        if parent_msg is None or parent_msg.author.id != msg.guild.me.id:
+            return
         # run commands that have on thread message function
         for method in sum(
                 self.bot.special_methods['OnThreadMessage'].values(), []):
