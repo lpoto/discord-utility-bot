@@ -11,6 +11,7 @@ class Roles(Help):
         self.description = 'Add or remove roles with button clicks.'
         self.bot_permissions = ['send_messages', 'manage_roles']
         self.user_permissions = ['manage_roles']
+        self.risky_labels = ['delete', 'config', 'help', 'games']
 
     @decorators.ExecuteCommand
     async def empty_roles_message_to_channel(self, msg):
@@ -53,7 +54,11 @@ class Roles(Help):
         for r in msg.guild.roles:
             x = await self.valid_role(role=r, msg=msg, reply=False)
             if x:
-                guild_roles.append(x.name)
+                name = x.name
+                if name in self.risky_labels:
+                    guild_roles.append('_' + name)
+                else:
+                    guild_roles.append(name)
         guild_roles = guild_roles[::-1]
         options = []
         for i in range(start, end):
@@ -67,16 +72,16 @@ class Roles(Help):
             discord.ui.Select(
                 placeholder=x,
                 options=options,
-                max_values=20),
+                max_values=len(options) if len(options) <= 20 else 20),
             discord.ui.Button(label='reset'),
             discord.ui.Button(label='commit')
         ]
         if start > 0:
             components.append(discord.ui.Button(
-                label='page {} of roles'.format(start // 21)))
+                label='page {} of roles'.format(start // 25)))
         if len(guild_roles) > end:
             components.append(discord.ui.Button(
-                label='page {} of roles'.format((start // 21) + 2)))
+                label='page {} of roles'.format((start // 25) + 2)))
         return embed, components
 
     @decorators.OnMenuSelect
@@ -159,8 +164,11 @@ class Roles(Help):
 
     async def add_remove_role(self, button, msg, user, webhook):
         # if user has the role remove it, else add the role
+        r = button.label
+        if r[0] == '_' and r[1:] in self.risky_labels:
+            r = r[1:]
         role = await self.valid_role(
-            role_name=button.label, msg=msg, reply=False)
+            role_name=r, msg=msg, reply=False)
         if role is None:
             return
         rl = user.get_role(role.id)

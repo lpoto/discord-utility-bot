@@ -4,9 +4,6 @@ from utils.misc import delete_button, colors
 from utils.wrappers import EmbedWrapper
 import utils.decorators as decorators
 
-# TODO make sure server has no roles with names
-#    in ['delete', 'config', '~ page ?', 'help', ...]
-
 
 class Config(Help):
     def __init__(self):
@@ -17,6 +14,7 @@ class Config(Help):
         self.embed_type = 'CONFIG'
         self.requires_database = True
         self.interactions_require_database = True
+        self.risky_labels = ['delete', 'config', 'help', 'games']
 
     @decorators.ExecuteCommand
     async def send_general_config_message(self, msg):
@@ -67,7 +65,9 @@ class Config(Help):
                 self.modify_welcome_text_embed},
             'on_menu_select': {
                 self.modify_roles_embed,
-                self.modify_deletion_time_embed}
+                self.modify_deletion_time_embed},
+            'on_button_click': {
+                self.modify_roles_embed_button}
         }
 
     @property
@@ -144,6 +144,7 @@ class Config(Help):
                 default_value = default_value[z[1]]
             embed.description = 'Current: `{}`'.format(default_value)
             await msg.edit(embed=embed)
+            return
         # commit button should save the modified settings to database
         # and notify the user about the changes
         if button.label == 'commit':
@@ -162,8 +163,8 @@ class Config(Help):
                 await msg.channel.notify('Removed settings for `{}`'.format(
                     txt), delete_after=False)
                 return
-            info = [(x[1:][:-2] if x[-1] == ',' else x[1:][:-1]
-                     ) for x in info.split('\n') if len(x.strip()) != 0]
+            info = [(x[1:][:-1]) for x in info.split(', ') if len(
+                x.strip()) != 0]
             if len(info) > 1:
                 txt += ' set to `{}`'.format(', '.join(info))
             else:
@@ -172,6 +173,9 @@ class Config(Help):
             await self.bot.database.use_database(
                 self.option_to_database, name, msg.guild.id, info, info2)
             await msg.channel.notify(txt, delete_after=False)
+            return
+        for method in self.modify_options['on_button_click']:
+            await method(button, msg)
 
     # --------------------------- options' embeds and their modification embeds
 
@@ -240,9 +244,15 @@ class Config(Help):
             '* Select one of the commands to see or change the ' +
             'roles allowed to use it.'
         )
-        options = [discord.SelectOption(
-            label=k, description=v.description) for k, v in (
-            self.bot.commands.items()) if v.name != 'help']
+        options = []
+        for v in self.bot.commands.values():
+            if v.name == 'help':
+                continue
+            name = v.name
+            if name in self.risky_labels:
+                name = '_' + name
+            options.append(discord.SelectOption(
+                label=name, description=v.description))
         components = [
             discord.ui.Select(
                 placeholder='Select a command',
@@ -253,8 +263,10 @@ class Config(Help):
         await msg.edit(embed=embed, components=components)
 
     async def roles_command_embed(
-            self, command, msg, start=0, end=20, redo=False):
+            self, command, msg, start=0, end=25, redo=False):
         embed = msg.embeds[0]
+        if command[0] == '_':
+            command = command[1:]
         if not redo:
             embed.title += ' - ' + command
             roles = await self.bot.database.get_required_roles(msg, command)
@@ -269,30 +281,46 @@ class Config(Help):
                 ' or "commit" to save the\u2000changes.\n' +
                 '* Clicking on an already selected role will remove it.'
             )
-        guild_roles = [r.name for r in msg.guild.roles][::-1]
+        guild_roles = []
+        for i in msg.guild.roles[::-1]:
+            name = str(i.name)
+            if name in self.risky_labels:
+                name = '_' + name
+            guild_roles.append(name)
         options = []
-        for i in range(start, end + 1):
+        for i in range(start, end):
             if i >= len(guild_roles):
                 break
             options.append(discord.SelectOption(label=guild_roles[i]))
-        if start > 0:
-            options.append(discord.SelectOption(
-                label='~ page {}'.format((start // 21)),
-                description='See the previous page of guild roles.'))
-        if len(guild_roles) > end:
-            options.append(discord.SelectOption(
-                label='~ page {}'.format(((start // 21) + 2)),
-                description='See the next page of guild roles.'))
+        x = 'Select roles'
+        if start > 0 or len(guild_roles) > end:
+            x = 'Select roles (page {})'.format(start // 21 + 1)
         components = [
             discord.ui.Select(
-                placeholder='Select roles',
-                options=options),
+                placeholder=x,
+                options=options,
+                max_values=len(options)),
             discord.ui.Button(label='back'),
             discord.ui.Button(label='default'),
             discord.ui.Button(label='commit'),
-            delete_button()
         ]
+        if start > 0:
+            components.append(discord.ui.Button(
+                label='page {} of roles'.format(start // 25)))
+        if len(guild_roles) > end:
+            components.append(discord.ui.Button(
+                label='page {} of roles'.format((start // 25) + 2)))
+        components.append(delete_button())
         await msg.edit(embed=embed, components=components)
+
+    async def modify_roles_embed_button(self, button, msg):
+        embed = msg.embeds[0]
+        if not embed.title.startswith('roles - '):
+            return
+        x = int(button.label.replace('page ', '', 1).split()[0]) - 1
+        name = embed.title.replace('roles - ', '', 1)
+        await self.roles_command_embed(
+            name, msg, x * 25, x * 25 + 25, True)
 
     async def modify_roles_embed(self, interaction, msg):
         embed = msg.embeds[0]
@@ -301,30 +329,27 @@ class Config(Help):
             await self.roles_command_embed(command, msg)
             return
         if embed.title.startswith('roles - '):
-            role = interaction.data['values'][0]
-            if role.startswith('~ page'):
-                x = int(role.replace('~ page ', '')) - 1
-                await self.roles_command_embed(
-                    embed.title.replace('roles - ', ''),
-                    msg, x * 21,
-                    x * 21 + 20,
-                    True)
-                return
+            roles = interaction.data['values']
+            for k, v in enumerate(roles):
+                if v[0] == '_' and v[1:] in self.risky_labels:
+                    roles[k] = v[1:]
             if embed.description == 'Current: `None`':
-                embed.description = 'Current:\n`{}`'.format(role)
+                embed.description = 'Current:\n{}'.format(
+                    ', '.join(['`{}`'.format(r) for r in roles]))
             else:
                 info = embed.description.replace('Current:', '', 1).strip()
-                rls = [(x[1:][:-2] if x[-1] == ',' else x[1:][:-1]
-                        ) for x in info.split('\n') if len(x.strip()) != 0]
-                if role in rls:
-                    rls.remove(role)
-                else:
-                    rls.append(role)
+                rls = [(x[1:][:-1]) for x in info.split(', ') if len(
+                    x.strip()) != 0]
+                for role in roles:
+                    if role in rls:
+                        rls.remove(role)
+                    else:
+                        rls.append(role)
                 if len(rls) == 0:
                     embed.description = 'Current: `None`'
                 else:
                     embed.description = 'Current:\n{}'.format(
-                        ',\n'.join(['`{}`'.format(x) for x in rls]))
+                        ', '.join(['`{}`'.format(x) for x in rls]))
             await msg.edit(embed=embed)
 
     async def deletion_time_embed(self, label, msg, s=21, e=41, restart=False):
