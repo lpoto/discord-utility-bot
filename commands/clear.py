@@ -54,11 +54,14 @@ class ClearChat(Help):
     def purge_filter(self, msg):
         # don't delete pinned messages and
         # messages marked with NOT DELETABLE
+        if msg.author.id != msg.guild.me.id:
+            return True
         if not isinstance(msg, MessageWrapper):
             msg = MessageWrapper(msg)
         if not hasattr(msg, 'is_deletable'):
             return False
-        return msg.is_deletable
+        x = msg.is_deletable
+        return x
 
     def additional_info(self, prefix):
         return '* {}\n* {}'.format(

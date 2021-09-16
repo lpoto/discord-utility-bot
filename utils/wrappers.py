@@ -187,12 +187,10 @@ class MessageWrapper(discord.Message):
     def is_deletable(self):
         if len(self._wrapped_msg.embeds) != 1:
             return True
-        if self.pinned:
+        if self.pinned or self.is_roles or self.is_poll:
             return False
-        if (self.embeds[0].description is not discord.Embed.Empty and
-                'ND' in self.embeds[0].description.split()[-1]):
-            return False
-        return self.type_check(None, EmbedWrapper.NOT_DELETABLE)
+        return self.type_check(
+                None, bad_marks=EmbedWrapper.NOT_DELETABLE)
 
 
 class ChannelWrapper(object):
