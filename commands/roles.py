@@ -202,10 +202,9 @@ class Roles(Help):
         x = []
         embed = referenced_msg.embeds[0]
         color = embed.color
-        for i in referenced_msg.components:
-            for i2 in i.children:
-                if isinstance(i2, discord.Button):
-                    x.append('`{}`'.format(i2.label))
+        for i in sum([i.children for i in referenced_msg.components], []):
+            if isinstance(i, discord.Button):
+                x.append('`{}`'.format(i.label))
         title = None
         if embed.author.name.startswith('ROLES - '):
             title = embed.author.name.replace('ROLES - ', '', 1)

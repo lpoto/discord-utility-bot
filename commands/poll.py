@@ -142,15 +142,14 @@ class Poll(Help):
             await poll_msg.channel.warn(
                 content='Cannot add responses longer than 20 characters.')
             return
-        for i in poll_msg.components:
-            for i2 in i.children:
-                if not isinstance(i2, discord.Button):
-                    continue
-                lbl = self.get_response_name(i2.label)
-                if option == lbl.split('\u2000(')[0]:
-                    return
-                components.append(discord.ui.Button(label=i2.label,
-                                                    row=len(components) // 4))
+        for i in sum([i.children for i in poll_msg.components], []):
+            if not isinstance(i, discord.Button):
+                continue
+            lbl = self.get_response_name(i.label)
+            if option == lbl.split('\u2000(')[0]:
+                return
+            components.append(discord.ui.Button(
+                label=i.label, row=len(components) // 4))
         option = option.center(15, '\u2000')
         t = 45 + len(option)//2
         components.append(discord.ui.Button(
@@ -196,24 +195,23 @@ class Poll(Help):
         components = []
         equals = []
         max_len = 0
-        for i in poll_msg.components:
-            for i2 in i.children:
-                if not isinstance(i2, discord.Button):
-                    components.append(
-                        discord.ui.Select(
-                            placeholder=i2.placeholder,
-                            options=i2.options))
-                    continue
-                components.append(discord.ui.Button(
-                    label=i2.label,
-                    row=len(components) // 4))
-                x = len(i2.label.split('\u3000')[1].strip())
-                if x == max_len and max_len > 0:
-                    equals.append(len(components) - 1)
-                elif x > max_len:
-                    equals.clear()
-                    equals.append(len(components) - 1)
-                    max_len = x
+        for i in sum([i.children for i in poll_msg.components], []):
+            if not isinstance(i, discord.Button):
+                components.append(
+                    discord.ui.Select(
+                        placeholder=i.placeholder,
+                        options=i.options))
+                continue
+            components.append(discord.ui.Button(
+                label=i.label,
+                row=len(components) // 4))
+            x = len(i.label.split('\u3000')[1].strip())
+            if x == max_len and max_len > 0:
+                equals.append(len(components) - 1)
+            elif x > max_len:
+                equals.clear()
+                equals.append(len(components) - 1)
+                max_len = x
         if len(equals) == 1:
             components[equals[0]].style = discord.ButtonStyle.blurple
         elif len(equals) > 1:
@@ -242,23 +240,22 @@ class Poll(Help):
                 return
             await poll_msg.channel.warn(
                 content=('Responses can only be removed by indexes ' +
-                      'from `{}` to `{}`').format(
+                         'from `{}` to `{}`').format(
                     0, len(c) - 1))
             return
         components = []
         count = 0
         name = None
-        for i in poll_msg.components:
-            for i2 in i.children:
-                if not isinstance(i2, discord.Button):
-                    continue
-                if count != option:
-                    components.append(discord.ui.Button(
-                        label=i2.label,
-                        row=len(components)//4))
-                else:
-                    name = self.get_response_name(i2.label)
-                count += 1
+        for i in sum([i.children for i in poll_msg.components], []):
+            if not isinstance(i, discord.Button):
+                continue
+            if count != option:
+                components.append(discord.ui.Button(
+                    label=i.label,
+                    row=len(components)//4))
+            else:
+                name = self.get_response_name(i.label)
+            count += 1
         menu = self.info_menu(components)
         if menu is not None:
             components.append(menu)
@@ -279,34 +276,34 @@ class Poll(Help):
         add = await self.bot.database.use_database(
             self.add_or_remove, x[0].strip(), msg, user.id)
         components = []
-        for idx1, parent in enumerate(msg.components):
-            for idx2, v in enumerate(parent.children):
-                if not isinstance(v, discord.Button):
-                    continue
-                if v.label != button.label:
-                    components.append(discord.ui.Button(
-                        label=v.label,
-                        row=len(components) // 4))
-                    continue
-                y = x[1].strip()
-                if add:
-                    if len(y) > 0:
-                        y += y[-1]
-                    else:
-                        y += self.tokens[(idx1 + idx2) % self.tokens_count]
-                elif len(y) > 0:
-                    y = y[:-1]
-                x = x[0]
-                t = 45 + len(x) // 2
-                ln = len(x + y)
-                if ln >= t:
-                    t = ln + 1
-                components.append(
-                    discord.ui.Button(
-                        label='{}\u3000{}{}'.format(
-                            x, y,
-                            (t - len(x + y)) * '\u3000'),
-                        row=len(components) // 4))
+        for idx, v in enumerate(
+                sum([i.children for i in msg.components], [])):
+            if not isinstance(v, discord.Button):
+                continue
+            if v.label != button.label:
+                components.append(discord.ui.Button(
+                    label=v.label,
+                    row=len(components) // 4))
+                continue
+            y = x[1].strip()
+            if add:
+                if len(y) > 0:
+                    y += y[-1]
+                else:
+                    y += self.tokens[(idx) % self.tokens_count]
+            elif len(y) > 0:
+                y = y[:-1]
+            x = x[0]
+            t = 45 + len(x) // 2
+            ln = len(x + y)
+            if ln >= t:
+                t = ln + 1
+            components.append(
+                discord.ui.Button(
+                    label='{}\u3000{}{}'.format(
+                        x, y,
+                        (t - len(x + y)) * '\u3000'),
+                    row=len(components) // 4))
         if not isinstance(x, str):
             return
         i = self.info_menu(components)
