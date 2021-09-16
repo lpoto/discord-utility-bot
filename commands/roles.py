@@ -52,7 +52,7 @@ class Roles(Help):
                     text, (60 - len(text + m)) * '\u2000', m))
         guild_roles = []
         for r in msg.guild.roles:
-            x = await self.valid_role(role=r, msg=msg, reply=False)
+            x = await self.valid_role(role=r, msg=msg)
             if x:
                 name = x.name
                 if name in self.risky_labels:
@@ -168,7 +168,7 @@ class Roles(Help):
         if r[0] == '_' and r[1:] in self.risky_labels:
             r = r[1:]
         role = await self.valid_role(
-            role_name=r, msg=msg, reply=False)
+            role_name=r, msg=msg)
         if role is None:
             return
         rl = user.get_role(role.id)
@@ -201,6 +201,7 @@ class Roles(Help):
             return
         x = []
         embed = referenced_msg.embeds[0]
+        color = embed.color
         for i in referenced_msg.components:
             for i2 in i.children:
                 if isinstance(i2, discord.Button):
@@ -210,11 +211,12 @@ class Roles(Help):
             title = embed.author.name.replace('ROLES - ', '', 1)
             title = title[:-len(title.split()[-1])].strip()
         info = await self.starting_embed(title, referenced_msg)
+        info[0].color = color
         if len(x) > 0:
             info[0].description = ', '.join(x)
         await referenced_msg.edit(embed=info[0], components=info[1])
 
-    async def valid_role(self, msg, role_name=None, role=None, reply=True):
+    async def valid_role(self, msg, role_name=None, role=None):
         # check if role exists and if bot can add such a role
         if not role:
             for i in msg.guild.roles:
@@ -222,15 +224,9 @@ class Roles(Help):
                     role = i
                     break
         if role is None:
-            if reply is True:
-                await msg.channel.warn(
-                    content='Role `{}` does not exist!'.format(role_name))
             return
         # don't sent default (@everyone) or integration roles
         if role.is_integration() or role.is_default():
-            if reply is True:
-                await msg.channel.warn(
-                    content='Cannot add integration or default roles!')
             return
         position = False
         # don't allow roles higher than bot's highest role
@@ -239,10 +235,6 @@ class Roles(Help):
                 position = True
                 break
         if not position:
-            if reply is True:
-                await msg.channel.warn((
-                    'Role `{}` has higher position than my highest role!'
-                ).format(role.name))
             return
         # roles with these permissions not allowed
         not_allowed = [
@@ -254,9 +246,6 @@ class Roles(Help):
         ]
         for i in not_allowed:
             if dict(iter(role.permissions))[i]:
-                await msg.channel.warn(
-                    content='Cannot manage roles with `{}` permission.'.format(
-                        i))
                 return
         return role
 
