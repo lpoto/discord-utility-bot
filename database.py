@@ -52,7 +52,7 @@ class DB:
                 'channel_id VARCHAR(18) NOT NULL',
                 'message_id VARCHAR(18) NOT NULL',
                 'user_id VARCHAR(18) NOT NULL',
-                'info VARCHAR(30) NOT NULL',
+                'info VARCHAR(50) NOT NULL',
                 'deletion_time VARCHAR(8)'],
             'config': [
                 'option VARCHAR(20) NOT NULL',

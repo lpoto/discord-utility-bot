@@ -14,6 +14,13 @@ class Rps(Help):
         self.embed_type = 'ROCK_PAPER_SCISSORS'
         self.emojis = {rps_emojis[i]: v for i, v in enumerate(['r', 'p', 's'])}
 
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        # if rps is called via command in the chat,
+        # send a game menu from which you can start the rps game
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+            msg, False)
+
     @decorators.ExecuteWithInteraction
     async def start_the_game(self, msg, user, webhook):
         # when rps is selected in games menu send an ephemeral message
@@ -28,13 +35,6 @@ class Rps(Help):
             marks=EmbedWrapper.INFO,
             info='Choose one of the options to start the game.')
         await webhook.send(embed=embed, view=view, ephemeral=True)
-
-    @decorators.ExecuteCommand
-    async def send_game_menu(self, msg):
-        # if rps is called via command in the chat,
-        # send a game menu from which you can start the rps game
-        await self.bot.special_methods['ExecuteCommand']['games'][0](
-            msg, False)
 
     @decorators.OnButtonClick
     async def user_selection(self, button, msg, user, webhook):
@@ -172,6 +172,8 @@ class Rps(Help):
             embed.set_thumbnail(url=info['winner_avatar'])
         return embed
 
+    # ---------------------------------------------------------- DATABASE STUFF
+
     async def choice_to_database(self, cursor, choice, msg, user_id):
         time = await self.bot.database.get_deletion_time(msg, self.name)
         cur_time = (datetime.now() + timedelta(hours=time + 0.5)
@@ -219,36 +221,6 @@ class Rps(Help):
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, msg.guild.id, user_id))
         return count
-
-    async def leaderboard_embed(self, cursor, msg):
-        cursor.execute(
-            "SELECT * FROM wins WHERE game = 'rps' AND guild_id = '{}'"
-            .format(msg.guild.id))
-        fetched = cursor.fetchall()
-        if fetched is None or len(fetched) == 0:
-            return
-        embed_var = EmbedWrapper(discord.Embed(
-            title='Leaderboard',
-            color=random_color()),
-            embed_type=self.embed_type,
-            marks=EmbedWrapper.INFO)
-        users = {}
-        for i in fetched:
-            user = msg.guild.get_member(int(i[2]))
-            if user is None:
-                continue
-            users[user] = i[3]
-        users = {k: v for k, v in sorted(
-            users.items(), key=lambda item: item[1], reverse=True)}
-        i = 1
-        for u, w in users.items():
-            if i > 10:
-                break
-            name = u.name if not u.nick else u.nick
-            embed_var.add_field(
-                name='{}.  {}'.format(i, name), value=w, inline=False)
-            i += 1
-        return embed_var
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}'.format(

@@ -190,7 +190,7 @@ class MessageWrapper(discord.Message):
         if self.pinned or self.is_roles or self.is_poll:
             return False
         return self.type_check(
-                None, bad_marks=EmbedWrapper.NOT_DELETABLE)
+            None, bad_marks=EmbedWrapper.NOT_DELETABLE)
 
 
 class ChannelWrapper(object):

@@ -75,7 +75,7 @@ class Games(Help):
         if ' - leaderboard' in name:
             name = name.replace(' - leaderboard', '', 1)
             embed = await self.bot.database.use_database(
-                self.bot.games[name].leaderboard_embed, msg)
+                self.send_leaderboard, msg, name)
             if embed is None:
                 await webhook.send(
                     content='No availible leaderboard.',
@@ -83,6 +83,37 @@ class Games(Help):
             else:
                 await webhook.send(embed=embed, ephemeral=True)
         await msg.edit(content='')
+
+    async def send_leaderboard(self, cursor, msg, label):
+        cursor.execute(
+            "SELECT * FROM wins WHERE game = '{}' AND guild_id = '{}'"
+            .format(label, msg.guild.id))
+        fetched = cursor.fetchall()
+        if fetched is None or len(fetched) == 0:
+            return
+        color = colors[list(self.bot.games.keys()).index(label) % 9]
+        embed_var = EmbedWrapper(discord.Embed(
+            title='Leaderboard',
+            color=color),
+            embed_type=self.bot.games[label].embed_type,
+            marks=EmbedWrapper.INFO)
+        users = {}
+        for i in fetched:
+            user = msg.guild.get_member(int(i[2]))
+            if user is None:
+                continue
+            users[user] = i[3]
+        users = {k: v for k, v in sorted(
+            users.items(), key=lambda item: item[1], reverse=True)}
+        i = 1
+        for u, w in users.items():
+            if i > 10:
+                break
+            name = u.name if not u.nick else u.nick
+            embed_var.add_field(
+                name='{}.  {}'.format(i, name), value=w, inline=False)
+            i += 1
+        return embed_var
 
     def additional_info(self, prefix):
         return ('* Click on the button with the name of the game ' +

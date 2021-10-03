@@ -14,6 +14,13 @@ class Hangman(Help):
         self.bot_permissions = ['send_messages']
         self.embed_type = 'HANGMAN'
 
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        # if command is called from chat, send a game menu, from which
+        # the game can be started
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+                msg, False)
+
     @decorators.ExecuteWithInteraction
     async def send_dm_to_user(self, msg, user, webhook):
         # send a dm to user, to which he can reply with a word
@@ -28,13 +35,6 @@ class Hangman(Help):
             marks=EmbedWrapper.NOT_DELETABLE,
             info=str(msg.channel.id))
         await dm.send(embed=dm_embed)
-
-    @decorators.ExecuteCommand
-    async def send_game_menu(self, msg):
-        # if command is called from chat, send a game menu, from which
-        # the game can be started
-        await self.bot.special_methods['ExecuteCommand']['games'][0](
-                msg, False)
 
     @decorators.OnDmReply
     async def choose_word(self, msg, referenced_msg):
@@ -254,6 +254,8 @@ class Hangman(Help):
         pic[phases[phase][0]] = phases[phase][1]
         return pic
 
+    # ---------------------------------------------------------- DATABASE STUFF
+
     async def word_to_database(self, cursor, msg, user_id, word):
         time = await self.bot.database.get_deletion_time(msg, self.name)
         cur_time = (datetime.now() + timedelta(hours=time + 0.5)
@@ -304,36 +306,6 @@ class Hangman(Help):
                  "guild_id = '{}' and user_id = '{}'").format(
                      count, msg.guild.id, user_id))
         return count
-
-    async def leaderboard_embed(self, cursor, msg):
-        cursor.execute(
-            "SELECT * FROM wins WHERE game = 'hangman' AND guild_id = '{}'"
-            .format(msg.guild.id))
-        fetched = cursor.fetchall()
-        if fetched is None or len(fetched) == 0:
-            return
-        embed_var = EmbedWrapper(discord.Embed(
-            title='Leaderboard',
-            color=random_color()),
-            embed_type=self.embed_type,
-            marks=EmbedWrapper.INFO)
-        users = {}
-        for i in fetched:
-            user = msg.guild.get_member(int(i[2]))
-            if user is None:
-                continue
-            users[user] = i[3]
-        users = {k: v for k, v in sorted(
-            users.items(), key=lambda item: item[1], reverse=True)}
-        i = 1
-        for u, w in users.items():
-            if i > 10:
-                break
-            name = u.name if not u.nick else u.nick
-            embed_var.add_field(
-                name='{}.  {}'.format(i, name), value=w, inline=False)
-            i += 1
-        return embed_var
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

@@ -1,7 +1,7 @@
 from commands.help import Help
 from datetime import datetime, timedelta
 import discord
-from utils.misc import random_color, black_circle, white_circle
+from utils.misc import random_color, circles
 from utils.wrappers import EmbedWrapper
 import utils.decorators as decorators
 
@@ -16,7 +16,7 @@ class Poll(Help):
         self.synonyms = ['vote']
         self.requires_database = True
         self.interactions_require_database = True
-        self.tokens = [black_circle, white_circle]
+        self.tokens = [circles['black'], circles['white']]
         self.tokens_count = 2
 
     def info_menu(self, components):

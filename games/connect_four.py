@@ -15,8 +15,15 @@ class ConnectFour(Help):
         self.synonyms = ['cf']
         self.embed_type = 'CONNECT_FOUR'
         self.tokens = [utils.emojis[i] for i in range(7)]
-        self.empty_grid_element = utils.black_circle
+        self.empty_grid_element = utils.circles['black']
         self.timers = {}
+
+    @decorators.ExecuteCommand
+    async def send_game_menu(self, msg):
+        # if cf is called from the chat, send a game menu from which
+        # the game can be started
+        await self.bot.special_methods['ExecuteCommand']['games'][0](
+            msg, False)
 
     @decorators.ExecuteWithInteraction
     async def start_the_game(self, msg, user, webhook):
@@ -40,13 +47,6 @@ class ConnectFour(Help):
             user.id,
             user.name if not user.nick else user.nick,
             self.tokens[1])
-
-    @decorators.ExecuteCommand
-    async def send_game_menu(self, msg):
-        # if cf is called from the chat, send a game menu from which
-        # the game can be started
-        await self.bot.special_methods['ExecuteCommand']['games'][0](
-            msg, False)
 
     @decorators.OnButtonClick
     async def determine_game_state(self, button, msg, user, webhook):
@@ -300,62 +300,14 @@ class ConnectFour(Help):
         txt += '\n' + 3*'\u3000' + ' '.join(utils.number_emojis)
         return txt
 
-# the binary stuff
-# get current grid by creating a bitmask from made moves
-# xor with cur position to get opponent position
+    @decorators.CleanUp
+    def kill_threading_timers(self):
+        for timer in self.timers.values():
+            if timer is not None and timer.is_alive():
+                timer.cancel()
+        self.timers = {}
 
-    @property
-    def empty_grid(self):
-        return [[self.empty_grid_element for _ in range(7)] for _ in range(6)]
-
-    @property
-    def overflow_mask(self):
-        return 0x1020408102040
-
-    def play(self, moves, token1, token2, grid=None):
-        if grid is None:
-            grid = self.empty_grid
-        mask, position, turn = self.mask_position_turn(moves)
-        completed = self.game_completed((position ^ mask) ^ mask)
-        grid = self.add_token(
-            grid, moves[-1] - 1, token1 if turn % 2 == 0 else token2)
-        return (grid, completed, turn % 2)
-
-    def mask_position_turn(self, moves):
-        mask = 0
-        position = 0
-        for i in moves:
-            mask = mask | (mask + (1 << ((i - 1) * 7)))
-            position = position ^ mask
-        turn = 0 if len(moves) == 0 else len(moves) - 1
-        return (mask, position, turn)
-
-    def game_completed(self, pos):
-        # Horizontal check
-        m = pos & (pos >> 7)
-        if m & (m >> 14):
-            return True
-        # Diagonal \
-        m = pos & (pos >> 6)
-        if m & (m >> 12):
-            return True
-        # Diagonal /
-        m = pos & (pos >> 8)
-        if m & (m >> 16):
-            return True
-        # Vertical
-        m = pos & (pos >> 1)
-        if m & (m >> 2):
-            return True
-        # Nothing found
-        return False
-
-    def add_token(self, grid, move_idx, token):
-        for i in range(6 - 1, -1, -1):
-            if grid[i][move_idx] == self.empty_grid_element:
-                grid[i][move_idx] = token
-                break
-        return grid
+    # ---------------------------------------------------------- DATABASE STUFF
 
     async def get_game(self, cursor, msg):
         cursor.execute(("SELECT * FROM messages WHERE type = 'connect_Four'" +
@@ -425,43 +377,62 @@ class ConnectFour(Help):
             ("INSERT INTO connect_four_records (moves) VALUES ('{}')"
              ).format(moves))
 
-    async def leaderboard_embed(self, cursor, msg):
-        cursor.execute((
-            "SELECT * FROM wins WHERE game = 'connect_four' " +
-            "AND guild_id = '{}'"
-        ).format(msg.guild.id))
-        fetched = cursor.fetchall()
-        if fetched is None or len(fetched) == 0:
-            return
-        embed_var = EmbedWrapper(discord.Embed(
-            title='Leaderboard',
-            color=utils.random_color()),
-            embed_type=self.embed_type,
-            marks=EmbedWrapper.INFO)
-        users = {}
-        for i in fetched:
-            user = msg.guild.get_member(int(i[2]))
-            if user is None:
-                continue
-            users[user] = i[3]
-        users = {k: v for k, v in sorted(
-            users.items(), key=lambda item: item[1], reverse=True)}
-        i = 1
-        for u, w in users.items():
-            if i > 10:
-                break
-            name = u.name if not u.nick else u.nick
-            embed_var.add_field(
-                name='{}.  {}'.format(i, name), value=w, inline=False)
-            i += 1
-        return embed_var
+    # ---------------------------------------------------------- GAME MECHANICS
 
-    @decorators.CleanUp
-    def kill_threading_timers(self):
-        for timer in self.timers.values():
-            if timer is not None and timer.is_alive():
-                timer.cancel()
-        self.timers = {}
+    @property
+    def empty_grid(self):
+        return [[self.empty_grid_element for _ in range(7)] for _ in range(6)]
+
+    @property
+    def overflow_mask(self):
+        return 0x1020408102040
+
+    def play(self, moves, token1, token2, grid=None):
+        # get current grid by creating a bitmask from made moves
+        # xor with cur position to get opponent position
+        if grid is None:
+            grid = self.empty_grid
+        mask, position, turn = self.mask_position_turn(moves)
+        completed = self.game_completed((position ^ mask) ^ mask)
+        grid = self.add_token(
+            grid, moves[-1] - 1, token1 if turn % 2 == 0 else token2)
+        return (grid, completed, turn % 2)
+
+    def mask_position_turn(self, moves):
+        mask = 0
+        position = 0
+        for i in moves:
+            mask = mask | (mask + (1 << ((i - 1) * 7)))
+            position = position ^ mask
+        turn = 0 if len(moves) == 0 else len(moves) - 1
+        return (mask, position, turn)
+
+    def game_completed(self, pos):
+        # Horizontal check
+        m = pos & (pos >> 7)
+        if m & (m >> 14):
+            return True
+        # Diagonal \
+        m = pos & (pos >> 6)
+        if m & (m >> 12):
+            return True
+        # Diagonal /
+        m = pos & (pos >> 8)
+        if m & (m >> 16):
+            return True
+        # Vertical
+        m = pos & (pos >> 1)
+        if m & (m >> 2):
+            return True
+        # Nothing found
+        return False
+
+    def add_token(self, grid, move_idx, token):
+        for i in range(6 - 1, -1, -1):
+            if grid[i][move_idx] == self.empty_grid_element:
+                grid[i][move_idx] = token
+                break
+        return grid
 
     def additional_info(self, prefix):
         return '* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(

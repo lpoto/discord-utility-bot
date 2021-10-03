@@ -86,26 +86,38 @@ rps_emojis = (
     u"\U00002702\U0000FE0F")
 # thumbs up emoji
 thumbs_up = u"\U0001F44D"
-number_emojis = (u"\U00000031\U0000FE0F\U000020E3",
-                 u"\U00000032\U0000FE0F\U000020E3",
-                 u"\U00000033\U0000FE0F\U000020E3",
-                 u"\U00000034\U0000FE0F\U000020E3",
-                 u"\U00000035\U0000FE0F\U000020E3",
-                 u"\U00000036\U0000FE0F\U000020E3",
-                 u"\U00000037\U0000FE0F\U000020E3")
-emojis = (
-    u"\U000026AA",
-    u"\U0001F534",
-    u"\U0001F535",
-    u"\U0001F7E0",
-    u"\U0001F7E1",
-    u"\U0001F7E2",
-    u"\U0001F7E3",
-    u"\U0001F7E4",
-    u"\U000026AB",
+number_emojis = (
+    '1️⃣',
+    '2️⃣',
+    '3️⃣',
+    '4️⃣',
+    '5️⃣',
+    '6️⃣',
+    '7️⃣'
 )
-black_circle = u"\U000026AB"
-white_circle = u"\U000026AA"
+squares = {
+    'red': '🟥',
+    'blue': '🟦',
+    'brown': '🟫',
+    'green': '🟩',
+    'yellow': '🟨',
+    'orange': '🟧',
+    'purple': '🟪',
+    'white': '⬜',
+    'black': '⬛',
+}
+circles = {
+    'red': '🔴',
+    'blue': '🔵',
+    'orange': '🟠',
+    'green': '🟢',
+    'yellow': '🟡',
+    'brown': '🟤',
+    'purple': '🟣',
+    'white': '⚪',
+    'black': '⚫'
+}
+emojis = tuple(circles.values())
 # colors that match emoji colors by indexes
 colors = (
     0xffffff,

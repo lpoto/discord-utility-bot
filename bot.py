@@ -24,7 +24,8 @@ class Bot:
             'poll': 160,
             'rock_paper_scissors': 24,
             'connect_four': 24,
-            'hangman': 24}
+            'hangman': 24
+        }
         # discord.Client will not trigger events until
         # it has a ready Bot object
         self.ready = False
@@ -61,8 +62,8 @@ class Bot:
                 c = C()
                 c.bot = self
                 self.add_command(c, True)
-            self.ready = True
         await self.database.use_database(self.restart_deleting_timers)
+        self.ready = True
 
     def add_command(self, command, game=False):
         """
@@ -214,7 +215,6 @@ class Bot:
         if cmd in self.commands:
             cmd = self.commands[cmd]
         elif cmd in self.games:
-            print(cmd)
             cmd = self.games[cmd]
         elif cmd in self.commands_synonyms:
             cmd = self.commands_synonyms[cmd]
