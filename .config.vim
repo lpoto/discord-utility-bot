@@ -1,7 +1,11 @@
-let g:collection_python_interpreter = "python3 ~/projects/discord-utility-bot/main.py"
-let g:collection_python_formater = "autopep8 %"
-let g:collection_errorlist_size = 60
-
-set wildignore+=**.git/**
-set wildignore+=**/__pycache__/**
-set wildignore+=**.pyc
+lua << EOF
+require("telescope").setup({
+	pickers = {
+		find_files = {
+			theme = "ivy",
+			hidden = 1,
+			file_ignore_patterns = {"__pycache__/", ".git/"}
+			}
+		}
+})
+EOF

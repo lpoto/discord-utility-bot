@@ -16,9 +16,9 @@ class Bot:
     user defined commands.
     """
 
-    def __init__(self, default_prefix):
+    def __init__(self, default_prefix, database=None):
         self.client = None
-        self.database = None
+        self.database = database
         self.default_prefix = default_prefix
         self.default_deletion_times = {
             'poll': 160,

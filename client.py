@@ -1,5 +1,4 @@
 import discord
-import asyncio
 import sys
 import os
 import logging
@@ -8,11 +7,10 @@ import utils.wrappers as wrappers
 import utils.misc as utils
 
 
-class MyClient(discord.Client):
-    def __init__(self, *, loop=None, **options):
+class UtilityClient(discord.Client):
+    def __init__(self, *, loop=None, bot, **options):
         super().__init__(loop=loop, **options)
-        self.bot = None
-        self.handle_exit = None
+        self.bot = bot
 
     def get_channel(self, channel_id) -> wrappers.ChannelWrapper:
         return wrappers.ChannelWrapper(
@@ -20,22 +18,6 @@ class MyClient(discord.Client):
 
     def get_user(self, user_id) -> wrappers.MemberWrapper:
         return wrappers.MemberWrapper(super().get_user(int(user_id)))
-
-    async def _run_event(self, coro, event_name, *args, **kwargs):
-        """
-        Call a method matching the event recieved from discord.
-        """
-        try:
-            if event_name != 'on_ready' and not self.bot.ready:
-                return
-            await super()._run_event(
-                coro, event_name, *args, **kwargs)
-        except SystemExit:
-            self.dispatch('error', event_name, *sys.exc_info())
-            self.handle_exit(
-                self, self.bot, asyncio.all_tasks(loop=self.loop), True)
-        except Exception:
-            self.dispatch('error', event_name, *sys.exc_info())
 
 #  -------------------------------------------------------------- client events
 

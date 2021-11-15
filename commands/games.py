@@ -78,7 +78,7 @@ class Games(Help):
                 self.send_leaderboard, msg, name)
             if embed is None:
                 await webhook.send(
-                    content='No availible leaderboard.',
+                    content='No available leaderboard.',
                     ephemeral=True)
             else:
                 await webhook.send(embed=embed, ephemeral=True)
