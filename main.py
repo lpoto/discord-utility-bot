@@ -1,9 +1,10 @@
+import discord
 import logging
 import os
 from dotenv import load_dotenv
-from bot import Bot
-import discord
-from client import UtilityClient
+
+from bot.bot import Bot
+from bot.client import UtilityClient
 
 load_dotenv()
 

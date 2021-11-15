@@ -1,6 +1,6 @@
-from commands.help import Help
-from utils.decorators import ExecuteCommand
-from utils.wrappers import MessageWrapper
+from bot.commands.help import Help
+from bot.utils.decorators import ExecuteCommand
+from bot.utils.wrappers import MessageWrapper
 
 
 class ClearChat(Help):

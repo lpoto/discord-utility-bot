@@ -1,8 +1,9 @@
-from commands.help import Help
 import discord
-from utils.misc import random_color
-from utils.wrappers import EmbedWrapper
-import utils.decorators as decorators
+
+from bot.commands.help import Help
+from bot.utils.misc import random_color
+from bot.utils.wrappers import EmbedWrapper
+import bot.utils.decorators as decorators
 
 
 class Roles(Help):

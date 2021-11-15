@@ -3,8 +3,9 @@ import sys
 import os
 import logging
 import traceback
-import utils.wrappers as wrappers
-import utils.misc as utils
+
+import bot.utils.wrappers as wrappers
+import bot.utils.misc as utils
 
 
 class UtilityClient(discord.Client):

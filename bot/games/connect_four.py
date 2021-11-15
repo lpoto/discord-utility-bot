@@ -2,10 +2,11 @@ import discord
 from threading import Timer
 from datetime import datetime, timedelta
 import asyncio
-import utils.misc as utils
-import utils.decorators as decorators
-from utils.wrappers import EmbedWrapper
-from commands.help import Help
+
+import bot.utils.misc as utils
+import bot.utils.decorators as decorators
+from bot.utils.wrappers import EmbedWrapper
+from bot.commands.help import Help
 
 
 class ConnectFour(Help):

@@ -1,9 +1,10 @@
 import discord
-from utils.misc import random_color, delete_button
 from datetime import timedelta, datetime
-import utils.decorators as decorators
-from utils.wrappers import EmbedWrapper
-from commands.help import Help
+
+from bot.utils.misc import random_color, delete_button
+import bot.utils.decorators as decorators
+from bot.utils.wrappers import EmbedWrapper
+from bot.commands.help import Help
 
 
 class Hangman(Help):

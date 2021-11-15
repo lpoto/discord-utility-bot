@@ -2,12 +2,13 @@ import discord
 from collections import defaultdict
 from functools import partial
 from datetime import datetime
-from utils.misc import Queue, colors, delete_button
-from utils.wrappers import EmbedWrapper, MemberWrapper
-import utils.decorators as decorators
-from database import DB
-import commands as cmds
-import games as gms
+
+from bot.utils.misc import Queue, colors, delete_button
+from bot.utils.wrappers import EmbedWrapper, MemberWrapper
+import bot.utils.decorators as decorators
+from bot.database import DB
+import bot.commands as cmds
+import bot.games as gms
 
 
 class Bot:
@@ -246,6 +247,8 @@ class Bot:
         # function handling button_clicks in a queue
         msg = msg if msg is not None else (
             await channel.fetch_message(int(msg_id)))
+        if not msg:
+            return
         webhook = interaction.followup
         x = self.special_methods['ExecuteWithInteraction']
         if button.label in x:
@@ -253,8 +256,6 @@ class Bot:
                 msg, MemberWrapper(interaction.user), webhook)
             return
         if msg.is_ended:
-            return
-        if msg is None:
             return
         # call those commands that have on button click functions
         # await v(button, msg, MemberWrapper(interaction.user, webhook))
@@ -273,7 +274,7 @@ class Bot:
             return
         webhook = interaction.followup
         x = self.special_methods['ExecuteWithInteraction']
-        if interaction.data['values'][0] in x:
+        if interaction.data['values'][0] in x and not msg.is_help:
             await x[interaction.data['values'][0]][0](
                 msg, MemberWrapper(interaction.user), webhook)
             await msg.edit(content='')

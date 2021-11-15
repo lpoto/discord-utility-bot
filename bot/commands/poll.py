@@ -1,9 +1,10 @@
-from commands.help import Help
-from datetime import datetime, timedelta
 import discord
-from utils.misc import random_color, circles
-from utils.wrappers import EmbedWrapper
-import utils.decorators as decorators
+from datetime import datetime, timedelta
+
+from bot.commands.help import Help
+from bot.utils.misc import random_color, circles
+from bot.utils.wrappers import EmbedWrapper
+import bot.utils.decorators as decorators
 
 # TODO what to do if too many people vote and the length
 #      of a button label exceedes 80 characters

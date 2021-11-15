@@ -1,8 +1,9 @@
 import discord
-from commands.help import Help
-from utils.misc import green_color
-from utils.decorators import ExecuteWithInteraction
-from utils.wrappers import EmbedWrapper
+
+from bot.commands.help import Help
+from bot.utils.misc import green_color
+from bot.utils.decorators import ExecuteWithInteraction
+from bot.utils.wrappers import EmbedWrapper
 
 
 class DeleteButton(Help):

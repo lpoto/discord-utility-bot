@@ -1,8 +1,9 @@
 import discord
-from commands.help import Help
-from utils.misc import delete_button, colors
-from utils.wrappers import EmbedWrapper
-import utils.decorators as decorators
+
+from bot.commands.help import Help
+from bot.utils.misc import delete_button, colors
+from bot.utils.wrappers import EmbedWrapper
+import bot.utils.decorators as decorators
 
 
 class Config(Help):

@@ -1,8 +1,9 @@
 import discord
-from utils.wrappers import EmbedWrapper
-from utils.misc import colors, delete_button
-import utils.decorators as decorators
-from commands.help import Help
+
+from bot.utils.wrappers import EmbedWrapper
+from bot.utils.misc import colors, delete_button
+import bot.utils.decorators as decorators
+from bot.commands.help import Help
 
 
 class Games(Help):

@@ -1,7 +1,8 @@
 import discord
-from utils.misc import colors, delete_button
-from utils.wrappers import EmbedWrapper
-import utils.decorators as decorators
+
+from bot.utils.misc import colors, delete_button
+from bot.utils.wrappers import EmbedWrapper
+import bot.utils.decorators as decorators
 
 
 class Help:

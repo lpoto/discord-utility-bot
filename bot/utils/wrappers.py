@@ -1,5 +1,6 @@
 import discord
-from utils.misc import red_color, green_color
+
+from bot.utils.misc import red_color, green_color
 
 
 class MessageWrapper(discord.Message):
