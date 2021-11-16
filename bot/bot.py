@@ -266,7 +266,8 @@ class Bot:
             return
         webhook = interaction.followup
         x = self.special_methods['ExecuteWithInteraction']
-        if interaction.data['values'][0] in x and not msg.is_help:
+        if (interaction.data['values'][0] in x and
+                not msg.is_help and not msg.is_config):
             await x[interaction.data['values'][0]][0](
                 msg, MemberWrapper(interaction.user), webhook)
             await msg.edit(content='')
