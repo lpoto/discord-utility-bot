@@ -123,20 +123,3 @@ class OnThreadMessage(object):
     @classmethod
     def methods(cls, subject):
         return ExecuteCommand.methods(subject, OnThreadMessage)
-
-
-class CleanUp(object):
-    """
-    Commands' instance methods, called when a
-    SystemExit occurs.
-    """
-
-    def __init__(self, method):
-        self._method = method
-
-    def __call__(self, obj, *args, **kwargs):
-        return self._method(obj, *args, **kwargs)
-
-    @classmethod
-    def methods(cls, subject):
-        return ExecuteCommand.methods(subject, CleanUp)

@@ -90,14 +90,6 @@ class Bot:
                 self.special_methods[Dec.__name__][command.name].append(
                     partial(v, command))
 
-    def clean_up(self):
-        """
-        Clean up commands threading timers etc.
-        """
-        self.client = None
-        for method in sum(self.special_methods['CleanUp'].values(), []):
-            method()
-
     async def check_if_valid(self, command, msg, user, wh=None) -> bool:
         """
         Check if user and bot are allowed to use the command.

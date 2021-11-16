@@ -19,6 +19,12 @@ class ConnectFour(Help):
         self.empty_grid_element = utils.circles['black']
         self.timers = {}
 
+    def __del__(self):
+        for timer in self.timers.values():
+            if timer is not None and timer.is_alive():
+                timer.cancel()
+        self.timers = {}
+
     @decorators.ExecuteCommand
     async def send_game_menu(self, msg):
         # if cf is called from the chat, send a game menu from which
@@ -300,13 +306,6 @@ class ConnectFour(Help):
         txt = '\n'.join([self.join_line(i) for i in grid])
         txt += '\n' + 3*'\u3000' + ' '.join(utils.number_emojis)
         return txt
-
-    @decorators.CleanUp
-    def kill_threading_timers(self):
-        for timer in self.timers.values():
-            if timer is not None and timer.is_alive():
-                timer.cancel()
-        self.timers = {}
 
     # ---------------------------------------------------------- DATABASE STUFF
 
