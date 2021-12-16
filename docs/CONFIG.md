@@ -1,39 +1,61 @@
+## Requirements
+
+- Python 3.9
+- pip 20.x
+
 ## Prerequisites
 
-* Python 3.9
-* pip 20.x
+- Clone the repository and install packages:
 
-## Installation
-
-* Clone the repository and install packages:
 ```
-	git clone https://github.com/potocnikluka/discord-utility-bot.git
-	cd discord-utility-bot
-	pip install -r requirements.txt
+git clone https://github.com/potocnikluka/discord-utility-bot.git
+cd discord-utility-bot
+pip install -r requirements.txt
 ```
 
-* Create your [discord bot client](creating_client.md)
+- Create your [discord bot client](CREATING_CLIENT.md)
 
-* Create `.env` file in project's root directory and add:
+- Create `.env` file in project's root directory and add:
+
 ```
-	DISCORD_TOKEN="<your-discord-client-token>"
-	DEFAULT_PREFIX="<prefix-key>"
-```
-* you can optionally add mysql database:
-	- Create a database and add info to `.env` file:
-```
-	DATABASE="database-name"
-	HOST="host-type"
-	USER="user"
-	PASSWORD="your-database-password"
+DEV_DISCORD_TOKEN="your-discord-client-token"
+
+DEV_BOT_LOGGING=<0-50>
 ```
 
-* Add filename to `.env` if you want error logs in a file:
+- Create a database and add info to `.env` file:
+
 ```
-	LOGFILE='error.log'
+DEV_DATABASE="database-name"
+DEV_HOST="host-type"
+DEV_USER="user"
+DEV_PASSWORD="your-database-password"
+
+DEV_DB_LOGGING=<0-50>
 ```
+
 ## Running the bot
+
 Run the following command in your bot's root directory:
+
 ```
-	python3 main.py
+python main.py --dev
+```
+
+or
+
+```
+python main.py --prod
+```
+
+**NOTE** drop env variables' `DEV_` prefix to run with `--prod` flag
+
+## Running the bot in a docker container
+
+```
+docker build -t discordbot .
+```
+
+```
+docker run --rm -it -d --network="host" discordbot:latest
 ```

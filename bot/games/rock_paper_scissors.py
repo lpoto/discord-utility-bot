@@ -4,13 +4,11 @@ import bot.decorators as decorators
 # TODO
 
 
-class ConnectFour:
+class RockPaperScissors:
     def __init__(self, client):
         self.client = client
-        self.color = utils.colors['orange']
-        self.description = 'A connection game between two players.'
-        self.tokens = list(utils.circles.values())[:7]
-        self.empty_grid_element = utils.circles['black']
+        self.description = 'A simple game of choice between two players.'
+        self.color = utils.colors['brown']
 
     @decorators.MenuSelect
     async def start_command(self, msg, user, data, webhook):

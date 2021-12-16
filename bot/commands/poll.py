@@ -1,24 +1,76 @@
-import discord
-from datetime import datetime, timedelta
+import nextcord
 
-from bot.commands.help import Help
-from bot.utils.misc import random_color, circles
-from bot.utils.wrappers import EmbedWrapper
-import bot.utils.decorators as decorators
-
-# TODO what to do if too many people vote and the length
-#      of a button label exceedes 80 characters
+import bot.decorators as decorators
+import bot.utils as utils
 
 
-class Poll(Help):
-    def __init__(self):
-        super().__init__(name='poll')
+class Poll:
+    def __init__(self, client):
+        self.client = client
+        self.color = utils.colors['green']
         self.description = 'Create a poll for users to vote on.'
-        self.synonyms = ['vote']
-        self.requires_database = True
-        self.interactions_require_database = True
-        self.tokens = [circles['black'], circles['white']]
-        self.tokens_count = 2
+        self.tokens = [utils.circles['black'], utils.circles['white']]
+        self.default_deletion_time = 336
+
+    @decorators.MenuSelect
+    @decorators.CheckPermissions
+    async def start_command(self, msg, user, data, webhook):
+        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        if (embed.get_type() not in {
+            self.client.default_type, self.__class__.__name__}
+                or 'values' in data and
+                data['values'][0] != self.__class__.__name__):
+            return
+
+        self.client.logger.debug(msg=f'Poll main menu: {str(msg.id)}')
+
+        embed = utils.UtilityEmbed(
+            type=self.__class__.__name__,
+            version=self.client.version,
+            title=self.description,
+            description='',
+            color=self.color)
+        components = [
+            nextcord.ui.Button(label='New poll'),
+            utils.home_button(),
+            utils.help_button(),
+            utils.delete_button()]
+        await msg.edit(embed=embed, view=utils.build_view(components))
+
+    @decorators.ButtonClick
+    @decorators.CheckPermissions
+    async def send_empty_poll_to_channel(self, msg, user, button, webhook):
+        if (button.label != 'New poll' or
+                msg.embeds[0].title and
+                msg.embeds[0].title != self.description):
+            return
+
+        self.client.logger.debug(msg=f'New poll: {str(msg.id)}')
+
+        # send a poll with only question added
+        # to the channel and add info on adding responses
+        embed = utils.UtilityEmbed(
+            type=self.__class__.__name__,
+            version=self.client.version,
+            title='New poll',
+            description=self.additional_info(self),
+            color=utils.random_color())
+
+        await msg.edit(embed=embed, view=None)
+
+        deletion_time = await self.client.database.Config.get_option(
+            name='Poll_deletion', guild_id=msg.guild.id)
+        if len(deletion_time.get('info')) == 0:
+            deletion_time = self.default_deletion_time * 3600
+        else:
+            deletion_time = int(deletion_time.get('info')[0]) * 3600
+        deletion_timestamp = utils.delta_seconds_timestamp(deletion_time)
+
+        await self.client.database.Messages.add_message_info(
+            id=msg.id, name='deletion_time', info=deletion_timestamp)
+        await self.client.database.Messages.update_message_author(
+            id=msg.id, author_id=None)
+        await msg.delete(delay=deletion_time)
 
     def info_menu(self, components):
         # build a dropdown menu that contains all the responses
@@ -26,187 +78,165 @@ class Poll(Help):
             return None
         options = []
         for i in components:
-            x = i.label.split('\u3000')[0].strip()
-            options.append(discord.SelectOption(label=x))
-        return discord.ui.Select(
+            options.append(
+                nextcord.SelectOption(label=self.get_response_name(i.label)))
+        return nextcord.ui.Select(
             placeholder='Responses info', options=options,
             row=4)
 
-    @decorators.ExecuteCommand
-    async def send_empty_poll_to_channel(self, msg):
-        # send a poll with only question added
-        # to the channel and add info on adding responses
-        args = msg.content.split()
-        if len(args) < 2:
-            await msg.channel.warn(content='Add a question!')
-            return
-        question = msg.content.replace('{} '.format(args[0]), '', 1)
-        if len(question) >= 60:
-            await msg.channel.warn(
-                content='Can only add question shorter than 60 characters!')
-            return
-        embed = EmbedWrapper(
-            discord.Embed(color=random_color()),
-            embed_type='POLL - {}{}{}'.format(
-                question,
-                (59 - len(question)) * '\u2000',
-                EmbedWrapper.NOT_DELETABLE))
-        embed.set_footer(
-            text=('* {}\n* {}\n* {}\n* {}\n* {}\n* {}')
-            .format(
-                'Reply to this message to add a response.',
-                'Reply "remove <idx>" to remove a response by index.',
-                'Reply "question <new_question>" to change the question.',
-                'Reply "fix" to prevent further adding or removing responses.',
-                'Reply "end" to close the poll.',
-                ('Multiple responses can be added at once, separated ' +
-                    'with ";" \n(example: "response1; remove 0; response2")')))
+    def valid_poll(self, msg, fixed=False, partial_ended=False):
+        return (isinstance(msg.channel, nextcord.TextChannel) and
+                (msg.content != '`Ended`' or partial_ended) and
+                (len(msg.embeds) == 1) and
+                (msg.embeds[0].title not in {'Help', self.description}) and
+                (not fixed or msg.content != '`Fixed`'))
 
-        m = await msg.channel.send(embed=embed)
-        await self.bot.database.use_database(
-            self.new_poll_to_database, m)
-
-    def is_poll(self, msg, partly_endeded=False):
-        # check if the message is a poll message
-        if (str(msg.channel.type) != 'text' or
-                msg.author.id != msg.guild.me.id or
-                len(msg.embeds) != 1 or
-                not msg.embeds[0].description or
-                msg.embeds[0].description.split(' - ')[0] != 'POLL'):
-            return False
-        x = ['ND', 'FND']
-        if partly_endeded:
-            x.append('AND')
-        if msg.embeds[0].description.split()[-1] not in x:
-            return False
-        return True
-
-    @decorators.OnReply
-    async def manage_poll_info(self, msg, poll_msg):
+    @decorators.Reply
+    @decorators.CheckPermissions
+    async def manage_poll_info(self, msg, user, poll_msg):
         # add or remove responses
         # fix poll -> no more responses can be added or removed
         # end poll -> button clicks don't work anymore
         # but you can still select the response in dropdown to see who voted
-        if not poll_msg.is_poll:
-            return
-        # check if the user who replied has the required permissions
-        if await self.bot.check_if_valid(self, msg, msg.author) is False:
+        if not self.valid_poll(poll_msg):
             return
         # many options may be added at once separated with ";"
         # process them one by one
-        opts = msg.content.split(';')
-        for o in opts:
-            # don't allow empty replies
-            if len(o) < 1:
-                continue
-            try:
-                await self.add_poll_info(
-                    poll_msg.channel, poll_msg.id, o.strip())
-            except ValueError as err:
-                # there can only be 5 rows of buttons and dropdowns
-                if str(err) in [
-                    'could not find open space for item',
-                        'item would not fit at row 4 (6 > 5 width)']:
-                    await msg.channel.warn(
-                        'Maximum number of responses reached!')
-                    return
-                else:
-                    raise ValueError(err)
+        if not msg.content or len(msg.content) < 1:
+            return
+
+        self.client.logger.debug(msg=f'Changing poll info: {str(poll_msg.id)}')
+
+        try:
+            await self.add_poll_info(
+                poll_msg.channel, poll_msg.id, msg.content.strip())
+        except ValueError as err:
+            # there can only be 5 rows of buttons and dropdowns
+            if str(err) in [
+                'could not find open space for item',
+                    'item would not fit at row 4 (6 > 5 width)']:
+                await utils.warn(
+                    msg.channel,
+                    text='Maximum number of responses reached!')
+                return
+            else:
+                raise ValueError(err)
 
     async def add_poll_info(self, channel, poll_msg_id, option):
         # if reply does not contain any of the keywords
         # add a response to the poll, else
         # do whatever it is supposed to do
         poll_msg = await channel.fetch_message(int(poll_msg_id))
-        if (poll_msg is None or not poll_msg.is_poll or
-                (option != 'end' and poll_msg.is_fixed_poll) or
-                option is None):
+        if (poll_msg is None or option is None or
+                not self.valid_poll(poll_msg, fixed=option != 'end')):
             return
-        funcs = {'remove': self.remove_response,
-                 'fix': self.fix_poll,
-                 'end': self.end_poll,
-                 'question': self.change_question}
-        args = option.split()
-        if args[0] in funcs:
-            v = option.replace('{} '.format(args[0]), '', 1)
-            return await funcs[args[0]](poll_msg, v)
-        await self.add_response(poll_msg, option)
+        opts = option.split(';')
+        q = tuple(filter(lambda x: x.strip().startswith('question '), opts))
+        f = tuple(filter(lambda x: x.strip() == 'fix', opts))
+        e = tuple(filter(lambda x: x.strip() == 'end', opts))
+        rm = tuple(filter(lambda x: x.strip().startswith('remove '), opts))
+        r = tuple(filter(
+            lambda x: (x not in q and x not in f and x not in rm and
+                       x not in e and len(x) > 0), opts))
+        if any(len(i) > 25 for i in r):
+            await utils.warn(
+                poll_msg.channel,
+                text='Cannot add responses longer than 25 characters.')
+            r = tuple(filter(lambda x: len(x) <= 25, r))
+        if len(q) > 0:
+            await self.change_question(poll_msg, q[0])
+            poll_msg = await channel.fetch_message(int(poll_msg_id))
+        if len(r) > 0:
+            await self.add_responses(poll_msg, r)
+            poll_msg = await channel.fetch_message(int(poll_msg_id))
+        if len(rm) > 0:
+            await self.remove_responses(poll_msg, rm)
+            poll_msg = await channel.fetch_message(int(poll_msg_id))
+        if len(f) > 0:
+            await self.fix_poll(poll_msg)
+            poll_msg = await channel.fetch_message(int(poll_msg_id))
+        if len(e) > 0:
+            await self.end_poll(poll_msg)
 
-    def get_response_name(self, text):
-        return text.split('\u3000')[0].strip()
+    def get_response_name(self, text) -> str:
+        return text.split('\u3000')[1].strip()
 
-    async def add_response(self, poll_msg, option):
-        components = []
-        option = option.replace('"', "'")
-        option = '\u2000'.join(option.split())
-        if len(option) > 30:
-            await poll_msg.channel.warn(
-                content='Cannot add responses longer than 20 characters.')
-            return
-        for i in sum([i.children for i in poll_msg.components], []):
-            if not isinstance(i, discord.Button):
-                continue
-            lbl = self.get_response_name(i.label)
-            if option == lbl.split('\u2000(')[0]:
+    def format_response_name(self, name, count, token) -> str:
+        name = '({})\u3000{}\u3000'.format(
+            count, '{:\u2000<25}'.format(name.center(15, '\u2000')))
+        if count > 80 - len(name):
+            name += (79 - len(name)) * token + '…'
+        else:
+            name += count * token
+        return '{}{}'.format(name, (80 - len(name)) * '\u3000')
+
+    async def add_responses(self, poll_msg, options):
+        components = [nextcord.ui.Button(
+            label=i.label,
+            custom_id=i.custom_id,
+        ) for i in sum(
+            [i.children for i in poll_msg.components], [])
+            if isinstance(i, nextcord.Button)]
+        for option in options:
+            option = option.replace('"', "'").strip()
+            option = ' '.join(option.split())
+            if option == 'New poll':
+                await utils.warn(
+                    poll_msg.channel,
+                    text='Invalid response')
                 return
-            components.append(discord.ui.Button(
-                label=i.label, row=len(components) // 4))
-        option = option.center(15, '\u2000')
-        t = 45 + len(option)//2
-        components.append(discord.ui.Button(
-            label='{}\u3000{}'.format(
-                option, (t - len(option)) * '\u3000'),
-            row=len(components) // 4))
-        x = self.info_menu(components)
-        if x is not None:
-            components.append(x)
-        if poll_msg.embeds[0].footer.text:
-            poll_msg.embeds[0].set_footer(text=discord.Embed.Empty)
+            if any(option == self.get_response_name(i.label)
+                    for i in components):
+                break
+            components.append(nextcord.ui.Button(
+                label=self.format_response_name(option, 0, self.tokens[0]),
+                row=len(components) // 4))
+        if poll_msg.embeds[0].description:
+            poll_msg.embeds[0].description = nextcord.Embed.Empty
             await poll_msg.edit(
-                embed=poll_msg.embeds[0], components=components)
+                embed=poll_msg.embeds[0], view=utils.build_view(components))
             return
-        await poll_msg.edit(components=components)
+        await poll_msg.edit(view=utils.build_view(components))
 
-    async def fix_poll(self, poll_msg, option):
-        if poll_msg.embeds[0].author.name.split()[
-                -1] != EmbedWrapper.NOT_DELETABLE:
-            return
+    async def fix_poll(self, poll_msg):
         # no more responses can be added or removed
-        m = EmbedWrapper.FIXED + EmbedWrapper.NOT_DELETABLE
-        poll_msg.embeds[0].set_author(
-            name=poll_msg.embeds[0].author.name[:-len(m)] + m)
-        await poll_msg.edit(embed=poll_msg.embeds[0])
-        await poll_msg.channel.notify(
-            content='Poll has been fixed, no responses ' +
-            'can be added or removed.')
+        await poll_msg.edit(content='`Fixed`')
+        await utils.notify(
+            poll_msg.channel,
+            text='No more responses can be added or removed.')
 
     async def change_question(self, poll_msg, option):
+        option = option.replace('question ', '', 1)
         if len(option) >= 60:
-            await poll_msg.channel.warn(
-                content='Can only add question shorter than 60 characters!')
+            await utils.warn(
+                poll_msg.channel,
+                text='Can only add question shorter than 60 characters!')
             return
-        marks = poll_msg.embeds[0].description.split()[-1]
-        if marks in ('FND', 'AND'):
+        if option == self.description:
+            await utils.warn(
+                poll_msg.channel,
+                text='Invalid question')
             return
-        poll_msg.embeds[0].description = 'POLL - {}{}{}'.format(
-            option, (62 - len(marks) - len(option)) * '\u2000', marks)
+        poll_msg.embeds[0].title = option
         await poll_msg.edit(embed=poll_msg.embeds[0])
 
-    async def end_poll(self, poll_msg, option):
+    async def end_poll(self, poll_msg):
         components = []
         equals = []
         max_len = 0
         for i in sum([i.children for i in poll_msg.components], []):
-            if not isinstance(i, discord.Button):
+            if not isinstance(i, nextcord.Button):
                 components.append(
-                    discord.ui.Select(
+                    nextcord.ui.Select(
                         placeholder=i.placeholder,
-                        options=i.options))
+                        options=i.options,
+                        custom_id=i.custom_id))
                 continue
-            components.append(discord.ui.Button(
+            components.append(nextcord.ui.Button(
                 label=i.label,
+                custom_id=i.custom_id,
                 row=len(components) // 4))
-            x = len(i.label.split('\u3000')[1].strip())
+            x = int(i.label.split('\u3000')[0][1:][:-1])
             if x == max_len and max_len > 0:
                 equals.append(len(components) - 1)
             elif x > max_len:
@@ -214,130 +244,127 @@ class Poll(Help):
                 equals.append(len(components) - 1)
                 max_len = x
         if len(equals) == 1:
-            components[equals[0]].style = discord.ButtonStyle.blurple
+            components[equals[0]].style = nextcord.ButtonStyle.blurple
         elif len(equals) > 1:
             for i in equals:
-                components[i].style = discord.ButtonStyle.blurple
-        m = EmbedWrapper.PARTLY_ENDED + EmbedWrapper.NOT_DELETABLE
-        poll_msg.embeds[0].set_author(
-            name=poll_msg.embeds[0].author.name[:-len(m)] + m)
-        await poll_msg.edit(embed=poll_msg.embeds[0], components=components)
-        await poll_msg.channel.notify(
-            content='Poll has been ended.')
+                components[i].style = nextcord.ButtonStyle.blurple
+        await poll_msg.edit(
+            content='`Ended`',
+            view=utils.build_view(components))
+        await utils.notify(
+            poll_msg.channel,
+            text='Poll has been ended.')
 
-    async def remove_response(self, poll_msg, option):
-        if poll_msg.embeds[0].description[-3:] in ['FND', 'AND']:
-            return
-        c = sum(len(i.children) for i in poll_msg.components)
+    async def remove_responses(self, poll_msg, options):
+        cmps = list(
+            filter(lambda x: isinstance(x, nextcord.Button),
+                   sum([i.children for i in poll_msg.components], [])))
+        c = len(cmps)
         try:
-            option = int(option)
-            if (option >= c or
-                    option < 0):
+
+            options = tuple(int(i.split()[1]) for i in options)
+            if any(o >= c or o < 0 for o in options):
                 raise ValueError
         except ValueError:
             if len(poll_msg.components) == 0:
-                await poll_msg.channel.warn(
+                await utils.warn(
+                    poll_msg.channel,
                     'There are no responses in the poll!')
                 return
-            await poll_msg.channel.warn(
-                content=('Responses can only be removed by indexes ' +
-                         'from `{}` to `{}`').format(
-                    0, len(c) - 1))
+            await utils.warn(
+                poll_msg.channel,
+                text=('Responses can only be removed by indexes ' +
+                      'from `{}` to `{}`').format(
+                    0, c - 1))
             return
-        components = []
-        count = 0
-        name = None
-        for i in sum([i.children for i in poll_msg.components], []):
-            if not isinstance(i, discord.Button):
-                continue
-            if count != option:
-                components.append(discord.ui.Button(
-                    label=i.label,
-                    row=len(components)//4))
-            else:
-                name = self.get_response_name(i.label)
-            count += 1
-        menu = self.info_menu(components)
+        components = list(nextcord.ui.Button(
+            label=i.label,
+            custom_id=i.custom_id
+        ) for i in cmps)
+        remaining_components = list(
+            components[i] for i in range(
+                len(components)) if i not in options)
+        removed = list(self.get_response_name(i.label) for i in components
+                       if i not in remaining_components)
+        menu = self.info_menu(remaining_components)
         if menu is not None:
-            components.append(menu)
+            remaining_components.append(menu)
         await poll_msg.edit(
-            components=components)
-        if name is not None:
-            await poll_msg.channel.notify(
-                content='Response `{}` has been removed.'.format(name))
+            view=utils.build_view(remaining_components))
+        if len(removed) > 0:
+            await utils.notify(
+                poll_msg.channel,
+                text='Removed: `{}`'.format(', '.join(removed)))
 
-    @decorators.OnButtonClick
-    async def add_remove_response(self, button, msg, user, webhook):
+    @decorators.ButtonClick
+    async def add_remove_response(self, msg, user, button, webhook):
         # when a user click on a response, determine whether he already voted
         # for this response (from database)
         # if he voted remove his vote, else add another vote
-        if not msg.is_poll:
+        if (button.label == 'New poll') or not self.valid_poll(msg):
             return
-        x = button.label.split('\u3000')
-        add = await self.bot.database.use_database(
-            self.add_or_remove, x[0].strip(), msg, user.id)
+        name = self.get_response_name(button.label)
+        msg_info = await self.client.database.Messages.get_message_info(
+            msg.id, name=name)
+        add = all(i.get('user_id') != user.id for i in msg_info)
+
+        self.client.logger.debug(
+            msg='Adding vote on poll {} for user {}: {}'.format(
+                msg.id, user.id, add))
+
+        responses_count = len(msg_info) + (1 if add else -1)
         components = []
         for idx, v in enumerate(
                 sum([i.children for i in msg.components], [])):
-            if not isinstance(v, discord.Button):
+            if not isinstance(v, nextcord.Button):
                 continue
             if v.label != button.label:
-                components.append(discord.ui.Button(
+                components.append(nextcord.ui.Button(
                     label=v.label,
+                    custom_id=v.custom_id,
                     row=len(components) // 4))
                 continue
-            y = x[1].strip()
-            if add:
-                if len(y) > 0:
-                    y += y[-1]
-                else:
-                    y += self.tokens[(idx) % self.tokens_count]
-            elif len(y) > 0:
-                y = y[:-1]
-            x = x[0]
-            t = 45 + len(x) // 2
-            ln = len(x + y)
-            if ln >= t:
-                t = ln + 1
             components.append(
-                discord.ui.Button(
-                    label='{}\u3000{}{}'.format(
-                        x, y,
-                        (t - len(x + y)) * '\u3000'),
+                nextcord.ui.Button(
+                    label=self.format_response_name(
+                        name, responses_count,
+                        self.tokens[(idx) % len(self.tokens)]),
+                    custom_id=v.custom_id,
                     row=len(components) // 4))
-        if not isinstance(x, str):
-            return
         i = self.info_menu(components)
         if i is not None:
             components.append(i)
-        await msg.edit(components=components)
+        await msg.edit(view=utils.build_view(components))
         if not add:
-            await self.bot.database.use_database(
-                self.delete_from_db, x.strip(), msg, user.id)
+            await self.client.database.Messages.delete_message_info(
+                msg.id, name=name, user_id=user.id)
         else:
-            await self.bot.database.use_database(
-                self.insert_to_db, x.strip(), msg, user.id)
+            await self.client.database.Messages.add_message_info(
+                msg.id, name=name, user_id=user.id)
 
-    @decorators.OnMenuSelect
-    async def show_response_info(self, interaction, msg, user, webhook):
-        if not msg.is_partial_poll:
+    @decorators.MenuSelect
+    @decorators.CheckPermissions
+    async def show_response_info(self, msg, user, data, webhook):
+        if not self.valid_poll(msg, partial_ended=True):
             return
         # when selecting one of the responses in a dropdown,
         # see the number of votes and the users who voted
-        if await self.bot.check_if_valid(self, msg, user, webhook) is False:
-            return
-        name = interaction.data['values'][0]
-        users = await self.bot.database.use_database(
-            self.users_who_voted, name, msg)
+        name = data['values'][0]
+        users = await self.client.database.Messages.get_message_info(
+            msg.id, name=name)
         if users is None or len(users) == 0:
             return
-        embed = discord.Embed(
+
+        self.client.logger.debug(
+            msg=f'Sending response info for poll {str(msg.id)}')
+
+        embed = nextcord.Embed(
             title=name,
-            color=random_color())
+            color=utils.random_color())
         y = None
         k = 0
         for i in users:
-            user = msg.guild.get_member(int(i[3]))
+            user = msg.guild.get_member(i.get('user_id'))
             if user is None:
                 continue
             x = user.name
@@ -350,61 +377,13 @@ class Poll(Help):
         embed.add_field(name="Users", value=y, inline=False)
         await webhook.send(embed=embed, ephemeral=True)
 
-    async def users_who_voted(self, cursor, rsp, msg):
-        cursor.execute((
-            "SELECT * FROM messages WHERE type = 'poll' AND " +
-            "channel_id = \"{}\" AND message_id = \"{}\" AND info = \"{}\""
-        ).format(
-            msg.channel.id, msg.id, rsp))
-        fetched = cursor.fetchall()
-        return fetched
-
-    async def add_or_remove(self, cursor, rsp, msg, user_id):
-        cursor.execute((
-            "SELECT * FROM messages WHERE " +
-            "type = 'poll' AND channel_id = \"{}\" AND " +
-            "message_id = \"{}\" AND user_id = \"{}\" AND info = \"{}\""
-        ).format(
-            msg.channel.id, msg.id, user_id, rsp))
-        fetched = cursor.fetchone()
-        if fetched is None:
-            return True
-        return False
-
-    async def delete_from_db(self, cursor, rsp, msg, user_id):
-        cursor.execute((
-            "DELETE FROM messages WHERE " +
-            "channel_id = \"{}\" AND " +
-            "message_id = \"{}\" AND user_id = \"{}\" AND info = \"{}\""
-        ).format(
-            msg.channel.id, msg.id, user_id, rsp))
-
-    async def insert_to_db(self, cursor, rsp, msg, user_id):
-        cursor.execute((
-            "INSERT INTO messages (type, channel_id, message_id, user_id, " +
-            "info) VALUES ('poll', \"{}\", \"{}\", \"{}\", \"{}\")"
-        ).format(
-            msg.channel.id, msg.id, user_id, rsp))
-
-    async def new_poll_to_database(self, cursor, msg):
-        time = await self.bot.database.get_deletion_time(msg, self.name)
-        cur_time = (datetime.now() + timedelta(hours=time + 0.5)
-                    ).strftime('%d:%m:%H')
-        cursor.execute(
-            ("INSERT INTO messages " +
-             "(type, channel_id, message_id, user_id, info, deletion_time) " +
-             "VALUES ('{}', '{}', '{}', '{}', '{}', '{}')").format(
-                'poll', msg.channel.id, msg.id, None, None, cur_time))
-        await msg.delete(
-            delay=time * 3600)
-
-    def additional_info(self, prefix):
-        return ('* {}\n* {}\n* {}\n* {}\n* {}\n* {}\n* {}'.format(
-            'Initialize the poll with "{}poll <question>"'.format(prefix),
-            'Change question by replying "question <new_question>".',
-            "Add responses by replying to the poll.",
-            'Multiple responses can be added at once, ' +
-            'separated with semicolons (response1;response2;...).',
-            'Remove a response by replying "remove <number>".',
-            'Fix poll responses with replying "fix".',
-            'End the poll with replying "end".'))
+    @decorators.Help
+    def additional_info(self):
+        return '\n'.join((
+            'Reply `question <new_question>` to change the question.',
+            'Reply `<response>` to add a response.',
+            'Reply `remove <idx>` to remove a response by index.',
+            'Reply `fix` to disable further adding or removing responses.',
+            'Reply `end` to close the poll.',
+            ('Multiple options can be added at once, separated ' +
+             'with `;` \n(example: `response1; remove 0; response2`)')))

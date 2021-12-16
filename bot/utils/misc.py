@@ -1,77 +1,26 @@
-import sys
-import discord
-from collections import deque
+from datetime import datetime, timedelta
 import random
 
 
-class Queue():
-    """
-    Create queues for messages constantly edited by buttons or replies
-    to avoid duplicating or missing any of the edits.
-    """
-
-    def __init__(self, bot):
-        self.bot = bot
-        self.queues = {}
-
-    async def add_to_queue(self, queue_id, *args, function=None, idx=None):
-        if idx is None:
-            self.queues.setdefault(
-                queue_id, [False, deque([])])[1].append(args)
-        else:
-            self.queues.setdefault(
-                queue_id, [False, deque([])])[1].insert(idx, args)
-        # start clearing the queue immediately if function provided
-        if function is not None:
-            await self.clear_queue(queue_id, function, False)
-
-    async def clear_queue(self, queue_id, function, ignore_running):
-        if queue_id not in self.queues:
-            return
-        # clear messages or interactions in queue to avoid
-        # multiple instances of same command or interactions
-        if (queue_id in self.queues and
-            (not self.queues[queue_id][0] or
-             ignore_running) and len(self.queues[queue_id][1]) > 0):
-            self.queues[queue_id][0] = True
-            args = self.queues[queue_id][1].popleft()
-            # catch exceptions triggered when clearing the queue
-            # and continue clearing
-            try:
-                await function(*args)
-            except ValueError as err:
-                if str(err) in [
-                    'could not find open space for item',
-                        'item would not fit at row 4 (6 > 5 width)']:
-                    raise ValueError(err)
-                else:
-                    self.bot.client.dispatch('error', err, *sys.exc_info())
-            except Exception as err:
-                self.bot.client.dispatch('error', err, *sys.exc_info())
-            finally:
-                await self.clear_queue(queue_id, function, True)
-        else:
-            # clean up
-            if queue_id in self.queues and len(
-                    self.queues[queue_id][1]) == 0:
-                del self.queues[queue_id]
+def timestamp_string():
+    return '%d-%m-%y %H:%M:%S'
 
 
-def get_component(req_attr, msg, attr='custom_id'):
-    for component in msg.components:
-        if not hasattr(component, 'children'):
-            continue
-        for b in component.children:
-            if hasattr(b, attr) and (
-                    getattr(b, attr) == req_attr):
-                return b
+def cur_timestamp():
+    return datetime.now().strftime(timestamp_string())
 
 
-def delete_button(row=None):
-    return discord.ui.Button(
-        style=discord.ButtonStyle.blurple,
-        label='delete',
-        row=row)
+def delta_seconds_timestamp(seconds):
+    return (datetime.now() + timedelta(seconds=seconds)).strftime(
+        timestamp_string())
+
+
+def time_dif(timestamp):
+    """Returns seconds between timestamp and current timestamp"""
+    then = datetime.strptime(timestamp, timestamp_string())
+    now = datetime.strptime(cur_timestamp(), timestamp_string())
+    tdelta = then - now
+    return tdelta.total_seconds()
 
 
 def random_color():
@@ -79,13 +28,24 @@ def random_color():
     return int("%06x" % random.randint(0, 0xFFFFFF), 16)
 
 
+colors = {
+    'white': 0xffffff,
+    'red': 0xc30202,
+    'blue': 0x0099e1,
+    'orange': 0xf75f1c,
+    'yellow': 0xf8c300,
+    'green': 0x008e44,
+    'purple': 0xa652bb,
+    'brown': 0xa5714e,
+    'black': 0,
+}
 # emojis rock, paper, scissors
 rps_emojis = (
-    u"\U0001FAA8",
-    u"\U0001F5DE\U0000FE0F",
-    u"\U00002702\U0000FE0F")
+    u'\U0001FAA8',
+    u'\U0001F5DE\U0000FE0F',
+    u'\U00002702\U0000FE0F')
 # thumbs up emoji
-thumbs_up = u"\U0001F44D"
+thumbs_up = u'\U0001F44D'
 number_emojis = (
     '1️⃣',
     '2️⃣',
@@ -118,17 +78,3 @@ circles = {
     'black': '⚫'
 }
 emojis = tuple(circles.values())
-# colors that match emoji colors by indexes
-colors = (
-    0xffffff,
-    0xc30202,
-    0x0099e1,
-    0xf75f1c,
-    0xf8c300,
-    0x008e44,
-    0xa652bb,
-    0xa5714e,
-    0,
-)
-green_color = 0x008e44
-red_color = 0xc30202

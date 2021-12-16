@@ -1,33 +1,52 @@
-import discord
 import logging
-import os
+import nextcord
+import sys
 from dotenv import load_dotenv
 
-from bot.bot import Bot
-from bot.client import UtilityClient
+from version import __version__
+
+from bot.utils import get_required_bot_env_variables
+from bot import UtilityClient
+from database import Database
+from database.utils import get_required_database_env_variables
+
+
+def set_default_logging():
+    nextcord.VoiceClient.warn_nacl = False
+    logging.getLogger('nextcord').setLevel(logging.CRITICAL)
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s',
+        level=logging.INFO)
+
+
+def get_flag_and_version(version):
+    flag = 'prod' if any(i == '--prod' for i in sys.argv) else 'dev'
+    version = version if flag == 'prod' else version + '-dev'
+    logging.info(msg='Running in "{}" mode'.format(flag))
+    return flag, version
+
+
+def run_the_client(database_info, token, version, bot_logging, db_logging):
+    if not token:
+        return logging.critical(msg='Missing nextcord token')
+    if not database_info:
+        return logging.critical(msg='Missing database info')
+    database = Database(
+        info=database_info,
+        log_level=db_logging)
+    if not database or not database.connected:
+        return logging.critical('Could not connect to database!')
+    client = UtilityClient(
+        intents=nextcord.Intents.all(),
+        version=version,
+        database=database,
+        log_level=bot_logging)
+    client.run(token=token, reconnect=True)
+
 
 load_dotenv()
-
-DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
-LOG_FILE = os.environ.get('LOGFILE')
-DEFAULT_PREFIX = os.environ.get('DEFAULT_PREFIX')
-
-# do not warn about PyNaCl not installed
-discord.VoiceClient.warn_nacl = False
-
-# send only warnings and errors from discord module
-logging.getLogger('discord').setLevel(logging.WARN)
-# set up default logging config, log to file if filename provided
-logging.basicConfig(
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%H:%M:%S %d-%m-%Y',
-    level=logging.INFO,
-    filename=LOG_FILE)
-
-bot = Bot(DEFAULT_PREFIX)
-client = UtilityClient(intents=discord.Intents.all(), bot=bot)
-
-try:
-    client.run(token=DISCORD_TOKEN, reconnect=True)
-except Exception as exception:
-    logging.error(exception)
+set_default_logging()
+FLAG, VERSION = get_flag_and_version(__version__)
+DISCORD_TOKEN, BOT_LOGGING = get_required_bot_env_variables(FLAG)
+DATABASE_INFO, DB_LOGGING = get_required_database_env_variables(FLAG)
+run_the_client(DATABASE_INFO, DISCORD_TOKEN, VERSION, BOT_LOGGING, DB_LOGGING)
