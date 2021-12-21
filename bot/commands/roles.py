@@ -283,7 +283,7 @@ class Roles:
         return '\n'.join((
             'Add roles to the message by selecting them in the dropdown.',
             'Selecting an already added role will remove it.',
-            'Clickign `reset` will remove all the roles in the message.',
+            'Clicking `reset` will remove all the roles in the message.',
             'Clicking `commit` will change the menu into role buttons.',
             'Clicking on a button will give or remove the role.',
             'You can edit the roles in a message by replying `edit`.'))

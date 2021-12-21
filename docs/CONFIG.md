@@ -57,5 +57,5 @@ docker build -t discordbot .
 ```
 
 ```
-docker run --rm -it -d --network="host" discordbot:latest
+docker run -it -d --restart always --network="host" discordbot:latest
 ```

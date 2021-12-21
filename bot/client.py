@@ -237,7 +237,9 @@ class UtilityClient(nextcord.Client):
                 opt.description = command.description
             options.append(opt)
         view = utils.build_view([
-            nextcord.ui.Select(placeholder='Select a command', options=options),
+            nextcord.ui.Select(
+                placeholder='Select a command',
+                options=options),
             utils.help_button(),
             utils.delete_button()
         ])
@@ -325,11 +327,16 @@ class UtilityClient(nextcord.Client):
 
         # process interactions in a queue to avoid
         # multiple or too few instances
-        await self.queue.add_to_queue(
-            str(interaction.message.id),
-            interaction_type,
-            interaction,
-            function=self.dispatch)
+        if interaction_type == 'button_click':
+            await self.queue.add_to_queue(
+                str(interaction.message.id),
+                interaction,
+                function=self.on_button_click)
+        elif interaction_type == 'menu_select':
+            await self.queue.add_to_queue(
+                str(interaction.message.id),
+                interaction,
+                function=self.on_menu_select)
 
     async def on_button_click(self, interaction):
         """
@@ -418,7 +425,9 @@ class UtilityClient(nextcord.Client):
         if name == self.default_type:
             embed.description = ('Select a command in the main menu,\n' +
                                  'then click on the "help" ' +
-                                 'button for more info about the command.')
+                                 'button for more info about the command.\n' +
+                                 '**\nOnly the user who started ' +
+                                 'the menu may navigate it\n**')
         else:
             embed.description = self.commands[name].description
             if name in self.decorated_methods['Help']:

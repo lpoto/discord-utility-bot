@@ -105,7 +105,7 @@ class Hangman:
         return '\u3000'.join(w2)
 
     async def game_embed(
-            self, word, msg=None, new_chars=None, user_id=None
+            self, word, msg=None, new_chars=None, user_id=None, author_id=None
     ) -> utils.UtilityEmbed:
         # create an embed for the current state of the game
         embed = None
@@ -140,17 +140,15 @@ class Hangman:
             self.picture(phase=phase, guessed_chars=chars).values())
         if r'\_' not in hidden_word:
             return await self.end_embed(
-                winner=False,
                 embed=embed,
                 msg=msg,
                 user_id=user_id,
                 word=word)
         if phase >= 7:
             return await self.end_embed(
-                winner=True,
                 embed=embed,
                 msg=msg,
-                user_id=user_id,
+                user_id=author_id,
                 word=word)
         embed.description += '\n\nGuess the word in this message\'s thread!'
         return embed
@@ -176,16 +174,16 @@ class Hangman:
         word = info[0].get('info')
         author_id = info[0].get('user_id')
         await self.guess_letter(
-                msg.channel.parent, msg.channel, msg, parent.id,
-                x, word, author_id)
+            msg.channel.parent, msg.channel, parent.id,
+            x, word, msg.author.id, author_id)
 
     async def guess_letter(
-            self, channel, thread, msg, ref_msg_id, letters,
-            word, user_id
+            self, channel, thread, ref_msg_id, letters,
+            word, user_id, author_id
     ):
         # edit the hangman's embed based on guessed letter
         if (channel is None or thread is None or
-                str(msg.author.id) == str(user_id)):
+                str(author_id) == str(user_id)):
             return False
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
         if (referenced_msg is None or
@@ -195,7 +193,8 @@ class Hangman:
             word,
             referenced_msg,
             letters,
-            user_id)
+            user_id,
+            author_id)
         if embed is None:
             return False
         if r'\_' not in embed.title:
@@ -213,7 +212,7 @@ class Hangman:
         return False
 
     async def end_embed(
-            self, winner, embed, msg, user_id, word) -> utils.UtilityEmbed:
+            self, embed, msg, user_id, word) -> utils.UtilityEmbed:
         # an embed once the game ends
         # show whether the user who started the game won or lost
         # if he won and database is connected, show his total wins
@@ -221,37 +220,32 @@ class Hangman:
         embed.title = word
         if not user:
             return embed
-        if winner:
-            embed.description = '{} wins!\n\n{}'.format(
-                user.name if not user.nick else user.nick,
-                embed.description)
-            wins = await self.client.database.Users.get_user_info(
+        embed.description = '{} wins!\n\n{}'.format(
+            user.name if not user.nick else user.nick,
+            embed.description)
+        wins = await self.client.database.Users.get_user_info(
+            int(user_id),
+            guild_id=msg.guild.id,
+            name=self.__class__.__name__ + '_wins'
+        )
+        if not wins:
+            await self.client.database.Users.add_user_info(
                 int(user_id),
                 guild_id=msg.guild.id,
-                name=self.__class__.__name__ + '_wins'
-            )
-            if not wins:
-                await self.client.database.Users.add_user_info(
-                    int(user_id),
-                    guild_id=msg.guild.id,
-                    name=self.__class__.__name__ + '_wins',
-                    info=1)
-                wins = 1
-            else:
-                wins = int(wins) + 1
-                await self.client.database.Users.update_user_info(
-                    int(user_id),
-                    guild_id=msg.guild.id,
-                    name=self.__class__.__name__ + '_wins',
-                    info=wins)
-            extra = '{} total wins: {}\u3000'.format(
-                user.name if not user.nick else user.nick,
-                wins)
-            embed.description += '\n\n' + extra
+                name=self.__class__.__name__ + '_wins',
+                info=1)
+            wins = 1
         else:
-            embed.description = '{} loses!\n\n{}'.format(
-                user.name if not user.nick else user.nick,
-                embed.description)
+            wins = int(wins) + 1
+            await self.client.database.Users.update_user_info(
+                int(user_id),
+                guild_id=msg.guild.id,
+                name=self.__class__.__name__ + '_wins',
+                info=wins)
+        extra = '{} total wins: {}\u3000'.format(
+            user.name if not user.nick else user.nick,
+            wins)
+        embed.description += '\n\n' + extra
         embed.set_type_and_version('Hangman_ended', self.client.version)
         return embed
 
