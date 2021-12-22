@@ -51,6 +51,8 @@ class Games:
             utils.delete_button()
         ]
         await msg.edit(embed=embed, view=utils.build_view(components))
+        await self.client.database.Messages.update_message_author(
+            id=msg.id, author_id=None)
 
     @decorators.MenuSelect
     async def send_leaderboard(self, msg, user, data, webhook):
