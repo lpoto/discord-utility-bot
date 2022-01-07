@@ -5,13 +5,17 @@ class Users:
     @property
     def required_tables(self) -> dict:
         return {
-            'user_info': [
-                'user_id BIGINT NOT NULL',
-                'guild_id BIGINT NOT NULL',
-                'name VARCHAR(50) NOT NULL',
-                'info TINYTEXT NOT NULL',
-                'PRIMARY KEY (user_id, guild_id, name)',
-            ],
+            'user_info': {
+                'columns': [
+                    'user_id BIGINT NOT NULL',
+                    'guild_id BIGINT NOT NULL',
+                    'name VARCHAR(50) NOT NULL',
+                    'info TINYTEXT NOT NULL',
+                ],
+                'constraints': [
+                    'PRIMARY KEY (user_id, guild_id, name)',
+                ]
+            }
         }
 
     async def get_user_info(

@@ -114,11 +114,34 @@ class Database:
 
                 cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
                 fetched = cursor.fetchone()
-                if fetched is None:
+                if not fetched and v.get('columns'):
                     self.logger.debug(msg=f'Creating table "{table_name}"')
 
-                    cursor.execute(f"CREATE TABLE {k} ({', '.join(v)})")
+                    constraints = v.get('columns')
+                    if v.get('constraints'):
+                        constraints += v.get('constraints')
+
+                    cursor.execute(
+                        f"CREATE TABLE {k} ({', '.join(constraints)})")
                     self.logger.info(msg=f'Created table "{table_name}"')
+
+                if (v.get('indexes')):
+                    self.logger.debug(
+                        msg=f'Checking for indexes on table "{table_name}"')
+
+                    for column_name in v.get('indexes'):
+                        cursor.execute((
+                            "SHOW index FROM {} WHERE column_name = '{}'"
+                        ).format(table_name, column_name))
+                        fetched = cursor.fetchone()
+                        if not fetched:
+                            cursor.execute(
+                                "CREATE INDEX {}_index ON {}({})".format(
+                                    column_name, table_name, column_name
+                                ))
+                            self.logger.info(
+                                msg=f'Created index "{column_name}_index"')
+
             cursor.close()
             cnx.close()
             self.logger.debug(msg='Service ready!')

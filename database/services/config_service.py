@@ -5,20 +5,32 @@ class Config:
     @property
     def required_tables(self) -> dict:
         return {
-            '`option`': [
-                'name VARCHAR(50) NOT NULL',
-                'guild_id BIGINT NOT NULL',
-                'PRIMARY KEY (name, guild_id)',
-            ],
-            'option_info': [
-                'id BIGINT NOT NULL AUTO_INCREMENT',
-                'name VARCHAR(50) NOT NULL',
-                'guild_id BIGINT NOT NULL',
-                'info TINYTEXT NOT NULL',
-                'PRIMARY KEY (id)',
-                ('FOREIGN KEY (name, guild_id) REFERENCES ' +
-                    '`option`(name, guild_id) ON DELETE CASCADE')  # enclose option in ` to avoid conflict with mysql
-            ]
+            '`option`': {
+                'columns': [
+                    'name VARCHAR(50) NOT NULL',
+                    'guild_id BIGINT NOT NULL',
+                ],
+                'constraints': [
+                    'PRIMARY KEY (name, guild_id)',
+                ]
+            },
+            'option_info': {
+                'columns': [
+                    'id BIGINT NOT NULL AUTO_INCREMENT',
+                    'name VARCHAR(50) NOT NULL',
+                    'guild_id BIGINT NOT NULL',
+                    'info TINYTEXT NOT NULL',
+                ],
+                'constraints': [
+                    'PRIMARY KEY (id)',
+                    ('FOREIGN KEY (name, guild_id) REFERENCES ' +
+                     '`option`(name, guild_id) ON DELETE CASCADE')
+                ],
+                'indexes': [
+                    'name',
+                    'guild_id'
+                ]
+            }
         }
 
     async def get_option(self, *, guild_id: int, name: str) -> dict:
