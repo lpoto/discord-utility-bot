@@ -17,7 +17,7 @@ class Config:
                 'info TINYTEXT NOT NULL',
                 'PRIMARY KEY (id)',
                 ('FOREIGN KEY (name, guild_id) REFERENCES ' +
-                    'option(name, guild_id) ON DELETE CASCADE')
+                    '`option`(name, guild_id) ON DELETE CASCADE')  # enclose option in ` to avoid conflict with mysql
             ]
         }
 
