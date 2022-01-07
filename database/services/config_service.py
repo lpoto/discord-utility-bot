@@ -5,7 +5,7 @@ class Config:
     @property
     def required_tables(self) -> dict:
         return {
-            'option': [
+            '`option`': [
                 'name VARCHAR(50) NOT NULL',
                 'guild_id BIGINT NOT NULL',
                 'PRIMARY KEY (name, guild_id)',

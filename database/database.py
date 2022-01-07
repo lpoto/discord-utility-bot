@@ -109,25 +109,16 @@ class Database:
             if not cursor:
                 return False
             for k, v in tables.items():
+                table_name = k.strip('`')
+                self.logger.debug(msg=f'Checking for table "{table_name}"')
 
-                self.logger.debug(msg=f'Checking for table "{k}"')
-
-                cursor.execute(f"SHOW TABLES LIKE '{k}'")
+                cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
                 fetched = cursor.fetchone()
                 if fetched is None:
-                    # if k is option enclose option in ` to avoid conflict with mysql
-                    if k == 'option':
-                        self.logger.debug(msg=f'Creating table "{k}"')
-                        # print query
-                        self.logger.debug(msg=f"CREATE TABLE {k} ({', '.join(v)})")
-                        cursor.execute(f"CREATE TABLE `{k}` ({', '.join(v)})")
-                        self.logger.info(msg=f'Created table "{k}"')
-                    else:
-                        self.logger.debug(msg=f'Creating table "{k}"')
-                        # print query
-                        self.logger.debug(msg=f"CREATE TABLE {k} ({', '.join(v)})")
-                        cursor.execute(f"CREATE TABLE {k} ({', '.join(v)})")
-                        self.logger.info(msg=f'Created table "{k}"')
+                    self.logger.debug(msg=f'Creating table "{table_name}"')
+
+                    cursor.execute(f"CREATE TABLE {k} ({', '.join(v)})")
+                    self.logger.info(msg=f'Created table "{table_name}"')
             cursor.close()
             cnx.close()
             self.logger.debug(msg='Service ready!')
