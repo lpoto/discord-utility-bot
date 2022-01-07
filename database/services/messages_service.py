@@ -5,24 +5,39 @@ class Messages:
     @property
     def required_tables(self) -> dict:
         return {
-            'message': [
-                'id BIGINT NOT NULL',
-                'channel_id BIGINT NOT NULL',
-                'author_id BIGINT',
-                'type VARCHAR(20)',
-                'PRIMARY KEY (id)',
-            ],
-            'message_info': [
-                'id BIGINT NOT NULL AUTO_INCREMENT',
-                'message_id BIGINT NOT NULL',
-                'name VARCHAR(50) NOT NULL',
-                'info TINYTEXT',
-                'user_id BIGINT',
-                'PRIMARY KEY(id)',
-                'UNIQUE (message_id, name, user_id)',
-                ('FOREIGN KEY (message_id) REFERENCES message(id) ' +
-                    'ON DELETE CASCADE')
-            ],
+            'message': {
+                'columns': [
+                    'id BIGINT NOT NULL',
+                    'channel_id BIGINT NOT NULL',
+                    'author_id BIGINT',
+                    'type VARCHAR(20)',
+                ],
+                'constraints': [
+                    'PRIMARY KEY (id)',
+                ],
+                'indexes': [
+                    'channel_id'
+                ]
+            },
+            'message_info': {
+                'columns': [
+                    'id BIGINT NOT NULL AUTO_INCREMENT',
+                    'message_id BIGINT NOT NULL',
+                    'name VARCHAR(50) NOT NULL',
+                    'info TINYTEXT',
+                    'user_id BIGINT',
+                ],
+                'constraints': [
+                    'PRIMARY KEY(id)',
+                    'UNIQUE (message_id, name, user_id)',
+                    ('FOREIGN KEY (message_id) REFERENCES message(id) ' +
+                     'ON DELETE CASCADE')
+                ],
+                'indexes': [
+                    'message_id',
+                    'name'
+                ]
+            }
         }
 
     async def get_message(
