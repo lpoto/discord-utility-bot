@@ -380,7 +380,7 @@ class UtilityClient(nextcord.Client):
                 return
             # return to main menu
             if button.label == 'home':
-                await self.client.database.Messages.update_message_author(
+                await self.database.Messages.update_message_author(
                     id=msg.id, author_id=interaction.user.id)
                 self.dispatch('client_mention', msg, interaction.user.id)
                 return
