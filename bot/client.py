@@ -7,6 +7,7 @@ import logging
 from functools import partial
 
 import bot.commands as commands
+from bot.commands.bulk_delete import bulk_delete
 import bot.games as games
 import bot.decorators as decorators
 import bot.utils as utils
@@ -219,9 +220,16 @@ class UtilityClient(nextcord.Client):
         Send the commands' main menu when the bot is tagged.
         If 'old_author_id' is not None, 'msg' will be edited
         instead of sending a new message.
+        If "clear <nbr>" is added to tag, user is administrator
+        and client has "manage_messages" permission
+        bulk delete 1 - 50 messages.
         """
         # All the command should be initialized with methods with @MenuSelect
         # or @ButtonClick commands
+        content = msg.content.split()[1:]
+        if len(content) == 2 and content[0] in {'clear', 'delete', 'purge'}:
+            await bulk_delete(msg, content[1], self.logger)
+            return
 
         self.logger.debug(msg='Main menu ({}): {}'.format(
             'Client mention' if not old_author_id else 'Home button',

@@ -10,7 +10,7 @@ class Poll:
         self.color = utils.colors['green']
         self.description = 'Create a poll for users to vote on.'
         self.tokens = [utils.circles['black'], utils.circles['white']]
-        self.default_deletion_time = 336
+        self.default_deletion_time = 720
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
