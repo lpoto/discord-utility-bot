@@ -343,12 +343,12 @@ class UtilityClient(nextcord.Client):
         # multiple or too few instances
         if interaction_type == 'button_click':
             await self.queue.add_to_queue(
-                str(interaction.message.id),
+                "button_click:" + str(interaction.message.id),
                 interaction,
                 function=self.on_button_click)
         elif interaction_type == 'menu_select':
             await self.queue.add_to_queue(
-                str(interaction.message.id),
+                "menu_select:" + str(interaction.message.id),
                 interaction,
                 function=self.on_menu_select)
 
