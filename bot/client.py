@@ -167,7 +167,7 @@ class UtilityClient(nextcord.Client):
             prev_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
 
-            if prev_msg and str(prev_msg.channel.type) == 'private':
+            if prev_msg and str(prev_msg.channel.type) != 'private':
                 self.logger.debug(
                     msg='Validated dm reply: {}'.format(
                         prev_msg.id
@@ -179,7 +179,7 @@ class UtilityClient(nextcord.Client):
             prev_msg = await msg.channel.parent.fetch_message(
                 msg.channel.id)
             author_id = msg.author.id
-        if type == 'menu_select':
+        elif type == 'menu_select':
             prev_msg = await msg.message.channel.fetch_message(
                 msg.message.id)
             author_id = msg.user.id
@@ -200,12 +200,15 @@ class UtilityClient(nextcord.Client):
 
         msg_info = await self.database.Messages.get_message(prev_msg.id)
 
-        if (author_id and not msg_info and type == 'reply'
+        if (author_id and not msg_info and type in {'reply', 'thread_message'}
                 and not isinstance(msg.channel, nextcord.TextChannel)):
             return True
 
-        if not author_id or not msg_info:
+        if not msg_info or not author_id:
             self.logger.debug(msg='Failed validating author: no info')
+            return True
+
+        if not author_id:
             return False
 
         self.logger.debug(msg='Validating author: {} - {}'.format(
