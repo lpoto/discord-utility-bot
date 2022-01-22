@@ -156,8 +156,12 @@ class UtilityClient(nextcord.Client):
             msg.channel.permissions_for(msg.guild.me).create_public_threads
         )
 
-    async def validate_author(self, msg, type):
-        if type == 'client_mention':
+    async def validate(self, msg, type):
+        if not type or (type not in {'reply', 'thread_message'} and
+                        not isinstance(msg.channel, nextcord.TextChannel)):
+            return False
+        if (type == 'client_mention' or type in {'reply', 'thread_message'}
+                and not isinstance(msg.channel, nextcord.TextChannel)):
             return True
 
         prev_msg = None
@@ -166,14 +170,6 @@ class UtilityClient(nextcord.Client):
         if type == 'reply':
             prev_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
-
-            if prev_msg and str(prev_msg.channel.type) != 'private':
-                self.logger.debug(
-                    msg='Validated dm reply: {}'.format(
-                        prev_msg.id
-                    ))
-                return True
-
             author_id = msg.author.id
         elif type == 'thread_message':
             prev_msg = await msg.channel.parent.fetch_message(
@@ -186,10 +182,6 @@ class UtilityClient(nextcord.Client):
         elif type == 'button_click':
 
             if ('ephemeral', True) in msg.message.flags:
-                self.logger.debug(
-                    msg='Validated author for ephemeral: {}'.format(
-                        msg.message.id
-                    ))
                 return True
 
             prev_msg = await msg.message.channel.fetch_message(
@@ -205,14 +197,10 @@ class UtilityClient(nextcord.Client):
             return True
 
         if not msg_info or not author_id:
-            self.logger.debug(msg='Failed validating author: no info')
             return True
 
         if not author_id:
             return False
-
-        self.logger.debug(msg='Validating author: {} - {}'.format(
-            author_id, msg_info.get('author_id')))
 
         return (not msg_info.get('author_id') or
                 str(msg_info.get('author_id')) == str(author_id))
@@ -222,26 +210,16 @@ class UtilityClient(nextcord.Client):
             return
         # determine the type of message
         msg_type = self.determine_msg_type(msg)
-        if (not msg_type or (
-                msg_type != 'reply' and
-                not isinstance(msg.channel, nextcord.TextChannel) and
-                not isinstance(msg.channel, nextcord.threads.Thread)) or
-                (msg_type == 'thread_message' and
-                 not isinstance(msg.channel, nextcord.threads.Thread))):
-            return
         # check if message is valid and user has the permissions to modify
         # the message
-        if not await self.validate_author(msg, msg_type):
+        if not await self.validate(msg, msg_type):
             return
 
         self.logger.debug(
             msg='Validated message of type "{}" with id {}'.format(
                 msg_type, msg.id))
 
-        # dispatch the event in a queue, to avoid multiple or too few instances
-        # of same command
-        await self.queue.add_to_queue(
-            str(msg.id), msg_type, msg, function=self.dispatch)
+        self.dispatch(msg_type, msg)
 
     async def on_client_mention(self, msg, old_author_id=None):
         """
@@ -352,7 +330,7 @@ class UtilityClient(nextcord.Client):
         interaction_type = self.determine_interaction_type(interaction)
         if not interaction_type:
             return
-        valid_interaction = await self.validate_author(
+        valid_interaction = await self.validate(
             interaction, interaction_type)
         if not valid_interaction:
             return

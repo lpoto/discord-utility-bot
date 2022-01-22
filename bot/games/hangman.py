@@ -10,6 +10,7 @@ class Hangman:
         self.color = utils.colors['purple']
         self.description = 'A guessing game for two or more players'
         self.default_deletion_time = 24
+        self.editing = {}
 
     @decorators.MenuSelect
     async def get_word_from_dm(self, msg, user, data, webhook):
@@ -135,8 +136,14 @@ class Hangman:
             phase = int(dsc[j].split('sses: ')[1].split('/')[0])
         dif_chars = set()
         if new_chars is not None:
+            if msg:
+                x = self.editing.get(msg.id)
+                if x and x is not True:
+                    new_chars = new_chars.union(x.get('letters'))
+                    self.editing[msg.id] = True
             dif_chars = new_chars.difference(chars)
             chars = chars.union(new_chars)
+
         hidden_word = self.hide_word(word, chars)
         embed.title = hidden_word
         if new_chars:
@@ -162,46 +169,66 @@ class Hangman:
     async def guesses_from_thread(self, msg, author, parent):
         # all users except the one who started the game
         # can guess letters in a game's thread
-        if msg.channel.name != 'Hangman!' or not self.valid_hangman(
-                parent, thread=True):
+        if (not parent or
+            msg.channel.name != 'Hangman!' or not self.valid_hangman(
+                parent, thread=True)):
             return
-        x = set(i.strip().upper() for i in msg.content.split())
-        # allow only 1 ASCII (65-90) letter at a time
-        # or multiple, separated with whitespace
-        if any(len(c.strip()) > 1 for c in x) or any(
-                ord(c.strip().upper()) > 90 or ord(
-                    c.strip().upper()) < 65 for c in x):
-            return
-        info = await self.client.database.Messages.get_message_info(
-            id=msg.channel.id, name='hangman_word')
-        if len(info) < 1:
-            return
-        word = info[0].get('info')
-        author_id = info[0].get('user_id')
-        await self.guess_letter(
-            msg.channel.parent, msg.channel, parent.id,
-            x, word, msg.author.id, author_id)
+        try:
+            # allow only 1 ASCII (65-90) letter at a time
+            # or multiple, separated with whitespace
+            x = set(i.strip().upper() for i in msg.content.split())
+            x = set(c for c in x if (
+                len(c) == 1 and ord(c.upper()) <= 90 and ord(c.upper()) >= 65
+            ))
+            if len(x) < 1:
+                return
+
+            if parent.id in self.editing:
+                if not self.editing.get(
+                        parent.id) or self.editing.get(
+                        parent.id) is True:
+                    self.editing[parent.id] = {
+                        'author_id': msg.author.id,
+                        'letters': x
+                    }
+                else:
+                    self.editing[parent.id]['author_id'] = msg.author.id
+                    self.editing[parent.id]['letters'] = (
+                        self.editing[parent.id].get('letters').union(x)
+                    )
+                return
+
+            self.editing[parent.id] = True
+
+            info = await self.client.database.Messages.get_message_info(
+                id=parent.id, name='hangman_word')
+            if len(info) < 1:
+                await self.client.database.Messages.delete_message(
+                    id=parent.id)
+                if parent.id in self.editing:
+                    del self.editing[parent.id]
+                return
+            word = info[0].get('info')
+            author_id = info[0].get('user_id')
+            await self.guess_letter(
+                msg.channel.parent, msg.channel, parent.id,
+                x, word, msg.author.id, author_id)
+        except Exception:
+            if parent and parent.id in self.editing:
+                del self.editing[parent.id]
 
     async def guess_letter(
             self, channel, thread, ref_msg_id, letters,
             word, user_id, author_id
     ):
         # edit the hangman's embed based on guessed letter
-        if (channel is None or thread is None or
-                str(author_id) == str(user_id)):
-            return False
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
-        if (referenced_msg is None or
-                not self.valid_hangman(referenced_msg)):
-            return False
         embed = await self.game_embed(
             word,
             referenced_msg,
             letters,
             user_id,
             author_id)
-        if embed is None:
-            return False
         if r'\_' not in embed.title:
             # if is_ended, game was completed
             await thread.send('Game ended! ({})'.format(
@@ -212,9 +239,20 @@ class Hangman:
             await referenced_msg.edit(
                 embed=embed,
                 view=utils.build_view([utils.delete_button()]))
-            return True
-        await referenced_msg.edit(embed=embed)
-        return False
+        else:
+            await referenced_msg.edit(embed=embed)
+        if referenced_msg.id in self.editing:
+            x = self.editing.get(referenced_msg.id)
+            if not x or x is True:
+                del self.editing[referenced_msg.id]
+                return
+            letters = x['letters']
+            user_id = x['author_id']
+            self.editing[referenced_msg.id] = True
+            return await self.guess_letter(
+                channel, thread, ref_msg_id, letters,
+                word, user_id, author_id
+            )
 
     async def end_embed(
             self, embed, msg, user_id, word) -> utils.UtilityEmbed:
