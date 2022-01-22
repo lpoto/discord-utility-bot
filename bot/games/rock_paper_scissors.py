@@ -15,6 +15,7 @@ class RockPaperScissors:
             u'\U0001F5DE\U0000FE0F',
             u'\U00002702\U0000FE0F'
         )
+        self.default_deletion_time = 24
 
     def is_rps(self, msg, data=None, init=False) -> bool:
         # check if interaction message is a valid rock paper scissors
@@ -122,6 +123,14 @@ class RockPaperScissors:
             view=utils.build_view(components))
 
         # save the message and the first user's choice to database
+        deletion_time = await self.client.database.Config.get_option(
+            name='Hangman_deletion',
+            guild_id=msg.guild.id)
+        if not deletion_time or len(deletion_time.get('info')) == 0:
+            deletion_time = self.default_deletion_time * 3600
+        elif deletion_time:
+            deletion_time = int(deletion_time.get('info')[0]) * 3600
+        deletion_timestamp = utils.delta_seconds_timestamp(deletion_time)
         await self.client.database.Messages.add_message(
             id=new_msg.id, channel_id=new_msg.channel.id,
             type=self.__class__.__name__, info=[
@@ -129,6 +138,10 @@ class RockPaperScissors:
                     'name': 'choice1',
                     'info': button.emoji.name,
                     'user_id': user.id
+                },
+                {
+                    'name': 'deletion_time',
+                    'info': deletion_timestamp
                 }
             ]
         )
