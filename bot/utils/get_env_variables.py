@@ -2,10 +2,8 @@ import os
 import logging
 
 
-def get_required_bot_env_variables(flag):
-    keys = ('DISCORD_TOKEN', 'BOT_LOGGING')
-    if flag == 'dev':
-        keys = tuple(f'DEV_{i}' for i in keys)
+def get_required_bot_env_variables():
+    keys = ('DISCORD_TOKEN', 'CLIENT_LOGGING')
     r = []
     for k in keys:
         r.append(os.environ.get(k))

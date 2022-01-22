@@ -2,22 +2,22 @@ import os
 import logging
 
 
-def get_required_database_env_variables(flag='dev'):
+def get_required_database_env_variables():
     info = {
-        'database': None,
-        'host': None,
-        'user': None,
-        'password': None
-    }
+            'database': 'MYSQL_DATABASE',
+            'host': 'MYSQL_HOST',
+            'user': 'MYSQL_USER',
+            'password': 'MYSQL_PASSWORD'
+            }
+    logging_level_key = 'MYSQL_LOGGING'
+    return_info = {}
     no_info = False
-    for k in info.keys():
-        variable_name = k.upper() if flag != 'dev' else 'DEV_' + k.upper()
-        info[k] = os.environ.get(variable_name)
-        if not info[k]:
+    for k, v in info.items():
+        return_info[k] = os.environ.get(v)
+        if not return_info[k]:
             no_info = True
-            logging.warning(f'Missing env variable "{variable_name}"')
-    logging_level_key = 'DB_LOGGING' if flag == 'prod' else 'DEV_DB_LOGGING'
+            logging.warning(f'Missing env variable "{v}"')
     logging_level = os.environ.get(logging_level_key)
     if not logging_level:
         logging.warning(f'Missing env variable "{logging_level_key}"')
-    return None if no_info else info, logging_level
+    return None if no_info else return_info, logging_level

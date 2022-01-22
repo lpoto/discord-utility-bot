@@ -2,8 +2,41 @@
 
 - Python 3.9
 - pip 20.x
+- mysql
 
 ## Prerequisites
+
+- Create your [discord bot client](CREATING_CLIENT.md)
+
+- Create `.env` file in project's root directory and add:
+
+```
+DISCORD_TOKEN="your-discord-client-token"
+
+CLIENT_LOGGING=<0-50>
+```
+
+- Create a mysql database and add it's info to the `.env` file:
+
+```
+MYSQL_DATABASE="discord_utility_bot"
+MYSQL_HOST="localhost"
+MYSQL_USER="user"
+MYSQL_PASSWORD="password"
+
+MYSQL_LOGGING=<0-50>
+
+**NOTE**  tables and indexes on the database will be created automatically
+
+```
+
+## Running the bot in a docker container
+
+```
+docker-compose up -d
+```
+
+## Running the bot without a docker
 
 - Clone the repository and install packages:
 
@@ -13,49 +46,9 @@ cd discord-utility-bot
 pip install -r requirements.txt
 ```
 
-- Create your [discord bot client](CREATING_CLIENT.md)
-
-- Create `.env` file in project's root directory and add:
+- Run the bot
 
 ```
-DEV_DISCORD_TOKEN="your-discord-client-token"
-
-DEV_BOT_LOGGING=<0-50>
+python main.py
 ```
 
-- Create a database and add info to `.env` file:
-
-```
-DEV_DATABASE="database-name"
-DEV_HOST="host-type"
-DEV_USER="user"
-DEV_PASSWORD="your-database-password"
-
-DEV_DB_LOGGING=<0-50>
-```
-
-## Running the bot
-
-Run the following command in your bot's root directory:
-
-```
-python main.py --dev
-```
-
-or
-
-```
-python main.py --prod
-```
-
-**NOTE** drop env variables' `DEV_` prefix to run with `--prod` flag
-
-## Running the bot in a docker container
-
-```
-docker build -t discordbot .
-```
-
-```
-docker run -it -d --restart always --network="host" discordbot:latest
-```

@@ -8,9 +8,9 @@ A discord bot written in python, intended for managing smaller discord servers.
 * Adding and removing roles with button clicks,
 * hosting polls,
 * hosting games:
-	- rock-paper-scissors (deprecated),
-	- connect-four (deprecated),
-	- hangman
+	- hangman,
+	- rock-paper-scissors,
+	- connect-four (deprecated)
 * All commands available from the same, easy to use, interface
 
 For more information mention bot in the discord channel
