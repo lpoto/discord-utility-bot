@@ -94,6 +94,7 @@ class Games:
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
         await webhook.send(embed=embed_var, ephemeral=True)
+        await utils.reset_message_view(msg)
 
     @decorators.Help
     def additional_info(self):

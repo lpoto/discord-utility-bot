@@ -159,8 +159,10 @@ class UtilityClient(nextcord.Client):
     async def validate_author(self, msg, type):
         if type == 'client_mention':
             return True
+
         prev_msg = None
         author_id = None
+
         if type == 'reply':
             prev_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
@@ -174,18 +176,33 @@ class UtilityClient(nextcord.Client):
                 msg.message.id)
             author_id = msg.user.id
         elif type == 'button_click':
+
+            if ('ephemeral', True) in msg.message.flags:
+                self.logger.debug(
+                    msg='Validated author for ephemeral: {}'.format(
+                        msg.message.id
+                    ))
+                return True
+
             prev_msg = await msg.message.channel.fetch_message(
                 msg.message.id)
             author_id = msg.user.id
+        else:
+            return False
+
         msg_info = await self.database.Messages.get_message(prev_msg.id)
+
         if (author_id and not msg_info and type == 'reply'
                 and not isinstance(msg.channel, nextcord.TextChannel)):
             return True
+
         if not author_id or not msg_info:
             self.logger.debug(msg='Failed validating author: no info')
             return False
+
         self.logger.debug(msg='Validating author: {} - {}'.format(
             author_id, msg_info.get('author_id')))
+
         return (not msg_info.get('author_id') or
                 str(msg_info.get('author_id')) == str(author_id))
 
@@ -356,8 +373,12 @@ class UtilityClient(nextcord.Client):
 
         self.logger.debug(msg='Button click: ' + str(interaction.message.id))
 
-        msg = await interaction.message.channel.fetch_message(
-            interaction.message.id)
+        msg = None
+        if ('ephemeral', True) in interaction.message.flags:
+            msg = interaction.message
+        else:
+            msg = await interaction.message.channel.fetch_message(
+                interaction.message.id)
         if msg is None or len(msg.embeds) != 1:
             return
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()

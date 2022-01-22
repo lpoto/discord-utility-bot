@@ -19,12 +19,16 @@ class Hangman:
                 data['values'][0] != self.__class__.__name__):
             return
 
+        # reset the selected option in the games menu
+        await utils.reset_message_view(msg)
+
         dm = await user.create_dm()
         if not dm:
             return
 
         self.client.logger.debug(
-            msg=f'Hangman dm user {str(user.id)}')
+            msg=f'Hangman: user: {str(user.id)}, dm'
+        )
 
         dm_embed = utils.UtilityEmbed(
             color=self.color,
@@ -33,7 +37,6 @@ class Hangman:
             description='Reply with a hangman word!\nChannel: {}'.format(
                 msg.channel.id))
         await dm.send(embed=dm_embed)
-        await utils.reset_message_view(msg)
         await webhook.send('You have received a dm', ephemeral=True)
 
     def valid_hangman(self, msg, dm=False, thread=False):
@@ -95,8 +98,10 @@ class Hangman:
         await hm_message.delete(delay=deletion_time)
 
         self.client.logger.debug(
-            msg='User {} started hangman in channel {}'.format(
-                user.id, channel_id))
+            msg='Hangman: channel: {}, user: {}, started'.format(
+                channel_id, user.id
+            )
+        )
 
     def hide_word(self, word, chars):
         w2 = (' '.join(
@@ -242,9 +247,10 @@ class Hangman:
                 guild_id=msg.guild.id,
                 name=self.__class__.__name__ + '_wins',
                 info=wins)
+        name = user.name if not user.nick else user.nick
+        name = name + "'" if name[-1] == 's' else name + "'s"
         extra = '{} total wins: {}\u3000'.format(
-            user.name if not user.nick else user.nick,
-            wins)
+                name, wins)
         embed.description += '\n\n' + extra
         embed.set_type_and_version('Hangman_ended', self.client.version)
         return embed

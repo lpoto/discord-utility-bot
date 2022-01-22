@@ -1,7 +1,9 @@
 import nextcord
 
 
-def get_component(req_attr, msg: nextcord.Message, attr='custom_id'):
+def get_component(
+        req_attr, msg: nextcord.Message, attr='custom_id'
+) -> nextcord.Component:
     for component in msg.components:
         if not hasattr(component, 'children'):
             continue
@@ -11,35 +13,37 @@ def get_component(req_attr, msg: nextcord.Message, attr='custom_id'):
                 return b
 
 
-def delete_button(row: int = None):
+def delete_button(row: int = None) -> nextcord.ui.Button:
     return nextcord.ui.Button(
         style=nextcord.ButtonStyle.blurple,
         label='delete',
         row=row)
 
 
-def help_button(row: int = None):
+def help_button(row: int = None) -> nextcord.ui.Button:
     return nextcord.ui.Button(
         style=nextcord.ButtonStyle.gray,
         label='help',
         row=row)
 
 
-def back_button(row: int = None):
+def back_button(row: int = None) -> nextcord.ui.Button:
     return nextcord.ui.Button(
         style=nextcord.ButtonStyle.gray,
         label='back',
         row=row)
 
 
-def home_button(row: int = None):
+def home_button(row: int = None) -> nextcord.ui.Button:
     return nextcord.ui.Button(
         style=nextcord.ButtonStyle.gray,
         label='home',
         row=row)
 
 
-def build_view(components: list, view: nextcord.ui.View = None):
+def build_view(
+        components: list, view: nextcord.ui.View = None
+) -> nextcord.ui.View:
     if not isinstance(components, list) and not isinstance(
             components, tuple):
         components = [components]

@@ -39,11 +39,6 @@ colors = {
     'brown': 0xa5714e,
     'black': 0,
 }
-# emojis rock, paper, scissors
-rps_emojis = (
-    u'\U0001FAA8',
-    u'\U0001F5DE\U0000FE0F',
-    u'\U00002702\U0000FE0F')
 # thumbs up emoji
 thumbs_up = u'\U0001F44D'
 number_emojis = (
