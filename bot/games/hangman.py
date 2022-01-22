@@ -210,6 +210,8 @@ class Hangman:
                 return
             word = info[0].get('info')
             author_id = info[0].get('user_id')
+            if str(msg.author.id) == str(author_id):
+                return
             await self.guess_letter(
                 msg.channel.parent, msg.channel, parent.id,
                 x, word, msg.author.id, author_id)
