@@ -166,6 +166,14 @@ class UtilityClient(nextcord.Client):
         if type == 'reply':
             prev_msg = await msg.channel.fetch_message(
                 msg.reference.message_id)
+
+            if prev_msg and str(prev_msg.channel.type) == 'private':
+                self.logger.debug(
+                    msg='Validated dm reply: {}'.format(
+                        prev_msg.id
+                    ))
+                return True
+
             author_id = msg.author.id
         elif type == 'thread_message':
             prev_msg = await msg.channel.parent.fetch_message(

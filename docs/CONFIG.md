@@ -8,6 +8,13 @@
 
 - Create your [discord bot client](CREATING_CLIENT.md)
 
+- Clone the repository:
+
+```
+git clone https://github.com/potocnikluka/discord-utility-bot.git
+cd discord-utility-bot
+```
+
 - Create `.env` file in project's root directory and add:
 
 ```
@@ -33,16 +40,14 @@ MYSQL_LOGGING=<0-50>
 ## Running the bot in a docker container
 
 ```
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 ## Running the bot without a docker
 
-- Clone the repository and install packages:
+- Install packages:
 
 ```
-git clone https://github.com/potocnikluka/discord-utility-bot.git
-cd discord-utility-bot
 pip install -r requirements.txt
 ```
 
