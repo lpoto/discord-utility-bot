@@ -57,7 +57,7 @@ class UtilityClient(nextcord.Client):
                                        []).append(partial(v, command))
 
     async def call_decorated_methods(
-            self, method_type, command_name, *args):
+            self, method_type, msg, command_name, *args):
         """
         Call all command's methods with 'method_type' decorator.
         """
@@ -68,12 +68,23 @@ class UtilityClient(nextcord.Client):
         self.logger.debug(
             msg=f'Calling decorator methods: {method_type} ({command_name})')
 
+        cmd = self.commands.get(command_name)
+        if not cmd:
+            cmd = self.games.get(command_name)
+
         for method in self.decorated_methods.get(method_type
                                                  ).get(command_name):
-            if not inspect.iscoroutinefunction(method):
-                await method(*args)
+            if cmd and hasattr(cmd, 'required_queues'):
+                await self.queue.add_to_queue(
+                    f'{method_type}:{str(msg.id)}',
+                    *args,
+                    function=method
+                )
             else:
-                method(*args)
+                if not inspect.iscoroutinefunction(method):
+                    await method(*args)
+                else:
+                    method(*args)
 
     async def restart_deletion_timers(self):
         deleting = await self.database.Messages.get_messages_by_info(
@@ -278,16 +289,13 @@ class UtilityClient(nextcord.Client):
 
         self.logger.debug(msg='Reply: ' + str(msg.id))
 
-        msg = await msg.channel.fetch_message(msg.id)
-        if msg is None:
-            return
         referenced_msg = await msg.channel.fetch_message(
             msg.reference.message_id)
         if referenced_msg is None:
             return
         cmd = utils.UtilityEmbed(embed=referenced_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
-            'Reply', cmd, msg,
+            'Reply', referenced_msg, cmd, msg,
             msg.author, referenced_msg)
 
     async def on_thread_message(self, msg):
@@ -301,7 +309,7 @@ class UtilityClient(nextcord.Client):
         parent_msg = await msg.channel.parent.fetch_message(msg.channel.id)
         cmd = utils.UtilityEmbed(embed=parent_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
-            'Thread', cmd, msg, msg.author, parent_msg)
+            'Thread', parent_msg, cmd, msg, msg.author, parent_msg)
 
     def determine_interaction_type(self, interaction):
         if interaction.user.bot:
@@ -339,18 +347,7 @@ class UtilityClient(nextcord.Client):
             msg='Validated interaction of type "{}" on message {}'.format(
                 interaction_type, interaction.message.id))
 
-        # process interactions in a queue to avoid
-        # multiple or too few instances
-        if interaction_type == 'button_click':
-            await self.queue.add_to_queue(
-               "button_click:" + str(interaction.message.id),
-               interaction,
-               function=self.on_button_click)
-        elif interaction_type == 'menu_select':
-            await self.queue.add_to_queue(
-                "menu_select:" + str(interaction.message.id),
-                interaction,
-                function=self.on_menu_select)
+        self.dispatch(interaction_type, interaction)
 
     async def on_button_click(self, interaction):
         """
@@ -362,12 +359,7 @@ class UtilityClient(nextcord.Client):
 
         self.logger.debug(msg='Button click: ' + str(interaction.message.id))
 
-        msg = None
-        if ('ephemeral', True) in interaction.message.flags:
-            msg = interaction.message
-        else:
-            msg = await interaction.message.channel.fetch_message(
-                interaction.message.id)
+        msg = interaction.message
         if msg is None or len(msg.embeds) != 1:
             return
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
@@ -390,6 +382,7 @@ class UtilityClient(nextcord.Client):
             if button.label == 'back':
                 await self.call_decorated_methods(
                     'MenuSelect',
+                    msg,
                     utils.UtilityEmbed(embed=msg.embeds[0]).get_type(),
                     msg,
                     interaction.user,
@@ -405,6 +398,7 @@ class UtilityClient(nextcord.Client):
 
         await self.call_decorated_methods(
             'ButtonClick',
+            msg,
             cmd,
             msg,
             interaction.user,
@@ -488,6 +482,7 @@ class UtilityClient(nextcord.Client):
                 interaction.data['values'][0] in self.games)):
             await self.call_decorated_methods(
                 'MenuSelect',
+                msg,
                 interaction.data['values'][0],
                 msg,
                 interaction.user,
@@ -496,6 +491,7 @@ class UtilityClient(nextcord.Client):
         else:
             await self.call_decorated_methods(
                 'MenuSelect',
+                msg,
                 cmd,
                 msg,
                 interaction.user,

@@ -38,9 +38,9 @@ class Queue():
             # and continue clearing
             try:
                 if inspect.iscoroutinefunction(function):
-                    await function(*args)
-                else:
                     function(*args)
+                else:
+                    await function(*args)
             except ValueError as err:
                 if str(err) in {
                     'could not find open space for item',

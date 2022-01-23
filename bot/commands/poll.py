@@ -11,6 +11,7 @@ class Poll:
         self.description = 'Create a poll for users to vote on.'
         self.tokens = ['⚪', '⚫']
         self.default_deletion_time = 720
+        self.required_queues = {'reply', 'button_click'}
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
@@ -323,7 +324,8 @@ class Poll:
         # when a user click on a response, determine whether he already voted
         # for this response (from database)
         # if he voted remove his vote, else add another vote
-        if (button.label == 'New poll') or not self.valid_poll(msg):
+        msg = await msg.channel.fetch(msg.id)
+        if not msg or (button.label == 'New poll') or not self.valid_poll(msg):
             return
         name = self.get_response_name(button.label)
         msg_info = await self.client.database.Messages.get_message_info(
