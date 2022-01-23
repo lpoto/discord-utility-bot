@@ -343,9 +343,9 @@ class UtilityClient(nextcord.Client):
         # multiple or too few instances
         if interaction_type == 'button_click':
             await self.queue.add_to_queue(
-                "button_click:" + str(interaction.message.id),
-                interaction,
-                function=self.on_button_click)
+               "button_click:" + str(interaction.message.id),
+               interaction,
+               function=self.on_button_click)
         elif interaction_type == 'menu_select':
             await self.queue.add_to_queue(
                 "menu_select:" + str(interaction.message.id),
@@ -420,13 +420,15 @@ class UtilityClient(nextcord.Client):
 
         if msg.pinned:
             return
-        await msg.edit(content=None,
-                       embed=utils.UtilityEmbed(
-                           type='Message has been deleted.',
-                           version=self.version,
-                           color=utils.colors['green']),
-                       delete_after=2,
-                       view=None)
+        await msg.edit(
+            content=None,
+            embed=utils.UtilityEmbed(
+                type='Message has been deleted.',
+                version=self.version,
+                color=utils.colors['green']
+            ),
+            delete_after=2,
+            view=None)
 
     async def on_help_button_click(self, msg):
         """

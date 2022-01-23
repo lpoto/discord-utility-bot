@@ -9,7 +9,7 @@ class Poll:
         self.client = client
         self.color = utils.colors['green']
         self.description = 'Create a poll for users to vote on.'
-        self.tokens = [utils.circles['black'], utils.circles['white']]
+        self.tokens = ['⚪', '⚫']
         self.default_deletion_time = 720
 
     @decorators.MenuSelect

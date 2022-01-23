@@ -39,37 +39,3 @@ colors = {
     'brown': 0xa5714e,
     'black': 0,
 }
-# thumbs up emoji
-thumbs_up = u'\U0001F44D'
-number_emojis = (
-    '1️⃣',
-    '2️⃣',
-    '3️⃣',
-    '4️⃣',
-    '5️⃣',
-    '6️⃣',
-    '7️⃣'
-)
-squares = {
-    'red': '🟥',
-    'blue': '🟦',
-    'brown': '🟫',
-    'green': '🟩',
-    'yellow': '🟨',
-    'orange': '🟧',
-    'purple': '🟪',
-    'white': '⬜',
-    'black': '⬛',
-}
-circles = {
-    'red': '🔴',
-    'blue': '🔵',
-    'orange': '🟠',
-    'green': '🟢',
-    'yellow': '🟡',
-    'brown': '🟤',
-    'purple': '🟣',
-    'white': '⚪',
-    'black': '⚫'
-}
-emojis = tuple(circles.values())

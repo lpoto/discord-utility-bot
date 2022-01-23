@@ -133,8 +133,9 @@ class RockPaperScissors:
 
         # save the message and the first user's choice to database
         deletion_time = await self.client.database.Config.get_option(
-            name='Hangman_deletion',
-            guild_id=msg.guild.id)
+            name=self.__class__.__name__ + '_deletion',
+            guild_id=msg.guild.id
+        )
         if not deletion_time or len(deletion_time.get('info')) == 0:
             deletion_time = self.default_deletion_time * 3600
         elif deletion_time:
