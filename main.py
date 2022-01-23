@@ -20,7 +20,7 @@ def set_default_logging():
 
 def run_the_client(database_info, token, version, bot_logging, db_logging):
     if not token:
-        return logging.critical(msg='Missing nextcord token')
+        return logging.critical(msg='Missing a discord token')
     if not database_info:
         return logging.critical(msg='Missing database info')
     database = Database(

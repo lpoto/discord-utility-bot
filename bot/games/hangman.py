@@ -13,7 +13,12 @@ class Hangman:
         self.editing = {}
 
     @decorators.MenuSelect
-    async def get_word_from_dm(self, msg, user, data, webhook):
+    async def ask_for_word_in_dmg(self, msg, user, data, webhook):
+        """
+        Send a dm to the user who selected Hangman in the games menu.
+        User may reply to the message with a word of length <= 30, that
+        consists only of ASCII characters from a to Z, to start the game.
+        """
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
         if (embed.get_type() != 'Games' or
             'values' in data and
@@ -41,6 +46,9 @@ class Hangman:
         await webhook.send('You have received a dm', ephemeral=True)
 
     def valid_hangman(self, msg, dm=False, thread=False):
+        """
+        Determine whether the message is a valig hangman message.
+        """
         if ((not (dm ^ isinstance(msg.channel, nextcord.TextChannel) and
             not (thread and isinstance(msg.channel, nextcord.threads.Thread)))
         ) or not msg.embeds or len(msg.embeds) != 1):
@@ -50,6 +58,10 @@ class Hangman:
 
     @decorators.Reply
     async def start_new_hangman(self, msg, user, referenced_msg):
+        """
+        Send a new hangman thread to the channel after the user replied with
+        the word in a dm.
+        """
         if (not self.valid_hangman(referenced_msg, dm=True) or
                 'Channel:' not in referenced_msg.embeds[0].description):
             return
@@ -105,6 +117,9 @@ class Hangman:
         )
 
     def hide_word(self, word, chars):
+        """
+        Replace characters in the word that were not yet guessed with _
+        """
         w2 = (' '.join(
             c if c in chars else r'\_' for c in i
         ) for i in word.split())
@@ -113,7 +128,9 @@ class Hangman:
     async def game_embed(
             self, word, msg=None, new_chars=None, user_id=None, author_id=None
     ) -> utils.UtilityEmbed:
-        # create an embed for the current state of the game
+        """
+        Create an embed for the current state of the game.
+        """
         embed = None
         chars = set()
         phase = 0
@@ -167,6 +184,9 @@ class Hangman:
 
     @decorators.Thread
     async def guesses_from_thread(self, msg, author, parent):
+        """
+        Add guesses from the game's thread to the game's results.
+        """
         # all users except the one who started the game
         # can guess letters in a game's thread
         if (not parent or
@@ -223,6 +243,10 @@ class Hangman:
             self, channel, thread, ref_msg_id, letters,
             word, user_id, author_id
     ):
+        """
+        Add guessed letters to the game's results, multiple letters
+        may be guessed at once, separated with spaces.
+        """
         # edit the hangman's embed based on guessed letter
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
         embed = await self.game_embed(
@@ -258,6 +282,9 @@ class Hangman:
 
     async def end_embed(
             self, embed, msg, user_id, word) -> utils.UtilityEmbed:
+        """
+        Create an embed based on the results of the game.
+        """
         # an embed once the game ends
         # show whether the user who started the game won or lost
         # if he won and database is connected, show his total wins
@@ -296,7 +323,10 @@ class Hangman:
         return embed
 
     def picture(self, phase=0, guessed_chars=[]) -> dict:
-        # recursively build build the game phase
+        """
+        Recursively build the hangman image shown for the current state
+        of the game.
+        """
         phases = {
             1: (1, '\u2000│/' + 7 * '\u2000' + '|'),
             2: (2, '\u2000│' + 8 * '\u2000' + '0'),

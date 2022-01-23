@@ -18,8 +18,10 @@ class RockPaperScissors:
         self.default_deletion_time = 24
 
     def is_rps(self, msg, data=None, init=False) -> bool:
-        # check if interaction message is a valid rock paper scissors
-        # message
+        """
+        Determine whether an interaction message is a valid
+        rock, paper,scissors message.
+        """
         if (len(msg.embeds) != 1):
             return False
         # if "init", we are checking Games menu, else rps message
@@ -34,8 +36,10 @@ class RockPaperScissors:
 
     @decorators.MenuSelect
     async def start_the_game(self, msg, user, data, webhook):
-        # when rps is selected in games menu send an ephemeral message
-        # in which the first user can make his choice
+        """
+        Start a game of rock paper scissors, selected from the games menu.
+        Allow the first user to choose in an ephemeral message.
+        """
 
         if not self.is_rps(msg=msg, data=data, init=True):
             return
@@ -61,6 +65,10 @@ class RockPaperScissors:
 
     @decorators.ButtonClick
     async def user_selection(self, msg, user, button, webhook):
+        """
+        Add a user's choice to the game. Determine whether the user is
+        first or second to join, a player cannot play with himself.
+        """
         # if message is ephemeral, it means the first user is making his choice
         # if the message is not ephemeral, the first user has already chosen
         # and the second user, that is not the same as the first user, must
@@ -82,9 +90,10 @@ class RockPaperScissors:
             await self.second_user_selection(button, msg, user, webhook)
 
     async def first_user_selection(self, button, msg, user, webhook):
-        # first user picked his choice, send a new message to the channel
-        # where another user can pick his choice. Save the first user's choice
-        # to database, so the winner can be determined later
+        """
+        Save the first user's choice to database and send a new
+        message to the channel where another user can join the game.
+        """
 
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
 
@@ -101,7 +110,7 @@ class RockPaperScissors:
             type=self.__class__.__name__ + '_selected',
             version=self.client.version
         )
-        embed.description = ''
+        embed.description = f'You picked {button.emoji.name}'
         await webhook.edit_message(
             message_id=msg.id,
             embed=msg.embeds[0],
@@ -147,6 +156,9 @@ class RockPaperScissors:
         )
 
     async def second_user_selection(self, button, msg, user, webhook):
+        """
+        Determine a game's result based on 2nd user's choice.
+        """
         # Both users have selected their choices.
         # get the info from database and determine winner, save the winner's
         # wins to database
@@ -224,6 +236,10 @@ class RockPaperScissors:
         await msg.edit(embed=embed, view=utils.build_view(components))
 
     async def update_wins(self, user_id, guild_id) -> int:
+        """
+        Increment a user's wins in the database by 1 and return the
+        the new win count.
+        """
         wins = await self.client.database.Users.get_user_info(
             id=int(user_id),
             guild_id=guild_id,
@@ -247,6 +263,9 @@ class RockPaperScissors:
         return wins
 
     def winner(self, user1_id, option1, user2_id, option2) -> dict:
+        """
+        Determine the game's winner from the selected options
+        """
         # if options are equal or any option is invalid, return a draw
         if any(
                 not i for i in {user1_id, option1, user2_id, option2}

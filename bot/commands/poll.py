@@ -15,6 +15,11 @@ class Poll:
     @decorators.MenuSelect
     @decorators.CheckPermissions
     async def start_command(self, msg, user, data, webhook):
+        """
+        Edit the main menu message to a main poll menu message
+        when a user selects Poll in a dropdown.
+        Check if user is allowed to start a poll before editing.
+        """
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
         if (embed.get_type() not in {
             self.client.default_type, self.__class__.__name__}
@@ -40,6 +45,10 @@ class Poll:
     @decorators.ButtonClick
     @decorators.CheckPermissions
     async def send_empty_poll_to_channel(self, msg, user, button, webhook):
+        """
+        Send a new empty poll after it has been initialized in the main
+        poll menu.
+        """
         if (button.label != 'New poll' or
                 msg.embeds[0].title and
                 msg.embeds[0].title != self.description):
@@ -94,10 +103,11 @@ class Poll:
     @decorators.Reply
     @decorators.CheckPermissions
     async def manage_poll_info(self, msg, user, poll_msg):
-        # add or remove responses
-        # fix poll -> no more responses can be added or removed
-        # end poll -> button clicks don't work anymore
-        # but you can still select the response in dropdown to see who voted
+        """
+        Add or remove responses to the poll,
+        change the poll's question, fix the poll so no more responses
+        may be added or removed, or end the poll completely.
+        """
         if not self.valid_poll(poll_msg):
             return
         # many options may be added at once separated with ";"
@@ -123,6 +133,10 @@ class Poll:
                 raise ValueError(err)
 
     async def add_poll_info(self, channel, poll_msg_id, option):
+        """
+        Add a new options(reply, question, fix, end) to the poll,
+        multiple options may be added at once, separated with ;.
+        """
         # if reply does not contain any of the keywords
         # add a response to the poll, else
         # do whatever it is supposed to do
@@ -159,9 +173,17 @@ class Poll:
             await self.end_poll(poll_msg)
 
     def get_response_name(self, text) -> str:
+        """
+        Trim the whitespace, emojis and response count from the
+        response's button label.
+        """
         return text.split('\u3000')[1].strip()
 
     def format_response_name(self, name, count, token) -> str:
+        """
+        Add whitespace and a valid number of tokens to the response's
+        button label, so all the responses align.
+        """
         name = '({})\u3000{}\u3000'.format(
             count, '{:\u2000<25}'.format(name.center(15, '\u2000')))
         if count > 80 - len(name):
