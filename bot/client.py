@@ -414,15 +414,7 @@ class UtilityClient(nextcord.Client):
 
         if msg.pinned:
             return
-        await msg.edit(
-            content=None,
-            embed=utils.UtilityEmbed(
-                type='Message has been deleted.',
-                version=self.version,
-                color=utils.colors['green']
-            ),
-            delete_after=2,
-            view=None)
+        await msg.delete()
 
     async def on_help_button_click(self, msg):
         """

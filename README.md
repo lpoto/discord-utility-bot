@@ -26,6 +26,7 @@ For more information mention bot in the discord channel
 * Send Messages
 * Read Message History
 * Manage Roles (adding and removing roles with buttons)
+* Create Public Threads
 	
 ## using the code
 
