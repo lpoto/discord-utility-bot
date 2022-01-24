@@ -1,5 +1,4 @@
 import os
-import inspect
 import sys
 import traceback
 import nextcord
@@ -92,10 +91,7 @@ class UtilityClient(nextcord.Client):
                 self.logger.debug(
                     f'Calling {command_name}.{method_type}'
                 )
-                if not inspect.iscoroutinefunction(method):
-                    await method(*args)
-                else:
-                    method(*args)
+                await method(*args)
 
     async def validate_author(
             self, msg_id, user_id, info=False
@@ -517,7 +513,7 @@ class UtilityClient(nextcord.Client):
             return
 
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
-        if cmd == self.default_type:
+        if cmd == self.default_type or cmd == 'Games':
             cmd = interaction.data['values'][0]
 
         await self.call_decorated_methods(
