@@ -159,10 +159,12 @@ class Poll:
                 not self.valid_poll(poll_msg, fixed=option != 'end')):
             return
         opts = option.split(';')
-        q = tuple(filter(lambda x: x.strip().startswith('question '), opts))
-        f = tuple(filter(lambda x: x.strip() == 'fix', opts))
-        e = tuple(filter(lambda x: x.strip() == 'end', opts))
-        rm = tuple(filter(lambda x: x.strip().startswith('remove '), opts))
+        q = tuple(filter(lambda x: x.strip().lower().startswith('question '),
+                         opts))
+        f = tuple(filter(lambda x: x.strip().lower() == 'fix', opts))
+        e = tuple(filter(lambda x: x.strip().lower() == 'end', opts))
+        rm = tuple(filter(lambda x: x.strip().lower().startswith('remove '),
+                          opts))
         r = tuple(filter(
             lambda x: (x not in q and x not in f and x not in rm and
                        x not in e and len(x) > 0), opts))
@@ -242,7 +244,7 @@ class Poll:
             text='No more responses can be added or removed.')
 
     async def change_question(self, poll_msg, option):
-        option = option.replace('question ', '', 1)
+        option = option.replace(option.split()[0], '', 1).strip()
         if len(option) >= 60:
             await utils.warn(
                 poll_msg.channel,
