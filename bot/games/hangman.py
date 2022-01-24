@@ -43,7 +43,10 @@ class Hangman:
             description='Reply with a hangman word!\nChannel: {}'.format(
                 msg.channel.id))
         await dm.send(embed=dm_embed)
-        await webhook.send('You have received a dm', ephemeral=True)
+        await webhook.send(
+            'You have received a private message!',
+            ephemeral=True
+        )
 
     def valid_hangman(self, msg, dm=False, thread=False):
         """
@@ -83,7 +86,9 @@ class Hangman:
 
         embed.description = word
         embed.set_type_and_version('Hangman_word', self.client.version)
-        utility_embed = await self.game_embed(word)
+        utility_embed = await self.game_embed(
+            word=word, author_id=user.id, guild=channel.guild
+        )
         await referenced_msg.edit(embed=embed)
         hm_message = await channel.send(embed=utility_embed)
         deletion_time = await self.client.database.Config.get_option(
@@ -126,7 +131,8 @@ class Hangman:
         return '\u3000'.join(w2)
 
     async def game_embed(
-            self, word, msg=None, new_chars=None, user_id=None, author_id=None
+            self, word, author_id, msg=None,
+            new_chars=None, user_id=None, guild=None
     ) -> utils.UtilityEmbed:
         """
         Create an embed for the current state of the game.
@@ -179,7 +185,13 @@ class Hangman:
                 msg=msg,
                 user_id=author_id,
                 word=word)
-        embed.description += '\n\nGuess the word in this message\'s thread!'
+        author = guild.get_member(int(author_id))
+        embed.description += '\n\n{}\n\n{}'.format(
+            'Guess the word in this message\'s thread!',
+            'Started by **{}**'.format(
+                author.name if not author.nick else author.nick
+            )
+        )
         return embed
 
     @decorators.Thread
@@ -251,10 +263,11 @@ class Hangman:
         referenced_msg = await channel.fetch_message(int(ref_msg_id))
         embed = await self.game_embed(
             word,
+            author_id,
             referenced_msg,
             letters,
             user_id,
-            author_id)
+            referenced_msg.guild)
         if r'\_' not in embed.title:
             # if is_ended, game was completed
             await thread.send('Game ended! ({})'.format(
@@ -292,7 +305,7 @@ class Hangman:
         embed.title = word
         if not user:
             return embed
-        embed.description = '{} wins!\n\n{}'.format(
+        embed.description = '**{}** wins!\n\n{}'.format(
             user.name if not user.nick else user.nick,
             embed.description)
         wins = await self.client.database.Users.get_user_info(
@@ -316,7 +329,7 @@ class Hangman:
                 info=wins)
         name = user.name if not user.nick else user.nick
         name = name + "'" if name[-1] == 's' else name + "'s"
-        extra = '{} total wins: {}\u3000'.format(
+        extra = '**{}** total wins: {}\u3000'.format(
                 name, wins)
         embed.description += '\n\n' + extra
         embed.set_type_and_version('Hangman_ended', self.client.version)

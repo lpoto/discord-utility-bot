@@ -45,6 +45,8 @@ class UtilityEmbed():
     def set_type_and_version(self, type: str, version: str) -> None:
         """Set type and version in the embed's footer text"""
         t = '@'
+        if not version:
+            version = 'dev'
         if type is not None:
             t += type
         spacer = (61 - len(t) - len(version)) * '\u2000'
