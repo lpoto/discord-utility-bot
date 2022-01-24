@@ -10,6 +10,7 @@ class Roles:
         self.color = utils.colors['blue']
         self.description = 'Add or remove roles with button clicks.'
         self.risky_labels = {'delete', 'help', 'home', 'back'}
+        self.author_check = {'MenuSelect', 'DeleteButton'}
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
@@ -41,6 +42,9 @@ class Roles:
         if (button.label != 'New roles message' or
                 msg.embeds[0].title and
                 msg.embeds[0].title != self.description):
+            return
+
+        if await self.client.validate_author(msg.id, user.id) is False:
             return
 
         self.client.logger.debug(msg=f'New roles message: {str(msg.id)}')

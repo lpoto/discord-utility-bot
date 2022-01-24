@@ -9,9 +9,11 @@ class Games:
         self.client = client
         self.color = utils.colors['yellow']
         self.description = 'A menu for starting games and seeing leaderboards.'
+        self.delete_button_author_check = True
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
+    @decorators.ValidateAuthor
     async def send_game_menu_to_channel(self, msg, user, data, webhook):
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
         if (embed.get_type() not in {
@@ -51,8 +53,6 @@ class Games:
             utils.delete_button()
         ]
         await msg.edit(embed=embed, view=utils.build_view(components))
-        await self.client.database.Messages.update_message_author(
-            id=msg.id, author_id=None)
 
     @decorators.MenuSelect
     async def send_leaderboard(self, msg, user, data, webhook):

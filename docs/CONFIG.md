@@ -32,10 +32,9 @@ MYSQL_USER="user"
 MYSQL_PASSWORD="password"
 
 MYSQL_LOGGING=<0-50>
+```
 
 **NOTE**  tables and indexes on the database will be created automatically
-
-```
 
 ## Running the bot in a docker container
 

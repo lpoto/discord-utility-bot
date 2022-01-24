@@ -3,17 +3,17 @@ import nextcord
 import bot.decorators as decorators
 import bot.utils as utils
 
-# TODO
-
 
 class Config:
     def __init__(self, client):
         self.client = client
         self.color = utils.colors['red']
         self.description = "Manage bot's configurations in this server."
+        self.delete_button_author_check = True
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
+    @decorators.ValidateAuthor
     async def edit_message_to_config_message(self, msg, user, data, webhook):
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
         if (embed.title and 'values' in data or
@@ -70,6 +70,7 @@ class Config:
                 (title is not None and embed.title == title))
 
     @decorators.MenuSelect
+    @decorators.ValidateAuthor
     async def modify_from_dropdown(self, msg, user, data, webhook):
         if not self.valid_config(msg):
             return

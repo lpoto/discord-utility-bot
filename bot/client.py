@@ -57,7 +57,8 @@ class UtilityClient(nextcord.Client):
                                        []).append(partial(v, command))
 
     async def call_decorated_methods(
-            self, method_type, msg, command_name, *args):
+            self, method_type, msg, command_name, *args
+    ):
         """
         Call all command's methods with 'method_type' decorator.
         """
@@ -65,26 +66,53 @@ class UtilityClient(nextcord.Client):
                 command_name not in self.decorated_methods.get(method_type)):
             return
 
-        self.logger.debug(
-            msg=f'Calling decorator methods: {method_type} ({command_name})')
-
         cmd = self.commands.get(command_name)
         if not cmd:
             cmd = self.games.get(command_name)
 
         for method in self.decorated_methods.get(method_type
                                                  ).get(command_name):
-            if cmd and hasattr(cmd, 'required_queues'):
+            if cmd and hasattr(cmd, 'required_queues') and (
+                    method_type in cmd.required_queues
+            ):
+                self.logger.debug(
+                    'Adding {}.{} to queue: {}'.format(
+                        command_name, method_type,
+                        f'{method_type}:{str(msg.id)}'
+                    )
+                )
                 await self.queue.add_to_queue(
                     f'{method_type}:{str(msg.id)}',
                     *args,
                     function=method
                 )
             else:
+                self.logger.debug(
+                    f'Calling {command_name}.{method_type}'
+                )
                 if not inspect.iscoroutinefunction(method):
                     await method(*args)
                 else:
                     method(*args)
+
+    async def validate_author(
+            self, msg_id, user_id, info=False
+    ) -> dict or False:
+        """
+        Returns False if user_id does not match the msg's author.
+        Returns msg_info from database if ids match.
+        """
+        if not msg_id or not user_id:
+            return False
+        msg_info = await self.database.Messages.get_message(
+            id=msg_id,
+            info=info
+        )
+        if msg_info.get('author_id') and str(user_id) != str(
+                msg_info.get('author_id')
+        ):
+            return False
+        return msg_info
 
     async def restart_deletion_timers(self):
         deleting = await self.database.Messages.get_messages_by_info(
@@ -167,68 +195,23 @@ class UtilityClient(nextcord.Client):
             msg.channel.permissions_for(msg.guild.me).create_public_threads
         )
 
-    async def validate(self, msg, type):
-        if not type or (type not in {'reply', 'thread_message'} and
-                        not isinstance(msg.channel, nextcord.TextChannel)):
-            return False
-        if (type == 'client_mention' or type in {'reply', 'thread_message'}
-                and not isinstance(msg.channel, nextcord.TextChannel)):
-            return True
-
-        prev_msg = None
-        author_id = None
-
-        if type == 'reply':
-            prev_msg = await msg.channel.fetch_message(
-                msg.reference.message_id)
-            author_id = msg.author.id
-        elif type == 'thread_message':
-            prev_msg = await msg.channel.parent.fetch_message(
-                msg.channel.id)
-            author_id = msg.author.id
-        elif type == 'menu_select':
-            prev_msg = await msg.message.channel.fetch_message(
-                msg.message.id)
-            author_id = msg.user.id
-        elif type == 'button_click':
-
-            if ('ephemeral', True) in msg.message.flags:
-                return True
-
-            prev_msg = await msg.message.channel.fetch_message(
-                msg.message.id)
-            author_id = msg.user.id
-        else:
-            return False
-
-        msg_info = await self.database.Messages.get_message(prev_msg.id)
-
-        if (author_id and not msg_info and type in {'reply', 'thread_message'}
-                and not isinstance(msg.channel, nextcord.TextChannel)):
-            return True
-
-        if not msg_info or not author_id:
-            return True
-
-        if not author_id:
-            return False
-
-        return (not msg_info.get('author_id') or
-                str(msg_info.get('author_id')) == str(author_id))
-
     async def on_message(self, msg):
         if not self.ready or not self.check_client_permissions(msg):
             return
+
         # determine the type of message
         msg_type = self.determine_msg_type(msg)
-        # check if message is valid and user has the permissions to modify
-        # the message
-        if not await self.validate(msg, msg_type):
+
+        # check if message is valid
+        if not msg_type or (
+            msg_type not in {'reply', 'thread_message'} and
+                not isinstance(msg.channel, nextcord.TextChannel)
+        ):
             return
 
         self.logger.debug(
-            msg='Validated message of type "{}" with id {}'.format(
-                msg_type, msg.id))
+            msg=f'Message: type: "{msg_type}", id {str(msg.id)}'
+        )
 
         self.dispatch(msg_type, msg)
 
@@ -295,8 +278,8 @@ class UtilityClient(nextcord.Client):
             return
         cmd = utils.UtilityEmbed(embed=referenced_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
-            'Reply', referenced_msg, cmd, msg,
-            msg.author, referenced_msg)
+            'Reply', referenced_msg, cmd, referenced_msg,
+            msg.author, msg)
 
     async def on_thread_message(self, msg):
         """
@@ -324,8 +307,14 @@ class UtilityClient(nextcord.Client):
         Determine type of interaction and trigger "on_button_click"
         or "on_menu_select" events.
         """
-        if not self.ready or not self.check_client_permissions(
-                interaction.message):
+        if (
+                not self.ready or not self.check_client_permissions(
+                interaction.message) or
+                not isinstance(
+                    interaction.message.channel,
+                    nextcord.TextChannel
+                )
+        ):
             return
         try:
             # defer interaction response to avoid
@@ -338,14 +327,13 @@ class UtilityClient(nextcord.Client):
         interaction_type = self.determine_interaction_type(interaction)
         if not interaction_type:
             return
-        valid_interaction = await self.validate(
-            interaction, interaction_type)
-        if not valid_interaction:
-            return
 
         self.logger.debug(
-            msg='Validated interaction of type "{}" on message {}'.format(
-                interaction_type, interaction.message.id))
+            msg='Interaction: type: "{}", message_id: {}'.format(
+                interaction_type,
+                interaction.message.id
+            )
+        )
 
         self.dispatch(interaction_type, interaction)
 
@@ -365,6 +353,7 @@ class UtilityClient(nextcord.Client):
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
         if not cmd:
             return
+
         button = utils.get_component(interaction.data['custom_id'], msg)
         if not button:
             return
@@ -373,11 +362,19 @@ class UtilityClient(nextcord.Client):
         if button.label in ['delete', 'help', 'home', 'back']:
             # delete message if deletable
             if button.label == 'delete':
-                self.dispatch('delete_button_click', msg)
+                self.dispatch(
+                    'delete_button_click',
+                    msg,
+                    interaction.user
+                )
                 return
             # show help about the current stage of the interface
             if button.label == 'help':
-                self.dispatch('help_button_click', msg)
+                self.dispatch(
+                    'help_button_click',
+                    msg,
+                    interaction.user
+                )
                 return
             if button.label == 'back':
                 await self.call_decorated_methods(
@@ -389,8 +386,17 @@ class UtilityClient(nextcord.Client):
                     interaction.data,
                     interaction.followup)
                 return
+
             # return to main menu
             if button.label == 'home':
+                member = msg.guild.get_member(interaction.user.id)
+                if (
+                        not msg.channel.permissions_for(member).administrator
+                        and await self.validate_author(
+                            msg.id, member.id
+                        ) is False
+                ):
+                    return
                 await self.database.Messages.update_message_author(
                     id=msg.id, author_id=interaction.user.id)
                 self.dispatch('client_mention', msg, interaction.user.id)
@@ -405,10 +411,36 @@ class UtilityClient(nextcord.Client):
             button,
             interaction.followup)
 
-    async def on_delete_button_click(self, msg):
+    async def on_delete_button_click(self, msg, user):
         """
-        If the message is not pinned, delete it
+        If the message is not pinned, delete it.
+        Check if author is required based on message type.
         """
+        if not msg or not user:
+            return
+        member = msg.guild.get_member(user.id)
+        if (
+                not msg.channel.permissions_for(member).manage_messages and
+                len(msg.embeds) == 1
+        ):
+            # main menu can only be deleted by the author of the message
+            # or members with manage_messages permission
+            embed = utils.UtilityEmbed(embed=msg.embeds[0])
+            type = embed.get_type()
+            if type == self.default_type and await self.validate_author(
+                    msg.id, user.id
+            ) is False:
+                return
+            # check if message_type requires author check
+            # on delete button click
+            cmd = (self.commands.get(type) if type in self.commands
+                   else self.games.get(type))
+            if (
+                cmd and hasattr(cmd, 'delete_button_author_check') and
+                cmd.delete_button_author_check and
+                    await self.validate_author(msg.id, user.id) is False
+            ):
+                return
 
         self.logger.debug(msg='Delete button: ' + str(msg.id))
 
@@ -416,11 +448,26 @@ class UtilityClient(nextcord.Client):
             return
         await msg.delete()
 
-    async def on_help_button_click(self, msg):
+    async def on_help_button_click(self, msg, user):
         """
         Edit the message into a help message, based
         on message's type.
         """
+        if not msg or not user:
+            return
+        member = msg.guild.get_member(user.id)
+        if (
+                not msg.channel.permissions_for(member).administrator and
+                len(msg.embeds) == 1
+        ):
+            # main menu help can only be user by the author of the message
+            # or members with administrator permission
+            embed = utils.UtilityEmbed(embed=msg.embeds[0])
+            type = embed.get_type()
+            if type == self.default_type and await self.validate_author(
+                    msg.id, user.id
+            ) is False:
+                return
 
         self.logger.debug(msg='Help button: ' + str(msg.id))
 
@@ -468,6 +515,7 @@ class UtilityClient(nextcord.Client):
             return
 
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
+
         if (interaction.data and interaction.data.get('values') and
                 len(interaction.data['values']) > 0 and (
                 cmd == self.default_type or

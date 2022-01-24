@@ -11,10 +11,10 @@ class Poll:
         self.description = 'Create a poll for users to vote on.'
         self.tokens = ['⚪', '⚫']
         self.default_deletion_time = 720
-        self.required_queues = {'reply', 'button_click'}
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
+    @decorators.ValidateAuthor
     async def start_command(self, msg, user, data, webhook):
         """
         Edit the main menu message to a main poll menu message
@@ -26,6 +26,9 @@ class Poll:
             self.client.default_type, self.__class__.__name__}
                 or 'values' in data and
                 data['values'][0] != self.__class__.__name__):
+
+            if self.valid_poll(msg, partial_ended=True):
+                return await self.show_response_info(msg, user, data, webhook)
             return
 
         self.client.logger.debug(msg=f'Poll main menu: {str(msg.id)}')
@@ -44,17 +47,27 @@ class Poll:
         await msg.edit(embed=embed, view=utils.build_view(components))
 
     @decorators.ButtonClick
+    async def determine_button_click_type(self, msg, user, button, webhook):
+        if (
+                button.label == 'New poll' and
+                msg.embeds[0].title and
+                msg.embeds[0].title == self.description
+        ):
+            await self.send_empty_poll_to_channel(
+                msg, user, button, webhook
+            )
+        elif self.valid_poll(msg):
+            await self.add_remove_response(
+                msg, user, button, webhook
+            )
+
     @decorators.CheckPermissions
+    @decorators.ValidateAuthor
     async def send_empty_poll_to_channel(self, msg, user, button, webhook):
         """
         Send a new empty poll after it has been initialized in the main
         poll menu.
         """
-        if (button.label != 'New poll' or
-                msg.embeds[0].title and
-                msg.embeds[0].title != self.description):
-            return
-
         self.client.logger.debug(msg=f'New poll: {str(msg.id)}')
 
         # send a poll with only question added
@@ -103,7 +116,7 @@ class Poll:
 
     @decorators.Reply
     @decorators.CheckPermissions
-    async def manage_poll_info(self, msg, user, poll_msg):
+    async def manage_poll_info(self, poll_msg, user, msg):
         """
         Add or remove responses to the poll,
         change the poll's question, fix the poll so no more responses
@@ -319,14 +332,11 @@ class Poll:
                 poll_msg.channel,
                 text='Removed: `{}`'.format(', '.join(removed)))
 
-    @decorators.ButtonClick
     async def add_remove_response(self, msg, user, button, webhook):
         # when a user click on a response, determine whether he already voted
         # for this response (from database)
         # if he voted remove his vote, else add another vote
-        msg = await msg.channel.fetch(msg.id)
-        if not msg or (button.label == 'New poll') or not self.valid_poll(msg):
-            return
+        msg = await msg.channel.fetch_message(msg.id)
         name = self.get_response_name(button.label)
         msg_info = await self.client.database.Messages.get_message_info(
             msg.id, name=name)
@@ -366,11 +376,7 @@ class Poll:
             await self.client.database.Messages.add_message_info(
                 msg.id, name=name, user_id=user.id)
 
-    @decorators.MenuSelect
-    @decorators.CheckPermissions
     async def show_response_info(self, msg, user, data, webhook):
-        if not self.valid_poll(msg, partial_ended=True):
-            return
         # when selecting one of the responses in a dropdown,
         # see the number of votes and the users who voted
         name = data['values'][0]

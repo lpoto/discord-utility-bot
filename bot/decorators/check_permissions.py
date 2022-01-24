@@ -4,22 +4,29 @@ from functools import wraps
 
 
 async def check_permissions(*args):
-    if (len(args) < 3 or
-            not isinstance(args[1], nextcord.Message) or
-            not isinstance(args[2], nextcord.Member)):
-        return True
-    cmd, msg, user = args[0], args[1], args[2]
+    try:
+        if (len(args) < 3 or
+                not isinstance(args[1], nextcord.Message) or
+                not isinstance(args[2], nextcord.Member)):
+            return True
+        cmd, msg, user = args[0], args[1], args[2]
 
-    if msg.channel.permissions_for(user).administrator:
-        return True
+        if not cmd or not msg or not user:
+            return False
 
-    required_roles = await cmd.client.database.Config.get_option(
-        guild_id=msg.guild.id, name=cmd.__class__.__name__)
-    if (required_roles):
-        required_roles = required_roles.get('info')
-    user_roles = {str(x.name) for x in user.roles}
-    return (not required_roles or len(required_roles) == 0 or
-            any(i in user_roles for i in required_roles))
+        if msg.channel.permissions_for(user).administrator:
+            return True
+
+        required_roles = await cmd.client.database.Config.get_option(
+            guild_id=msg.guild.id, name=cmd.__class__.__name__)
+
+        if (required_roles):
+            required_roles = required_roles.get('info')
+        user_roles = {str(x.name) for x in user.roles}
+        return (not required_roles or len(required_roles) == 0 or
+                any(i in user_roles for i in required_roles))
+    except Exception:
+        return True
 
 
 def CheckPermissions(func):
@@ -30,6 +37,44 @@ def CheckPermissions(func):
     @wraps(func)
     async def wrapper(*args):
         if not await check_permissions(*args):
+            return
+        if not inspect.iscoroutinefunction(func):
+            return func(*args)
+        return await func(*args)
+    return wrapper
+
+
+async def validate_author(*args):
+    try:
+        if (len(args) < 3 or
+                not isinstance(args[1], nextcord.Message) or
+                not isinstance(args[2], nextcord.Member)):
+            return True
+        cmd, msg, user = args[0], args[1], args[2]
+
+        if not cmd or not msg or not user:
+            return False
+
+        if msg.channel.permissions_for(user).administrator:
+            return True
+
+        client = cmd.client
+        msg_info = await client.database.Messages.get_message(
+            id=msg.id
+        )
+        if msg_info and msg_info.get('author_id'):
+            if str(msg_info.get('author_id')) != str(user.id):
+                return False
+        return True
+
+    except Exception:
+        return True
+
+
+def ValidateAuthor(func):
+    @wraps(func)
+    async def wrapper(*args):
+        if not await validate_author(*args):
             return
         if not inspect.iscoroutinefunction(func):
             return func(*args)

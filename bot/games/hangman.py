@@ -60,7 +60,7 @@ class Hangman:
         return embed.get_type() == self.__class__.__name__
 
     @decorators.Reply
-    async def start_new_hangman(self, msg, user, referenced_msg):
+    async def start_new_hangman(self, referenced_msg, user, msg):
         """
         Send a new hangman thread to the channel after the user replied with
         the word in a dm.

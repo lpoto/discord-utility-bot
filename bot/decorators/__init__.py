@@ -5,3 +5,4 @@ from bot.decorators.reference import Reference
 from bot.decorators.reply import Reply
 from bot.decorators.thread import Thread
 from bot.decorators.check_permissions import CheckPermissions
+from bot.decorators.check_permissions import ValidateAuthor
