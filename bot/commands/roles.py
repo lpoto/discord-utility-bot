@@ -9,18 +9,19 @@ class Roles:
         self.client = client
         self.color = utils.colors['blue']
         self.description = 'Add or remove roles with button clicks.'
-        self.risky_labels = {'delete', 'help', 'home', 'back'}
         self.author_check = {'MenuSelect', 'DeleteButton'}
 
     @decorators.MenuSelect
-    @decorators.CheckPermissions
-    async def start_command(self, msg, user, data, webhook):
+    async def determine_menu_select_type(self, msg, user, data, webhook):
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
-        if (embed.get_type() not in {
-            self.client.default_type, self.__class__.__name__}
-                or 'values' in data and
-                data['values'][0] != self.__class__.__name__):
-            return
+        type = embed.get_type()
+        if type == self.client.default_type:
+            await self.start_command(msg, user)
+        if self.valid_roles_message(msg):
+            await self.add_roles_to_embed(msg, user, data, webhook)
+
+    @decorators.CheckPermissions
+    async def start_command(self, msg, user):
 
         self.client.logger.debug(msg=f'Roles main menu: {str(msg.id)}')
 
@@ -80,11 +81,7 @@ class Roles:
         for r in msg.guild.roles:
             x = await self.valid_role(role=r, msg=msg)
             if x:
-                name = x.name
-                if name in self.risky_labels:
-                    guild_roles.append('_' + name)
-                else:
-                    guild_roles.append(name)
+                guild_roles.append(x.name)
         guild_roles = guild_roles[::-1]
         options = []
         for i in range(start, end):
@@ -93,7 +90,7 @@ class Roles:
             options.append(nextcord.SelectOption(label=guild_roles[i]))
         x = 'Select roles'
         if start > 0 or len(guild_roles) > end:
-            x = 'Select roles (page {})'.format(start // 21 + 1)
+            x = 'Select roles (page {})'.format(start // 25 + 1)
         components = [
             nextcord.ui.Select(
                 placeholder=x,
@@ -110,13 +107,10 @@ class Roles:
                 label='page {} of roles'.format((start // 25) + 2)))
         return embed, components
 
-    @decorators.MenuSelect
     @decorators.CheckPermissions
     async def add_roles_to_embed(self, msg, user, data, webhook):
         # add the selected roles from the dropdown to the description
         # when commiting, these roles will turn into buttons
-        if not self.valid_roles_message(msg):
-            return
 
         self.client.logger.debug(
             msg=f'Changing roles in message: {str(msg.id)}')
@@ -195,8 +189,6 @@ class Roles:
             return
         # if user has the role remove it, else add the role
         r = button.label
-        if r[0] == '_' and r[1:] in self.risky_labels:
-            r = r[1:]
         role = await self.valid_role(
             role_name=r, msg=msg)
         if role is None:

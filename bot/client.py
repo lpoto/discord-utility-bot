@@ -14,7 +14,9 @@ import bot.utils as utils
 
 
 class UtilityClient(nextcord.Client):
-    """Client connection handling events recieved from Discord."""
+    """
+    Client connection handling events recieved from Discord.
+    """
 
     def __init__(self, *, version, database, log_level, **options):
         super().__init__(**options)
@@ -82,8 +84,8 @@ class UtilityClient(nextcord.Client):
                     )
                 )
                 await self.queue.add_to_queue(
-                    f'{method_type}:{str(msg.id)}',
                     *args,
+                    f'{method_type}:{str(msg.id)}',
                     function=method
                 )
             else:
@@ -383,7 +385,7 @@ class UtilityClient(nextcord.Client):
                     utils.UtilityEmbed(embed=msg.embeds[0]).get_type(),
                     msg,
                     interaction.user,
-                    interaction.data,
+                    '@back_button_click',
                     interaction.followup)
                 return
 
@@ -515,28 +517,17 @@ class UtilityClient(nextcord.Client):
             return
 
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
+        if cmd == self.default_type:
+            cmd = interaction.data['values'][0]
 
-        if (interaction.data and interaction.data.get('values') and
-                len(interaction.data['values']) > 0 and (
-                cmd == self.default_type or
-                interaction.data['values'][0] in self.games)):
-            await self.call_decorated_methods(
-                'MenuSelect',
-                msg,
-                interaction.data['values'][0],
-                msg,
-                interaction.user,
-                interaction.data,
-                interaction.followup)
-        else:
-            await self.call_decorated_methods(
-                'MenuSelect',
-                msg,
-                cmd,
-                msg,
-                interaction.user,
-                interaction.data,
-                interaction.followup)
+        await self.call_decorated_methods(
+            'MenuSelect',
+            msg,
+            cmd,
+            msg,
+            interaction.user,
+            interaction.data,
+            interaction.followup)
 
     async def on_raw_message_delete(self, msg):
         # clean up message's info from database when deleted

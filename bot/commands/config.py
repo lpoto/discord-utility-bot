@@ -8,57 +8,54 @@ class Config:
     def __init__(self, client):
         self.client = client
         self.color = utils.colors['red']
-        self.description = "Manage bot's configurations in this server."
+        self.description = "Manage which roles are allowed to use a command"
         self.delete_button_author_check = True
 
     @decorators.MenuSelect
+    async def determine_menu_type(self, msg, user, data, webhook):
+        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        type = embed.get_type()
+        if (
+                type == self.client.default_type or
+                type == self.__class__.__name__ and data and
+                data == '@back_button_click'
+        ):
+            await self.edit_message_to_config_message(msg, user)
+        elif (
+                type == self.__class__.__name__ and
+                data and 'values' in data and len(data['values']) > 0
+        ):
+            if data['values'][0] in self.client.commands:
+                await self.command_selection(msg, user, data['values'][0])
+            else:
+                await self.roles_selection(msg, user, data['values'])
+
     @decorators.CheckPermissions
     @decorators.ValidateAuthor
-    async def edit_message_to_config_message(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
-        if (embed.title and 'values' in data or
-            embed.get_type() not in {
-                self.client.default_type, self.__class__.__name__}
-                or 'values' in data and
-                data['values'][0] != self.__class__.__name__):
-            return
+    async def edit_message_to_config_message(self, msg, user):
 
         self.client.logger.debug(msg=f'Config menu: {str(user.id)}')
 
-        info = self.general_embed
-        await msg.edit(embed=info[0], view=utils.build_view(info[1]))
-
-    @property
-    def options(self) -> dict:
-        return {
-            'roles': (
-                'Which roles are allowed to use a command.',
-                self.roles_embed
-            ),
-            'Deletion time': (
-                'Time before the auto-deleting messages are deleted.',
-                self.deletion_time_embed
-            ),
-        }
-
-    @property
-    def general_embed(self) -> utils.UtilityEmbed:
-        embed_var = utils.UtilityEmbed(
+        embed = utils.UtilityEmbed(
+            title='Select a command to modify the roles allowed to use it',
             description='',
-            color=self.color,
-            type=self.__class__.__name__,
-            version=self.client.version)
-        opts = self.options
-        options = [nextcord.SelectOption(
-            label=k, description=v[0]) for k, v in opts.items()]
+            version=self.client.version,
+            type=self.__class__.__name__
+        )
+        options = [
+            nextcord.SelectOption(
+                label=k, description=v.description)
+            for k, v in self.client.commands.items()
+        ]
         components = [
             nextcord.ui.Select(
-                placeholder='Select an option', options=options),
-            utils.home_button(4),
-            utils.help_button(4),
-            utils.delete_button(4)
+                placeholder='Select a command',
+                options=options),
+            utils.home_button(),
+            utils.help_button(),
+            utils.delete_button(),
         ]
-        return (embed_var, components)
+        await msg.edit(embed=embed, view=utils.build_view(components))
 
     def valid_config(self, msg, title=None):
         if len(msg.embeds) != 1:
@@ -69,61 +66,173 @@ class Config:
         return ((title is None and not embed.title) or
                 (title is not None and embed.title == title))
 
-    @decorators.MenuSelect
+    @decorators.CheckPermissions
     @decorators.ValidateAuthor
-    async def modify_from_dropdown(self, msg, user, data, webhook):
-        if not self.valid_config(msg):
+    async def command_selection(self, msg, user, command):
+
+        self.client.logger.debug(
+            msg=f'Config for {command} in server: {str(msg.guild.id)}'
+        )
+
+        embed = msg.embeds[0]
+        embed.title = command
+
+        required_roles = await self.client.database.Config.get_option(
+            guild_id=msg.guild.id, name=self.__class__.__name__)
+
+        if required_roles and required_roles.get('info'):
+            embed.description = ', '.join(
+                [f'`{i}`' for i in required_roles.get('info')]
+            )
+        else:
+            embed.description = ''
+
+        await msg.edit(embed=embed, view=utils.build_view(
+            self.get_role_dropdown_components(msg, 0, 25, command)
+        ))
+
+    def get_role_dropdown_components(self, msg, i, j, command) -> list:
+        options = []
+        buttons = []
+        if i > 0:
+            buttons.append(nextcord.ui.Button(
+                label=f"page {str(i // 25)} of roles")
+            )
+        idx = 0
+        guild_roles = msg.guild.roles[::-1]
+        for r in guild_roles:
+            if idx >= i:
+                if r.is_default():
+                    continue
+                if idx >= j:
+                    buttons.append(
+                        nextcord.ui.Button(
+                            label="page {} of roles".format(
+                                (i // 25) + 2
+                            )
+                        ))
+                    break
+                options.append(nextcord.SelectOption(label=r.name))
+            idx += 1
+        label = f"Select roles for {command}"
+        if i > 0:
+            label += f' (page {str(i // 25 + 1)})'
+        components = [
+            nextcord.ui.Select(
+                placeholder=label,
+                options=options,
+                max_values=len(options) if len(options) <= 20 else 20,
+            )
+        ] + buttons
+        components += [
+            utils.back_button(),
+            nextcord.ui.Button(label='clear'),
+            nextcord.ui.Button(label='commit')
+        ]
+        return components
+
+    @decorators.CheckPermissions
+    @decorators.ValidateAuthor
+    async def roles_selection(self, msg, user, roles):
+        embed = msg.embeds[0]
+        new_roles = set(roles)
+        desc_roles = set()
+        if embed.description and len(embed.description) > 2:
+            desc_roles = set(
+                i[1:][:-1] for i in embed.description.split(', ')
+            )
+        roles_to_remove = new_roles.intersection(desc_roles)
+        new_roles = new_roles.union(desc_roles).difference(roles_to_remove)
+        embed.description = ', '.join([f'`{i}`' for i in new_roles])
+        await msg.edit(embed=embed)
+
+    @decorators.ButtonClick
+    async def determine_button_type(self, msg, user, button, webhook):
+        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        if embed.get_type() != self.__class__.__name__:
+            return
+        label = button.label
+        if label == 'clear':
+            await self.clear_roles(msg, user)
+        elif label == 'commit':
+            await self.commit_roles(msg, user, webhook)
+        elif label.startswith('page '):
+            try:
+                page = (int(label.split()[1].strip()) - 1) * 25
+                await self.change_roles_page(
+                    msg, user, page, page + 25
+                )
+            except Exception:
+                return
+
+    @decorators.CheckPermissions
+    @decorators.ValidateAuthor
+    async def clear_roles(self, msg, user):
+        msg.embeds[0].description = ''
+        await msg.edit(embed=msg.embeds[0])
+
+    @decorators.CheckPermissions
+    @decorators.ValidateAuthor
+    async def change_roles_page(self, msg, user, i, j):
+        await msg.edit(
+            view=utils.build_view(
+                self.get_role_dropdown_components(
+                    msg, i, j, msg.embeds[0].title)
+            )
+        )
+
+    @decorators.CheckPermissions
+    @decorators.ValidateAuthor
+    async def commit_roles(self, msg, user, webhook):
+        if len(msg.embeds) != 1 or not msg.embeds[0].title:
+            return
+        if (
+                not msg.embeds[0].description or
+                len(msg.embeds[0].description) < 3
+        ):
+            await self.client.database.Config.delete_option(
+                guild_id=msg.guild.id, name=msg.embeds[0].title
+            )
+
+            self.client.logger.debug(
+                msg='Removed required roles: command: {}, guild: {}'.format(
+                    msg.embeds[0].title,
+                    msg.guild.id
+                )
+            )
+            await webhook.send(
+                f'Removed roles for {msg.embeds[0].title}',
+                ephemeral=True
+            )
+
             return
 
-        name = data['values'][0]
-        for k, v in self.options.items():
-            if k == name:
-                self.client.logger.debug(
-                    msg='Selected config option {} on message {}'.format(
-                        name, msg.id))
-
-                return await v[1](name, msg)
-
-    async def deletion_time_embed(self, label, msg):
-        embed = msg.embeds[0]
-        embed.title = label
-        embed.description = (
-            'Select a message type to modify its deletion time.'
-        )
-        options = [nextcord.SelectOption(
-            label=k) for k in self.client.default_deletion_times.keys()]
-        components = [
-            nextcord.ui.Select(
-                placeholder='Select a type of message.',
-                options=options),
-            utils.back_button(),
-            utils.delete_button(),
+        roles = [
+            i[1:][:-1] for i in msg.embeds[0].description.split(', ')
         ]
-        await msg.edit(embed=embed, view=utils.build_view(components))
-
-    async def roles_embed(self, label, msg):
-        embed = msg.embeds[0]
-        embed.title = label
-        embed.description = (
-            'Select a command to modify the roles allowed to use it.'
+        await self.client.database.Config.add_option(
+            guild_id=msg.guild.id,
+            name=msg.embeds[0].title,
+            info=roles
         )
-        options = []
-        for k, v in self.client.commands.items():
-            if k in self.risky_labels:
-                k = '_' + k
-            options.append(nextcord.SelectOption(
-                label=k, description=v.description))
-        components = [
-            nextcord.ui.Select(
-                placeholder='Select a command',
-                options=options),
-            utils.back_button(),
-            utils.delete_button(),
-        ]
-        await msg.edit(embed=embed, view=utils.build_view(components))
+        self.client.logger.debug(
+            msg='Changed required roles: command: {}, guild: {}'.format(
+                msg.embeds[0].title,
+                msg.guild.id
+            )
+        )
+
+        await webhook.send(
+            'Changed roles for {} to `{}`'.format(
+                msg.embeds[0].title, ', '.join(roles)
+            ),
+            ephemeral=True
+        )
 
     @decorators.Help
     def additional_info(self):
         return '\n'.join((
-            '* Select an option you want to modify',
-            '* Selected option will provide more info.'))
+            '* Select a command in a dropdown.',
+            '* For the selected command, select the roles in a dropdown.'
+            '* Selected roles will be allowed to use those commands.'
+        ))

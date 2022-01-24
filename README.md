@@ -10,15 +10,14 @@ A discord bot written in python, intended for managing smaller discord servers.
 * hosting games:
 	- hangman,
 	- rock-paper-scissors,
-	- connect-four (deprecated)
+	- connect-four
 * All commands available from the same, easy to use, interface
 
 For more information mention bot in the discord channel
 
 ## customizable
 
-* which roles are allowed to use a command (deprecated),
-* time before the messages of certain type are deleted (deprecated)
+* which roles are allowed to use a command
 
 ## required permissions
 

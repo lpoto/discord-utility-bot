@@ -14,17 +14,24 @@ async def check_permissions(*args):
         if not cmd or not msg or not user:
             return False
 
+        cmd.client.logger.debug(
+            'Checking permissions: user: {}, message: {}'.format(
+                user.id,
+                msg.id
+            )
+        )
+
         if msg.channel.permissions_for(user).administrator:
             return True
 
         required_roles = await cmd.client.database.Config.get_option(
             guild_id=msg.guild.id, name=cmd.__class__.__name__)
 
-        if (required_roles):
-            required_roles = required_roles.get('info')
-        user_roles = {str(x.name) for x in user.roles}
-        return (not required_roles or len(required_roles) == 0 or
-                any(i in user_roles for i in required_roles))
+        if required_roles and required_roles.get('info'):
+            required_roles = set(required_roles.get('info'))
+        user_roles = set(str(x.name) for x in user.roles)
+
+        return len(required_roles.intersection(user_roles)) > 0
     except Exception:
         return True
 
@@ -54,6 +61,13 @@ async def validate_author(*args):
 
         if not cmd or not msg or not user:
             return False
+
+        cmd.client.logger.debug(
+            'Validating author: user: {}, message: {}'.format(
+                user.id,
+                msg.id
+            )
+        )
 
         if msg.channel.permissions_for(user).administrator:
             return True
