@@ -15,6 +15,7 @@ class ConnectFour:
         self.numbers = tuple(('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣'))
         self.numbers_set = set(self.numbers)
         self.default_deletion_time = 24
+        self.delete_button_author_check = True
 
     def is_cf(self, msg, data=None, init=False) -> bool:
         """
@@ -54,6 +55,7 @@ class ConnectFour:
         # build view (buttons) with connect four tokens
         components = [nextcord.ui.Button(emoji=i) for i in self.tokens]
         components[0].style = nextcord.ButtonStyle.green
+        components.append(utils.delete_button())
 
         view = utils.build_view(components)
         if view is None:
@@ -83,11 +85,13 @@ class ConnectFour:
         elif deletion_time:
             deletion_time = int(deletion_time.get('info')[0]) * 3600
         deletion_timestamp = utils.delta_seconds_timestamp(deletion_time)
+
         # save to database
         await self.client.database.Messages.add_message(
             id=m.id,
             channel_id=m.channel.id,
             type=self.__class__.__name__,
+            author_id=user.id,
             info=[
                 {
                     'name': 'cf_choice',
@@ -189,12 +193,20 @@ class ConnectFour:
             lambda i: str(i.get('name')) == 'cf_choice',
             msg_info.get('info')
         ))
+        author_id = None if len(x) == 0 else x[0].get('user_id')
+
+        await self.client.database.Messages.update_message_author(
+            id=msg.id,
+            author_id=author_id
+        )
+
         if len(x) == 2:
             embed.title = 'Click "start" button to start the game'
             components.append(
                 nextcord.ui.Button(
                     label='Start', style=nextcord.ButtonStyle.blurple)
             )
+        components.append(utils.delete_button())
 
         await msg.edit(embed=embed, view=utils.build_view(components))
 

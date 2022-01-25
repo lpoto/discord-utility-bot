@@ -11,6 +11,7 @@ class Hangman:
         self.description = 'A guessing game for two or more players'
         self.default_deletion_time = 24
         self.editing = {}
+        self.delete_button_author_check = True
 
     @decorators.MenuSelect
     async def ask_for_word_in_dmg(self, msg, user, data, webhook):
@@ -102,7 +103,9 @@ class Hangman:
             deletion_time = int(deletion_time.get('info')[0]) * 3600
         deletion_timestamp = utils.delta_seconds_timestamp(deletion_time)
         await self.client.database.Messages.add_message(
-            id=hm_message.id, channel_id=hm_message.channel.id,
+            id=hm_message.id,
+            channel_id=hm_message.channel.id,
+            author_id=user.id,
             type=self.__class__.__name__, info=[
                 {
                     'name': 'hangman_word',
@@ -315,6 +318,11 @@ class Hangman:
             guild_id=msg.guild.id,
             name=self.__class__.__name__ + '_wins'
         )
+
+        await self.client.database.Messages.update_message_author(
+            id=msg.id, author_id=user_id
+        )
+
         if not wins:
             await self.client.database.Users.add_user_info(
                 int(user_id),

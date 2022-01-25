@@ -429,7 +429,7 @@ class UtilityClient(nextcord.Client):
             # main menu can only be deleted by the author of the message
             # or members with manage_messages permission
             embed = utils.UtilityEmbed(embed=msg.embeds[0])
-            type = embed.get_type()
+            type = embed.get_type().split('_')[0]
             if type == self.default_type and await self.validate_author(
                     msg.id, user.id
             ) is False:
