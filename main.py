@@ -21,16 +21,19 @@ def run_the_client(database_info, token, version, bot_logging, db_logging):
         return logging.critical(msg='Missing a discord token')
     if not database_info:
         return logging.critical(msg='Missing database info')
+
     database = MySQL(
         info=database_info,
         log_level=db_logging)
     if not database or not database.connected:
         return logging.critical('Could not connect to database!')
+
     client = UtilityClient(
         intents=nextcord.Intents.all(),
         version=version,
         database=database,
-        log_level=bot_logging)
+        log_level=bot_logging,
+    )
     client.run(token=token, reconnect=True)
 
 

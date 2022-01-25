@@ -22,15 +22,15 @@ class UtilityClient(nextcord.Client):
         self.version = version
         self.logger = logging.getLogger('utility_client')
         self.logger.setLevel(logging.INFO if not log_level else int(log_level))
-        self.ready = False
+        self.queue = utils.Queue(self)
         self.database = database
         self.commands = {}
         self.games = {}
         self.decorated_methods = {}
-        self.queue = utils.Queue(self)
         self.default_type = 'Hello world!'
         self.back_button_click = '@back_button_click'
         self.default_deletion_times = {}
+        self.ready = False
 
     def __initialize_commands__(self, cmds, cmds_dict):
         # fill commands/games dictionary with all commands objects

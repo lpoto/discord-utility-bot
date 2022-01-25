@@ -1,4 +1,5 @@
 import nextcord
+import math
 
 import bot.decorators as decorators
 import bot.utils as utils
@@ -17,7 +18,7 @@ class Hangman:
     async def ask_for_word_in_dmg(self, msg, user, data, webhook):
         """
         Send a dm to the user who selected Hangman in the games menu.
-        User may reply to the message with a word of length <= 30, that
+        User may reply to the message with a word of length <= 40, that
         consists only of ASCII characters from a to Z, to start the game.
         """
         embed = utils.UtilityEmbed(embed=msg.embeds[0])
@@ -50,7 +51,7 @@ class Hangman:
 
     def valid_hangman(self, msg, dm=False, thread=False):
         """
-        Determine whether the message is a valig hangman message.
+        Determine whether the message is a valid hangman message.
         """
         if ((not (dm ^ isinstance(msg.channel, nextcord.TextChannel) and
             not (thread and isinstance(msg.channel, nextcord.threads.Thread)))
@@ -73,15 +74,18 @@ class Hangman:
         channel = self.client.get_channel(channel_id)
         if not channel:
             return
-        word = msg.content.strip().upper()
-        if len(word) > 30:
+
+        word = ' '.join(msg.content.strip().upper().split())
+
+        if len(word) > 40:
             await msg.reply(
-                'Hangman word cannot be longer than 30 characters.')
+                'Hangman word cannot be longer than 40 characters.')
             return
-        if any((ord(c) > 90 or ord(c) < 65) and ord(c) != 32 for c in word):
+        if all((ord(c) > 90 or ord(c) < 65) for c in word):
             await msg.reply(
-                'Hangman word can only include spaces and ' +
-                'ASCII characters from 65 to 90 (case insensitive)')
+                'Hangman word must include at least 1 ASCII character'
+                + 'from a to Z (case insensitive)'
+            )
             return
 
         embed.description = word
@@ -128,7 +132,12 @@ class Hangman:
         Replace characters in the word that were not yet guessed with _
         """
         w2 = (' '.join(
-            c if c in chars else r'\_' for c in i
+            c if (
+                c in chars or
+                ord(c) == 32 or
+                ord(c) > 90 or ord(c) < 65
+            )
+            else r'\_' for c in i
         ) for i in word.split())
         return '\u3000'.join(w2)
 
