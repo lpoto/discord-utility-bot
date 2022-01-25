@@ -26,9 +26,6 @@ class Hangman:
                 data['values'][0] != self.__class__.__name__):
             return
 
-        # reset the selected option in the games menu
-        await utils.reset_message_view(msg)
-
         dm = await user.create_dm()
         if not dm:
             return

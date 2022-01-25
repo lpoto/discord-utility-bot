@@ -45,9 +45,6 @@ class ConnectFour:
         if not self.is_cf(msg=msg, data=data, init=True):
             return
 
-        # reset games menu selected dropdown option
-        await utils.reset_message_view(msg)
-
         self.client.logger.debug(
             msg=f'ConnectFour user: {str(user.id)}, token: {self.tokens[0]}'
         )

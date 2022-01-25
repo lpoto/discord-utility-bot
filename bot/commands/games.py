@@ -12,17 +12,37 @@ class Games:
         self.delete_button_author_check = True
 
     @decorators.MenuSelect
+    async def determine_menu_select_type(self, msg, user, data, webhook):
+        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        type = embed.get_type()
+        if (
+                type not in {
+                    self.__class__.__name__,
+                    self.client.default_type
+                } or
+                'values' not in data or len(data) < 1
+        ):
+            return
+        name = data['values'][0]
+        if name == self.__class__.__name__:
+            await self.send_game_menu_to_channel(msg, user)
+        elif ' - leaderboard' in name:
+            name = name.replace(' - leaderboard', '', 1).strip()
+            await self.send_leaderboard(msg, user, name, webhook)
+            await utils.reset_message_view(msg)
+        elif name in self.client.games:
+            await self.client.call_menu_select_methods(
+                msg, name, user, data, webhook
+            )
+            await utils.reset_message_view(msg)
+
     @decorators.CheckPermissions
     @decorators.ValidateAuthor
-    async def send_game_menu_to_channel(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
-        if (embed.get_type() not in {
-            self.client.default_type, self.__class__.__name__}
-                or 'values' in data and
-                data['values'][0] != self.__class__.__name__):
-            return
+    async def send_game_menu_to_channel(self, msg, user):
 
-        self.client.logger.debug(msg=f'Games main menu: {str(msg.id)}')
+        self.client.logger.debug(
+            msg=f'Games: message: {str(msg.id)}, main menu'
+        )
 
         embed = utils.UtilityEmbed(
             type=self.__class__.__name__,
@@ -54,28 +74,27 @@ class Games:
         ]
         await msg.edit(embed=embed, view=utils.build_view(components))
 
-    @decorators.MenuSelect
-    async def send_leaderboard(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
-        if (embed.get_type() != self.__class__.__name__ or
-                'values' not in data or
-                ' - leaderboard' not in data['values'][0]):
-            return
-        name = data['values'][0].split(' - ')[0]
-
+    async def send_leaderboard(self, msg, user, name, webhook):
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg='Games: guild: {}, leaderboard: {}'.format(
+                    msg.guild.id, name
+                )
+            )
         fetched = await self.client.database.Users.get_info(
             guild_id=msg.guild.id, name=name + '_wins')
-        if fetched is None or len(fetched) == 0:
-            return
 
-        self.client.logger.debug(
-            msg='Leaderboard for {} in guild {}'.format(
-                name, msg.guild.id))
+        if fetched is None or len(fetched) == 0:
+            await webhook.send(
+                f'No leaderboard data for {name} in this server',
+                ephemeral=True
+            )
+            return
 
         embed_var = utils.UtilityEmbed(
             type=self.__class__.__name__,
             version=self.client.version,
-            title=data['values'][0],
+            title=name,
             color=utils.random_color())
         users = {}
         for i in fetched:
@@ -94,7 +113,6 @@ class Games:
                 name='{}.  {}'.format(i, name), value=w, inline=False)
             i += 1
         await webhook.send(embed=embed_var, ephemeral=True)
-        await utils.reset_message_view(msg)
 
     @decorators.Help
     def additional_info(self):

@@ -518,16 +518,25 @@ class UtilityClient(nextcord.Client):
             return
 
         cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
-        if cmd == self.default_type or cmd == 'Games':
+        if cmd == self.default_type:
             cmd = interaction.data['values'][0]
+        if cmd:
+            await self.call_menu_select_methods(
+                msg,
+                cmd,
+                interaction.user,
+                interaction.data,
+                interaction.followup
+            )
 
+    async def call_menu_select_methods(self, msg, cmd, user, data, webhook):
         await self.call_decorated_methods(
             'MenuSelect',
             cmd,
             msg,
-            interaction.user,
-            interaction.data,
-            interaction.followup,
+            user,
+            data,
+            webhook,
             msg=msg
         )
 
