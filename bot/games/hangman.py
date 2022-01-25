@@ -38,6 +38,7 @@ class Hangman:
             )
 
         dm_embed = utils.UtilityEmbed(
+            title=self.__class__.__name__ + f' game in {msg.guild.name}',
             color=self.color,
             type=self.__class__.__name__,
             version=self.client.version,
