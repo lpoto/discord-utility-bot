@@ -544,7 +544,10 @@ class UtilityClient(nextcord.Client):
     async def on_raw_message_delete(self, msg):
         # clean up message's info from database when deleted
 
-        self.logger.debug(msg='Deleting message: ' + str(msg.message_id))
+        if self.logger.level < 10:
+            self.logger.debug(
+                msg='Deleting message: ' + str(msg.message_id)
+            )
 
         await self.database.Messages.delete_message(id=msg.message_id)
 

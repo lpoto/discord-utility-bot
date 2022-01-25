@@ -4,7 +4,6 @@ import nextcord
 from bot.utils.embed_wrapper import UtilityEmbed
 import bot.commands as commands
 import bot.games as games
-from bot.utils.channel_notifications import notify, warn
 
 not_deletable_types = set(C.__name__ for C in commands.__dict__.values()
                           if isinstance(C, type)).union(
@@ -38,5 +37,4 @@ async def bulk_delete(msg, count, logger):
         return
     logger.debug(msg=f'Bulk deleting {c} messages')
     purged = len(await msg.channel.purge(limit=c, check=purge_filter)) - 1
-    await notify(msg.channel, text=f"Deleted {purged} messages.")
     logger.debug(msg=f'Bulk deleted {purged} messages')
