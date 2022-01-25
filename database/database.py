@@ -4,7 +4,7 @@ from mysql.connector import pooling, Error, PoolError
 import database.services as services
 
 
-class Database:
+class MySQL:
     def __init__(self, info, log_level):
         self.logger = logging.getLogger('database')
         self.logger.setLevel(logging.INFO if not log_level else int(log_level))

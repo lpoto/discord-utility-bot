@@ -19,20 +19,24 @@ class Games:
                 type not in {
                     self.__class__.__name__,
                     self.client.default_type
-                } or
-                'values' not in data or len(data) < 1
+                }
         ):
             return
-        name = data['values'][0]
-        if name == self.__class__.__name__:
+        if (
+                data == self.client.back_button_click or
+                'values' in data and len(data['values']) > 0 and
+                data['values'][0] == self.__class__.__name__
+        ):
             await self.send_game_menu_to_channel(msg, user)
-        elif ' - leaderboard' in name:
-            name = name.replace(' - leaderboard', '', 1).strip()
+        elif 'values' not in data or len(data['values']) < 1:
+            return
+        elif ' - leaderboard' in data['values'][0]:
+            name = data['values'][0].replace(' - leaderboard', '', 1).strip()
             await self.send_leaderboard(msg, user, name, webhook)
             await utils.reset_message_view(msg)
-        elif name in self.client.games:
+        elif data['values'][0] in self.client.games:
             await self.client.call_menu_select_methods(
-                msg, name, user, data, webhook
+                msg, data['values'][0], user, data, webhook
             )
             await utils.reset_message_view(msg)
 

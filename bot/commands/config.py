@@ -18,7 +18,7 @@ class Config:
         if (
                 type == self.client.default_type or
                 type == self.__class__.__name__ and data and
-                data == '@back_button_click'
+                data == self.client.back_button_click
         ):
             await self.edit_message_to_config_message(msg, user)
         elif (

@@ -29,6 +29,7 @@ class UtilityClient(nextcord.Client):
         self.decorated_methods = {}
         self.queue = utils.Queue(self)
         self.default_type = 'Hello world!'
+        self.back_button_click = '@back_button_click'
         self.default_deletion_times = {}
 
     def __initialize_commands__(self, cmds, cmds_dict):
@@ -383,7 +384,7 @@ class UtilityClient(nextcord.Client):
                     utils.UtilityEmbed(embed=msg.embeds[0]).get_type(),
                     msg,
                     interaction.user,
-                    '@back_button_click',
+                    self.back_button_click,
                     interaction.followup,
                     msg=msg
                 )
