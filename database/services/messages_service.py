@@ -14,9 +14,6 @@ class Messages:
                 ],
                 'constraints': [
                     'PRIMARY KEY (id)',
-                ],
-                'indexes': [
-                    'channel_id'
                 ]
             },
             'message_info': {

@@ -23,6 +23,9 @@ DISCORD_TOKEN="your-discord-client-token"
 CLIENT_LOGGING=<0-50>
 ```
 
+**NOTE** client logging 5 (all debugs), 10 (most of debugs), 20 (info), 
+30 (warnings), 40 (errors), 50 (critical)
+
 - Create a mysql database and add it's info to the `.env` file:
 
 ```

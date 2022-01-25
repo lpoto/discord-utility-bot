@@ -48,7 +48,9 @@ class Roles:
         if await self.client.validate_author(msg.id, user.id) is False:
             return
 
-        self.client.logger.debug(msg=f'New roles message: {str(msg.id)}')
+        self.client.logger.debug(
+            msg=f'Roles: message: {str(msg.id)}, new message'
+        )
 
         # send a message to the channel, containing the
         # information on how to add roles to the message
@@ -112,8 +114,10 @@ class Roles:
         # add the selected roles from the dropdown to the description
         # when commiting, these roles will turn into buttons
 
-        self.client.logger.debug(
-            msg=f'Changing roles in message: {str(msg.id)}')
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Roles: message: {str(msg.id)}, changing roles'
+            )
 
         embed = msg.embeds[0]
         if not embed.description or embed.description[0] != '`':
@@ -147,8 +151,10 @@ class Roles:
         if (button.label == 'reset' and embed.description and
                 len(embed.description) > 0):
 
-            self.client.logger.debug(
-                msg='Resetting roles in message: ' + str(msg.id))
+            if self.client.logger.level < 10:
+                self.client.logger.debug(
+                    msg=f'Roles: message: {str(msg.id)}, reset'
+                )
 
             # clear all roles from description
             embed.description = nextcord.Embed.Empty
@@ -161,8 +167,10 @@ class Roles:
             if not embed.description:
                 return
 
-            self.client.logger.debug(
-                msg='Commiting roles in message: ' + str(msg.id))
+            if self.client.logger.level < 10:
+                self.client.logger.debug(
+                    msg=f'Roles: message: {str(msg.id)}, commit'
+                )
 
             components = [
                 nextcord.ui.Button(
@@ -176,7 +184,14 @@ class Roles:
         # if page in button, switch pages of roles (when there are over 25
         # addable roles)
         if button.label.startswith('page '):
-            x = int(button.label.replace('page ', '', 1).split()[0]) - 1
+            x = int(button.label.replace('page ', '', 1).split()[0])
+
+            if self.client.logger.level < 10:
+                self.client.logger.debug(
+                    msg=f'Roles: message: {str(msg.id)}, roles page: {x}'
+                )
+
+            x += 1
             info = await self.starting_embed(
                 msg, x * 25, x * 25 + 25, embed)
             await msg.edit(embed=info[0], view=utils.build_view(info[1]))
@@ -195,9 +210,12 @@ class Roles:
             return
         rl = user.get_role(role.id)
 
-        self.client.logger.debug(
-            msg='Add role {} to user {}: {}'.format(
-                role.id, user.id, rl is None))
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg='Roles: role: {}, user: {}, add: {}'.format(
+                    role.id, user.id, rl is None
+                )
+            )
 
         txt = None
         # notify the user about the added or removed role
@@ -222,7 +240,9 @@ class Roles:
                 referenced_msg.embeds[0].description):
             return
 
-        self.client.logger.debug(msg='Reediting roles message: ' + str(msg.id))
+        self.client.logger.debug(
+            msg=f'Roles: message: {str(msg.id)}, reedit'
+        )
 
         x = []
         embed = referenced_msg.embeds[0]

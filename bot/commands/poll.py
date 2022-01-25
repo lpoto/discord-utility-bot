@@ -11,6 +11,7 @@ class Poll:
         self.description = 'Create a poll for users to vote on.'
         self.tokens = ['⚪', '⚫']
         self.default_deletion_time = 720
+        self.required_queues = {'Reply', 'ButtonClick'}
 
     @decorators.MenuSelect
     @decorators.CheckPermissions
@@ -129,7 +130,10 @@ class Poll:
         if not msg.content or len(msg.content) < 1:
             return
 
-        self.client.logger.debug(msg=f'Changing poll info: {str(poll_msg.id)}')
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Changing poll info: {str(poll_msg.id)}'
+            )
 
         try:
             await self.add_poll_info(
@@ -209,6 +213,12 @@ class Poll:
         return '{}{}'.format(name, (80 - len(name)) * '\u3000')
 
     async def add_responses(self, poll_msg, options):
+
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Adding responses to poll: {str(poll_msg.id)}'
+            )
+
         components = [nextcord.ui.Button(
             label=i.label,
             custom_id=i.custom_id,
@@ -237,7 +247,15 @@ class Poll:
         await poll_msg.edit(view=utils.build_view(components))
 
     async def fix_poll(self, poll_msg):
-        # no more responses can be added or removed
+        """
+        no more responses can be added or removed
+        """
+
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Fixing poll: {str(poll_msg.id)}'
+            )
+
         await poll_msg.edit(content='`Fixed`')
         await utils.notify(
             poll_msg.channel,
@@ -245,6 +263,12 @@ class Poll:
 
     async def change_question(self, poll_msg, option):
         option = option.replace(option.split()[0], '', 1).strip()
+
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Change question on poll: {str(poll_msg.id)}'
+            )
+
         if len(option) >= 60:
             await utils.warn(
                 poll_msg.channel,
@@ -262,6 +286,12 @@ class Poll:
         components = []
         equals = []
         max_len = 0
+
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'End poll: {str(poll_msg.id)}'
+            )
+
         for i in sum([i.children for i in poll_msg.components], []):
             if not isinstance(i, nextcord.Button):
                 components.append(
@@ -344,9 +374,12 @@ class Poll:
             msg.id, name=name)
         add = all(i.get('user_id') != user.id for i in msg_info)
 
-        self.client.logger.debug(
-            msg='Adding vote on poll {} for user {}: {}'.format(
-                msg.id, user.id, add))
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg='Poll vote: msg: {}, user: {}, add: {}'.format(
+                    msg.id, user.id, add
+                )
+            )
 
         responses_count = len(msg_info) + (1 if add else -1)
         components = []
@@ -387,8 +420,10 @@ class Poll:
         if users is None or len(users) == 0:
             return
 
-        self.client.logger.debug(
-            msg=f'Sending response info for poll {str(msg.id)}')
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Sending response info for poll {str(msg.id)}'
+            )
 
         embed = nextcord.Embed(
             title=name,

@@ -32,9 +32,10 @@ class Hangman:
         if not dm:
             return
 
-        self.client.logger.debug(
-            msg=f'Hangman: user: {str(user.id)}, dm'
-        )
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Hangman: user: {str(user.id)}, dm'
+            )
 
         dm_embed = utils.UtilityEmbed(
             color=self.color,

@@ -58,7 +58,7 @@ class UtilityClient(nextcord.Client):
                                        []).append(partial(v, command))
 
     async def call_decorated_methods(
-            self, method_type, msg, command_name, *args
+            self, method_type, command_name, *args, msg
     ):
         """
         Call all command's methods with 'method_type' decorator.
@@ -83,8 +83,8 @@ class UtilityClient(nextcord.Client):
                     )
                 )
                 await self.queue.add_to_queue(
-                    *args,
                     f'{method_type}:{str(msg.id)}',
+                    *args,
                     function=method
                 )
             else:
@@ -276,8 +276,9 @@ class UtilityClient(nextcord.Client):
             return
         cmd = utils.UtilityEmbed(embed=referenced_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
-            'Reply', referenced_msg, cmd, referenced_msg,
-            msg.author, msg)
+            'Reply', cmd, referenced_msg,
+            msg.author, msg, msg=referenced_msg
+        )
 
     async def on_thread_message(self, msg):
         """
@@ -290,7 +291,9 @@ class UtilityClient(nextcord.Client):
         parent_msg = await msg.channel.parent.fetch_message(msg.channel.id)
         cmd = utils.UtilityEmbed(embed=parent_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
-            'Thread', parent_msg, cmd, msg, msg.author, parent_msg)
+            'Thread', cmd, msg, msg.author,
+            parent_msg, msg=parent_msg
+        )
 
     def determine_interaction_type(self, interaction):
         if interaction.user.bot:
@@ -377,12 +380,13 @@ class UtilityClient(nextcord.Client):
             if button.label == 'back':
                 await self.call_decorated_methods(
                     'MenuSelect',
-                    msg,
                     utils.UtilityEmbed(embed=msg.embeds[0]).get_type(),
                     msg,
                     interaction.user,
                     '@back_button_click',
-                    interaction.followup)
+                    interaction.followup,
+                    msg=msg
+                )
                 return
 
             # return to main menu
@@ -402,12 +406,13 @@ class UtilityClient(nextcord.Client):
 
         await self.call_decorated_methods(
             'ButtonClick',
-            msg,
             cmd,
             msg,
             interaction.user,
             button,
-            interaction.followup)
+            interaction.followup,
+            msg=msg
+        )
 
     async def on_delete_button_click(self, msg, user):
         """
@@ -518,12 +523,13 @@ class UtilityClient(nextcord.Client):
 
         await self.call_decorated_methods(
             'MenuSelect',
-            msg,
             cmd,
             msg,
             interaction.user,
             interaction.data,
-            interaction.followup)
+            interaction.followup,
+            msg=msg
+        )
 
     async def on_raw_message_delete(self, msg):
         # clean up message's info from database when deleted

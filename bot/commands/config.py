@@ -70,9 +70,12 @@ class Config:
     @decorators.ValidateAuthor
     async def command_selection(self, msg, user, command):
 
-        self.client.logger.debug(
-            msg=f'Config for {command} in server: {str(msg.guild.id)}'
-        )
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg='Config: command: {}, server: {}'.format(
+                    command, msg.guild.id
+                )
+            )
 
         embed = msg.embeds[0]
         embed.title = command
@@ -168,12 +171,22 @@ class Config:
     @decorators.CheckPermissions
     @decorators.ValidateAuthor
     async def clear_roles(self, msg, user):
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Config: message: {str(msg.id)}, clearing roles'
+            )
+
         msg.embeds[0].description = ''
         await msg.edit(embed=msg.embeds[0])
 
     @decorators.CheckPermissions
     @decorators.ValidateAuthor
     async def change_roles_page(self, msg, user, i, j):
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Config: message: {str(msg.id)}, roles page: {i + 1}'
+            )
+
         await msg.edit(
             view=utils.build_view(
                 self.get_role_dropdown_components(
@@ -186,6 +199,12 @@ class Config:
     async def commit_roles(self, msg, user, webhook):
         if len(msg.embeds) != 1 or not msg.embeds[0].title:
             return
+
+        if self.client.logger.level < 10:
+            self.client.logger.debug(
+                msg=f'Config: message: {str(msg.id)}, commiting roles'
+            )
+
         if (
                 not msg.embeds[0].description or
                 len(msg.embeds[0].description) < 3

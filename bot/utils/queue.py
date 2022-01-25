@@ -1,5 +1,4 @@
 from collections import deque
-import inspect
 import sys
 
 
@@ -37,10 +36,8 @@ class Queue():
             # catch exceptions triggered when clearing the queue
             # and continue clearing
             try:
-                if inspect.iscoroutinefunction(function):
-                    function(*args)
-                else:
-                    await function(*args)
+                # only coroutine functions
+                await function(*args)
             except ValueError as err:
                 if str(err) in {
                     'could not find open space for item',
