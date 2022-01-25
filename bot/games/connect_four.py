@@ -367,7 +367,7 @@ class ConnectFour:
         users = (user1, user2) if on_move == 0 else (user2, user1)
         embed_var = utils.UtilityEmbed(
             description=f'Game completed\n\n{self.grid_text(grid)}',
-            type=self.__class__.__name__,
+            type=self.__class__.__name__ + '_ended',
             version=self.client.version,
             color=self.color)
         if not forfeit:

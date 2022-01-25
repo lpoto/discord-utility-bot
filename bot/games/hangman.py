@@ -348,7 +348,10 @@ class Hangman:
         extra = '**{}** total wins: {}\u3000'.format(
                 name, wins)
         embed.description += '\n\n' + extra
-        embed.set_type_and_version('Hangman_ended', self.client.version)
+        embed.set_type_and_version(
+            self.__class__.__name__ + '_ended',
+            self.client.version
+        )
         return embed
 
     def picture(self, phase=0, guessed_chars=[]) -> dict:
