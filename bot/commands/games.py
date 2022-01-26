@@ -122,5 +122,6 @@ class Games:
     def additional_info(self):
         return '\n'.join((
             '* Select a game to start that game.',
-            "* Select a game's leaderboard to see other members' wins"
+            "* Select a game's leaderboard to see other members' wins",
+            '\n* Games will be automatically deleted after 24h.'
         ))

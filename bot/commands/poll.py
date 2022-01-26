@@ -447,10 +447,12 @@ class Poll:
     @decorators.Help
     def additional_info(self):
         return '\n'.join((
-            'Reply `question <new_question>` to change the question.',
-            'Reply `<response>` to add a response.',
-            'Reply `remove <idx>` to remove a response by index.',
-            'Reply `fix` to disable further adding or removing responses.',
-            'Reply `end` to close the poll.',
-            ('Multiple options can be added at once, separated ' +
-             'with `;` \n(example: `response1; remove 0; response2`)')))
+            '* Reply `question <new_question>` to change the question.',
+            '* Reply `<response>` to add a response.',
+            '* Reply `remove <idx>` to remove a response by index.',
+            '* Reply `fix` to disable further adding or removing responses.',
+            '* Reply `end` to close the poll.',
+            ('* Multiple options can be added at once, separated ' +
+             'with `;` \n(example: `response1; remove 0; response2`)'),
+            '\n* Poll message will be automatically deleted after a month.'
+        ))
