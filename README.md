@@ -15,6 +15,8 @@ A discord bot written in python, intended for managing smaller discord servers.
 
 For more information **mention** bot in the **discord channel**.
 
+**NOTE** Only member that mentioned the bot may use the interface.
+
 ## customizable
 
 * Which roles are allowed to use a command.

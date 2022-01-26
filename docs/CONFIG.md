@@ -23,10 +23,10 @@ DISCORD_TOKEN="your-discord-client-token"
 CLIENT_LOGGING=<0-50>
 ```
 
-**NOTE** client logging 5 (all debugs), 10 (most of debugs), 20 (info), 
-30 (warnings), 40 (errors), 50 (critical)
+**NOTE** Client logging: 5 (all debugs), 10 (most of debugs), 20 (info), 
+30 (warnings), 40 (errors), 50 (critical).
 
-- Create a mysql database and add it's info to the `.env` file:
+- Create a mysql database and add info to the `.env` file:
 
 ```
 MYSQL_DATABASE="discord_utility_bot"
@@ -37,7 +37,7 @@ MYSQL_PASSWORD="password"
 MYSQL_LOGGING=<0-50>
 ```
 
-**NOTE**  tables and indexes on the database will be created automatically
+**NOTE**  Tables and indexes on the database will be created automatically.
 
 ## Running the bot in a docker container
 
@@ -53,7 +53,7 @@ docker-compose up -d --build
 pip install -r requirements.txt
 ```
 
-- Run the bot
+- Run the bot:
 
 ```
 python main.py

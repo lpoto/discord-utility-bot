@@ -1,6 +1,6 @@
 ## Creating your discord bot client
 
-Visit https://discord.com/developers and log in to your discord account.
+Visit [discord developer portal](https://discord.com/developers) and log in to your discord account.
 
 Under `Applications` click on `New application` and name your discord bot.
 
