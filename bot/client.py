@@ -169,6 +169,17 @@ class UtilityClient(nextcord.Client):
             self.ready = False
             await self.close()
 
+    def embed(
+            self, embed=None, type=None, title=None,
+            description=None, color=None, author=None
+    ):
+        return utils.UtilityEmbed(
+            version=self.version,
+            embed=embed, type=type, title=title,
+            description=description, color=color,
+            author=author
+        )
+
     def determine_msg_type(self, msg):
         if (msg.author.id == self.user.id or
                 msg.author.bot or
@@ -234,9 +245,14 @@ class UtilityClient(nextcord.Client):
             'Client mention' if not old_author_id else 'Home button',
             str(msg.id)))
 
-        embed = utils.UtilityEmbed(
-            type=self.default_type, version=self.version,
-            color=utils.colors['black'])
+        author = msg.guild.get_member(msg.author.id)
+        if old_author_id:
+            author = msg.guild.get_member(int(old_author_id))
+        embed = self.embed(
+            type=self.default_type,
+            color=utils.colors['black'],
+            author=author
+        )
         options = []
         for name, command in self.commands.items():
             opt = nextcord.SelectOption(label=name)
@@ -275,7 +291,7 @@ class UtilityClient(nextcord.Client):
             msg.reference.message_id)
         if referenced_msg is None:
             return
-        cmd = utils.UtilityEmbed(embed=referenced_msg.embeds[0]).get_type()
+        cmd = self.embed(embed=referenced_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
             'Reply', cmd, referenced_msg,
             msg.author, msg, msg=referenced_msg
@@ -290,7 +306,7 @@ class UtilityClient(nextcord.Client):
         self.logger.debug(msg='Thread message: ' + str(msg.id))
 
         parent_msg = await msg.channel.parent.fetch_message(msg.channel.id)
-        cmd = utils.UtilityEmbed(embed=parent_msg.embeds[0]).get_type()
+        cmd = self.embed(embed=parent_msg.embeds[0]).get_type()
         await self.call_decorated_methods(
             'Thread', cmd, msg, msg.author,
             parent_msg, msg=parent_msg
@@ -352,7 +368,7 @@ class UtilityClient(nextcord.Client):
         msg = interaction.message
         if msg is None or len(msg.embeds) != 1:
             return
-        cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
+        cmd = self.embed(embed=msg.embeds[0]).get_type()
         if not cmd:
             return
 
@@ -381,7 +397,7 @@ class UtilityClient(nextcord.Client):
             if button.label == 'back':
                 await self.call_decorated_methods(
                     'MenuSelect',
-                    utils.UtilityEmbed(embed=msg.embeds[0]).get_type(),
+                    self.embed(embed=msg.embeds[0]).get_type(),
                     msg,
                     interaction.user,
                     self.back_button_click,
@@ -429,7 +445,7 @@ class UtilityClient(nextcord.Client):
         ):
             # main menu can only be deleted by the author of the message
             # or members with manage_messages permission
-            embed = utils.UtilityEmbed(embed=msg.embeds[0])
+            embed = self.embed(embed=msg.embeds[0])
             type = embed.get_type().split('_')[0]
             if type == self.default_type and await self.validate_author(
                     msg.id, user.id
@@ -466,7 +482,7 @@ class UtilityClient(nextcord.Client):
         ):
             # main menu help can only be user by the author of the message
             # or members with administrator permission
-            embed = utils.UtilityEmbed(embed=msg.embeds[0])
+            embed = self.embed(embed=msg.embeds[0])
             type = embed.get_type()
             if type == self.default_type and await self.validate_author(
                     msg.id, user.id
@@ -475,18 +491,19 @@ class UtilityClient(nextcord.Client):
 
         self.logger.debug(msg='Help button: ' + str(msg.id))
 
-        old_embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        old_embed = self.embed(embed=msg.embeds[0])
         name = old_embed.get_type()
         if not name:
             return
-        embed = nextcord.Embed(title='Help')
-        embed.set_footer(text=old_embed.footer.text)
+        embed = self.embed(embed=old_embed)
+        embed.title = 'Help'
         if name == self.default_type:
-            embed.description = ('Select a command in the main menu,\n' +
-                                 'then click on the "help" ' +
-                                 'button for more info about the command.\n' +
-                                 '**\nOnly the user who started ' +
-                                 'the menu may navigate it\n**')
+            embed.description = (
+                'Select a command in the main menu,\n' +
+                'then click on the "help" ' +
+                'button for more info about the command.\n' +
+                '**\nOnly the user who started ' +
+                'the menu may navigate it\n**')
         else:
             embed.description = self.commands[name].description
             if name in self.decorated_methods['Help']:
@@ -518,7 +535,7 @@ class UtilityClient(nextcord.Client):
         if msg is None or len(msg.embeds) != 1:
             return
 
-        cmd = utils.UtilityEmbed(embed=msg.embeds[0]).get_type()
+        cmd = self.embed(embed=msg.embeds[0]).get_type()
         if cmd == self.default_type:
             cmd = interaction.data['values'][0]
         if cmd:

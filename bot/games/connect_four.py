@@ -25,7 +25,7 @@ class ConnectFour:
         if (len(msg.embeds) != 1):
             return False
         # if "init", we are checking Games menu, else rps message
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         type = embed.get_type()
         return type and (
             (init and type == 'Games') or (not init and (
@@ -59,10 +59,10 @@ class ConnectFour:
             return
 
         # create initial embed sent to the user as an ephemeral message
-        embed = utils.UtilityEmbed(
-            version=self.client.version,
+        embed = self.client.embed(
             color=self.color,
             type=self.__class__.__name__,
+            author=user,
             description='{}\n{}\n\n{} {}'.format(
                 'Select a token to join or change the already selected token!',
                 'Click on the selected token to leave the game.',
@@ -175,7 +175,7 @@ class ConnectFour:
             type=self.__class__.__name__,
             info=msg_info.get('info')
         )
-        embed = msg.embeds[0]
+        embed = self.client.embed(embed=msg.embeds[0])
         embed.description = '{}\n{}\n\n'.format(
             'Select a token to join or change the already selected token!',
             'Click on the selected token to leave the game.')
@@ -191,6 +191,10 @@ class ConnectFour:
             msg_info.get('info')
         ))
         author_id = None if len(x) == 0 else x[0].get('user_id')
+        if not author_id:
+            embed.set_author(None)
+        else:
+            embed.set_author(msg.guild.get_member(int(author_id)))
 
         await self.client.database.Messages.update_message_author(
             id=msg.id,
@@ -365,11 +369,12 @@ class ConnectFour:
         # show in title who won agains who
         # if database connection show wins of the winner in the footer info
         users = (user1, user2) if on_move == 0 else (user2, user1)
-        embed_var = utils.UtilityEmbed(
+        embed_var = self.client.embed(
             description=f'Game completed\n\n{self.grid_text(grid)}',
             type=self.__class__.__name__ + '_ended',
-            version=self.client.version,
-            color=self.color)
+            color=self.color,
+            author=msg.guild.get_member(int(users[0][0]))
+        )
         if not forfeit:
             embed_var.title = '{} wins against {} with {}!'.format(
                 users[0][1], users[1][1], token1 if on_move == 0 else token2)

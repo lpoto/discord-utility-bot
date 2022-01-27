@@ -13,11 +13,15 @@ class Roles:
 
     @decorators.MenuSelect
     async def determine_menu_select_type(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         type = embed.get_type()
-        if type == self.client.default_type:
+        if (
+                type == self.client.default_type or
+                type == self.__class__.__name__ and data and
+                data == self.client.back_button_click
+        ):
             await self.start_command(msg, user)
-        if self.valid_roles_message(msg):
+        elif self.valid_roles_message(msg):
             await self.add_roles_to_embed(msg, user, data, webhook)
 
     @decorators.CheckPermissions
@@ -25,12 +29,12 @@ class Roles:
 
         self.client.logger.debug(msg=f'Roles main menu: {str(msg.id)}')
 
-        embed = utils.UtilityEmbed(
+        embed = self.client.embed(
             type=self.__class__.__name__,
-            version=self.client.version,
             title=self.description,
-            description='',
-            color=self.color)
+            color=self.color,
+            author=user
+        )
         components = [
             nextcord.ui.Button(label='New roles message'),
             utils.home_button(),
@@ -57,13 +61,14 @@ class Roles:
         info = await self.starting_embed(msg)
         if info is None:
             return
+        info[0].set_author(msg.guild.get_member(user.id))
         await msg.edit(embed=info[0], view=utils.build_view(info[1]))
 
     def valid_roles_message(self, msg):
         if (len(msg.embeds) != 1 or
                 not isinstance(msg.channel, nextcord.TextChannel)):
             return False
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         return ((not embed.title) and
                 (embed.get_type() == self.__class__.__name__))
 
@@ -71,14 +76,14 @@ class Roles:
         # add a dropdown of guild roles that can be added
         # add buttons for switching between pages of roles if there are over
         # 25 addable roles
-        # add reset button that clears all added roles and
+        # add clear button that clears all added roles and
         # commit button that removes the dropdown and turn roles into buttons
         if embed is None:
-            embed = utils.UtilityEmbed(
+            embed = self.client.embed(
                 description=self.additional_info(self),
                 color=utils.random_color(),
-                version=self.client.version,
-                type=self.__class__.__name__)
+                type=self.__class__.__name__
+            )
         guild_roles = []
         for r in msg.guild.roles:
             x = await self.valid_role(role=r, msg=msg)
@@ -98,8 +103,6 @@ class Roles:
                 placeholder=x,
                 options=options,
                 max_values=len(options) if len(options) <= 20 else 20),
-            nextcord.ui.Button(label='reset'),
-            nextcord.ui.Button(label='commit')
         ]
         if start > 0:
             components.append(nextcord.ui.Button(
@@ -107,6 +110,9 @@ class Roles:
         if len(guild_roles) > end:
             components.append(nextcord.ui.Button(
                 label='page {} of roles'.format((start // 25) + 2)))
+        components.append(utils.back_button())
+        components.append(nextcord.ui.Button(label='clear'))
+        components.append(nextcord.ui.Button(label='commit'))
         return embed, components
 
     @decorators.CheckPermissions
@@ -148,12 +154,12 @@ class Roles:
         if not self.valid_roles_message(msg):
             return
         embed = msg.embeds[0]
-        if (button.label == 'reset' and embed.description and
+        if (button.label == 'clear' and embed.description and
                 len(embed.description) > 0):
 
             if self.client.logger.level < 10:
                 self.client.logger.debug(
-                    msg=f'Roles: message: {str(msg.id)}, reset'
+                    msg=f'Roles: message: {str(msg.id)}, clear'
                 )
 
             # clear all roles from description
@@ -191,7 +197,7 @@ class Roles:
                     msg=f'Roles: message: {str(msg.id)}, roles page: {x}'
                 )
 
-            x += 1
+            x -= 1
             info = await self.starting_embed(
                 msg, x * 25, x * 25 + 25, embed)
             await msg.edit(embed=info[0], view=utils.build_view(info[1]))
@@ -299,7 +305,7 @@ class Roles:
         return '\n'.join((
             'Add roles to the message by selecting them in the dropdown.',
             'Selecting an already added role will remove it.',
-            'Clicking `reset` will remove all the roles in the message.',
+            'Clicking `clear` will remove all the roles in the message.',
             'Clicking `commit` will change the menu into role buttons.',
             'Clicking on a button will give or remove the role.',
             'You can edit the roles in a message by replying `edit`.'))

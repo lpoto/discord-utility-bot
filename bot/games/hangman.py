@@ -1,5 +1,4 @@
 import nextcord
-import math
 
 import bot.decorators as decorators
 import bot.utils as utils
@@ -15,13 +14,13 @@ class Hangman:
         self.delete_button_author_check = True
 
     @decorators.MenuSelect
-    async def ask_for_word_in_dmg(self, msg, user, data, webhook):
+    async def ask_for_word_in_dm(self, msg, user, data, webhook):
         """
         Send a dm to the user who selected Hangman in the games menu.
         User may reply to the message with a word of length <= 40, that
         consists only of ASCII characters from a to Z, to start the game.
         """
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         if (embed.get_type() != 'Games' or
             'values' in data and
                 data['values'][0] != self.__class__.__name__):
@@ -36,11 +35,10 @@ class Hangman:
                 msg=f'Hangman: user: {str(user.id)}, dm'
             )
 
-        dm_embed = utils.UtilityEmbed(
+        dm_embed = self.client.embed(
             title=self.__class__.__name__ + f' game in {msg.guild.name}',
             color=self.color,
             type=self.__class__.__name__,
-            version=self.client.version,
             description='Reply with a hangman word!\nChannel: {}'.format(
                 msg.channel.id))
         await dm.send(embed=dm_embed)
@@ -57,7 +55,7 @@ class Hangman:
             not (thread and isinstance(msg.channel, nextcord.threads.Thread)))
         ) or not msg.embeds or len(msg.embeds) != 1):
             return False
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         return embed.get_type() == self.__class__.__name__
 
     @decorators.Reply
@@ -66,10 +64,10 @@ class Hangman:
         Send a new hangman thread to the channel after the user replied with
         the word in a dm.
         """
+        embed = self.client.embed(embed=referenced_msg.embeds[0])
         if (not self.valid_hangman(referenced_msg, dm=True) or
-                'Channel:' not in referenced_msg.embeds[0].description):
+                'Channel:' not in embed.description):
             return
-        embed = utils.UtilityEmbed(embed=referenced_msg.embeds[0])
         channel_id = int(embed.description.split('Channel: ')[-1])
         channel = self.client.get_channel(channel_id)
         if not channel:
@@ -93,6 +91,7 @@ class Hangman:
         utility_embed = await self.game_embed(
             word=word, author_id=user.id, guild=channel.guild
         )
+        utility_embed.set_author(channel.guild.get_member(user.id))
         await referenced_msg.edit(embed=embed)
         hm_message = await channel.send(embed=utility_embed)
         deletion_time = await self.client.database.Config.get_option(
@@ -152,16 +151,15 @@ class Hangman:
         chars = set()
         phase = 0
         if msg is None:
-            embed = utils.UtilityEmbed(
+            embed = self.client.embed(
                 color=utils.random_color(),
-                type=self.__class__.__name__,
-                description='',
-                version=self.client.version)
+                type=self.__class__.__name__
+            )
         else:
             i, j = 1, 0
             embed = msg.embeds[0]
             if not isinstance(embed, utils.UtilityEmbed):
-                embed = utils.UtilityEmbed(embed=embed)
+                embed = self.client.embed(embed=embed)
             dsc = embed.description.split('\n')
             if ' vs ' in dsc[0]:
                 i, j = 3, 2
@@ -195,13 +193,10 @@ class Hangman:
                 embed=embed,
                 msg=msg,
                 user_id=author_id,
-                word=word)
-        author = guild.get_member(int(author_id))
-        embed.description += '\n\n{}\n\n{}'.format(
-            'Guess the word in this message\'s thread!',
-            'Started by **{}**'.format(
-                author.name if not author.nick else author.nick
+                word=word
             )
+        embed.description += '\n\n{}'.format(
+            'Guess the word in this message\'s thread!'
         )
         return embed
 
@@ -328,6 +323,8 @@ class Hangman:
         await self.client.database.Messages.update_message_author(
             id=msg.id, author_id=user_id
         )
+
+        embed.set_author(msg.guid.get_member(int(user_id)))
 
         if not wins:
             await self.client.database.Users.add_user_info(

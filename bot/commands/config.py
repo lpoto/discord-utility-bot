@@ -13,7 +13,7 @@ class Config:
 
     @decorators.MenuSelect
     async def determine_menu_type(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         type = embed.get_type()
         if (
                 type == self.client.default_type or
@@ -36,10 +36,10 @@ class Config:
 
         self.client.logger.debug(msg=f'Config menu: {str(user.id)}')
 
-        embed = utils.UtilityEmbed(
+        embed = self.client.embed(
             title='Select a command to modify the roles allowed to use it',
+            author=user,
             description='',
-            version=self.client.version,
             type=self.__class__.__name__
         )
         options = [
@@ -60,7 +60,7 @@ class Config:
     def valid_config(self, msg, title=None):
         if len(msg.embeds) != 1:
             return False
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         if embed.get_type() != self.__class__.__name__:
             return False
         return ((title is None and not embed.title) or
@@ -77,15 +77,17 @@ class Config:
                 )
             )
 
-        embed = msg.embeds[0]
+        embed = self.client.embed(embed=msg.embeds[0])
         embed.title = command
 
         required_roles = await self.client.database.Config.get_option(
             guild_id=msg.guild.id, name=self.__class__.__name__)
 
         if required_roles and required_roles.get('info'):
-            embed.description = ', '.join(
-                [f'`{i}`' for i in required_roles.get('info')]
+            embed.description = (
+                ', '.join(
+                    [f'`{i}`' for i in required_roles.get('info')]
+                )
             )
         else:
             embed.description = ''
@@ -137,7 +139,7 @@ class Config:
     @decorators.CheckPermissions
     @decorators.ValidateAuthor
     async def roles_selection(self, msg, user, roles):
-        embed = msg.embeds[0]
+        embed = self.client.embed(msg.embeds[0])
         new_roles = set(roles)
         desc_roles = set()
         if embed.description and len(embed.description) > 2:
@@ -146,12 +148,12 @@ class Config:
             )
         roles_to_remove = new_roles.intersection(desc_roles)
         new_roles = new_roles.union(desc_roles).difference(roles_to_remove)
-        embed.description = ', '.join([f'`{i}`' for i in new_roles])
+        embed.description = (', '.join([f'`{i}`' for i in new_roles]))
         await msg.edit(embed=embed)
 
     @decorators.ButtonClick
     async def determine_button_type(self, msg, user, button, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         if embed.get_type() != self.__class__.__name__:
             return
         label = button.label
@@ -176,8 +178,9 @@ class Config:
                 msg=f'Config: message: {str(msg.id)}, clearing roles'
             )
 
-        msg.embeds[0].description = ''
-        await msg.edit(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
+        embed.descrtiption = ''
+        await msg.edit(embed=embed)
 
     @decorators.CheckPermissions
     @decorators.ValidateAuthor

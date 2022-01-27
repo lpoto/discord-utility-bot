@@ -13,7 +13,7 @@ class Games:
 
     @decorators.MenuSelect
     async def determine_menu_select_type(self, msg, user, data, webhook):
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         type = embed.get_type()
         if (
                 type not in {
@@ -48,11 +48,11 @@ class Games:
             msg=f'Games: message: {str(msg.id)}, main menu'
         )
 
-        embed = utils.UtilityEmbed(
+        embed = self.client.embed(
             type=self.__class__.__name__,
-            version=self.client.version,
-            description='',
-            color=self.color)
+            color=self.color,
+            author=user
+        )
         components = [
             nextcord.ui.Button(label='New poll'),
             utils.home_button(),
@@ -95,11 +95,11 @@ class Games:
             )
             return
 
-        embed_var = utils.UtilityEmbed(
+        embed_var = self.client.embed(
             type=self.__class__.__name__,
-            version=self.client.version,
             title=name,
-            color=utils.random_color())
+            color=utils.random_color()
+        )
         users = {}
         for i in fetched:
             user = msg.guild.get_member(int(i.get('user_id')))

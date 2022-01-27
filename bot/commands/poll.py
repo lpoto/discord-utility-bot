@@ -22,7 +22,7 @@ class Poll:
         when a user selects Poll in a dropdown.
         Check if user is allowed to start a poll before editing.
         """
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         if (embed.get_type() not in {
             self.client.default_type, self.__class__.__name__}
                 or 'values' in data and
@@ -34,12 +34,12 @@ class Poll:
 
         self.client.logger.debug(msg=f'Poll main menu: {str(msg.id)}')
 
-        embed = utils.UtilityEmbed(
+        embed = self.client.embed(
             type=self.__class__.__name__,
-            version=self.client.version,
             title=self.description,
-            description='',
-            color=self.color)
+            color=self.color,
+            author=user
+        )
         components = [
             nextcord.ui.Button(label='New poll'),
             utils.home_button(),
@@ -73,9 +73,8 @@ class Poll:
 
         # send a poll with only question added
         # to the channel and add info on adding responses
-        embed = utils.UtilityEmbed(
+        embed = self.client.embed(
             type=self.__class__.__name__,
-            version=self.client.version,
             title='New poll',
             description=self.additional_info(self),
             color=utils.random_color())

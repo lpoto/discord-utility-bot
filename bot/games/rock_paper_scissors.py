@@ -25,7 +25,7 @@ class RockPaperScissors:
         if (len(msg.embeds) != 1):
             return False
         # if "init", we are checking Games menu, else rps message
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
         type = embed.get_type()
         return type and (
             (init and type == 'Games') or (not init and (
@@ -53,8 +53,7 @@ class RockPaperScissors:
         if view is None:
             return
         # create initial embed sent to the user as an ephemeral message
-        embed = utils.UtilityEmbed(
-            version=self.client.version,
+        embed = self.client.embed(
             color=self.color,
             type=self.__class__.__name__,
             description='Choose one of the options to start the game.')
@@ -92,7 +91,7 @@ class RockPaperScissors:
         message to the channel where another user can join the game.
         """
 
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
 
         # edit the ephemeral message through webhook
         # change the selected button to green
@@ -114,13 +113,13 @@ class RockPaperScissors:
             view=utils.build_view(components))
 
         # send a non ephemeral message to the channel so another user can join
-        new_embed = utils.UtilityEmbed(
+        new_embed = self.client.embed(
             title='{} is waiting for an opponent...'.format(
                 user.name if not user.nick else user.nick),
             color=utils.random_color(),
             type=self.__class__.__name__,
-            description='Select one of the options to join the game.',
-            version=self.client.version)
+            description='Select one of the options to join the game.'
+        )
 
         # if user has nickname set up use nickname, else use username
         components[idx].style = nextcord.ButtonStyle.gray
@@ -194,7 +193,7 @@ class RockPaperScissors:
         name1 = user1.name if not user1.nick else user1.nick
         name2 = user2.name if not user2.nick else user2.nick
 
-        embed = utils.UtilityEmbed(embed=msg.embeds[0])
+        embed = self.client.embed(embed=msg.embeds[0])
 
         if not game_results.get('winner'):
             embed.title = 'Draw!'
