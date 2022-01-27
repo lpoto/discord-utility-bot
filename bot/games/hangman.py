@@ -196,7 +196,7 @@ class Hangman:
                 word=word
             )
         embed.description += '\n\n{}'.format(
-            'Guess the word in this message\'s thread!'
+            'Guess the word in this message\'s **thread!**'
         )
         return embed
 

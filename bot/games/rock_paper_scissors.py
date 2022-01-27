@@ -56,7 +56,7 @@ class RockPaperScissors:
         embed = self.client.embed(
             color=self.color,
             type=self.__class__.__name__,
-            description='Choose one of the options to start the game.')
+            description='Choose one of the options to **start** the game.')
         await webhook.send(embed=embed, view=view, ephemeral=True)
 
     @decorators.ButtonClick
@@ -118,7 +118,7 @@ class RockPaperScissors:
                 user.name if not user.nick else user.nick),
             color=utils.random_color(),
             type=self.__class__.__name__,
-            description='Select one of the options to join the game.'
+            description='Select one of the options to **join** the game.'
         )
 
         # if user has nickname set up use nickname, else use username

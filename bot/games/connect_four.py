@@ -63,9 +63,10 @@ class ConnectFour:
             color=self.color,
             type=self.__class__.__name__,
             author=user,
-            description='{}\n{}\n\n{} {}'.format(
-                'Select a token to join or change the already selected token!',
-                'Click on the selected token to leave the game.',
+            description='{}{}\n{}\n\n{} {}'.format(
+                'Select a token to **join** or ',
+                '**change** the already selected token!',
+                'Click on the **selected** token to leave the game.',
                 user.name if not user.nick else user.nick,
                 components[0].emoji.name
             )
@@ -176,9 +177,10 @@ class ConnectFour:
             info=msg_info.get('info')
         )
         embed = self.client.embed(embed=msg.embeds[0])
-        embed.description = '{}\n{}\n\n'.format(
-            'Select a token to join or change the already selected token!',
-            'Click on the selected token to leave the game.')
+        embed.description = '{}{}\n{}\n\n'.format(
+            'Select a **token** to join or **change**',
+            ' the already selected token!',
+            'Click on the **selected** token to leave the game.')
         for i in msg_info['info']:
             if str(i.get('name')) == 'cf_choice':
                 u = msg.guild.get_member(int(i.get('user_id')))
