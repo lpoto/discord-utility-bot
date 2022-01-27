@@ -157,7 +157,7 @@ class Hangman:
             )
         else:
             i, j = 1, 0
-            embed = msg.embeds[0]
+            embed = self.client.embed(embed=msg.embeds[0])
             if not isinstance(embed, utils.UtilityEmbed):
                 embed = self.client.embed(embed=embed)
             dsc = embed.description.split('\n')
@@ -248,8 +248,8 @@ class Hangman:
                 return
             word = info[0].get('info')
             author_id = info[0].get('user_id')
-            if str(msg.author.id) == str(author_id):
-                return
+            #if str(msg.author.id) == str(author_id):
+            #    return
             await self.guess_letter(
                 msg.channel.parent, msg.channel, parent.id,
                 x, word, msg.author.id, author_id)
@@ -307,6 +307,9 @@ class Hangman:
         # an embed once the game ends
         # show whether the user who started the game won or lost
         # if he won and database is connected, show his total wins
+
+        if not isinstance(embed, utils.UtilityEmbed):
+            embed = self.client.embed(embed=embed)
         user = msg.guild.get_member(int(user_id))
         embed.title = word
         if not user:
@@ -324,7 +327,7 @@ class Hangman:
             id=msg.id, author_id=user_id
         )
 
-        embed.set_author(msg.guid.get_member(int(user_id)))
+        embed.set_author(user)
 
         if not wins:
             await self.client.database.Users.add_user_info(
