@@ -71,14 +71,16 @@ class UtilityEmbed():
             return
         txt = self._wrapped_embed.footer.text.split('\n')[0].replace(
             '@type', '', 1
-        ).strip()
+        ).strip().split('\u2000\u2000')[0].strip()
         return txt
 
     def set_type(self, type: str):
         return self.set_type_and_version(type, self.version)
 
     def expand_text(self, text, version):
-        spacer = (59 - len(text) - len(version)) * '\u2000'
+        spacer = '\u2000\u2000'
+        if len(text) <= 57:
+            spacer = (59 - len(text) - len(version)) * '\u2000'
         for i in range(1, len(text) // 10 + 1):
             spacer += i * ' \u2000'
         for i in range(1, len(version) // 10 + 1):
