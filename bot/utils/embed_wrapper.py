@@ -66,12 +66,12 @@ class UtilityEmbed():
         if (
                 not self._wrapped_embed.footer or
                 not self._wrapped_embed.footer.text or
-                '@type' not in self._wrapped_embed.footer.text
+                not self._wrapped_embed.footer.text.startswith('@')
         ):
             return
-        txt = self._wrapped_embed.footer.text.split('\n')[0].replace(
-            '@type', '', 1
-        ).strip().split('\u2000\u2000')[0].strip()
+        txt = self._wrapped_embed.footer.text.split('\u2000\u2000')[0].replace(
+            '@', '', 1
+        ).strip()
         return txt
 
     def set_type(self, type: str):
@@ -79,13 +79,20 @@ class UtilityEmbed():
 
     def expand_text(self, text, version):
         spacer = '\u2000\u2000'
-        if len(text) <= 57:
-            spacer = (59 - len(text) - len(version)) * '\u2000'
+        text2 = 'v' + version
+        if self.author:
+            text2 = (
+                self.author.name
+                if not self.author.nick
+                else self.author.nick
+            )
+        if len(text) <= 59:
+            spacer = (61 - len(text) - len(text2)) * '\u2000'
         for i in range(1, len(text) // 10 + 1):
             spacer += i * ' \u2000'
-        for i in range(1, len(version) // 10 + 1):
+        for i in range(1, len(text2) // 10 + 1):
             spacer += i * ' \u2000'
-        return text + spacer + version
+        return text + spacer + text2
 
     def set_type_and_version(self, type: str, version: str) -> None:
         """
@@ -93,20 +100,10 @@ class UtilityEmbed():
         """
         self.__set_wrapper_attr__('version', version)
         self.__set_wrapper_attr__('type', type)
-        t = '@type\u2000\u2000\u2000\u2000'
+        t = '@'
         if not version:
             version = 'dev'
         if type is not None:
             t += type
-        if self.author:
-            t += '\n' + self.expand_text(
-                '@author \u2000\u2000{}'.format(
-                    self.author.name
-                    if not self.author.nick
-                    else self.author.nick
-                ),
-                version
-            )
-        else:
-            t = self.expand_text(t, version)
+        t = self.expand_text(t, version)
         self._wrapped_embed.set_footer(text=t)
