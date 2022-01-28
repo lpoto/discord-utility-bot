@@ -88,9 +88,9 @@ class UtilityEmbed():
             )
         if len(text) <= 59:
             spacer = (61 - len(text) - len(text2)) * '\u2000'
-        for i in range(1, len(text) // 10 + 1):
+        for i in range(1, (len(text)) // 10 + 1):
             spacer += i * ' \u2000'
-        for i in range(1, len(text2) // 10 + 1):
+        for i in range(1, (len(text2)) // 10 + 1):
             spacer += i * ' \u2000'
         return text + spacer + text2
 

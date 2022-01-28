@@ -2,6 +2,7 @@
 import nextcord
 
 from bot.utils.embed_wrapper import UtilityEmbed
+from bot.utils import warn
 import bot.commands as commands
 import bot.games as games
 
@@ -15,7 +16,7 @@ def purge_filter(msg):
     if msg.author.id != msg.guild.me.id or len(
             msg.embeds) != 1:
         return True
-    embed = UtilityEmbed(embed=msg.embeds[0])
+    embed = UtilityEmbed(embed=msg.embeds[0], version='dev')
     type = embed.get_type()
     if not type or type not in not_deletable_types:
         return True
