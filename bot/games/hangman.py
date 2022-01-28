@@ -1,4 +1,5 @@
 import nextcord
+import math
 
 import bot.decorators as decorators
 import bot.utils as utils
@@ -91,6 +92,8 @@ class Hangman:
         utility_embed = await self.game_embed(
             word=word, author_id=user.id, guild=channel.guild
         )
+        if not utility_embed:
+            return
         utility_embed.set_author(channel.guild.get_member(user.id))
         await referenced_msg.edit(embed=embed)
         hm_message = await channel.send(embed=utility_embed)
@@ -130,15 +133,23 @@ class Hangman:
         """
         Replace characters in the word that were not yet guessed with _
         """
-        w2 = (' '.join(
-            c if (
-                c in chars or
-                ord(c) == 32 or
-                ord(c) > 90 or ord(c) < 65
-            )
-            else r'\_' for c in i
-        ) for i in word.split())
-        return '\u3000'.join(w2)
+        x = len(word)
+        word = list((c for c in i) for i in word.split())
+        if x >= 25:
+            c = len(word) // 2
+            w1 = '\u3000'.join(' '.join(i) for i in word[c:])
+            w2 = '\u3000'.join(' '.join(i) for i in word[:c])
+            word = w1 + '\n' + w2
+        else:
+            word = '\u3000'.join(' '.join(w) for w in word)
+        for c in word:
+            if (
+                c != r'\_' and
+                ord(c) <= 90 and ord(c) >= 65 and
+                c not in chars
+            ):
+                word = word.replace(c, r'\_')
+        return word
 
     async def game_embed(
             self, word, author_id, msg=None,
@@ -248,7 +259,7 @@ class Hangman:
                 return
             word = info[0].get('info')
             author_id = info[0].get('user_id')
-            #if str(msg.author.id) == str(author_id):
+            # if str(msg.author.id) == str(author_id):
             #    return
             await self.guess_letter(
                 msg.channel.parent, msg.channel, parent.id,
@@ -308,6 +319,8 @@ class Hangman:
         # show whether the user who started the game won or lost
         # if he won and database is connected, show his total wins
 
+        if not msg or not msg.guild:
+            return
         if not isinstance(embed, utils.UtilityEmbed):
             embed = self.client.embed(embed=embed)
         user = msg.guild.get_member(int(user_id))
