@@ -191,8 +191,9 @@ class Hangman:
         embed.title = hidden_word
         if new_chars:
             phase += len({i for i in dif_chars if i not in embed.title})
-        embed.description = '\n'.join(
-            self.picture(phase=phase, guessed_chars=chars).values())
+        picture = list(self.picture(phase=phase, guessed_chars=chars).values())
+        picture = '\n'.join(picture[:2]) + '\n**' + '\n'.join(picture[2:]) + "\n**"
+        embed.description = picture
         if r'\_' not in hidden_word:
             return await self.end_embed(
                 embed=embed,
@@ -379,7 +380,7 @@ class Hangman:
             4: (3, '\u2000│' + 7 * '\u2000' + '/│'),
             5: (3, '\u2000│' + 7 * '\u2000' + '/│\\'),
             6: (4, '\u2000│' + 7 * '\u2000' + ' /'),
-            7: (4, '\u2000│' + 7 * '\u2000' + ' /^\\'),
+            7: (4, '\u2000│' + 7 * '\u2000' + ' / \\'),
         }
         if phase > 7:
             return self.picture(7, guessed_chars)
