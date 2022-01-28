@@ -86,14 +86,13 @@ class UtilityEmbed():
                 if not self.author.nick
                 else self.author.nick
             )
-        if len(text) <= 59:
-            spacer = (61 - len(text) - len(text2)) * '\u2000'
-        spacer = self.align_spacer(text, spacer)
-        spacer = self.align_spacer(text2, spacer)
+        if len(text) <= 58:
+            spacer = (60 - len(text) - len(text2)) * '\u2000'
+        spacer = self.align_spacer(text + text2, spacer)
         return text + spacer + text2
 
     def align_spacer(self, text, spacer):
-        small_chars = {'i', 'j', 't', 'l', 'f'}
+        small_chars = {'i', 'j', 't', 'l', 'f', '!', '.', ',', 'I'}
         count = sum(text.count(i) for i in small_chars) // 2
         spacer += count * '\u2000'
         return spacer
