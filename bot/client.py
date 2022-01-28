@@ -117,8 +117,6 @@ class UtilityClient(nextcord.Client):
         deleting = await self.database.Messages.get_messages_by_info(
             name='deletion_time')
 
-        self.logger.debug(msg='Restarting deletion timers')
-
         for i in deleting:
             try:
                 channel = self.get_channel(i.get('channel_id'))
@@ -129,6 +127,9 @@ class UtilityClient(nextcord.Client):
                     await msg.delete()
                 else:
                     await msg.delete(delay=time_dif)
+            except nextcord.NotFound:
+                if i.get('id'):
+                    self.dispatch('raw_message_delete', None, i.get('id'))
             except Exception:
                 continue
 
@@ -558,15 +559,17 @@ class UtilityClient(nextcord.Client):
             msg=msg
         )
 
-    async def on_raw_message_delete(self, msg):
+    async def on_raw_message_delete(self, msg, id=None):
         # clean up message's info from database when deleted
 
+        if not id:
+            id = msg.message_id
         if self.logger.level < 10:
             self.logger.debug(
-                msg='Deleting message: ' + str(msg.message_id)
+                msg='Deleting message: ' + str(id)
             )
 
-        await self.database.Messages.delete_message(id=msg.message_id)
+        await self.database.Messages.delete_message(id=id)
 
     async def on_raw_bulk_message_delete(self, payload):
         # clean up bulk deleted message's info from
