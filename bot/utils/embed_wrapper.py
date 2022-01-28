@@ -92,7 +92,7 @@ class UtilityEmbed():
         return text + spacer + text2
 
     def align_spacer(self, text, spacer):
-        small_chars = {'i', 'j', 't', 'l', 'f', '!', '.', ',', 'I'}
+        small_chars = {'i', 'j', 't', 'l', 'f', 'I', ' '}
         count = sum(text.count(i) for i in small_chars) // 2
         spacer += count * '\u2000'
         return spacer

@@ -107,6 +107,9 @@ class UtilityClient(nextcord.Client):
             id=msg_id,
             info=info
         )
+        print(msg_info)
+        if not msg_info:
+            return {}
         if msg_info.get('author_id') and str(user_id) != str(
                 msg_info.get('author_id')
         ):
@@ -327,7 +330,9 @@ class UtilityClient(nextcord.Client):
         or "on_menu_select" events.
         """
         if (
-                not self.ready or not self.check_client_permissions(
+                not self.ready or
+                interaction.message.author.id != self.user.id or
+                not self.check_client_permissions(
                 interaction.message) or
                 not isinstance(
                     interaction.message.channel,
@@ -340,8 +345,8 @@ class UtilityClient(nextcord.Client):
             # "This interaction failed" in nextcord channel
             # when  clicking on a button created before bot restarted
             await interaction.response.defer()
-        except nextcord.NotFound:
-            pass
+        except Exception as e:
+            self.logger.debug(msg=e)
 
         interaction_type = self.determine_interaction_type(interaction)
         if not interaction_type:
