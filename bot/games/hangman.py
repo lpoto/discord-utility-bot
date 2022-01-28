@@ -137,8 +137,8 @@ class Hangman:
         word = list((c for c in i) for i in word.split())
         if x >= 25:
             c = len(word) // 2
-            w1 = '\u3000'.join(' '.join(i) for i in word[c:])
-            w2 = '\u3000'.join(' '.join(i) for i in word[:c])
+            w1 = '\u3000'.join(' '.join(i) for i in word[:c])
+            w2 = '\u3000'.join(' '.join(i) for i in word[c:])
             word = w1 + '\n' + w2
         else:
             word = '\u3000'.join(' '.join(w) for w in word)
