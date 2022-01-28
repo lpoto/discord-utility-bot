@@ -153,7 +153,7 @@ class Roles:
     async def handle_roles_editing(self, msg, user, button, webhook):
         if not self.valid_roles_message(msg):
             return
-        embed = msg.embeds[0]
+        embed = self.client.embed(embed=msg.embeds[0])
         if (button.label == 'clear' and embed.description and
                 len(embed.description) > 0):
 
@@ -182,6 +182,7 @@ class Roles:
                 nextcord.ui.Button(
                     label=i[1:][:-1]) for i in embed.description.split(', ')
             ]
+            embed.set_author(None)
             embed.description = nextcord.Embed.Empty
             await msg.edit(embed=embed, view=utils.build_view(components))
             await self.client.database.Messages.update_message_author(

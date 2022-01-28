@@ -60,26 +60,35 @@ class UtilityEmbed():
         self.set_type_and_version(self.type, self.version)
 
     def get_type(self) -> str or None:
-        """Return embed's type from it's footer"""
+        """
+        Return embed's type from it's footer
+        """
         if (
                 not self._wrapped_embed.footer or
                 not self._wrapped_embed.footer.text or
                 '@type' not in self._wrapped_embed.footer.text
         ):
             return
-        txt = self._wrapped_embed.footer.text.split('@author')[0].strip(
-            '\n'
-        )
-        version = txt.split()[-1]
-        if not version:
-            return
-        return txt[:-len(version)].replace("@type", '', 1).strip()
+        txt = self._wrapped_embed.footer.text.split('\n')[0].replace(
+            '@type', '', 1
+        ).strip()
+        return txt
 
     def set_type(self, type: str):
         return self.set_type_and_version(type, self.version)
 
+    def expand_text(self, text, version):
+        spacer = (59 - len(text) - len(version)) * '\u2000'
+        for i in range(1, len(text) // 10 + 1):
+            spacer += i * ' \u2000'
+        for i in range(1, len(version) // 10 + 1):
+            spacer += i * ' \u2000'
+        return text + spacer + version
+
     def set_type_and_version(self, type: str, version: str) -> None:
-        """Set type and version in the embed's footer text"""
+        """
+        Set type and version in the embed's footer text
+        """
         self.__set_wrapper_attr__('version', version)
         self.__set_wrapper_attr__('type', type)
         t = '@type\u2000\u2000\u2000\u2000'
@@ -87,14 +96,15 @@ class UtilityEmbed():
             version = 'dev'
         if type is not None:
             t += type
-        spacer = (59 - len(t) - len(version)) * '\u2000'
-        for i in range(1, len(t) // 10 + 1):
-            spacer += i * ' \u2000'
-        for i in range(1, len(version) // 10 + 1):
-            spacer += i * ' \u2000'
-        ftr = t + spacer + version
         if self.author:
-            ftr += '\n@author \u2000\u2000{}'.format(
-                self.author.name if not self.author.nick else self.author.nick
+            t += '\n' + self.expand_text(
+                '@author \u2000\u2000{}'.format(
+                    self.author.name
+                    if not self.author.nick
+                    else self.author.nick
+                ),
+                version
             )
-        self._wrapped_embed.set_footer(text=ftr)
+        else:
+            t = self.expand_text(t, version)
+        self._wrapped_embed.set_footer(text=t)
