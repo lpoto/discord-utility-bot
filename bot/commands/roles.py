@@ -84,11 +84,13 @@ class Roles:
                 color=utils.random_color(),
                 type=self.__class__.__name__
             )
+        memo = set()
         guild_roles = []
         for r in msg.guild.roles:
             x = await self.valid_role(role=r, msg=msg)
-            if x:
+            if x and x.name not in memo:
                 guild_roles.append(x.name)
+                memo.add(x.name)
         guild_roles = guild_roles[::-1]
         options = []
         for i in range(start, end):
@@ -239,12 +241,17 @@ class Roles:
 
     @decorators.Reply
     @decorators.CheckPermissions
-    async def reedit_roles_message(self, msg, user, referenced_msg):
+    async def reedit_roles_message(self, referenced_msg, user, msg):
         # replying "edit" on a commited roles message should reopen
         # it for editing
-        if (not self.valid_roles_message(referenced_msg) or
+        if (
+                not self.valid_roles_message(referenced_msg) or
                 msg.content not in {'edit', 'change', 'reedit', 'modify'} or
-                referenced_msg.embeds[0].description):
+                (
+                    referenced_msg.embeds[0].description and
+                    len(referenced_msg.embeds[0].description) != 0
+                )
+        ):
             return
 
         self.client.logger.debug(

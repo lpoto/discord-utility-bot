@@ -11,7 +11,7 @@
 - Clone the repository:
 
 ```
-git clone https://github.com/potocnikluka/discord-utility-bot.git
+git clone https://github.com/lpoto/discord-utility-bot.git
 cd discord-utility-bot
 ```
 

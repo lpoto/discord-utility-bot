@@ -107,6 +107,9 @@ class UtilityClient(nextcord.Client):
             id=msg_id,
             info=info
         )
+        print(msg_info)
+        if not msg_info:
+            return {}
         if msg_info.get('author_id') and str(user_id) != str(
                 msg_info.get('author_id')
         ):
