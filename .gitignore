@@ -1,0 +1,6 @@
+config.json
+
+dist
+*.js
+
+node_modules
