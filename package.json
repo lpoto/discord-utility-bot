@@ -13,9 +13,9 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc -p .",
     "start": "node dist/index.js",
-    "lint": "npx eslint 'src/**/*.ts'",
-    "lint-fix": "npx eslint 'src/**/*.ts' --fix",
-    "format": "npx prettier 'src/**/*.ts' --write"
+    "lint": "eslint --ext .ts src",
+    "lint-fix": "eslint --ext .ts src --fix",
+    "format": "npx prettier 'src\/**\/*.ts' --write"
   },
   "dependencies": {
     "@supercharge/queue-datastructure": "^2.1.0",
