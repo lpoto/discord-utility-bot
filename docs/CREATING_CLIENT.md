@@ -6,12 +6,21 @@ Under `Applications` click on `New application` and name your discord bot.
 
 Under `Bot` click on `Add bot` and then:
 
-- under `Privileged Gateway Intents` check `PRESENCE INTENT` and `SERVER MEMBERS INTENT`,
+- under `Privileged Gateway Intents` check `PRESENCE INTENT`, `SERVER MEMBERS INTENT` and `MESSAGE CONTENT INTENT`,
 - copy `TOKEN` to your `.env`.
 
 Add the bot to your discord server:
 
-- Under `General information` copy `CLIENT ID`.
-- Visit https://discordapi.com/permissions.html, paste your client's id under `Client ID`,
-  select desired permissions and copy the link on the bottom of the page.
-- paste the link into your browser.
+- Under `OAuth2/URL Generator` under `SCOPES` select:
+    - bot,
+    - applications.commands
+
+- Under `BOT PERMISSIONS` select:
+    - Send Messages,
+    - Create Public Threads,
+    - Send Messages in Threads,
+    - Read Message History,
+    - Connect,
+    - Speak
+
+- Copy `GENERATED URL` and paste it into the browser.

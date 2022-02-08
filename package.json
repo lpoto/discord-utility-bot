@@ -18,7 +18,10 @@
     "format": "prettier -w ./src"
   },
   "dependencies": {
+    "@discordjs/rest": "^0.3.0",
+    "@discordjs/voice": "^0.8.0",
     "@supercharge/queue-datastructure": "^2.1.0",
+    "discord-api-types": "^0.26.1",
     "discord.js": "^13.6.0"
   },
   "devDependencies": {

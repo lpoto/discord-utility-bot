@@ -149,6 +149,13 @@ export class Music {
             });
     }
 
+    static get slashCommand(): { [key: string]: string } {
+        return {
+            name: 'music',
+            description: 'Starts a new music thread!',
+        };
+    }
+
     public static async newMusic(
         client: MusicClient,
         guildId: string,
