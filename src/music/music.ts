@@ -1,5 +1,7 @@
 import {
+    CommandInteraction,
     Guild,
+    GuildMember,
     Message,
     MessageEmbed,
     TextChannel,
@@ -59,31 +61,26 @@ export class Music {
         this.voiceChannel = value;
     }
 
-    public async setup(
-        guildId: string,
-        voiceChannelId: string,
-        textChannelId: string,
-    ): Promise<void> {
-        this.client.guilds
-            .fetch(guildId)
-            .then((guild: Guild) => {
-                this.musicGuild = guild;
-                this.fetchChannels(textChannelId, voiceChannelId).then(
-                    (result) => {
-                        if (!result) return;
-                        this.initializeQueueMessage().then((result2) => {
-                            if (!result2) return;
-                            this.songQueue = new SongQueue();
-                            this.isReady =
-                                this.songQueue !== null &&
-                                this.songQueue !== undefined;
-                        });
-                    },
-                );
-            })
-            .catch((error) => {
-                console.log('Error when calling Music object setup:', error);
-            });
+    public async setup(interaction: CommandInteraction): Promise<void> {
+        if (
+            !interaction.member ||
+            !(interaction.member instanceof GuildMember) ||
+            !interaction.member.voice ||
+            !interaction.member.voice.channel ||
+            !interaction.channel ||
+            !(interaction.channel instanceof TextChannel) ||
+            !(interaction.member.voice.channel instanceof VoiceChannel)
+        )
+            return;
+        this.textChannel = interaction.channel;
+        this.voiceChannel = interaction.member.voice.channel;
+        this.musicGuild = interaction.guild;
+        this.initializeQueueMessage(interaction).then((result) => {
+            if (!result) return;
+            this.songQueue = new SongQueue();
+            this.isReady =
+                this.songQueue !== null && this.songQueue !== undefined;
+        });
     }
 
     public async execute(commandName: CommandName): Promise<void> {
@@ -96,22 +93,27 @@ export class Music {
 
     private queueMessageContent(): MessageEmbed {
         return new MessageEmbed({
-            title: 'Hello world!',
-            description: 'TODO',
+            title: 'Music Queue',
+            description: 'IDK MAN',
         });
     }
 
-    private async initializeQueueMessage(): Promise<boolean> {
+    private async initializeQueueMessage(
+        interaction: CommandInteraction,
+    ): Promise<boolean> {
         if (!this.textChannel || !this.musicGuild || !this.voiceChannel)
             return false;
-        return this.textChannel
-            .send({ embeds: [this.queueMessageContent()] })
-            .then((message: Message) => {
-                this.queueMessage = message;
-                return true;
+        return interaction
+            .reply({ embeds: [this.queueMessageContent()], fetchReply: true })
+            .then((message) => {
+                if (message instanceof Message) {
+                    this.queueMessage = message;
+                    return true;
+                }
+                return false;
             })
             .catch((error) => {
-                console.log('Error when sending queue message:', error);
+                console.log('Error when initializing queue message:', error);
                 return false;
             });
     }
@@ -158,13 +160,11 @@ export class Music {
 
     public static async newMusic(
         client: MusicClient,
-        guildId: string,
-        voiceChannelId: string,
-        textChannelId: string,
+        interaction: CommandInteraction,
     ): Promise<Music | null> {
         const music: Music = new Music(client);
         if (!music) return null;
-        return music.setup(guildId, voiceChannelId, textChannelId).then(() => {
+        return music.setup(interaction).then(() => {
             if (!music.ready) return null;
             return music;
         });

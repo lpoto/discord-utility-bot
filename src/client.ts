@@ -1,25 +1,39 @@
 import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
+import {
+    APIInteraction,
+    APIInteractionGuildMember,
+    Routes,
+} from 'discord-api-types/v9';
 import {
     Client,
     ClientOptions,
+    CommandInteraction,
+    GuildMember,
     Interaction,
     Message,
+    Role,
+    TextChannel,
     ThreadChannel,
     User,
+    VoiceChannel,
 } from 'discord.js';
 import { Music } from './music';
 
 export class MusicClient extends Client {
     private guildMusics: { [guildId: string]: Music };
     private musicRoleName: string;
-    private clientReady: boolean;
 
     constructor(options: ClientOptions, musicRoleName: string) {
         super(options);
         this.musicRoleName = musicRoleName;
         this.guildMusics = {};
-        this.clientReady = false;
+    }
+
+    get slashCommand(): { [key: string]: string } {
+        return {
+            name: 'music',
+            description: 'Starts a new music thread.',
+        };
     }
 
     public async handleThreadMessage(msg: Message): Promise<void> {
@@ -27,20 +41,72 @@ export class MusicClient extends Client {
         console.log('Handle thread message:', msg);
     }
 
-    public async handleInteractions(interaction: Interaction): Promise<void> {
-        console.log('Handle interaction:', interaction);
+    private async handleSlashCommand(
+        interaction: CommandInteraction,
+    ): Promise<void> {
+        if (!interaction.guildId) return;
+        console.log('Handle slash command:', interaction.id);
+        if (this.musicExists(interaction.guildId)) {
+            await interaction.reply({
+                content: 'Music thread is already active in this server!!',
+                ephemeral: true,
+            });
+            return;
+        }
+        if (!(await this.validMember(interaction))) return;
+        console.log(`Initializing queue msg in guild ${interaction.guildId}`);
+        const music: Music | null = await Music.newMusic(this, interaction);
+        if (music) this.guildMusics[interaction.guildId] = music;
     }
 
-    private async checkUser(user: User, music: Music): Promise<boolean> {
-        // check if user has the required role
-        /* check if user is in the same channel as client,
-        or client is not in channel*/
-        if (!music.ready || !music.guild) return false;
-        return music.guild.members.fetch(user.id).then((member) => {
-            if (!member || !member.roles.cache.has(this.musicRoleName))
+    private musicExists(guildId: string): boolean {
+        if (guildId in this.guildMusics) {
+            if (
+                !this.guildMusics[guildId] ||
+                !this.guildMusics[guildId].ready
+            ) {
+                delete this.guildMusics[guildId];
                 return false;
+            }
             return true;
-        });
+        }
+        return false;
+    }
+
+    private async validMember(
+        interaction: CommandInteraction,
+        music: Music | null = null,
+    ): Promise<boolean> {
+        /* check if user has the required role
+        check if user is in the same channel as client,
+        or client is not in channel */
+        if (
+            !interaction.guild ||
+            !interaction.member ||
+            !(interaction.member instanceof GuildMember)
+        )
+            return false;
+        if (
+            !interaction.member.roles.cache.find(
+                (r: Role) => r.name === this.musicRoleName,
+            )
+        ) {
+            await interaction.reply({
+                content: `You are missing role \`${this.musicRoleName}\``,
+                ephemeral: true,
+            });
+            return false;
+        }
+        if (!interaction.member.voice.channel) {
+            await interaction.reply({
+                content: 'You are not in a voice channel!',
+                ephemeral: true,
+            });
+            return false;
+        }
+        if (!music) return true;
+        // if music check if member in the same voice channel as client!
+        return false;
     }
 
     private async registerSlashCommands(token: string): Promise<void> {
@@ -63,12 +129,7 @@ export class MusicClient extends Client {
         guildId: string,
         token: string,
     ): Promise<void> {
-        const commands = [
-            {
-                name: 'music',
-                description: 'Starts a new music thread.',
-            },
-        ];
+        const commands = [this.slashCommand];
         const rest = new REST({ version: '9' }).setToken(token);
         (async () => {
             if (!this.user) return;
@@ -99,6 +160,13 @@ export class MusicClient extends Client {
             client.registerSlashCommands(token).then(() => {});
         });
 
+        client.on('interactionCreate', async (interaction) => {
+            if (!interaction.isCommand()) return;
+
+            if (interaction.commandName === client.slashCommand.name) {
+                await client.handleSlashCommand(interaction);
+            }
+        });
         client.login(token);
     }
 }
