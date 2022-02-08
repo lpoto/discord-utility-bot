@@ -1,2 +1,3 @@
 export { Music } from './music';
-export { QueueEmbed } from './queue-embed';
+export { SongQueue } from './song-queue';
+export { Song } from './song';

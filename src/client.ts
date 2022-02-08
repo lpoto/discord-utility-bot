@@ -1,10 +1,9 @@
 import {
     Client,
     ClientOptions,
-    Guild,
-    Intents,
     Interaction,
     Message,
+    ThreadChannel,
     User,
 } from 'discord.js';
 import { Music } from './music';
@@ -18,38 +17,24 @@ export class MusicClient extends Client {
         this.musicRoleName = musicRoleName;
     }
 
-    public checkIfValidUser(user: User, guild: Guild): boolean {
-        /* checks if user has musicRoleName
-           check if user in same channel as client*/
-        return true;
+    public async handleThreadMessage(msg: Message): Promise<void> {
+        if (!(msg.channel instanceof ThreadChannel)) return;
+        console.log('Handle thread message:', msg);
     }
 
-    public addMusic(guildId: string) {
-        if (!this.isReady() || this.checkIfPlaying(guildId)) return;
-        // add new Music object
+    public async handleInteractions(interaction: Interaction): Promise<void> {
+        console.log('Handle interaction:', interaction);
     }
 
-    public checkIfPlaying(guildId: string): boolean {
-        /* check if Music object exists in this.guildMusics
-            and is a valid ready Music object */
-        if (guildId in this.guildMusics) {
-            if (
-                !this.guildMusics[guildId].isReady ||
-                this.guildMusics[guildId].SongCount === 0
-            ) {
-                delete this.guildMusics[guildId];
+    private async checkUser(user: User, music: Music): Promise<boolean> {
+        // check if user has the required role
+        /* check if user is in the same channel as client,
+        or client is not in channel*/
+        if (!music.ready || !music.guild) return false;
+        return music.guild.members.fetch(user.id).then((member) => {
+            if (!member || !member.roles.cache.has(this.musicRoleName))
                 return false;
-            }
             return true;
-        }
-        return false;
-    }
-
-    public async onThreadMessage(msg: Message): Promise<void> {
-        // TODO
-    }
-
-    public async onMusicSlashCommand(interaction: Interaction): Promise<void> {
-        // TODO
+        });
     }
 }

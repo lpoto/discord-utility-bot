@@ -1,151 +1,165 @@
-import { Guild, NonThreadGuildBasedChannel, VoiceChannel } from 'discord.js';
+import {
+    Guild,
+    Message,
+    MessageEmbed,
+    TextChannel,
+    VoiceChannel,
+} from 'discord.js';
 import { MusicClient } from '../client';
+import { CommandName, fetchCommand } from './commands';
+import { SongQueue } from './song-queue';
 
 export class Music {
+    // should only be created from newMusic static method
     private client: MusicClient;
-    private ready = false;
-    private guild: Guild | null = null;
-    private channel: VoiceChannel | null = null;
-    private headSong: Song | null = null;
-    private tailSong: Song | null = null;
-    private songCount = 0;
-    private paused = false;
-    private loop = false;
-    private loopQueue = false;
+    private isReady;
+    private musicGuild: Guild | null;
+    private textChannel: TextChannel | null;
+    private queueMessage: Message | null;
+    private voiceChannel: VoiceChannel | null;
+    private songQueue: SongQueue | null;
 
-    constructor(client: MusicClient, guildId: string, channelId: string) {
+    constructor(client: MusicClient) {
         this.client = client;
-        this.client.guilds.fetch(guildId).then((guild: Guild) => {
-            if (!this.guild) return;
-            this.guild = guild;
-            this.guild.channels
-                .fetch(channelId)
-                .then((channel: NonThreadGuildBasedChannel | null) => {
-                    if (!channel) return;
-                    if (channel instanceof VoiceChannel) {
-                        this.channel = channel;
-                        this.ready = true;
-                    }
-                    return;
-                });
+        this.isReady = false;
+        this.musicGuild = null;
+        this.textChannel = null;
+        this.queueMessage = null;
+        this.voiceChannel = null;
+        this.songQueue = null;
+    }
+
+    get ready(): boolean {
+        return this.isReady;
+    }
+
+    get queue(): SongQueue | null {
+        return this.songQueue;
+    }
+
+    get size(): number {
+        if (!this.ready) return 0;
+        if (!this.queue) this.songQueue = new SongQueue();
+        return this.queue ? this.queue.size : 0;
+    }
+
+    get message(): Message | null {
+        return this.queueMessage;
+    }
+
+    get guild(): Guild | null {
+        return this.musicGuild;
+    }
+
+    get channel(): VoiceChannel | null {
+        return this.voiceChannel;
+    }
+
+    set channel(value: VoiceChannel | null) {
+        this.voiceChannel = value;
+    }
+
+    public async setup(
+        guildId: string,
+        voiceChannelId: string,
+        textChannelId: string,
+    ): Promise<void> {
+        this.client.guilds
+            .fetch(guildId)
+            .then((guild: Guild) => {
+                this.musicGuild = guild;
+                this.fetchChannels(textChannelId, voiceChannelId).then(
+                    (result) => {
+                        if (!result) return;
+                        this.initializeQueueMessage().then((result2) => {
+                            if (!result2) return;
+                            this.songQueue = new SongQueue();
+                            this.isReady =
+                                this.songQueue !== null &&
+                                this.songQueue !== undefined;
+                        });
+                    },
+                );
+            })
+            .catch((error) => {
+                console.log('Error when calling Music object setup:', error);
+            });
+    }
+
+    public async execute(commandName: CommandName): Promise<void> {
+        fetchCommand(commandName, this)
+            ?.execute()
+            .catch((error) => {
+                console.log(`Error when executing ${commandName}:`, error);
+            });
+    }
+
+    private queueMessageContent(): MessageEmbed {
+        return new MessageEmbed({
+            title: 'Hello world!',
+            description: 'TODO',
         });
     }
 
-    get isReady() {
-        return this.ready;
+    private async initializeQueueMessage(): Promise<boolean> {
+        if (!this.textChannel || !this.musicGuild || !this.voiceChannel)
+            return false;
+        return this.textChannel
+            .send({ embeds: [this.queueMessageContent()] })
+            .then((message: Message) => {
+                this.queueMessage = message;
+                return true;
+            })
+            .catch((error) => {
+                console.log('Error when sending queue message:', error);
+                return false;
+            });
     }
 
-    get SongCount() {
-        return this.songCount;
+    private async fetchChannels(
+        textChannelId: string,
+        voiceChannelId: string,
+    ): Promise<boolean> {
+        if (!this.musicGuild) return false;
+        return this.musicGuild.channels
+            .fetch(textChannelId)
+            .then((textChannel) => {
+                if (
+                    !this.musicGuild ||
+                    !textChannel ||
+                    !(textChannel instanceof TextChannel)
+                )
+                    return false;
+                this.textChannel = textChannel;
+                return this.musicGuild.channels
+                    .fetch(voiceChannelId)
+                    .then((voiceChannel) => {
+                        if (
+                            !voiceChannel ||
+                            !(voiceChannel instanceof VoiceChannel)
+                        )
+                            return false;
+                        this.voiceChannel = voiceChannel;
+                        return true;
+                    });
+            })
+            .catch((error) => {
+                console.log('Error when fetching channels:', error);
+                return false;
+            });
     }
 
-    get Loop() {
-        return this.loop;
-    }
-
-    get LoopQueue() {
-        return this.loopQueue;
-    }
-
-    public changeChannel(newChannel: VoiceChannel) {
-        if (!this.ready) return;
-        this.channel = newChannel;
-    }
-
-    public addSong(songName: string, pushForward: boolean, skip: boolean) {
-        if (!this.ready) return;
-        const song = this.findSong(songName);
-        if (!song) return;
-        this.enqueueSong(song, pushForward, skip);
-    }
-
-    public shuffle(): void {
-        if (!this.ready) return;
-        // shove songs into an array
-        // shuffle the array
-        // change the array back to linked list
-        return;
-    }
-
-    public clearQueue(): void {
-        this.songCount = 0;
-        this.headSong = null;
-        this.tailSong = null;
-    }
-
-    public stopPlaying(): void {}
-
-    public pauseResume(): void {}
-
-    public skip(): void {
-        this.playNextSong();
-    }
-
-    private enqueueSong(
-        song: Song,
-        pushForward: boolean = false,
-        skip: boolean = false,
-    ): void {
-        // if pushForward, add song to the head of the queue
-        // if skip, skip the current song
-        if (pushForward) {
-            const temp: Song | null = this.headSong;
-            this.headSong = song;
-            this.headSong.Next = temp;
-            if (skip) {
-                this.skip();
-                return;
-            }
-        } else {
-            if (!this.tailSong || !this.headSong) {
-                this.headSong = song;
-                this.tailSong = this.headSong;
-                this.songCount = 1;
-            } else if (this.tailSong) {
-                this.tailSong.Next = song;
-                this.tailSong = this.tailSong.Next;
-                this.songCount++;
-            } else return;
-        }
-        if (!this.paused && this.songCount === 1) this.startPlaying();
-    }
-
-    private dequeueSong(): Song | null {
-        if (!this.headSong) return null;
-        const song: Song = this.headSong;
-        this.headSong = this.headSong.Next;
-        this.songCount--;
-        return song;
-    }
-
-    private joinChannel(): void {}
-
-    private leaveChannel(): void {}
-
-    private playNextSong(): void {}
-
-    private startPlaying(): void {}
-
-    private findSong(songName: string): Song | null {
-        if (!this.ready) return null;
-        return null;
-    }
-}
-
-class Song {
-    private next: Song | null;
-    private name: string;
-    private duration: number;
-
-    constructor() {
-        this.next = null;
-    }
-
-    get Next(): Song | null {
-        return this.next;
-    }
-
-    set Next(next: Song | null) {
-        this.next = next;
+    public static async newMusic(
+        client: MusicClient,
+        guildId: string,
+        voiceChannelId: string,
+        textChannelId: string,
+    ): Promise<Music | null> {
+        const music: Music = new Music(client);
+        if (!music) return null;
+        return music.setup(guildId, voiceChannelId, textChannelId).then(() => {
+            if (!music.ready) return null;
+            return music;
+        });
     }
 }
