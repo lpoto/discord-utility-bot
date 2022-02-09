@@ -1,3 +1,4 @@
+import { joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
 import {
     CommandInteraction,
     Guild,
@@ -13,26 +14,12 @@ import { SongQueue } from './song-queue';
 
 export class Music {
     // should only be created from newMusic static method
-    private client: MusicClient;
-    private isReady;
-    private musicGuild: Guild | null;
-    private textChannel: TextChannel | null;
     private queueMessage: Message | null;
-    private voiceChannel: VoiceChannel | null;
     private songQueue: SongQueue | null;
 
-    constructor(client: MusicClient) {
-        this.client = client;
-        this.isReady = false;
-        this.musicGuild = null;
-        this.textChannel = null;
+    constructor() {
         this.queueMessage = null;
-        this.voiceChannel = null;
         this.songQueue = null;
-    }
-
-    get ready(): boolean {
-        return this.isReady;
     }
 
     get queue(): SongQueue | null {
@@ -40,7 +27,6 @@ export class Music {
     }
 
     get size(): number {
-        if (!this.ready) return 0;
         if (!this.queue) this.songQueue = new SongQueue();
         return this.queue ? this.queue.size : 0;
     }
@@ -49,37 +35,36 @@ export class Music {
         return this.queueMessage;
     }
 
-    get guild(): Guild | null {
-        return this.musicGuild;
-    }
-
-    get channel(): VoiceChannel | null {
-        return this.voiceChannel;
-    }
-
-    set channel(value: VoiceChannel | null) {
-        this.voiceChannel = value;
-    }
-
-    public async setup(interaction: CommandInteraction): Promise<void> {
+    public async setup(
+        interaction: CommandInteraction,
+    ): Promise<Music | null> {
         if (
             !interaction.member ||
             !(interaction.member instanceof GuildMember) ||
             !interaction.member.voice ||
             !interaction.member.voice.channel ||
-            !interaction.channel ||
-            !(interaction.channel instanceof TextChannel) ||
             !(interaction.member.voice.channel instanceof VoiceChannel)
         )
-            return;
-        this.textChannel = interaction.channel;
-        this.voiceChannel = interaction.member.voice.channel;
-        this.musicGuild = interaction.guild;
-        this.initializeQueueMessage(interaction).then((result) => {
-            if (!result) return;
+            return this;
+        const voiceChannel: VoiceChannel | null = interaction.member.voice.channel;
+        const guild: Guild | null = interaction.guild;
+        if (voiceChannel.full || !voiceChannel.joinable) {
+            await interaction.reply({
+                content: 'Cannot join your voice channel!',
+                ephemeral: true,
+            });
+            return null;
+        }
+        return this.initializeQueueMessage(interaction).then((result) => {
+            if (!result || !voiceChannel || !guild) return this;
             this.songQueue = new SongQueue();
-            this.isReady =
-                this.songQueue !== null && this.songQueue !== undefined;
+
+            joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: guild.id,
+                adapterCreator: guild.voiceAdapterCreator
+            })
+            return this;
         });
     }
 
@@ -101,52 +86,23 @@ export class Music {
     private async initializeQueueMessage(
         interaction: CommandInteraction,
     ): Promise<boolean> {
-        if (!this.textChannel || !this.musicGuild || !this.voiceChannel)
+        if (!interaction.channel || !interaction.guild)
             return false;
         return interaction
             .reply({ embeds: [this.queueMessageContent()], fetchReply: true })
             .then((message) => {
                 if (message instanceof Message) {
                     this.queueMessage = message;
+                    message.startThread({
+                        name: 'Music thread',
+                        reason: 'Adding songs to the queue',
+                    });
                     return true;
                 }
                 return false;
             })
             .catch((error) => {
                 console.log('Error when initializing queue message:', error);
-                return false;
-            });
-    }
-
-    private async fetchChannels(
-        textChannelId: string,
-        voiceChannelId: string,
-    ): Promise<boolean> {
-        if (!this.musicGuild) return false;
-        return this.musicGuild.channels
-            .fetch(textChannelId)
-            .then((textChannel) => {
-                if (
-                    !this.musicGuild ||
-                    !textChannel ||
-                    !(textChannel instanceof TextChannel)
-                )
-                    return false;
-                this.textChannel = textChannel;
-                return this.musicGuild.channels
-                    .fetch(voiceChannelId)
-                    .then((voiceChannel) => {
-                        if (
-                            !voiceChannel ||
-                            !(voiceChannel instanceof VoiceChannel)
-                        )
-                            return false;
-                        this.voiceChannel = voiceChannel;
-                        return true;
-                    });
-            })
-            .catch((error) => {
-                console.log('Error when fetching channels:', error);
                 return false;
             });
     }
@@ -159,13 +115,12 @@ export class Music {
     }
 
     public static async newMusic(
-        client: MusicClient,
         interaction: CommandInteraction,
     ): Promise<Music | null> {
-        const music: Music = new Music(client);
+        const music: Music = new Music();
         if (!music) return null;
-        return music.setup(interaction).then(() => {
-            if (!music.ready) return null;
+        return music.setup(interaction).then((music) => {
+            if (music) return null;
             return music;
         });
     }
