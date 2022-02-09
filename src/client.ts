@@ -25,6 +25,10 @@ export class MusicClient extends Client {
         this.slashCommandQueue = [];
     }
 
+    get musics(): { [guildId: string]: Music } {
+        return this.guildMusics;
+    }
+
     get slashCommand(): { [key: string]: string } {
         return {
             name: 'music',
@@ -54,7 +58,6 @@ export class MusicClient extends Client {
             )
         ) {
             console.log('Handle slash command:', interaction.id);
-            console.log(this.guildMusics);
             if (this.musicExists(interaction.guildId)) {
                 await interaction.reply({
                     content: 'Music thread is already active in this server!!',
@@ -65,7 +68,7 @@ export class MusicClient extends Client {
                     console.log(
                         `Initializing queue msg in guild ${interaction.guildId}`,
                     );
-                    Music.newMusic(interaction).then((music) => {
+                    Music.newMusic(this, interaction).then((music) => {
                         if (interaction.guildId && music)
                             this.guildMusics[interaction.guildId] = music;
                     });
@@ -96,7 +99,8 @@ export class MusicClient extends Client {
     ): boolean {
         return (
             channel.permissionsFor(clientMember).has('CONNECT') &&
-            channel.permissionsFor(clientMember).has('SPEAK')
+            channel.permissionsFor(clientMember).has('SPEAK') &&
+            channel.permissionsFor(clientMember).has('USE_VAD')
         );
     }
 
@@ -184,6 +188,19 @@ export class MusicClient extends Client {
         }
     }
 
+    private async archiveOldThreads(): Promise<void> {
+        console.log('Archiving old music threads.');
+        for (let i of this.guilds.cache) {
+            i[1].channels.fetchActiveThreads().then(async (fetched) => {
+                if (!fetched || !fetched.threads || fetched.threads.size == 0)
+                    return;
+                for (let thread of fetched.threads)
+                    if (this.user)
+                        await Music.archiveMusicThread(thread[1], this.user?.id);
+            });
+        }
+    }
+
     private async registerSlashCommand(
         guildId: string,
         token: string,
@@ -211,12 +228,13 @@ export class MusicClient extends Client {
         client: MusicClient,
         token: string,
     ): Promise<void> {
-        client.on('ready', () => {
+        client.on('ready', async () => {
             if (!client.user) return;
             console.log('------------------------------------');
             console.log(`  Logged in as user ${client.user.tag}`);
             console.log('------------------------------------');
             client.registerSlashCommands(token).then(() => {});
+            await client.archiveOldThreads();
         });
 
         client.on('interactionCreate', async (interaction) => {

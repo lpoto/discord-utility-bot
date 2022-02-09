@@ -2,7 +2,7 @@
 
 A discord bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
 
-[invite bot](https://discord.com/api/oauth2/authorize?client_id=826508834238627840&permissions=311388342272&scope=bot%20applications.commands)
+[invite bot](https://discord.com/api/oauth2/authorize?client_id=826508834238627840&permissions=51576309760&scope=bot%20applications.commands)
 
 ## Features
 
@@ -42,6 +42,7 @@ music commands.
 - Create Public Threads
 - Connect
 - Speak
+- Use Voice Activity
 
 ## Development
 

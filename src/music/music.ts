@@ -1,11 +1,11 @@
-import { joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
+import { joinVoiceChannel, VoiceConnectionStatus } from '@discordjs/voice';
 import {
     CommandInteraction,
     Guild,
     GuildMember,
     Message,
     MessageEmbed,
-    TextChannel,
+    ThreadChannel,
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
@@ -14,12 +14,22 @@ import { SongQueue } from './song-queue';
 
 export class Music {
     // should only be created from newMusic static method
+    private client: MusicClient;
+    private guildId: string;
     private queueMessage: Message | null;
     private songQueue: SongQueue | null;
+    private musicThread: ThreadChannel | null;
 
-    constructor() {
+    constructor(client: MusicClient, guildId: string) {
         this.queueMessage = null;
         this.songQueue = null;
+        this.musicThread = null;
+        this.client = client;
+        this.guildId = guildId;
+    }
+
+    get thread() {
+        return this.musicThread;
     }
 
     get queue(): SongQueue | null {
@@ -46,7 +56,8 @@ export class Music {
             !(interaction.member.voice.channel instanceof VoiceChannel)
         )
             return this;
-        const voiceChannel: VoiceChannel | null = interaction.member.voice.channel;
+        const voiceChannel: VoiceChannel | null =
+            interaction.member.voice.channel;
         const guild: Guild | null = interaction.guild;
         if (voiceChannel.full || !voiceChannel.joinable) {
             await interaction.reply({
@@ -62,8 +73,19 @@ export class Music {
             joinVoiceChannel({
                 channelId: voiceChannel.id,
                 guildId: guild.id,
-                adapterCreator: guild.voiceAdapterCreator
-            })
+                adapterCreator: guild.voiceAdapterCreator,
+                selfMute: false,
+            }).on('stateChange', (statePrev, stateAfter) => {
+                if (statePrev.status == stateAfter.status) return;
+                console.log(
+                    `State change: ${statePrev.status} -> ${stateAfter.status}`,
+                );
+                if (
+                    stateAfter.status == VoiceConnectionStatus.Destroyed ||
+                    stateAfter.status == VoiceConnectionStatus.Disconnected
+                )
+                    this.destroy();
+            });
             return this;
         });
     }
@@ -76,6 +98,13 @@ export class Music {
             });
     }
 
+    private destroy(): void {
+        if (this.guildId in this.client.musics)
+            delete this.client.musics[this.guildId];
+        if (this.client.user?.id)
+            Music.archiveMusicThread(this.thread, this.client.user.id);
+    }
+
     private queueMessageContent(): MessageEmbed {
         return new MessageEmbed({
             title: 'Music Queue',
@@ -86,18 +115,44 @@ export class Music {
     private async initializeQueueMessage(
         interaction: CommandInteraction,
     ): Promise<boolean> {
-        if (!interaction.channel || !interaction.guild)
-            return false;
+        if (!interaction.channel || !interaction.guild) return false;
         return interaction
             .reply({ embeds: [this.queueMessageContent()], fetchReply: true })
             .then((message) => {
                 if (message instanceof Message) {
                     this.queueMessage = message;
-                    message.startThread({
-                        name: 'Music thread',
-                        reason: 'Adding songs to the queue',
-                    });
-                    return true;
+                    return message
+                        .startThread({
+                            name: Music.musicThreadName,
+                            reason: 'Adding songs to the queue',
+                        })
+                        .then(async (thread) => {
+                            if (thread) {
+                                this.musicThread = thread;
+                                await thread
+                                    .send(
+                                        'Type the name or the url of a song!',
+                                    )
+                                    .catch(() => {});
+                                return true;
+                            }
+                            if (message.deletable)
+                                try {
+                                    message.delete();
+                                } catch (error) {
+                                    return false;
+                                }
+                            return false;
+                        })
+                        .catch(() => {
+                            if (message.deletable)
+                                try {
+                                    message.delete();
+                                } catch (error) {
+                                    return false;
+                                }
+                            return false;
+                        });
                 }
                 return false;
             })
@@ -114,14 +169,55 @@ export class Music {
         };
     }
 
+    static get musicThreadName(): string {
+        return 'Music thread';
+    }
+
     public static async newMusic(
+        client: MusicClient,
         interaction: CommandInteraction,
     ): Promise<Music | null> {
-        const music: Music = new Music();
+        if (!interaction.guildId || !client.user) return null;
+        const music: Music = new Music(client, interaction.guildId);
         if (!music) return null;
         return music.setup(interaction).then((music) => {
-            if (music) return null;
-            return music;
+            if (music && music.client && music?.guildId && music.queueMessage)
+                return music;
+            return null;
+        });
+    }
+
+    public static async archiveMusicThread(
+        thread: ThreadChannel | null,
+        clientId: string,
+    ): Promise<void> {
+        if (
+            !thread ||
+            !thread.guild ||
+            !thread.parentId ||
+            thread.name != Music.musicThreadName ||
+            thread.ownerId != clientId
+        )
+            return;
+        thread.fetchStarterMessage().then(async (message) => {
+            if (!message || !message.deletable) return;
+            try {
+                await message.delete();
+            } catch (error) {
+                return error;
+            }
+        });
+        thread.setName('Used to be a music thread...').then(() => {
+            thread
+                .delete()
+                .then(() => {
+                    console.log(`Deleted thread: ${thread.id}`);
+                })
+                .catch(() => {
+                    thread.setArchived().then(() => {
+                        console.log(`Archived thread: ${thread.id}`);
+                    });
+                });
         });
     }
 }

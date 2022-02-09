@@ -20,6 +20,7 @@ Add the bot to your discord server:
     - Create Public Threads,
     - Send Messages in Threads,
     - Read Message History,
+    - Use Voice Activity,
     - Connect,
     - Speak
 
