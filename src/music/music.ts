@@ -63,7 +63,7 @@ export class Music {
         const guild: Guild | null = interaction.guild;
         if (voiceChannel.full || !voiceChannel.joinable) {
             await interaction.reply({
-                content: 'Cannot join your voice channel!',
+                content: this.client.lang.error.cannotJoinVoice,
                 ephemeral: true,
             });
             return null;
@@ -78,13 +78,13 @@ export class Music {
                 adapterCreator: guild.voiceAdapterCreator,
                 selfMute: false,
             }).on('stateChange', (statePrev, stateAfter) => {
-                if (statePrev.status == stateAfter.status) return;
+                if (statePrev.status === stateAfter.status) return;
                 console.log(
                     `State change: ${statePrev.status} -> ${stateAfter.status}`,
                 );
                 if (
-                    stateAfter.status == VoiceConnectionStatus.Destroyed ||
-                    stateAfter.status == VoiceConnectionStatus.Disconnected
+                    stateAfter.status === VoiceConnectionStatus.Destroyed ||
+                    stateAfter.status === VoiceConnectionStatus.Disconnected
                 )
                     this.destroy();
             });
@@ -183,14 +183,19 @@ export class Music {
         if (!interaction.guildId || !client.user) return null;
         const music: Music = new Music(client, interaction.guildId);
         if (!music) return null;
-        return music.setup(interaction).then((music) => {
-            if (music && music.client && music?.guildId && music.queueMessage)
-                return music;
+        return music.setup(interaction).then((music2) => {
+            if (
+                music2 &&
+                music2.client &&
+                music2.guildId &&
+                music2.queueMessage
+            )
+                return music2;
             return null;
         });
     }
 
-    /** Archive a music thread, delete it if possible and delete 
+    /** Archive a music thread, delete it if possible and delete
      * the queue message */
     public static async archiveMusicThread(
         thread: ThreadChannel | null,
@@ -200,8 +205,8 @@ export class Music {
             !thread ||
             !thread.guild ||
             !thread.parentId ||
-            thread.name != Music.musicThreadName ||
-            thread.ownerId != clientId
+            thread.name !== Music.musicThreadName ||
+            thread.ownerId !== clientId
         )
             return;
         thread.fetchStarterMessage().then(async (message) => {

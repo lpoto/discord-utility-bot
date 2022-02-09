@@ -25,9 +25,12 @@ npm install
 
 ```
 {
-    "token": "discord-bot-token"
+    "token": "discord-bot-token",
+    "musicRole": "DJ"
 }
 ```
+
+**NOTE** a different music role may be used (role required to use the bot commands)
 
 ## Running the bot
 

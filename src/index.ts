@@ -2,7 +2,6 @@ import { Intents } from 'discord.js';
 import { MusicClient } from './client';
 import config from './config.json';
 
-const musicRole = 'DJ';
 const client: MusicClient = new MusicClient(
     {
         intents: [
@@ -11,7 +10,7 @@ const client: MusicClient = new MusicClient(
             Intents.FLAGS.GUILD_VOICE_STATES,
         ],
     },
-    musicRole,
+    config.musicRole,
 );
 
 MusicClient.run(client, config.token);

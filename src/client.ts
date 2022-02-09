@@ -12,17 +12,24 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import { Music } from './music';
+import lang from './lang.json';
 
 export class MusicClient extends Client {
     private guildMusics: { [guildId: string]: Music };
     private musicRoleName: string;
     private slashCommandQueue: CommandInteraction[];
+    private language: typeof lang;
 
     constructor(options: ClientOptions, musicRoleName: string) {
         super(options);
         this.musicRoleName = musicRoleName;
         this.guildMusics = {};
         this.slashCommandQueue = [];
+        this.language = lang;
+    }
+
+    get lang(): typeof lang {
+        return this.language;
     }
 
     get musics(): { [guildId: string]: Music } {
@@ -31,8 +38,8 @@ export class MusicClient extends Client {
 
     get slashCommand(): { [key: string]: string } {
         return {
-            name: 'music',
-            description: 'Starts a new music thread.',
+            name: this.lang.slashCommand.name,
+            description: this.lang.slashCommand.description,
         };
     }
 
@@ -60,7 +67,7 @@ export class MusicClient extends Client {
             console.log('Handle slash command:', interaction.id);
             if (this.musicExists(interaction.guildId)) {
                 await interaction.reply({
-                    content: 'Music thread is already active in this server!!',
+                    content: this.lang.error.activeThread,
                     ephemeral: true,
                 });
             } else {
@@ -80,6 +87,7 @@ export class MusicClient extends Client {
             this.handleSlashCommand(this.slashCommandQueue[0]);
     }
 
+    /** Check if client has the required text channel permissions*/
     private textChannelPermissions(
         clientMember: GuildMember,
         channel: TextChannel,
@@ -93,6 +101,7 @@ export class MusicClient extends Client {
         );
     }
 
+    /** Check if client has the required voice permissions*/
     private voiceChannelPermissions(
         clientMember: GuildMember,
         channel: VoiceChannel,
@@ -104,6 +113,7 @@ export class MusicClient extends Client {
         );
     }
 
+    /** Check if there is already an active music object in the server */
     private musicExists(guildId: string): boolean {
         if (guildId in this.guildMusics) {
             if (!this.guildMusics[guildId]) {
@@ -115,13 +125,13 @@ export class MusicClient extends Client {
         return false;
     }
 
+    /** check if user has the required music role and
+     * is in the same channel as client
+     * or client is not in channel */
     private async validMember(
         interaction: CommandInteraction,
         music: Music | null = null,
     ): Promise<boolean> {
-        /* check if user has the required role
-        check if user is in the same channel as client,
-        or client is not in channel */
         if (
             !interaction.guild ||
             !interaction.guild.me ||
@@ -135,7 +145,8 @@ export class MusicClient extends Client {
             )
         ) {
             await interaction.reply({
-                content: `You are missing role \`${this.musicRoleName}\``,
+                content:
+                    this.lang.error.missingRole + `\`${this.musicRoleName}\``,
                 ephemeral: true,
             });
             return false;
@@ -161,8 +172,7 @@ export class MusicClient extends Client {
             )
         ) {
             await interaction.reply({
-                content:
-                    'I am missing the required permissions to join the channel!',
+                content: 'I am missing the required permissions to join!',
                 ephemeral: true,
             });
             return false;
@@ -172,6 +182,7 @@ export class MusicClient extends Client {
         return false;
     }
 
+    /** Register the slash command in all of the servers that the client is member of.*/
     private async registerSlashCommands(token: string): Promise<void> {
         if (!this.user) return;
         for (const guild of this.guilds.cache) {
@@ -188,19 +199,24 @@ export class MusicClient extends Client {
         }
     }
 
+    /** Archive old music threads that were not closed properly.*/
     private async archiveOldThreads(): Promise<void> {
         console.log('Archiving old music threads.');
-        for (let i of this.guilds.cache) {
+        for (const i of this.guilds.cache) {
             i[1].channels.fetchActiveThreads().then(async (fetched) => {
-                if (!fetched || !fetched.threads || fetched.threads.size == 0)
+                if (!fetched || !fetched.threads || fetched.threads.size === 0)
                     return;
-                for (let thread of fetched.threads)
+                for (const thread of fetched.threads)
                     if (this.user)
-                        await Music.archiveMusicThread(thread[1], this.user?.id);
+                        await Music.archiveMusicThread(
+                            thread[1],
+                            this.user?.id,
+                        );
             });
         }
     }
 
+    /** Register a new music command that initializes the music in the server */
     private async registerSlashCommand(
         guildId: string,
         token: string,
@@ -224,6 +240,7 @@ export class MusicClient extends Client {
         })();
     }
 
+    /** Subscribe to required client events for the music client and login */
     public static async run(
         client: MusicClient,
         token: string,
@@ -235,6 +252,9 @@ export class MusicClient extends Client {
             console.log('------------------------------------');
             client.registerSlashCommands(token).then(() => {});
             await client.archiveOldThreads();
+            client.user.setActivity('/' + client.lang.slashCommand.name, {
+                type: 'PLAYING',
+            });
         });
 
         client.on('interactionCreate', async (interaction) => {
@@ -242,7 +262,7 @@ export class MusicClient extends Client {
 
             if (interaction.commandName === client.slashCommand.name) {
                 client.slashCommandQueue.push(interaction);
-                if (client.slashCommandQueue.length == 1)
+                if (client.slashCommandQueue.length === 1)
                     await client.handleSlashCommand(interaction);
             }
         });
