@@ -45,6 +45,8 @@ export class Music {
         return this.queueMessage;
     }
 
+    /** join the voice channel, send a queue message
+     * and start a new music thread */
     public async setup(
         interaction: CommandInteraction,
     ): Promise<Music | null> {
@@ -98,6 +100,8 @@ export class Music {
             });
     }
 
+    /** Archive the music thread, delete the queue message and remove the Music
+     * object from the client's music dictionary */
     private destroy(): void {
         if (this.guildId in this.client.musics)
             delete this.client.musics[this.guildId];
@@ -112,49 +116,46 @@ export class Music {
         });
     }
 
+    /** Send a new queue message and start a new music thread */
     private async initializeQueueMessage(
         interaction: CommandInteraction,
     ): Promise<boolean> {
         if (!interaction.channel || !interaction.guild) return false;
+
         return interaction
             .reply({ embeds: [this.queueMessageContent()], fetchReply: true })
             .then((message) => {
-                if (message instanceof Message) {
-                    this.queueMessage = message;
-                    return message
-                        .startThread({
-                            name: Music.musicThreadName,
-                            reason: 'Adding songs to the queue',
-                        })
-                        .then(async (thread) => {
-                            if (thread) {
-                                this.musicThread = thread;
-                                await thread
-                                    .send(
-                                        'Type the name or the url of a song!',
-                                    )
-                                    .catch(() => {});
-                                return true;
-                            }
-                            if (message.deletable)
-                                try {
-                                    message.delete();
-                                } catch (error) {
-                                    return false;
-                                }
+                if (!(message instanceof Message)) return false;
+
+                this.queueMessage = message;
+                return message
+                    .startThread({
+                        name: Music.musicThreadName,
+                        reason: 'Adding songs to the queue',
+                    })
+                    .then(async (thread) => {
+                        if (!thread) return false;
+                        this.musicThread = thread;
+                        await thread
+                            .send('Type the name or the url of a song!')
+                            .catch(() => {});
+                        if (!message.deletable) return false;
+                        try {
+                            message.delete();
+                            return true;
+                        } catch (error) {
                             return false;
-                        })
-                        .catch(() => {
-                            if (message.deletable)
-                                try {
-                                    message.delete();
-                                } catch (error) {
-                                    return false;
-                                }
+                        }
+                    })
+                    .catch(() => {
+                        if (!message.deletable) return false;
+                        try {
+                            message.delete();
+                            return true;
+                        } catch (error) {
                             return false;
-                        });
-                }
-                return false;
+                        }
+                    });
             })
             .catch((error) => {
                 console.log('Error when initializing queue message:', error);
@@ -173,6 +174,8 @@ export class Music {
         return 'Music thread';
     }
 
+    /** Create a new music object and initialize it properly.
+     * Music object should always be created with this method */
     public static async newMusic(
         client: MusicClient,
         interaction: CommandInteraction,
@@ -187,6 +190,8 @@ export class Music {
         });
     }
 
+    /** Archive a music thread, delete it if possible and delete 
+     * the queue message */
     public static async archiveMusicThread(
         thread: ThreadChannel | null,
         clientId: string,
@@ -209,14 +214,20 @@ export class Music {
         });
         thread.setName('Used to be a music thread...').then(() => {
             thread
-                .delete()
+                .setArchived()
                 .then(() => {
-                    console.log(`Deleted thread: ${thread.id}`);
+                    console.log(`Archived thread: ${thread.id}`);
                 })
                 .catch(() => {
-                    thread.setArchived().then(() => {
-                        console.log(`Archived thread: ${thread.id}`);
+                    console.log('Could not archive the thread!');
+                })
+                .then(() => {
+                    thread.delete().then(() => {
+                        console.log(`Deleted thread: ${thread.id}`);
                     });
+                })
+                .catch(() => {
+                    console.log('Could not delete the thread!');
                 });
         });
     }
