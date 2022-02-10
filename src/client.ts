@@ -82,7 +82,7 @@ export class MusicClient extends Client {
     public handleThreadMessage(msg: Message): void {
         if (
             !(msg.channel instanceof ThreadChannel) ||
-            msg.channel.ownerId != this.user?.id
+            msg.channel.ownerId !== this.user?.id
         )
             return;
         console.log('Handle thread message:', msg.id);
@@ -367,12 +367,12 @@ export class MusicClient extends Client {
         });
 
         client.on('messageDelete', (message) => {
-            if (message.guildId && message.author?.id == client.user?.id)
+            if (message.guildId && message.author?.id === client.user?.id)
                 client.destroyMusic(message.guildId);
         });
 
         client.on('threadDelete', (thread) => {
-            if (thread.guildId && thread.ownerId == client.user?.id)
+            if (thread.guildId && thread.ownerId === client.user?.id)
                 client.destroyMusic(thread.guildId);
         });
 

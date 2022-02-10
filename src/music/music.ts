@@ -1,4 +1,8 @@
-import { joinVoiceChannel, VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
+import {
+    joinVoiceChannel,
+    VoiceConnection,
+    VoiceConnectionStatus,
+} from '@discordjs/voice';
 import {
     CommandInteraction,
     Guild,
@@ -10,12 +14,12 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { CommandName, fetchCommand } from './commands';
+import { CommandName, executeCommand } from './commands';
 import { SongQueue } from './song-queue';
 
 export class Music {
     // should only be created from newMusic static method
-    private client: MusicClient;
+    private musicClient: MusicClient;
     private guildId: string;
     private queueMessage: Message | null;
     private songQueue: SongQueue | null;
@@ -26,16 +30,20 @@ export class Music {
         this.queueMessage = null;
         this.songQueue = null;
         this.musicThread = null;
-        this.client = client;
+        this.musicClient = client;
         this.guildId = guildId;
         this.con = null;
     }
 
-    get connection() {
+    get client(): MusicClient {
+        return this.musicClient;
+    }
+
+    get connection(): VoiceConnection | null {
         return this.con;
     }
 
-    get thread() {
+    get thread(): ThreadChannel | null {
         return this.musicThread;
     }
 
@@ -93,7 +101,7 @@ export class Music {
                 guildId: guild.id,
                 adapterCreator: guild.voiceAdapterCreator,
                 selfMute: true,
-                selfDeaf: true
+                selfDeaf: true,
             }).on('stateChange', (statePrev, stateAfter) => {
                 if (statePrev.status === stateAfter.status) return;
 
@@ -101,17 +109,15 @@ export class Music {
                     `State change: ${statePrev.status} -> ${stateAfter.status}`,
                 );
 
-                if (
-                    stateAfter.status === VoiceConnectionStatus.Disconnected
-                )
+                if (stateAfter.status === VoiceConnectionStatus.Disconnected)
                     this.client.destroyMusic(this.guildId);
             });
             return this;
         });
     }
 
-    public async execute(commandName: CommandName): Promise<void> {
-        fetchCommand(commandName, this)?.execute();
+    public execute(commandName: CommandName): void {
+        executeCommand({ name: commandName, music: this });
     }
 
     private queueMessageContent(): MessageEmbed {
