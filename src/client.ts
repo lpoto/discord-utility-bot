@@ -1,4 +1,4 @@
-import { REST } from '@discordjs/rest';
+import { DiscordAPIError, REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import {
     Client,
@@ -12,39 +12,61 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import { Music } from './music';
-import lang from './lang.json';
+import { LanguageString, Translator, LanguageKeyPath } from './translation';
 
 export class MusicClient extends Client {
     private guildMusics: { [guildId: string]: Music };
     private musicRoleName: string;
     private slashCommandQueue: CommandInteraction[];
-    private language: typeof lang;
+    private translator: Translator;
 
-    constructor(options: ClientOptions, musicRoleName: string) {
+    constructor(
+        options: ClientOptions,
+        musicRoleName: string,
+        defaultLang: LanguageString,
+    ) {
         super(options);
         this.musicRoleName = musicRoleName;
         this.guildMusics = {};
         this.slashCommandQueue = [];
-        this.language = lang;
-    }
-
-    get lang(): typeof lang {
-        return this.language;
+        this.translator = new Translator(defaultLang);
     }
 
     get musics(): { [guildId: string]: Music } {
         return this.guildMusics;
     }
 
-    get slashCommand(): { [key: string]: string } {
+    public translate(guildId: string | null, keys: LanguageKeyPath): string {
+        return this.translator.translate(guildId, keys);
+    }
+
+    public slashCommand(guildId: string): { [key: string]: string } {
         return {
-            name: this.lang.slashCommand.name,
-            description: this.lang.slashCommand.description,
+            name: this.translate(guildId, ['slashCommand', 'name']),
+            description: this.translate(guildId, [
+                'slashCommand',
+                'description',
+            ]),
         };
+    }
+
+    public handleError(error: Error): void {
+        try {
+            /* if discordApiError, do not log errors when fetching already
+             * deleted messages or missing permissions to delete threads...*/
+            const discordError: DiscordAPIError = error as DiscordAPIError;
+            if (['10008', '50013'].includes(discordError.code.toString()))
+                return;
+        } catch (e) {
+            console.error(error);
+            return;
+        }
+        console.error(error);
     }
 
     public async handleThreadMessage(msg: Message): Promise<void> {
         if (!(msg.channel instanceof ThreadChannel)) return;
+
         console.log('Handle thread message:', msg.id);
     }
 
@@ -65,9 +87,13 @@ export class MusicClient extends Client {
             )
         ) {
             console.log('Handle slash command:', interaction.id);
+
             if (this.musicExists(interaction.guildId)) {
                 await interaction.reply({
-                    content: this.lang.error.activeThread,
+                    content: this.translate(interaction.guildId, [
+                        'error',
+                        'activeThread',
+                    ]),
                     ephemeral: true,
                 });
             } else {
@@ -75,6 +101,7 @@ export class MusicClient extends Client {
                     console.log(
                         `Initializing queue msg in guild ${interaction.guildId}`,
                     );
+
                     Music.newMusic(this, interaction).then((music) => {
                         if (interaction.guildId && music)
                             this.guildMusics[interaction.guildId] = music;
@@ -134,6 +161,7 @@ export class MusicClient extends Client {
     ): Promise<boolean> {
         if (
             !interaction.guild ||
+            !interaction.guildId ||
             !interaction.guild.me ||
             !interaction.member ||
             !(interaction.member instanceof GuildMember)
@@ -146,21 +174,33 @@ export class MusicClient extends Client {
         ) {
             await interaction.reply({
                 content:
-                    this.lang.error.missingRole + `\`${this.musicRoleName}\``,
+                    this.translate(interaction.guildId, [
+                        'error',
+                        'missingRole',
+                    ]) + `\`${this.musicRoleName}\``,
                 ephemeral: true,
             });
             return false;
         }
         if (!interaction.member.voice.channel) {
             await interaction.reply({
-                content: 'You are not in a voice channel!',
+                content: this.translate(interaction.guildId, [
+                    'error',
+                    'voice',
+                    'user',
+                    'notConnected',
+                ]),
                 ephemeral: true,
             });
             return false;
         }
         if (!(interaction.member.voice.channel instanceof VoiceChannel)) {
             await interaction.reply({
-                content: 'Invalid voice channel!',
+                content: this.translate(interaction.guildId, [
+                    'error',
+                    'voice',
+                    'invalid',
+                ]),
                 ephemeral: true,
             });
             return false;
@@ -172,7 +212,12 @@ export class MusicClient extends Client {
             )
         ) {
             await interaction.reply({
-                content: 'I am missing the required permissions to join!',
+                content: this.translate(interaction.guildId, [
+                    'error',
+                    'voice',
+                    'client',
+                    'noPermissions',
+                ]),
                 ephemeral: true,
             });
             return false;
@@ -185,33 +230,34 @@ export class MusicClient extends Client {
     /** Register the slash command in all of the servers that the client is member of.*/
     private async registerSlashCommands(token: string): Promise<void> {
         if (!this.user) return;
+        console.log('Started refreshing application (/) commands...');
+
         for (const guild of this.guilds.cache) {
             console.log(
                 `Updating slash commands for guild "${guild[1].name}"`,
             );
+
             try {
-                this.registerSlashCommand(guild[1].id, token);
+                await this.registerSlashCommand(guild[1].id, token);
             } catch (error) {
-                console.log(
+                console.error(
                     `Failed registering the clash command for "${guild[1].name}"`,
                 );
             }
         }
+        console.log('Successfully reloaded application (/) commands.');
     }
 
     /** Archive old music threads that were not closed properly.*/
     private async archiveOldThreads(): Promise<void> {
-        console.log('Archiving old music threads.');
-        for (const i of this.guilds.cache) {
+        console.log('Archiving old music threads...');
+        for await (const i of this.guilds.cache) {
             i[1].channels.fetchActiveThreads().then(async (fetched) => {
                 if (!fetched || !fetched.threads || fetched.threads.size === 0)
                     return;
-                for (const thread of fetched.threads)
+                for await (const thread of fetched.threads)
                     if (this.user)
-                        await Music.archiveMusicThread(
-                            thread[1],
-                            this.user?.id,
-                        );
+                        await Music.archiveMusicThread(thread[1], this);
             });
         }
     }
@@ -221,22 +267,14 @@ export class MusicClient extends Client {
         guildId: string,
         token: string,
     ): Promise<void> {
-        const commands = [this.slashCommand];
+        const commands = [this.slashCommand(guildId)];
         const rest = new REST({ version: '9' }).setToken(token);
         (async () => {
             if (!this.user) return;
-            try {
-                console.log('Started refreshing application (/) commands.');
-
-                await rest.put(
-                    Routes.applicationGuildCommands(this.user.id, guildId),
-                    { body: commands },
-                );
-
-                console.log('Successfully reloaded application (/) commands.');
-            } catch (error) {
-                console.error(error);
-            }
+            await rest.put(
+                Routes.applicationGuildCommands(this.user.id, guildId),
+                { body: commands },
+            );
         })();
     }
 
@@ -245,26 +283,44 @@ export class MusicClient extends Client {
         client: MusicClient,
         token: string,
     ): Promise<void> {
+        client.on('error', (error: Error) => {
+            client.handleError(error);
+        });
+
         client.on('ready', async () => {
             if (!client.user) return;
+
             console.log('------------------------------------');
             console.log(`  Logged in as user ${client.user.tag}`);
             console.log('------------------------------------');
-            client.registerSlashCommands(token).then(() => {});
+
+            await client.registerSlashCommands(token);
             await client.archiveOldThreads();
-            client.user.setActivity('/' + client.lang.slashCommand.name, {
-                type: 'PLAYING',
-            });
+            client.user.setActivity(
+                '/' + client.translate(null, ['slashCommand', 'name']),
+                {
+                    type: 'PLAYING',
+                },
+            );
+
+            console.log('Client ready!\n');
         });
 
         client.on('interactionCreate', async (interaction) => {
-            if (!interaction.isCommand()) return;
+            if (
+                !interaction.isCommand() ||
+                !interaction.guildId ||
+                interaction.commandName !==
+                    client.translate(interaction.guildId, [
+                        'slashCommand',
+                        'name',
+                    ])
+            )
+                return;
 
-            if (interaction.commandName === client.slashCommand.name) {
-                client.slashCommandQueue.push(interaction);
-                if (client.slashCommandQueue.length === 1)
-                    await client.handleSlashCommand(interaction);
-            }
+            client.slashCommandQueue.push(interaction);
+            if (client.slashCommandQueue.length === 1)
+                await client.handleSlashCommand(interaction);
         });
 
         client.on('guildCreate', (guild) => {

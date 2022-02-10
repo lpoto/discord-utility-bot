@@ -1,6 +1,7 @@
 import { Intents } from 'discord.js';
 import { MusicClient } from './client';
 import config from './config.json';
+import { LanguageString } from './translation';
 
 const client: MusicClient = new MusicClient(
     {
@@ -11,6 +12,7 @@ const client: MusicClient = new MusicClient(
         ],
     },
     config.musicRole,
+    LanguageString.EN,
 );
 
 MusicClient.run(client, config.token);

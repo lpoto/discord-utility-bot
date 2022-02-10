@@ -9,6 +9,7 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
+import { LanguageKeyPath } from '../translation';
 import { CommandName, fetchCommand } from './commands';
 import { SongQueue } from './song-queue';
 
@@ -45,6 +46,10 @@ export class Music {
         return this.queueMessage;
     }
 
+    public translate(keys: LanguageKeyPath) {
+        return this.client.translate(this.guildId, keys);
+    }
+
     /** join the voice channel, send a queue message
      * and start a new music thread */
     public async setup(
@@ -63,7 +68,12 @@ export class Music {
         const guild: Guild | null = interaction.guild;
         if (voiceChannel.full || !voiceChannel.joinable) {
             await interaction.reply({
-                content: this.client.lang.error.cannotJoinVoice,
+                content: this.translate([
+                    'error',
+                    'voice',
+                    'client',
+                    'cannotJoin',
+                ]),
                 ephemeral: true,
             });
             return null;
@@ -79,9 +89,11 @@ export class Music {
                 selfMute: false,
             }).on('stateChange', (statePrev, stateAfter) => {
                 if (statePrev.status === stateAfter.status) return;
+
                 console.log(
                     `State change: ${statePrev.status} -> ${stateAfter.status}`,
                 );
+
                 if (
                     stateAfter.status === VoiceConnectionStatus.Destroyed ||
                     stateAfter.status === VoiceConnectionStatus.Disconnected
@@ -93,26 +105,24 @@ export class Music {
     }
 
     public async execute(commandName: CommandName): Promise<void> {
-        fetchCommand(commandName, this)
-            ?.execute()
-            .catch((error) => {
-                console.log(`Error when executing ${commandName}:`, error);
-            });
+        fetchCommand(commandName, this)?.execute();
     }
 
     /** Archive the music thread, delete the queue message and remove the Music
      * object from the client's music dictionary */
     private destroy(): void {
+        console.log(`Destroy music in guild: ${this.guildId}`);
+
         if (this.guildId in this.client.musics)
             delete this.client.musics[this.guildId];
         if (this.client.user?.id)
-            Music.archiveMusicThread(this.thread, this.client.user.id);
+            Music.archiveMusicThread(this.thread, this.client);
     }
 
     private queueMessageContent(): MessageEmbed {
         return new MessageEmbed({
-            title: 'Music Queue',
-            description: 'IDK MAN',
+            title: this.translate(['music', 'queue', 'title']),
+            footer: { text: this.translate(['music', 'queue', 'footer']) },
         });
     }
 
@@ -130,48 +140,31 @@ export class Music {
                 this.queueMessage = message;
                 return message
                     .startThread({
-                        name: Music.musicThreadName,
-                        reason: 'Adding songs to the queue',
+                        name: this.translate(['music', 'thread', 'name']),
+                        reason: this.translate(['music', 'thread', 'reason']),
                     })
                     .then(async (thread) => {
-                        if (!thread) return false;
-                        this.musicThread = thread;
-                        await thread
-                            .send('Type the name or the url of a song!')
-                            .catch(() => {});
-                        if (!message.deletable) return false;
-                        try {
-                            message.delete();
+                        if (thread) {
+                            this.musicThread = thread;
                             return true;
-                        } catch (error) {
-                            return false;
                         }
+                        message.delete().catch((error) => {
+                            this.client.handleError(error);
+                        });
+                        return false;
                     })
                     .catch(() => {
                         if (!message.deletable) return false;
-                        try {
-                            message.delete();
-                            return true;
-                        } catch (error) {
-                            return false;
-                        }
+                        message.delete().catch((error) => {
+                            this.client.handleError(error);
+                        });
+                        return false;
                     });
             })
             .catch((error) => {
-                console.log('Error when initializing queue message:', error);
+                this.client.handleError(error);
                 return false;
             });
-    }
-
-    static get slashCommand(): { [key: string]: string } {
-        return {
-            name: 'music',
-            description: 'Starts a new music thread!',
-        };
-    }
-
-    static get musicThreadName(): string {
-        return 'Music thread';
     }
 
     /** Create a new music object and initialize it properly.
@@ -199,41 +192,59 @@ export class Music {
      * the queue message */
     public static async archiveMusicThread(
         thread: ThreadChannel | null,
-        clientId: string,
+        client: MusicClient,
     ): Promise<void> {
         if (
             !thread ||
             !thread.guild ||
+            !thread.guildId ||
             !thread.parentId ||
-            thread.name !== Music.musicThreadName ||
-            thread.ownerId !== clientId
+            thread.ownerId !== client.user?.id
         )
             return;
-        thread.fetchStarterMessage().then(async (message) => {
-            if (!message || !message.deletable) return;
-            try {
-                await message.delete();
-            } catch (error) {
-                return error;
-            }
-        });
-        thread.setName('Used to be a music thread...').then(() => {
-            thread
-                .setArchived()
-                .then(() => {
-                    console.log(`Archived thread: ${thread.id}`);
-                })
-                .catch(() => {
-                    console.log('Could not archive the thread!');
-                })
-                .then(() => {
-                    thread.delete().then(() => {
-                        console.log(`Deleted thread: ${thread.id}`);
+        thread
+            .fetchStarterMessage()
+            .then(async (message) => {
+                if (!message || !message.deletable) return;
+                try {
+                    await message.delete();
+                } catch (error) {
+                    return error;
+                }
+            })
+            .catch((error) => {
+                client.handleError(error);
+            });
+        thread
+            .setName(
+                client.translate(thread.guildId, [
+                    'music',
+                    'thread',
+                    'archivedName',
+                ]),
+            )
+            .then(() => {
+                thread
+                    .setArchived()
+                    .then(() => {
+                        console.log(`Archived thread: ${thread.id}`);
+                    })
+                    .catch(() => {
+                        console.log('Could not archive the thread!');
+                    })
+                    .then(() => {
+                        thread
+                            .delete()
+                            .then(() => {
+                                console.log(`Deleted thread: ${thread.id}`);
+                            })
+                            .catch((error) => {
+                                client.handleError(error);
+                            });
+                    })
+                    .catch(() => {
+                        console.log('Could not delete the thread!');
                     });
-                })
-                .catch(() => {
-                    console.log('Could not delete the thread!');
-                });
-        });
+            });
     }
 }

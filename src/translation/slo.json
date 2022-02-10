@@ -1,0 +1,31 @@
+{
+    "slashCommand": {
+        "name": "music",
+        "description": "Opens a new music thread!"
+    },
+    "error": {
+        "activeThread": "Music thread is already active in this server!",
+        "missingRole": "You are missing role: ",
+        "voice": {
+            "invalid": "Invalid voice channel!",
+            "client": {
+                "cannotJoin": "Cannot join your voice channel!",
+                "noPermissions": "I am missing the required permissions to join your channel!"
+            },
+            "user": {
+                "notConnected": "You are not in a  voice channel!"
+            }
+        }
+    },
+    "music": {
+        "queue": {
+            "title": "Music queue",
+            "footer": "Type the name/url of a youtube song/playlist in this message's thread!"
+        },
+        "thread": {
+            "name": "Music thread!",
+            "archivedName": "Used to be a music thread...",
+            "reason": "Adding songs to the queue."
+        }
+    }
+}
