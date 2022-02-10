@@ -1,14 +1,8 @@
-import {
-    joinVoiceChannel,
-    VoiceConnection,
-    VoiceConnectionStatus,
-} from '@discordjs/voice';
+import { VoiceConnection } from '@discordjs/voice';
 import { randomUUID } from 'crypto';
 import {
     CommandInteraction,
-    Guild,
     GuildMember,
-    Message,
     MessageActionRow,
     ThreadChannel,
     VoiceChannel,
@@ -16,6 +10,7 @@ import {
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
 import { CommandName, executeCommand, getCommandsActionRow } from './commands';
+import { MusicActions } from './music-actions';
 import { SongQueue } from './song-queue';
 import { QueueEmbed } from './utils';
 
@@ -23,36 +18,38 @@ export class Music {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
     private musicGuildId: string;
-    private queueMessage: Message | null;
     private songQueue: SongQueue | null;
     private musicThread: ThreadChannel | null;
     private offset: number;
-    private con: VoiceConnection | null;
     private isLoop: boolean;
     private isLoopQueue: boolean;
+    private musicActions: MusicActions;
 
     constructor(client: MusicClient, guildId: string) {
-        this.queueMessage = null;
         this.songQueue = null;
         this.musicThread = null;
         this.musicClient = client;
         this.musicGuildId = guildId;
-        this.con = null;
         this.isLoop = false;
         this.isLoopQueue = false;
         this.offset = 0;
+        this.musicActions = new MusicActions(this);
     }
 
     get client(): MusicClient {
         return this.musicClient;
     }
 
-    get connection(): VoiceConnection | null {
-        return this.con;
+    get actions(): MusicActions {
+        return this.musicActions;
     }
 
     get thread(): ThreadChannel | null {
         return this.musicThread;
+    }
+
+    set thread(value: ThreadChannel | null) {
+        this.musicThread = value;
     }
 
     get queue(): SongQueue | null {
@@ -68,10 +65,6 @@ export class Music {
         this.loop = value;
     }
 
-    get queueOffset(): number {
-        return this.offset;
-    }
-
     get loopQueue(): boolean {
         return this.isLoopQueue;
     }
@@ -81,21 +74,12 @@ export class Music {
         this.loop = value;
     }
 
-    get size(): number {
-        if (!this.queue) this.songQueue = new SongQueue();
-        return this.queue ? this.queue.size : 0;
-    }
-
-    get message(): Message | null {
-        return this.queueMessage;
-    }
-
     get guildId(): string {
         return this.musicGuildId;
     }
 
-    public handleError(error: Error): void {
-        return this.client.handleError(error);
+    get queueOffset(): number {
+        return this.offset;
     }
 
     public incrementOffset() {
@@ -106,6 +90,11 @@ export class Music {
         this.offset =
             this.offset > 0 ? this.offset - QueueEmbed.songsPerPage() : 0;
     }
+
+    public handleError(error: Error): void {
+        return this.client.handleError(error);
+    }
+
 
     public translate(keys: LanguageKeyPath) {
         return this.client.translate(this.musicGuildId, keys);
@@ -124,10 +113,10 @@ export class Music {
             !(interaction.member.voice.channel instanceof VoiceChannel)
         )
             return this;
-        const voiceChannel: VoiceChannel | null =
-            interaction.member.voice.channel;
-        const guild: Guild | null = interaction.guild;
-        if (voiceChannel.full || !voiceChannel.joinable) {
+        if (
+            interaction.member.voice.channel.full ||
+            !interaction.member.voice.channel.joinable
+        ) {
             await interaction.reply({
                 content: this.translate([
                     'error',
@@ -140,25 +129,11 @@ export class Music {
             return null;
         }
         return this.initializeQueueMessage(interaction).then((result) => {
-            if (!result || !voiceChannel || !guild) return this;
-
-            this.con = joinVoiceChannel({
-                channelId: voiceChannel.id,
-                guildId: guild.id,
-                adapterCreator: guild.voiceAdapterCreator,
-                selfMute: true,
-                selfDeaf: true,
-            }).on('stateChange', (statePrev, stateAfter) => {
-                if (statePrev.status === stateAfter.status) return;
-
-                console.log(
-                    `State change: ${statePrev.status} -> ${stateAfter.status}`,
-                );
-
-                if (stateAfter.status === VoiceConnectionStatus.Disconnected)
-                    this.client.destroyMusic(this.guildId);
+            if (!result) return this;
+            return this.actions.joinVoice(interaction).then((result) => {
+                if (result) return this;
+                return null;
             });
-            return this;
         });
     }
 
@@ -178,46 +153,11 @@ export class Music {
         }
         const embed: QueueEmbed = new QueueEmbed(this);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null =
-            getCommandsActionRow(this);
+        const commandActionRow: MessageActionRow | null = getCommandsActionRow(
+            this,
+        );
         if (commandActionRow) components.push(commandActionRow);
-        return interaction
-            .reply({
-                embeds: [embed],
-                fetchReply: true,
-                components: components,
-            })
-            .then((message) => {
-                if (!(message instanceof Message)) return false;
-
-                this.queueMessage = message;
-                return message
-                    .startThread({
-                        name: this.translate(['music', 'thread', 'name']),
-                        reason: this.translate(['music', 'thread', 'reason']),
-                    })
-                    .then(async (thread) => {
-                        if (thread) {
-                            this.musicThread = thread;
-                            return true;
-                        }
-                        message.delete().catch((error) => {
-                            this.handleError(error);
-                        });
-                        return false;
-                    })
-                    .catch(() => {
-                        if (!message.deletable) return false;
-                        message.delete().catch((error) => {
-                            this.handleError(error);
-                        });
-                        return false;
-                    });
-            })
-            .catch((error) => {
-                this.handleError(error);
-                return false;
-            });
+        return this.actions.replyWithQueue(interaction);
     }
 
     /** Create a new music object and initialize it properly.
@@ -230,74 +170,9 @@ export class Music {
         const music: Music = new Music(client, interaction.guildId);
         if (!music) return null;
         return music.setup(interaction).then((music2) => {
-            if (
-                music2 &&
-                music2.client &&
-                music2.guildId &&
-                music2.queueMessage
-            )
+            if (music2 && music2.client && music2.guildId && music2.thread)
                 return music2;
             return null;
         });
-    }
-
-    /** Archive a music thread, delete it if possible and delete
-     * the queue message */
-    public static async archiveMusicThread(
-        thread: ThreadChannel | null,
-        client: MusicClient,
-    ): Promise<void> {
-        if (
-            !thread ||
-            !thread.guild ||
-            !thread.guildId ||
-            !thread.parentId ||
-            thread.ownerId !== client.user?.id
-        )
-            return;
-        thread
-            .fetchStarterMessage()
-            .then(async (message) => {
-                if (!message || !message.deletable) return;
-                try {
-                    await message.delete();
-                } catch (error) {
-                    return error;
-                }
-            })
-            .catch((error) => {
-                client.handleError(error);
-            });
-        thread
-            .setName(
-                client.translate(thread.guildId, [
-                    'music',
-                    'thread',
-                    'archivedName',
-                ]),
-            )
-            .then(() => {
-                thread
-                    .setArchived()
-                    .then(() => {
-                        console.log(`Archived thread: ${thread.id}`);
-                    })
-                    .catch(() => {
-                        console.log('Could not archive the thread!');
-                    })
-                    .then(() => {
-                        thread
-                            .delete()
-                            .then(() => {
-                                console.log(`Deleted thread: ${thread.id}`);
-                            })
-                            .catch((error) => {
-                                client.handleError(error);
-                            });
-                    })
-                    .catch(() => {
-                        console.log('Could not delete the thread!');
-                    });
-            });
     }
 }

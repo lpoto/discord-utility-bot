@@ -1,4 +1,3 @@
-import { VoiceConnection } from '@discordjs/voice';
 import { randomUUID } from 'crypto';
 import { MessageButton, ThreadChannel } from 'discord.js';
 import { MusicCommandOptions } from '.';
@@ -34,10 +33,6 @@ export abstract class Command {
 
     get queue(): SongQueue | null {
         return this.options.music.queue;
-    }
-
-    get connection(): VoiceConnection | null {
-        return this.options.music.connection;
     }
 
     get guildId(): string {

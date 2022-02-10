@@ -1,6 +1,6 @@
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import { Client } from 'discord.js';
+import { Client, ThreadChannel } from 'discord.js';
 import { MusicClientOptions } from '.';
 import { Music } from '../music';
 import { Translator, LanguageKeyPath } from '../translation';
@@ -57,8 +57,8 @@ export class MusicClient extends Client {
             return;
         console.log('Destroy music in guild: ', guildId);
 
-        this.musics[guildId].connection?.destroy();
-        Music.archiveMusicThread(this.musics[guildId].thread, this);
+        this.musics[guildId].actions.leaveVoice();
+        this.archiveMusicThread(this.musics[guildId].thread, this);
         delete this.musics[guildId];
     }
 
@@ -108,9 +108,69 @@ export class MusicClient extends Client {
                     return;
                 for await (const thread of fetched.threads)
                     if (this.user)
-                        await Music.archiveMusicThread(thread[1], this);
+                        await this.archiveMusicThread(thread[1], this);
             });
         }
+    }
+
+    /** Archive a music thread, delete it if possible and delete
+     * the queue message */
+    public async archiveMusicThread(
+        thread: ThreadChannel | null,
+        client: MusicClient,
+    ): Promise<void> {
+        if (
+            !thread ||
+            !thread.guild ||
+            !thread.guildId ||
+            !thread.parentId ||
+            thread.ownerId !== client.user?.id
+        )
+            return;
+        thread
+            .fetchStarterMessage()
+            .then(async (message) => {
+                if (!message || !message.deletable) return;
+                try {
+                    await message.delete();
+                } catch (error) {
+                    return error;
+                }
+            })
+            .catch((error) => {
+                this.handleError(error);
+            });
+        thread
+            .setName(
+                this.translate(thread.guildId, [
+                    'music',
+                    'thread',
+                    'archivedName',
+                ]),
+            )
+            .then(() => {
+                thread
+                    .setArchived()
+                    .then(() => {
+                        console.log(`Archived thread: ${thread.id}`);
+                    })
+                    .catch(() => {
+                        console.log('Could not archive the thread!');
+                    })
+                    .then(() => {
+                        thread
+                            .delete()
+                            .then(() => {
+                                console.log(`Deleted thread: ${thread.id}`);
+                            })
+                            .catch((error) => {
+                                this.handleError(error);
+                            });
+                    })
+                    .catch(() => {
+                        console.log('Could not delete the thread!');
+                    });
+            });
     }
 
     /** Register a new music command that initializes the music in the server */
