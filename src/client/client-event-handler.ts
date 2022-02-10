@@ -1,9 +1,11 @@
 import {
+    ButtonInteraction,
     CommandInteraction,
     DiscordAPIError,
     GuildMember,
     Interaction,
     Message,
+    MessageButton,
     TextChannel,
     ThreadChannel,
 } from 'discord.js';
@@ -14,10 +16,14 @@ import { MusicClient } from './client';
 export class ClientEventHandler {
     private client: MusicClient;
     private slashCommandQueue: CommandInteraction[];
+    private buttonClickQueue: { [messageId: string]: ButtonInteraction[] };
+    private threadMessageQueue: { [messageId: string]: Message[] };
 
     constructor(client: MusicClient) {
         this.client = client;
         this.slashCommandQueue = [];
+        this.buttonClickQueue = {};
+        this.threadMessageQueue = {};
     }
 
     get permissionChecker() {
@@ -61,8 +67,13 @@ export class ClientEventHandler {
         });
 
         this.client.on('messageCreate', (message) => {
-            if (message.channel instanceof ThreadChannel)
-                this.handleThreadMessage(message);
+            if (message.channel instanceof ThreadChannel) {
+                if (!(message.channel.id in this.threadMessageQueue))
+                    this.threadMessageQueue[message.channel.id] = [];
+                this.threadMessageQueue[message.channel.id].push(message);
+                if (this.threadMessageQueue[message.channel.id].length == 1)
+                    this.handleThreadMessage(message);
+            }
         });
 
         this.client.on('messageDelete', (message) => {
@@ -98,16 +109,57 @@ export class ClientEventHandler {
         console.error(error);
     }
 
-    private handleThreadMessage(msg: Message): void {
+    private async handleThreadMessage(message: Message): Promise<void> {
         if (
-            !(msg.channel instanceof ThreadChannel) ||
-            msg.channel.ownerId !== this.client.user?.id
-        )
-            return;
-        console.log('Handle thread message:', msg.id);
+            message.guildId &&
+            this.musics[message.guildId] &&
+            message.channel instanceof ThreadChannel &&
+            message.content &&
+            message.channel.ownerId === this.client.user?.id
+        ) {
+            await this.musics[message.guildId].actions.addSongToQueue(
+                message.content.split('\n'),
+            );
+        }
+        this.threadMessageQueue[message.channel.id].shift();
+        if (this.threadMessageQueue[message.channel.id].length === 0)
+            delete this.threadMessageQueue[message.channel.id];
+        else
+            this.handleThreadMessage(
+                this.threadMessageQueue[message.channel.id][0],
+            );
     }
 
-    private handleInteraction(interaction: Interaction): void {
+    private async handleInteraction(interaction: Interaction): Promise<void> {
+        if (
+            !interaction.guildId ||
+            (!interaction.isButton() && !interaction.isCommand()) ||
+            !interaction.member ||
+            !(interaction.member instanceof GuildMember)
+        )
+            return;
+        if (!this.permissionChecker.checkMemberRoles(interaction.member)) {
+            await interaction.reply({
+                content:
+                    this.client.translate(interaction.guildId, [
+                        'error',
+                        'missingRole',
+                    ]) + `\`${this.permissionChecker.roles.join(', ')}\``,
+                ephemeral: true,
+            });
+            return;
+        }
+        if (
+            interaction.isButton() &&
+            interaction.component instanceof MessageButton
+        ) {
+            if (!(interaction.message.id in this.buttonClickQueue))
+                this.buttonClickQueue[interaction.message.id] = [];
+            this.buttonClickQueue[interaction.message.id].push(interaction);
+            if (this.buttonClickQueue[interaction.message.id].length === 1)
+                this.handleButtonClick(interaction);
+            return;
+        }
         if (
             !interaction.isCommand() ||
             interaction.commandName !==
@@ -118,6 +170,41 @@ export class ClientEventHandler {
         this.slashCommandQueue.push(interaction);
         if (this.slashCommandQueue.length === 1)
             this.handleSlashCommand(interaction);
+    }
+
+    private handleButtonClick(interaction: ButtonInteraction): void {
+        if (
+            interaction.guildId !== undefined &&
+            interaction.guildId !== null &&
+            interaction.guildId in this.musics &&
+            this.musics[interaction.guildId] !== null &&
+            this.musics[interaction.guildId] !== undefined
+        ) {
+            if (
+                interaction.component.label !== null &&
+                interaction.component.label !== undefined
+            )
+                this.musics[interaction.guildId].actions
+                    .executeActionFromInteraction(interaction)
+                    .then((value) => {
+                        if (
+                            value ||
+                            !interaction.guildId ||
+                            !interaction.component.label
+                        )
+                            return;
+                        this.musics[
+                            interaction.guildId
+                        ].commands.executeFromInteraction(interaction);
+                    });
+        }
+        this.buttonClickQueue[interaction.message.id].shift();
+        if (this.buttonClickQueue[interaction.message.id].length === 0)
+            delete this.buttonClickQueue[interaction.message.id];
+        else
+            this.handleButtonClick(
+                this.buttonClickQueue[interaction.message.id][0],
+            );
     }
 
     private handleSlashCommand(interaction: CommandInteraction): void {
@@ -139,7 +226,7 @@ export class ClientEventHandler {
 
                 this.musics[interaction.guildId].thread
                     ?.fetchStarterMessage()
-                    .then(async (msg) => {
+                    .then(async (message) => {
                         return interaction.reply({
                             content:
                                 this.translate(interaction.guildId, [
@@ -147,7 +234,7 @@ export class ClientEventHandler {
                                     'activeThread',
                                 ]) +
                                 '\n' +
-                                msg.url,
+                                message.url,
                             ephemeral: true,
                             fetchReply: true,
                         });
@@ -164,14 +251,15 @@ export class ClientEventHandler {
                         if (!result) return;
 
                         console.log(
-                            `Initializing queue msg in guild ${interaction.guildId}`,
+                            `Initializing queue message in guild ${interaction.guildId}`,
                         );
 
                         Music.newMusic(this.client, interaction).then(
                             (music) => {
                                 if (interaction.guildId && music)
-                                    this.client.musics[interaction.guildId] =
-                                        music;
+                                    this.client.musics[
+                                        interaction.guildId
+                                    ] = music;
                             },
                         );
                     });

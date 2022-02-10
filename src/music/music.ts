@@ -1,15 +1,12 @@
-import { VoiceConnection } from '@discordjs/voice';
-import { randomUUID } from 'crypto';
 import {
     CommandInteraction,
     GuildMember,
-    MessageActionRow,
     ThreadChannel,
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { CommandName, executeCommand, getCommandsActionRow } from './commands';
+import { MusicCommands } from './commands';
 import { MusicActions } from './music-actions';
 import { SongQueue } from './song-queue';
 import { QueueEmbed } from './utils';
@@ -24,6 +21,7 @@ export class Music {
     private isLoop: boolean;
     private isLoopQueue: boolean;
     private musicActions: MusicActions;
+    private musicCommands: MusicCommands;
 
     constructor(client: MusicClient, guildId: string) {
         this.songQueue = null;
@@ -34,6 +32,7 @@ export class Music {
         this.isLoopQueue = false;
         this.offset = 0;
         this.musicActions = new MusicActions(this);
+        this.musicCommands = new MusicCommands(this);
     }
 
     get client(): MusicClient {
@@ -42,6 +41,10 @@ export class Music {
 
     get actions(): MusicActions {
         return this.musicActions;
+    }
+
+    get commands(): MusicCommands {
+        return this.musicCommands;
     }
 
     get thread(): ThreadChannel | null {
@@ -62,7 +65,7 @@ export class Music {
 
     set loop(value: boolean) {
         if (value) this.loopQueue = false;
-        this.loop = value;
+        this.isLoop = value;
     }
 
     get loopQueue(): boolean {
@@ -71,7 +74,7 @@ export class Music {
 
     set loopQueue(value: boolean) {
         if (value) this.loop = false;
-        this.loop = value;
+        this.isLoopQueue = value;
     }
 
     get guildId(): string {
@@ -82,11 +85,11 @@ export class Music {
         return this.offset;
     }
 
-    public incrementOffset() {
+    public async incrementOffset(): Promise<void> {
         this.offset += QueueEmbed.songsPerPage();
     }
 
-    public decrementOffset() {
+    public async decrementOffset(): Promise<void> {
         this.offset =
             this.offset > 0 ? this.offset - QueueEmbed.songsPerPage() : 0;
     }
@@ -94,7 +97,6 @@ export class Music {
     public handleError(error: Error): void {
         return this.client.handleError(error);
     }
-
 
     public translate(keys: LanguageKeyPath) {
         return this.client.translate(this.musicGuildId, keys);
@@ -137,10 +139,6 @@ export class Music {
         });
     }
 
-    public execute(commandName: CommandName): void {
-        executeCommand({ name: commandName, music: this });
-    }
-
     /** Send a new queue message and start a new music thread */
     private async initializeQueueMessage(
         interaction: CommandInteraction,
@@ -148,15 +146,6 @@ export class Music {
         if (!interaction.channel || !interaction.guild) return false;
 
         this.songQueue = new SongQueue();
-        for (let i = 0; i < 11; i++) {
-            this.songQueue.enqueue(randomUUID() + randomUUID());
-        }
-        const embed: QueueEmbed = new QueueEmbed(this);
-        const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null = getCommandsActionRow(
-            this,
-        );
-        if (commandActionRow) components.push(commandActionRow);
         return this.actions.replyWithQueue(interaction);
     }
 

@@ -12,13 +12,8 @@ export class SongQueue {
         return this.songs.reduce((sum, song) => sum + song.duration, 0);
     }
 
-    get songNames(): string[] {
-        if (!this.songs) this.songs = [];
-        return this.songs.map((song, index) => {
-            if (song.name.length > 50)
-                return `**${index}.**\u3000${song.name.substring(0, 47)}...`;
-            return `**${index}.**\u3000${song.name}`;
-        });
+    get allSongs(): Song[] {
+        return this.songs;
     }
 
     public enqueue(nameOrUrl: string) {
@@ -41,9 +36,10 @@ export class SongQueue {
         return song ? song : null;
     }
 
-    public shuffle(): void {
-        for (let i = this.size - 1; i >= 0; i--) {
-            const randomIndex = Math.floor(Math.random() * i);
+    public async shuffle(): Promise<void> {
+        for (let i: number = this.size - 1; i > 1; i--) {
+            let randomIndex: number = Math.floor(Math.random() * i);
+            while (randomIndex == 0) randomIndex = Math.floor(Math.random() * i);
             [this.songs[i], this.songs[randomIndex]] = [
                 this.songs[randomIndex],
                 this.songs[i],

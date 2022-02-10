@@ -6,35 +6,27 @@ import { Music } from '../music';
 export class QueueEmbed extends MessageEmbed {
     private music: Music;
     private songsPerSinglePage: number;
-    private songsOffset: number;
 
-    constructor(music: Music, songsOffset: number = 0) {
+    constructor(music: Music) {
         super({
             title: music.translate(['music', 'queue', 'title']),
             footer: { text: music.translate(['music', 'queue', 'footer']) },
         });
         this.songsPerSinglePage = QueueEmbed.songsPerPage();
-        this.songsOffset =
-            songsOffset - (songsOffset % this.songsPerSinglePage);
         this.music = music;
         this.setDescription(this.buildDescription());
         const queueSize: number = music.queue ? music.queue.size : 0;
-        if (this.songsOffset >= queueSize) this.songsOffset = 0;
         this.setDescription(
-            this.description +
-                '\n\n' +
-                this.music.translate(['music', 'queue', 'songNumber']) +
-                queueSize.toString(),
+            `${this.description}\n\n${this.music.translate([
+                'music',
+                'queue',
+                'songNumber',
+            ])} **${queueSize.toString()}**`,
         );
-        if (queueSize > this.songsPerSinglePage)
-            this.setDescription(
-                this.description +
-                    '\n' +
-                    this.music.translate(['music', 'queue', 'page']) +
-                    `${
-                        this.songsOffset / this.songsPerSinglePage + 1
-                    }/${Math.ceil(queueSize / this.songsPerSinglePage)}`,
-            );
+    }
+
+    get songsOffset() {
+        return this.music.queueOffset;
     }
 
     public getActionRow(): MessageActionRow {
@@ -48,7 +40,7 @@ export class QueueEmbed extends MessageEmbed {
                 .setDisabled(
                     !this.music.queue ||
                         this.songsOffset + this.songsPerSinglePage >=
-                            this.music.queue.size,
+                            this.music.queue.size - 1,
                 )
                 .setLabel(QueueEmbed.actionRowLabels(this.music).pageForward)
                 .setStyle(MessageButtonStyles.SECONDARY)
@@ -71,19 +63,52 @@ export class QueueEmbed extends MessageEmbed {
                         : MessageButtonStyles.SECONDARY,
                 )
                 .setCustomId(randomUUID()),
+            new MessageButton()
+                .setDisabled(!this.music.queue || this.music.queue.size < 2)
+                .setLabel(QueueEmbed.actionRowLabels(this.music).shuffle)
+                .setStyle(MessageButtonStyles.SECONDARY)
+                .setCustomId(randomUUID()),
         ]);
     }
 
     private buildDescription(): string {
-        return !this.music.queue
-            ? ''
-            : this.music.queue.songNames
-                  .slice(this.songsOffset, this.songsOffset + 10)
-                  .join('\n');
+        const songs: string[] | undefined = this.music.queue?.allSongs.map(
+            (song, index) => {
+                let songName: string = song.name;
+                if (songName.length > 50)
+                    songName = songName.substring(0, 50) + '...';
+                if (index > 0) songName = `**${index}.**\u3000${songName}`;
+                return songName;
+            },
+        );
+        if (!songs || songs.length < 1) return '';
+        const headSong = songs.shift();
+        return (
+            (songs.length == 0
+                ? ''
+                : songs
+                      .slice(
+                          this.songsOffset,
+                          this.songsOffset + QueueEmbed.songsPerPage(),
+                      )
+                      .join('\n')) +
+            `\n\n**${this.music.translate([
+                'music',
+                'queue',
+                'curPlaying',
+            ])}**\n\u3000\u2000${headSong}`
+        );
     }
 
-    public static actionRowLabels(music: Music): {
-        [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
+    public static actionRowLabels(
+        music: Music,
+    ): {
+        [key in
+            | 'pageForward'
+            | 'pageBackward'
+            | 'loop'
+            | 'loopQueue'
+            | 'shuffle']: string;
     } {
         return {
             pageForward: music.translate([
@@ -98,9 +123,9 @@ export class QueueEmbed extends MessageEmbed {
             ]),
             loop: music.translate(['music', 'actionRow', 'loop']),
             loopQueue: music.translate(['music', 'actionRow', 'loopQueue']),
+            shuffle: music.translate(['music', 'actionRow', 'shuffle']),
         };
     }
-
     public static songsPerPage(): number {
         return 10;
     }

@@ -78,17 +78,6 @@ export class PermissionChecker {
             !(interaction.member instanceof GuildMember)
         )
             return false;
-        if (!this.checkMemberRoles(interaction.member)) {
-            await interaction.reply({
-                content:
-                    this.client.translate(interaction.guildId, [
-                        'error',
-                        'missingRole',
-                    ]) + `\`${this.roles.join(', ')}\``,
-                ephemeral: true,
-            });
-            return false;
-        }
         if (!interaction.member.voice.channel) {
             await interaction.reply({
                 content: this.client.translate(interaction.guildId, [

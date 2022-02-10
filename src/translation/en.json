@@ -22,7 +22,7 @@
             "title": "Music queue",
             "footer": "Type the name/url of a youtube song/playlist in this message's thread!",
             "songNumber": "Number of songs in the queue: ",
-            "page": "Page: "
+            "curPlaying": "Currently playing:"
         },
         "thread": {
             "name": "Music thread!",
@@ -33,11 +33,15 @@
             "pageForward": ">",
             "pageBackward": "<",
             "loop": "Loop",
-            "loopQueue": "Loop Queue"
+            "loopQueue": "Loop Queue",
+            "shuffle": "Shuffle"
         },
         "commands": {
             "actionRow": {
-                "skip": ">>"
+                "skip": "⏩",
+                "pauseResume": "⏯",
+                "stop": "◼",
+                "replay": "↺"
             }
         }
     }
