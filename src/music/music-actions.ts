@@ -135,9 +135,9 @@ export class MusicActions {
     ): Promise<boolean> {
         if (!this.music.queue) return false;
         if (!front)
-            for await (let n of songNamesOrUrls) this.music.queue.enqueue(n);
+            for await (const n of songNamesOrUrls) this.music.queue.enqueue(n);
         else
-            for await (let n of songNamesOrUrls)
+            for await (const n of songNamesOrUrls)
                 this.music.queue.enqueueFront(n);
         return this.updateQueueMessage();
     }
@@ -207,8 +207,8 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null = this
-            .commandActionRow;
+        const commandActionRow: MessageActionRow | null =
+            this.commandActionRow;
         if (commandActionRow) components.push(commandActionRow);
         return {
             fetchReply: true,

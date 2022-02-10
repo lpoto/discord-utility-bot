@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { MessageButton, ThreadChannel } from 'discord.js';
+import { ButtonInteraction, MessageButton, ThreadChannel } from 'discord.js';
 import { MusicCommandOptions } from '.';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
@@ -47,5 +47,7 @@ export abstract class Command {
         return this.options.music.translate(keys);
     }
 
-    public async execute(): Promise<void> {}
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
+        console.log('Executing command: ', interaction?.id);
+    }
 }

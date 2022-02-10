@@ -74,17 +74,14 @@ export class QueueEmbed extends MessageEmbed {
     private buildDescription(): string {
         const songs: string[] | undefined = this.music.queue?.allSongs.map(
             (song, index) => {
-                let songName: string = song.name;
-                if (songName.length > 50)
-                    songName = songName.substring(0, 50) + '...';
-                if (index > 0) songName = `**${index}.**\u3000${songName}`;
-                return songName;
+                if (index > 0) return `**${index}.**\u3000${song.toString()}`;
+                return song.toString();
             },
         );
         if (!songs || songs.length < 1) return '';
         const headSong = songs.shift();
         return (
-            (songs.length == 0
+            (songs.length === 0
                 ? ''
                 : songs
                       .slice(
@@ -100,9 +97,7 @@ export class QueueEmbed extends MessageEmbed {
         );
     }
 
-    public static actionRowLabels(
-        music: Music,
-    ): {
+    public static actionRowLabels(music: Music): {
         [key in
             | 'pageForward'
             | 'pageBackward'

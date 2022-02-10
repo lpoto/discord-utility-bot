@@ -56,7 +56,7 @@ export class MusicCommands {
             const button: MessageButton | null = command.button;
             if (!button) continue;
             if (button.label && interaction.component.label === button.label)
-                return await command.execute();
+                return await command.execute(interaction);
         }
     }
 

@@ -39,7 +39,8 @@ export class SongQueue {
     public async shuffle(): Promise<void> {
         for (let i: number = this.size - 1; i > 1; i--) {
             let randomIndex: number = Math.floor(Math.random() * i);
-            while (randomIndex == 0) randomIndex = Math.floor(Math.random() * i);
+            while (randomIndex === 0)
+                randomIndex = Math.floor(Math.random() * i);
             [this.songs[i], this.songs[randomIndex]] = [
                 this.songs[randomIndex],
                 this.songs[i],
