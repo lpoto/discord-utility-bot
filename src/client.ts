@@ -5,6 +5,7 @@ import {
     ClientOptions,
     CommandInteraction,
     GuildMember,
+    Interaction,
     Message,
     Role,
     TextChannel,
@@ -50,12 +51,26 @@ export class MusicClient extends Client {
         };
     }
 
+    public destroyMusic(guildId: string): void {
+        if (!(guildId in this.musics) || !this.musics[guildId] || !this.user)
+            return;
+        console.log('Destroy music in guild: ', guildId);
+
+        this.musics[guildId].connection?.destroy();
+        Music.archiveMusicThread(this.musics[guildId].thread, this);
+        delete this.musics[guildId];
+    }
+
     public handleError(error: Error): void {
         try {
             /* if discordApiError, do not log errors when fetching already
              * deleted messages or missing permissions to delete threads...*/
             const discordError: DiscordAPIError = error as DiscordAPIError;
-            if (['10008', '50013'].includes(discordError.code.toString()))
+            if (
+                ['10008', '50013', '10003'].includes(
+                    discordError.code.toString(),
+                )
+            )
                 return;
         } catch (e) {
             console.error(error);
@@ -64,15 +79,29 @@ export class MusicClient extends Client {
         console.error(error);
     }
 
-    public async handleThreadMessage(msg: Message): Promise<void> {
-        if (!(msg.channel instanceof ThreadChannel)) return;
-
+    public handleThreadMessage(msg: Message): void {
+        if (
+            !(msg.channel instanceof ThreadChannel) ||
+            msg.channel.ownerId != this.user?.id
+        )
+            return;
         console.log('Handle thread message:', msg.id);
     }
 
-    private async handleSlashCommand(
-        interaction: CommandInteraction,
-    ): Promise<void> {
+    private handleInteraction(interaction: Interaction): void {
+        if (
+            !interaction.isCommand() ||
+            interaction.commandName !==
+                this.translate(interaction.guildId, ['slashCommand', 'name'])
+        )
+            return;
+
+        this.slashCommandQueue.push(interaction);
+        if (this.slashCommandQueue.length === 1)
+            this.handleSlashCommand(interaction);
+    }
+
+    private handleSlashCommand(interaction: CommandInteraction): void {
         if (
             interaction.guildId &&
             interaction.guild &&
@@ -89,15 +118,33 @@ export class MusicClient extends Client {
             console.log('Handle slash command:', interaction.id);
 
             if (this.musicExists(interaction.guildId)) {
-                await interaction.reply({
-                    content: this.translate(interaction.guildId, [
-                        'error',
-                        'activeThread',
-                    ]),
-                    ephemeral: true,
-                });
+                /* if musics exists notify user
+                 * and send the link to the music thread */
+
+                this.musics[interaction.guildId].thread
+                    ?.fetchStarterMessage()
+                    .then(async (msg) => {
+                        return interaction.reply({
+                            content:
+                                this.translate(interaction.guildId, [
+                                    'error',
+                                    'activeThread',
+                                ]) +
+                                '\n' +
+                                msg.url,
+                            ephemeral: true,
+                            fetchReply: true,
+                        });
+                    })
+                    .catch((error) => {
+                        this.handleError(error);
+                    });
             } else {
-                if (await this.validMember(interaction)) {
+                // if valid member start a new music object in the channel
+
+                this.validMember(interaction).then((result) => {
+                    if (!result) return;
+
                     console.log(
                         `Initializing queue msg in guild ${interaction.guildId}`,
                     );
@@ -106,7 +153,7 @@ export class MusicClient extends Client {
                         if (interaction.guildId && music)
                             this.guildMusics[interaction.guildId] = music;
                     });
-                }
+                });
             }
         }
         this.slashCommandQueue.shift();
@@ -143,7 +190,10 @@ export class MusicClient extends Client {
     /** Check if there is already an active music object in the server */
     private musicExists(guildId: string): boolean {
         if (guildId in this.guildMusics) {
-            if (!this.guildMusics[guildId]) {
+            if (
+                !this.guildMusics[guildId] ||
+                !this.guildMusics[guildId].thread
+            ) {
                 delete this.guildMusics[guildId];
                 return false;
             }
@@ -251,6 +301,7 @@ export class MusicClient extends Client {
     /** Archive old music threads that were not closed properly.*/
     private async archiveOldThreads(): Promise<void> {
         console.log('Archiving old music threads...');
+
         for await (const i of this.guilds.cache) {
             i[1].channels.fetchActiveThreads().then(async (fetched) => {
                 if (!fetched || !fetched.threads || fetched.threads.size === 0)
@@ -306,21 +357,23 @@ export class MusicClient extends Client {
             console.log('Client ready!\n');
         });
 
-        client.on('interactionCreate', async (interaction) => {
-            if (
-                !interaction.isCommand() ||
-                !interaction.guildId ||
-                interaction.commandName !==
-                    client.translate(interaction.guildId, [
-                        'slashCommand',
-                        'name',
-                    ])
-            )
-                return;
+        client.on('interactionCreate', (interaction) => {
+            client.handleInteraction(interaction);
+        });
 
-            client.slashCommandQueue.push(interaction);
-            if (client.slashCommandQueue.length === 1)
-                await client.handleSlashCommand(interaction);
+        client.on('messageCreate', (message) => {
+            if (message.channel instanceof ThreadChannel)
+                client.handleThreadMessage(message);
+        });
+
+        client.on('messageDelete', (message) => {
+            if (message.guildId && message.author?.id == client.user?.id)
+                client.destroyMusic(message.guildId);
+        });
+
+        client.on('threadDelete', (thread) => {
+            if (thread.guildId && thread.ownerId == client.user?.id)
+                client.destroyMusic(thread.guildId);
         });
 
         client.on('guildCreate', (guild) => {

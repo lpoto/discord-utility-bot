@@ -1,4 +1,4 @@
-import { joinVoiceChannel, VoiceConnectionStatus } from '@discordjs/voice';
+import { joinVoiceChannel, VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
 import {
     CommandInteraction,
     Guild,
@@ -20,6 +20,7 @@ export class Music {
     private queueMessage: Message | null;
     private songQueue: SongQueue | null;
     private musicThread: ThreadChannel | null;
+    private con: VoiceConnection | null;
 
     constructor(client: MusicClient, guildId: string) {
         this.queueMessage = null;
@@ -27,6 +28,11 @@ export class Music {
         this.musicThread = null;
         this.client = client;
         this.guildId = guildId;
+        this.con = null;
+    }
+
+    get connection() {
+        return this.con;
     }
 
     get thread() {
@@ -82,11 +88,12 @@ export class Music {
             if (!result || !voiceChannel || !guild) return this;
             this.songQueue = new SongQueue();
 
-            joinVoiceChannel({
+            this.con = joinVoiceChannel({
                 channelId: voiceChannel.id,
                 guildId: guild.id,
                 adapterCreator: guild.voiceAdapterCreator,
-                selfMute: false,
+                selfMute: true,
+                selfDeaf: true
             }).on('stateChange', (statePrev, stateAfter) => {
                 if (statePrev.status === stateAfter.status) return;
 
@@ -95,10 +102,9 @@ export class Music {
                 );
 
                 if (
-                    stateAfter.status === VoiceConnectionStatus.Destroyed ||
                     stateAfter.status === VoiceConnectionStatus.Disconnected
                 )
-                    this.destroy();
+                    this.client.destroyMusic(this.guildId);
             });
             return this;
         });
@@ -106,17 +112,6 @@ export class Music {
 
     public async execute(commandName: CommandName): Promise<void> {
         fetchCommand(commandName, this)?.execute();
-    }
-
-    /** Archive the music thread, delete the queue message and remove the Music
-     * object from the client's music dictionary */
-    private destroy(): void {
-        console.log(`Destroy music in guild: ${this.guildId}`);
-
-        if (this.guildId in this.client.musics)
-            delete this.client.musics[this.guildId];
-        if (this.client.user?.id)
-            Music.archiveMusicThread(this.thread, this.client);
     }
 
     private queueMessageContent(): MessageEmbed {

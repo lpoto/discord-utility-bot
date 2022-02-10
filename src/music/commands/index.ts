@@ -1,13 +1,14 @@
 import { Music } from '../music';
 
-export type CommandName =
-    | 'PLAY'
-    | 'STOP'
-    | 'SKIP'
-    | 'REPLAY'
-    | 'LOOP'
-    | 'LOOP_QUEUE'
-    | 'PAUSE';
+export enum CommandName {
+    PLAY,
+    STOP,
+    SKIP,
+    REPLAY,
+    LOOP,
+    LOOP_QUEUE,
+    PAUSE,
+}
 
 export function fetchCommand(
     commandName: CommandName,
