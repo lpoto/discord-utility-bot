@@ -14,8 +14,10 @@ export class SongQueue {
 
     get songNames(): string[] {
         if (!this.songs) this.songs = [];
-        return this.songs.map((song) => {
-            return song.name;
+        return this.songs.map((song, index) => {
+            if (song.name.length > 50)
+                return `**${index}.**\u3000${song.name.substring(0, 47)}...`;
+            return `**${index}.**\u3000${song.name}`;
         });
     }
 

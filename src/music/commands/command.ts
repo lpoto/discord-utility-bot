@@ -1,6 +1,6 @@
 import { VoiceConnection } from '@discordjs/voice';
-import { APIButtonComponent } from 'discord-api-types';
-import { ThreadChannel } from 'discord.js';
+import { randomUUID } from 'crypto';
+import { MessageButton, ThreadChannel } from 'discord.js';
 import { MusicCommandOptions } from '.';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
@@ -9,9 +9,15 @@ import { SongQueue } from '../song-queue';
 
 export abstract class Command {
     private options: MusicCommandOptions;
+    private commandId: string;
 
     constructor(options: MusicCommandOptions) {
         this.options = options;
+        this.commandId = randomUUID();
+    }
+
+    get id(): string {
+        return this.commandId;
     }
 
     get music(): Music {
@@ -34,7 +40,11 @@ export abstract class Command {
         return this.options.music.connection;
     }
 
-    get button(): APIButtonComponent | null {
+    get guildId(): string {
+        return this.options.music.guildId;
+    }
+
+    get button(): MessageButton | null {
         return null;
     }
 
@@ -42,5 +52,5 @@ export abstract class Command {
         return this.options.music.translate(keys);
     }
 
-    public execute(): void {}
+    public async execute(): Promise<void> {}
 }

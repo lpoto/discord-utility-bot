@@ -3,36 +3,44 @@ import {
     VoiceConnection,
     VoiceConnectionStatus,
 } from '@discordjs/voice';
+import { randomUUID } from 'crypto';
 import {
     CommandInteraction,
     Guild,
     GuildMember,
     Message,
-    MessageEmbed,
+    MessageActionRow,
     ThreadChannel,
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { CommandName, executeCommand } from './commands';
+import { CommandName, executeCommand, getCommandsActionRow } from './commands';
 import { SongQueue } from './song-queue';
+import { QueueEmbed } from './utils';
 
 export class Music {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
-    private guildId: string;
+    private musicGuildId: string;
     private queueMessage: Message | null;
     private songQueue: SongQueue | null;
     private musicThread: ThreadChannel | null;
+    private offset: number;
     private con: VoiceConnection | null;
+    private isLoop: boolean;
+    private isLoopQueue: boolean;
 
     constructor(client: MusicClient, guildId: string) {
         this.queueMessage = null;
         this.songQueue = null;
         this.musicThread = null;
         this.musicClient = client;
-        this.guildId = guildId;
+        this.musicGuildId = guildId;
         this.con = null;
+        this.isLoop = false;
+        this.isLoopQueue = false;
+        this.offset = 0;
     }
 
     get client(): MusicClient {
@@ -51,6 +59,28 @@ export class Music {
         return this.songQueue;
     }
 
+    get loop(): boolean {
+        return this.isLoop;
+    }
+
+    set loop(value: boolean) {
+        if (value) this.loopQueue = false;
+        this.loop = value;
+    }
+
+    get queueOffset(): number {
+        return this.offset;
+    }
+
+    get loopQueue(): boolean {
+        return this.isLoopQueue;
+    }
+
+    set loopQueue(value: boolean) {
+        if (value) this.loop = false;
+        this.loop = value;
+    }
+
     get size(): number {
         if (!this.queue) this.songQueue = new SongQueue();
         return this.queue ? this.queue.size : 0;
@@ -60,8 +90,25 @@ export class Music {
         return this.queueMessage;
     }
 
+    get guildId(): string {
+        return this.musicGuildId;
+    }
+
+    public handleError(error: Error): void {
+        return this.client.handleError(error);
+    }
+
+    public incrementOffset() {
+        this.offset += QueueEmbed.songsPerPage();
+    }
+
+    public decrementOffset() {
+        this.offset =
+            this.offset > 0 ? this.offset - QueueEmbed.songsPerPage() : 0;
+    }
+
     public translate(keys: LanguageKeyPath) {
-        return this.client.translate(this.guildId, keys);
+        return this.client.translate(this.musicGuildId, keys);
     }
 
     /** join the voice channel, send a queue message
@@ -94,7 +141,6 @@ export class Music {
         }
         return this.initializeQueueMessage(interaction).then((result) => {
             if (!result || !voiceChannel || !guild) return this;
-            this.songQueue = new SongQueue();
 
             this.con = joinVoiceChannel({
                 channelId: voiceChannel.id,
@@ -120,21 +166,27 @@ export class Music {
         executeCommand({ name: commandName, music: this });
     }
 
-    private queueMessageContent(): MessageEmbed {
-        return new MessageEmbed({
-            title: this.translate(['music', 'queue', 'title']),
-            footer: { text: this.translate(['music', 'queue', 'footer']) },
-        });
-    }
-
     /** Send a new queue message and start a new music thread */
     private async initializeQueueMessage(
         interaction: CommandInteraction,
     ): Promise<boolean> {
         if (!interaction.channel || !interaction.guild) return false;
 
+        this.songQueue = new SongQueue();
+        for (let i = 0; i < 11; i++) {
+            this.songQueue.enqueue(randomUUID() + randomUUID());
+        }
+        const embed: QueueEmbed = new QueueEmbed(this);
+        const components: MessageActionRow[] = [embed.getActionRow()];
+        const commandActionRow: MessageActionRow | null =
+            getCommandsActionRow(this);
+        if (commandActionRow) components.push(commandActionRow);
         return interaction
-            .reply({ embeds: [this.queueMessageContent()], fetchReply: true })
+            .reply({
+                embeds: [embed],
+                fetchReply: true,
+                components: components,
+            })
             .then((message) => {
                 if (!(message instanceof Message)) return false;
 
@@ -150,20 +202,20 @@ export class Music {
                             return true;
                         }
                         message.delete().catch((error) => {
-                            this.client.handleError(error);
+                            this.handleError(error);
                         });
                         return false;
                     })
                     .catch(() => {
                         if (!message.deletable) return false;
                         message.delete().catch((error) => {
-                            this.client.handleError(error);
+                            this.handleError(error);
                         });
                         return false;
                     });
             })
             .catch((error) => {
-                this.client.handleError(error);
+                this.handleError(error);
                 return false;
             });
     }

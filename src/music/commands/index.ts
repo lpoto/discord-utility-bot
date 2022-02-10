@@ -1,3 +1,4 @@
+import { MessageActionRow, MessageButton } from 'discord.js';
 import { Music } from '../music';
 import { Command } from './command';
 import { Pause } from './pause';
@@ -23,9 +24,38 @@ export interface MusicCommandOptions {
     duration?: number;
 }
 
-export function executeCommand(options: MusicCommandOptions): void {
+export async function executeCommand(
+    options: MusicCommandOptions,
+): Promise<void> {
     const command: Command | null = getCommand(options);
-    command?.execute()
+    command?.execute();
+}
+
+export async function executeCommandByButton(
+    music: Music,
+    label?: string,
+    emojiName?: string,
+): Promise<void> {
+    for (let i = 0; i < Object.keys(CommandName).length; i++) {
+        const command: Command | null = getCommand({ name: i, music: music });
+        if (!command) continue;
+        const button: MessageButton | null = command.button;
+        if (!button) continue;
+        if (label && button.label && label === button.label)
+            return await command.execute();
+        if (emojiName && button.emoji && emojiName === button.emoji.name)
+            return await command.execute();
+    }
+}
+
+export function getCommandsActionRow(music: Music): MessageActionRow | null {
+    const row: MessageActionRow = new MessageActionRow();
+    for (let i = 0; i < Object.keys(CommandName).length; i++) {
+        const command: Command | null = getCommand({ name: i, music: music });
+        if (!command || !command.button) continue;
+        row.addComponents(command.button);
+    }
+    return row.components.length === 0 ? null : row;
 }
 
 function getCommand(options: MusicCommandOptions): Command | null {
