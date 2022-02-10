@@ -34,6 +34,11 @@
             "pageBackward": "<",
             "loop": "Loop",
             "loopQueue": "Loop Queue"
+        },
+        "commands": {
+            "actionRow": {
+                "skip": ">>"
+            }
         }
     }
 }
