@@ -39,9 +39,12 @@
         "commands": {
             "actionRow": {
                 "skip": "⏩",
-                "pauseResume": "⏯",
+                "pause": "⏸",
                 "stop": "◼",
                 "replay": "↺"
+            },
+            "stop": {
+                "comfirm": "Click on '◼' again if you are sure you want to stop the music."
             }
         }
     }

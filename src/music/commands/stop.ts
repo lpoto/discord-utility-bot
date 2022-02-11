@@ -1,4 +1,8 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    InteractionWebhook,
+    MessageButton,
+} from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
 import { Command } from './command';
@@ -9,11 +13,31 @@ export class Stop extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (interaction)
-            await interaction.reply({
-                content: 'Sori poba, tole pa se ne deva ejga...',
-                ephemeral: true,
-            });
+        if (!interaction || !interaction.component) return;
+        if (interaction.component.style === 'PRIMARY')
+            this.music.client.destroyMusic(this.music.guildId);
+        else {
+            this.music.stopRequest = true;
+            const webhook: InteractionWebhook = interaction.webhook;
+            this.music.actions
+                .updateQueueMessageWithInteraction(interaction)
+                .then((result) => {
+                    if (!result) return;
+                    webhook.send({
+                        content: this.translate([
+                            'music',
+                            'commands',
+                            'stop',
+                            'comfirm',
+                        ]),
+                        ephemeral: true,
+                    });
+                    setTimeout(async () => {
+                        this.music.stopRequest = false;
+                        this.music.actions.updateQueueMessage();
+                    }, 10000);
+                });
+        }
     }
 
     get button(): MessageButton {
@@ -21,7 +45,11 @@ export class Stop extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'actionRow', 'stop']),
             )
-            .setStyle(MessageButtonStyles.SECONDARY)
+            .setStyle(
+                this.music.stopRequest
+                    ? MessageButtonStyles.PRIMARY
+                    : MessageButtonStyles.SECONDARY,
+            )
             .setCustomId(this.id);
     }
 }

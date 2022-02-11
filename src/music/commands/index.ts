@@ -16,19 +16,19 @@ export { Command } from './command';
 export enum CommandName {
     PLAY,
     SKIP,
-    REPLAY,
     PAUSE,
+    REPLAY,
     STOP,
 }
 
 export interface MusicCommandOptionsPartial {
-    music: Music;
+    name: CommandName;
     musicString?: string;
     duration?: number;
 }
 
 export interface MusicCommandOptions extends MusicCommandOptionsPartial {
-    name: CommandName;
+    music: Music
 }
 
 export class MusicCommands {
@@ -39,11 +39,11 @@ export class MusicCommands {
     }
 
     public async execute(options: MusicCommandOptionsPartial): Promise<void> {
-        options.music = this.music;
-        const command: Command | null = this.get(
-            options as MusicCommandOptions,
-        );
-        command?.execute();
+        const options2: MusicCommandOptions = options as MusicCommandOptions;
+        options2.music = this.music;
+        const command: Command | null = this.get(options2);
+        if (!command) return;
+        command.execute();
     }
 
     public async executeFromInteraction(interaction: ButtonInteraction) {

@@ -16,6 +16,7 @@ import {
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
 import { Music } from './music';
+import { Song } from './song';
 import { QueueEmbed } from './utils';
 
 export class MusicActions {
@@ -119,6 +120,19 @@ export class MusicActions {
         });
     }
 
+    public async nextSong(): Promise<boolean> {
+        if (!this.music.queue || this.music.queue.size < 1) return false;
+        if (this.music.loop) return true;
+        const song: Song | null = this.music.queue.dequeue();
+        if (this.music.loopQueue && song) this.music.queue.enqueueSong(song);
+        return true;
+    }
+
+    public async stopCurrentMusic(): Promise<boolean> {
+        // TODO
+        return true;
+    }
+
     public async loopSong(interaction: ButtonInteraction): Promise<boolean> {
         this.music.loop = !this.music.loop;
         return this.updateQueueMessageWithInteraction(interaction);
@@ -207,8 +221,8 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null =
-            this.commandActionRow;
+        const commandActionRow: MessageActionRow | null = this
+            .commandActionRow;
         if (commandActionRow) components.push(commandActionRow);
         return {
             fetchReply: true,

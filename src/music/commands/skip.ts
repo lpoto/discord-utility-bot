@@ -1,6 +1,6 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { MusicCommandOptions } from '.';
+import { CommandName, MusicCommandOptions } from '.';
 import { Command } from './command';
 
 export class Skip extends Command {
@@ -9,11 +9,19 @@ export class Skip extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (interaction)
-            await interaction.reply({
-                content: 'Sori poba, tole pa se ne deva ejga...',
-                ephemeral: true,
+        if (!interaction) return;
+        this.music.actions.stopCurrentMusic().then((value) => {
+            if (!value) return;
+            this.music.actions.nextSong().then(async (value2) => {
+                if (!value2) return;
+                this.music.actions.updateQueueMessageWithInteraction(
+                    interaction,
+                );
+                this.music.commands.execute({
+                    name: CommandName.PLAY,
+                });
             });
+        });
     }
 
     get button(): MessageButton {

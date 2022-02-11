@@ -30,6 +30,10 @@ export class SongQueue {
         for (const song of songs) this.songs.unshift(song);
     }
 
+    public enqueueSong(song: Song) {
+        this.songs.push(song);
+    }
+
     public dequeue(): Song | null {
         if (!this.songs || this.size < 1) return null;
         const song: Song | undefined = this.songs.shift();

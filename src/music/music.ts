@@ -19,6 +19,7 @@ export class Music {
     private musicThread: ThreadChannel | null;
     private offset: number;
     private isLoop: boolean;
+    private isStopRequested: boolean;
     private isLoopQueue: boolean;
     private isPaused: boolean;
     private musicActions: MusicActions;
@@ -32,6 +33,7 @@ export class Music {
         this.isLoop = false;
         this.isLoopQueue = false;
         this.isPaused = false;
+        this.isStopRequested = false;
         this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
@@ -85,6 +87,14 @@ export class Music {
 
     set paused(value: boolean) {
         this.isPaused = value;
+    }
+
+    get stopRequest(): boolean {
+        return this.isStopRequested;
+    }
+
+    set stopRequest(value: boolean) {
+        this.isStopRequested = value;
     }
 
     get guildId(): string {
