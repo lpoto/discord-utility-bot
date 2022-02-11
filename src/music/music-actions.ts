@@ -62,6 +62,7 @@ export class MusicActions {
             !(interaction.member.voice.channel instanceof VoiceChannel)
         )
             return false;
+        let dc: boolean = false;
         this.connection = joinVoiceChannel({
             channelId: interaction.member.voice.channel.id,
             guildId: interaction.guild.id,
@@ -74,10 +75,13 @@ export class MusicActions {
             console.log(
                 `State change: ${statePrev.status} -> ${stateAfter.status}`,
             );
-
-            if (stateAfter.status === VoiceConnectionStatus.Disconnected)
-                if (interaction.guildId)
-                    this.client.destroyMusic(interaction.guildId);
+            if (stateAfter.status === VoiceConnectionStatus.Disconnected) {
+                dc = true;
+                setTimeout(() => {
+                    if (interaction.guildId && dc)
+                        this.client.destroyMusic(interaction.guildId);
+                }, 2000);
+            } else dc = false;
         });
         return true;
     }
@@ -146,7 +150,7 @@ export class MusicActions {
         else
             for await (const n of songNamesOrUrls)
                 await this.music.queue.enqueueFront(n);
-        if (play) this.music.commands.execute({name: CommandName.PLAY});
+        if (play) this.music.commands.execute({ name: CommandName.PLAY });
         return this.updateQueueMessage();
     }
 
@@ -215,8 +219,8 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null =
-            this.commandActionRow;
+        const commandActionRow: MessageActionRow | null = this
+            .commandActionRow;
         if (commandActionRow) components.push(commandActionRow);
         return {
             fetchReply: true,
