@@ -30,8 +30,8 @@ export class ClientEventHandler {
         return this.client.permsChecker;
     }
 
-    get musics() {
-        return this.client.musics;
+    get guildMusic() {
+        return this.client.guildMusic;
     }
 
     private translate(guildId: string | null, keys: LanguageKeyPath) {
@@ -39,23 +39,8 @@ export class ClientEventHandler {
     }
 
     public async subscribe(token: string): Promise<void> {
-        this.client.on('ready', async () => {
-            if (!this.client.user) return;
-
-            console.log('------------------------------------');
-            console.log(`  Logged in as user ${this.client.user.tag}`);
-            console.log('------------------------------------');
-
-            await this.client.registerSlashCommands(token);
-            await this.client.archiveOldThreads();
-            this.client.user.setActivity(
-                '/' + this.client.translate(null, ['slashCommand', 'name']),
-                {
-                    type: 'PLAYING',
-                },
-            );
-
-            console.log('Client ready!\n');
+        this.client.on('ready', () => {
+            this.client.setup(token);
         });
 
         this.client.on('error', (error: Error) => {
@@ -71,7 +56,7 @@ export class ClientEventHandler {
                 if (!(message.channel.id in this.threadMessageQueue))
                     this.threadMessageQueue[message.channel.id] = [];
                 this.threadMessageQueue[message.channel.id].push(message);
-                if (this.threadMessageQueue[message.channel.id].length == 1)
+                if (this.threadMessageQueue[message.channel.id].length === 1)
                     this.handleThreadMessage(message);
             }
         });
@@ -112,12 +97,12 @@ export class ClientEventHandler {
     private async handleThreadMessage(message: Message): Promise<void> {
         if (
             message.guildId &&
-            this.musics[message.guildId] &&
+            this.guildMusic[message.guildId] &&
             message.channel instanceof ThreadChannel &&
             message.content &&
             message.channel.ownerId === this.client.user?.id
         ) {
-            await this.musics[message.guildId].actions.addSongToQueue(
+            await this.guildMusic[message.guildId].actions.addSongToQueue(
                 message.content.split('\n'),
             );
         }
@@ -176,15 +161,15 @@ export class ClientEventHandler {
         if (
             interaction.guildId !== undefined &&
             interaction.guildId !== null &&
-            interaction.guildId in this.musics &&
-            this.musics[interaction.guildId] !== null &&
-            this.musics[interaction.guildId] !== undefined
+            interaction.guildId in this.guildMusic &&
+            this.guildMusic[interaction.guildId] !== null &&
+            this.guildMusic[interaction.guildId] !== undefined
         ) {
             if (
                 interaction.component.label !== null &&
                 interaction.component.label !== undefined
             )
-                this.musics[interaction.guildId].actions
+                this.guildMusic[interaction.guildId].actions
                     .executeActionFromInteraction(interaction)
                     .then((value) => {
                         if (
@@ -193,7 +178,7 @@ export class ClientEventHandler {
                             !interaction.component.label
                         )
                             return;
-                        this.musics[
+                        this.guildMusic[
                             interaction.guildId
                         ].commands.executeFromInteraction(interaction);
                     });
@@ -221,10 +206,10 @@ export class ClientEventHandler {
             console.log('Handle slash command:', interaction.id);
 
             if (this.client.musicExists(interaction.guildId)) {
-                /* if musics exists notify user
+                /* if guildMusic exists notify user
                  * and send the link to the music thread */
 
-                this.musics[interaction.guildId].thread
+                this.guildMusic[interaction.guildId].thread
                     ?.fetchStarterMessage()
                     .then(async (message) => {
                         return interaction.reply({
@@ -257,7 +242,7 @@ export class ClientEventHandler {
                         Music.newMusic(this.client, interaction).then(
                             (music) => {
                                 if (interaction.guildId && music)
-                                    this.client.musics[
+                                    this.client.guildMusic[
                                         interaction.guildId
                                     ] = music;
                             },

@@ -132,8 +132,8 @@ export class Music {
         }
         return this.initializeQueueMessage(interaction).then((result) => {
             if (!result) return this;
-            return this.actions.joinVoice(interaction).then((result) => {
-                if (result) return this;
+            return this.actions.joinVoice(interaction).then((result2) => {
+                if (result2) return this;
                 return null;
             });
         });

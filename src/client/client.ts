@@ -8,14 +8,14 @@ import { ClientEventHandler } from './client-event-handler';
 import { PermissionChecker } from './permission-checker';
 
 export class MusicClient extends Client {
-    private guildMusics: { [guildId: string]: Music };
+    private musicDictionary: { [guildId: string]: Music };
     private translator: Translator;
     private permissionChecker: PermissionChecker;
     private eventsHandler: ClientEventHandler;
 
     constructor(options: MusicClientOptions) {
         super(options);
-        this.guildMusics = {};
+        this.musicDictionary = {};
         this.translator = new Translator(options.defaultLanguage);
         this.eventsHandler = new ClientEventHandler(this);
         this.permissionChecker = new PermissionChecker(
@@ -30,8 +30,8 @@ export class MusicClient extends Client {
         return this.permissionChecker;
     }
 
-    get musics(): { [guildId: string]: Music } {
-        return this.guildMusics;
+    get guildMusic(): { [guildId: string]: Music } {
+        return this.musicDictionary;
     }
 
     public translate(guildId: string | null, keys: LanguageKeyPath): string {
@@ -53,23 +53,27 @@ export class MusicClient extends Client {
     }
 
     public destroyMusic(guildId: string): void {
-        if (!(guildId in this.musics) || !this.musics[guildId] || !this.user)
+        if (
+            !(guildId in this.guildMusic) ||
+            !this.guildMusic[guildId] ||
+            !this.user
+        )
             return;
         console.log('Destroy music in guild: ', guildId);
 
-        this.musics[guildId].actions.leaveVoice();
-        this.archiveMusicThread(this.musics[guildId].thread, this);
-        delete this.musics[guildId];
+        this.guildMusic[guildId].actions.leaveVoice();
+        this.archiveMusicThread(this.guildMusic[guildId].thread, this);
+        delete this.guildMusic[guildId];
     }
 
     /** Check if there is already an active music object in the server */
     public musicExists(guildId: string): boolean {
-        if (guildId in this.guildMusics) {
+        if (guildId in this.musicDictionary) {
             if (
-                !this.guildMusics[guildId] ||
-                !this.guildMusics[guildId].thread
+                !this.musicDictionary[guildId] ||
+                !this.musicDictionary[guildId].thread
             ) {
-                delete this.guildMusics[guildId];
+                delete this.musicDictionary[guildId];
                 return false;
             }
             return true;
@@ -77,38 +81,55 @@ export class MusicClient extends Client {
         return false;
     }
 
-    /** Register the slash command in all of the servers that the client is member of.*/
-    public async registerSlashCommands(token: string): Promise<void> {
+    public setup(token: string): void {
         if (!this.user) return;
-        console.log('Started refreshing application (/) commands...');
+
+        console.log('------------------------------------');
+        console.log(`  Logged in as user ${this.user.tag}`);
+        console.log('------------------------------------');
+
+        this.registerSlashCommands(token);
+        this.archiveOldThreads();
+        this.user.setActivity(
+            '/' + this.translate(null, ['slashCommand', 'name']),
+            {
+                type: 'PLAYING',
+            },
+        );
+        console.log('------------------------------------');
+        console.log('  Client ready!');
+        console.log('------------------------------------');
+    }
+
+    /** Register the slash command in all of the servers that the client is member of.*/
+    public registerSlashCommands(token: string): void {
+        if (!this.user) return;
+        console.log('Refreshing application (/) commands.');
 
         for (const guild of this.guilds.cache) {
-            console.log(
-                `Updating slash commands for guild "${guild[1].name}"`,
-            );
-
             try {
-                await this.registerSlashCommand(guild[1].id, token);
+                this.registerSlashCommand(guild[1].id, token);
+                console.log(
+                    `Successfully registered slash commands for guild "${guild[1].name}".`,
+                );
             } catch (error) {
                 console.error(
-                    `Failed registering the clash command for "${guild[1].name}"`,
+                    `Failed registering slash commands for guild "${guild[1].name}".`,
                 );
             }
         }
-        console.log('Successfully reloaded application (/) commands.');
     }
 
     /** Archive old music threads that were not closed properly.*/
-    public async archiveOldThreads(): Promise<void> {
-        console.log('Archiving old music threads...');
+    public archiveOldThreads(): void {
+        console.log('Archiving old music threads.');
 
-        for await (const i of this.guilds.cache) {
-            i[1].channels.fetchActiveThreads().then(async (fetched) => {
+        for (const i of this.guilds.cache) {
+            i[1].channels.fetchActiveThreads().then((fetched) => {
                 if (!fetched || !fetched.threads || fetched.threads.size === 0)
                     return;
-                for await (const thread of fetched.threads)
-                    if (this.user)
-                        await this.archiveMusicThread(thread[1], this);
+                for (const thread of fetched.threads)
+                    if (this.user) this.archiveMusicThread(thread[1], this);
             });
         }
     }
