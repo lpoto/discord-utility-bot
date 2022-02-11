@@ -20,6 +20,7 @@ export class Music {
     private offset: number;
     private isLoop: boolean;
     private isLoopQueue: boolean;
+    private isPaused: boolean;
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
 
@@ -30,6 +31,7 @@ export class Music {
         this.musicGuildId = guildId;
         this.isLoop = false;
         this.isLoopQueue = false;
+        this.isPaused = false;
         this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
@@ -75,6 +77,14 @@ export class Music {
     set loopQueue(value: boolean) {
         if (value) this.loop = false;
         this.isLoopQueue = value;
+    }
+
+    get paused(): boolean {
+        return this.isPaused;
+    }
+
+    set paused(value: boolean) {
+        this.isPaused = value;
     }
 
     get guildId(): string {

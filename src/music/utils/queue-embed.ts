@@ -74,7 +74,7 @@ export class QueueEmbed extends MessageEmbed {
     private buildDescription(): string {
         const songs: string[] | undefined = this.music.queue?.allSongs.map(
             (song, index) => {
-                if (index > 0) return `**${index}.**\u3000${song.toString()}`
+                if (index > 0) return `**${index}.**\u3000${song.toString()}`;
                 return song.toString();
             },
         );
@@ -97,9 +97,7 @@ export class QueueEmbed extends MessageEmbed {
         );
     }
 
-    public static actionRowLabels(
-        music: Music,
-    ): {
+    public static actionRowLabels(music: Music): {
         [key in
             | 'pageForward'
             | 'pageBackward'

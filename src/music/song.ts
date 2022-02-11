@@ -34,7 +34,7 @@ export class Song {
     private durationString(): string {
         let hours = Math.floor(this.durationTime / 3600);
         let minutes = Math.floor((this.durationTime % 3600) / 60);
-        let seconds = Math.floor(((this.durationTime % 3600) % 60));
+        let seconds = Math.floor((this.durationTime % 3600) % 60);
         let timestring = hours > 0 ? `${hours}h` : '';
         if (minutes > 0) {
             if (timestring.length > 0) timestring += `, ${minutes}min`;
@@ -51,7 +51,11 @@ export class Song {
         // search youtube for either a song or multiple songs
         // if playlist given
         return [
-            new Song(nameOrUrl, Math.floor(Math.random() * 10000), new URL('https://www.valentinog.com')),
+            new Song(
+                nameOrUrl,
+                Math.floor(Math.random() * 10000),
+                new URL('https://www.valentinog.com'),
+            ),
         ];
     }
 }

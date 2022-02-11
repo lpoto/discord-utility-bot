@@ -15,10 +15,10 @@ export { Command } from './command';
 
 export enum CommandName {
     PLAY,
-    STOP,
     SKIP,
     REPLAY,
     PAUSE,
+    STOP,
 }
 
 export interface MusicCommandOptionsPartial {

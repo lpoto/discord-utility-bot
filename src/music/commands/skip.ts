@@ -11,9 +11,9 @@ export class Skip extends Command {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (interaction)
             await interaction.reply({
-                content: "Sori poba, tole pa se ne deva ejga...",
-                ephemeral: true
-            })
+                content: 'Sori poba, tole pa se ne deva ejga...',
+                ephemeral: true,
+            });
     }
 
     get button(): MessageButton {
@@ -21,6 +21,7 @@ export class Skip extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'actionRow', 'skip']),
             )
+            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
