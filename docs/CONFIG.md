@@ -53,4 +53,6 @@ npm run dev
 
 ## Run the bot in a docker container
 
-TODO
+```
+docker-compose up -d --build
+```

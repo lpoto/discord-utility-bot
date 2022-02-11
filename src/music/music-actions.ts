@@ -15,8 +15,8 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
+import { CommandName } from './commands';
 import { Music } from './music';
-import { Song } from './song';
 import { QueueEmbed } from './utils';
 
 export class MusicActions {
@@ -26,6 +26,10 @@ export class MusicActions {
     constructor(music: Music) {
         this.music = music;
         this.connection = null;
+    }
+
+    get con(): VoiceConnection | null {
+        return this.connection;
     }
 
     get client(): MusicClient {
@@ -62,7 +66,7 @@ export class MusicActions {
             channelId: interaction.member.voice.channel.id,
             guildId: interaction.guild.id,
             adapterCreator: interaction.guild.voiceAdapterCreator,
-            selfMute: true,
+            selfMute: false,
             selfDeaf: true,
         }).on('stateChange', (statePrev, stateAfter) => {
             if (statePrev.status === stateAfter.status) return;
@@ -120,19 +124,6 @@ export class MusicActions {
         });
     }
 
-    public async nextSong(): Promise<boolean> {
-        if (!this.music.queue || this.music.queue.size < 1) return false;
-        if (this.music.loop) return true;
-        const song: Song | null = this.music.queue.dequeue();
-        if (this.music.loopQueue && song) this.music.queue.enqueueSong(song);
-        return true;
-    }
-
-    public async stopCurrentMusic(): Promise<boolean> {
-        // TODO
-        return true;
-    }
-
     public async loopSong(interaction: ButtonInteraction): Promise<boolean> {
         this.music.loop = !this.music.loop;
         return this.updateQueueMessageWithInteraction(interaction);
@@ -148,11 +139,14 @@ export class MusicActions {
         front?: boolean,
     ): Promise<boolean> {
         if (!this.music.queue) return false;
+        const play: boolean = this.music.queue.size == 0;
         if (!front)
-            for await (const n of songNamesOrUrls) this.music.queue.enqueue(n);
+            for await (const n of songNamesOrUrls)
+                await this.music.queue.enqueue(n);
         else
             for await (const n of songNamesOrUrls)
-                this.music.queue.enqueueFront(n);
+                await this.music.queue.enqueueFront(n);
+        if (play) this.music.commands.execute({name: CommandName.PLAY});
         return this.updateQueueMessage();
     }
 
@@ -221,8 +215,8 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null = this
-            .commandActionRow;
+        const commandActionRow: MessageActionRow | null =
+            this.commandActionRow;
         if (commandActionRow) components.push(commandActionRow);
         return {
             fetchReply: true,

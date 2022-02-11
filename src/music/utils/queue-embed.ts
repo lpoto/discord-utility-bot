@@ -81,7 +81,7 @@ export class QueueEmbed extends MessageEmbed {
         if (!songs || songs.length < 1) return '';
         const headSong = songs.shift();
         return (
-            (songs.length == 0
+            (songs.length === 0
                 ? ''
                 : songs
                       .slice(
@@ -121,6 +121,7 @@ export class QueueEmbed extends MessageEmbed {
             shuffle: music.translate(['music', 'actionRow', 'shuffle']),
         };
     }
+
     public static songsPerPage(): number {
         return 10;
     }

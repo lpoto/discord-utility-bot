@@ -1,6 +1,6 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { MusicCommandOptions } from '.';
+import { CommandName, MusicCommandOptions } from '.';
 import { Command } from './command';
 
 export class Replay extends Command {
@@ -9,11 +9,12 @@ export class Replay extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (interaction)
-            await interaction.reply({
-                content: 'Sori poba, tole pa se ne deva ejga...',
-                ephemeral: true,
-            });
+        if (!interaction || !this.music.audioPlayer || this.music.paused) return;
+        this.music.audioPlayer.stop();
+        this.music.commands.execute({
+            name: CommandName.PLAY,
+        });
+        if (interaction) interaction.deferUpdate();
     }
 
     get button(): MessageButton {

@@ -17,13 +17,11 @@ export class ClientEventHandler {
     private client: MusicClient;
     private slashCommandQueue: CommandInteraction[];
     private buttonClickQueue: { [messageId: string]: ButtonInteraction[] };
-    private threadMessageQueue: { [messageId: string]: Message[] };
 
     constructor(client: MusicClient) {
         this.client = client;
         this.slashCommandQueue = [];
         this.buttonClickQueue = {};
-        this.threadMessageQueue = {};
     }
 
     get permissionChecker() {
@@ -53,11 +51,7 @@ export class ClientEventHandler {
 
         this.client.on('messageCreate', (message) => {
             if (message.channel instanceof ThreadChannel) {
-                if (!(message.channel.id in this.threadMessageQueue))
-                    this.threadMessageQueue[message.channel.id] = [];
-                this.threadMessageQueue[message.channel.id].push(message);
-                if (this.threadMessageQueue[message.channel.id].length === 1)
-                    this.handleThreadMessage(message);
+                this.handleThreadMessage(message);
             }
         });
 
@@ -94,7 +88,7 @@ export class ClientEventHandler {
         console.error(error);
     }
 
-    private async handleThreadMessage(message: Message): Promise<void> {
+    private handleThreadMessage(message: Message): void {
         if (
             message.guildId &&
             this.guildMusic[message.guildId] &&
@@ -102,17 +96,10 @@ export class ClientEventHandler {
             message.content &&
             message.channel.ownerId === this.client.user?.id
         ) {
-            await this.guildMusic[message.guildId].actions.addSongToQueue(
+            this.guildMusic[message.guildId].actions.addSongToQueue(
                 message.content.split('\n'),
             );
         }
-        this.threadMessageQueue[message.channel.id].shift();
-        if (this.threadMessageQueue[message.channel.id].length === 0)
-            delete this.threadMessageQueue[message.channel.id];
-        else
-            this.handleThreadMessage(
-                this.threadMessageQueue[message.channel.id][0],
-            );
     }
 
     private async handleInteraction(interaction: Interaction): Promise<void> {

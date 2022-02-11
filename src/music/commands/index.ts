@@ -28,7 +28,7 @@ export interface MusicCommandOptionsPartial {
 }
 
 export interface MusicCommandOptions extends MusicCommandOptionsPartial {
-    music: Music
+    music: Music;
 }
 
 export class MusicCommands {

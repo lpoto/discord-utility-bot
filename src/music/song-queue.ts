@@ -7,25 +7,26 @@ export class SongQueue {
         return this.songs.length;
     }
 
-    get totalDuration(): number {
-        if (!this.songs) this.songs = [];
-        return this.songs.reduce((sum, song) => sum + song.duration, 0);
-    }
-
     get allSongs(): Song[] {
         return this.songs;
     }
 
-    public enqueue(nameOrUrl: string) {
-        if (!this.songs) this.songs = [];
-        const songs: Song[] | null = Song.find(nameOrUrl);
-        if (!songs) return;
-        for (const song of songs) this.songs.push(song);
+    get head(): Song | null {
+        if (!this.songs || this.songs.length < 1) return null;
+        return this.songs[0];
     }
 
-    public enqueueFront(nameOrUrl: string) {
+    public async enqueue(nameOrUrl: string): Promise<void> {
         if (!this.songs) this.songs = [];
-        const songs: Song[] | null = Song.find(nameOrUrl);
+        const songs: Song[] | null = await Song.find(nameOrUrl);
+        if (!songs) return;
+        for (const song of songs)
+            this.songs.push(song) 
+    }
+
+    public async enqueueFront(nameOrUrl: string): Promise<void> {
+        if (!this.songs) this.songs = [];
+        const songs: Song[] | null = await Song.find(nameOrUrl);
         if (!songs) return;
         for (const song of songs) this.songs.unshift(song);
     }
@@ -41,6 +42,7 @@ export class SongQueue {
     }
 
     public async shuffle(): Promise<void> {
+        if (this.size < 3) return;
         for (let i: number = this.size - 1; i > 1; i--) {
             let randomIndex: number = Math.floor(Math.random() * i);
             while (randomIndex === 0)

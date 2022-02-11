@@ -47,5 +47,7 @@ export abstract class Command {
         return this.options.music.translate(keys);
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {}
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
+        console.log(interaction);
+    }
 }

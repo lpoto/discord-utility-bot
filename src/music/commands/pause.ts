@@ -9,22 +9,19 @@ export class Pause extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction) return;
+        if (!interaction || !this.music.audioPlayer) return;
+        if (this.music.paused) this.music.audioPlayer.unpause();
+        else this.music.audioPlayer.pause();
         this.music.paused = !this.music.paused;
-        //TODO if this.music.paused === true and music is playing pause it
-        await this.music.actions.updateQueueMessageWithInteraction(interaction);
+        await this.music.actions.updateQueueMessageWithInteraction(
+            interaction,
+        );
     }
-
 
     get button(): MessageButton {
         return new MessageButton()
             .setLabel(
-                this.translate([
-                    'music',
-                    'commands',
-                    'actionRow',
-                    'pause',
-                ]),
+                this.translate(['music', 'commands', 'actionRow', 'pause']),
             )
             .setDisabled(this.music.queue?.size === 0)
             .setStyle(

@@ -1,3 +1,4 @@
+import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import {
     CommandInteraction,
     GuildMember,
@@ -24,6 +25,7 @@ export class Music {
     private isPaused: boolean;
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
+    private player: AudioPlayer | null;
 
     constructor(client: MusicClient, guildId: string) {
         this.songQueue = null;
@@ -37,6 +39,7 @@ export class Music {
         this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
+        this.player = null;
     }
 
     get client(): MusicClient {
@@ -47,8 +50,20 @@ export class Music {
         return this.musicActions;
     }
 
+    get connection(): VoiceConnection | null {
+        return this.actions.con;
+    }
+
     get commands(): MusicCommands {
         return this.musicCommands;
+    }
+
+    get audioPlayer(): AudioPlayer | null {
+        return this.player;
+    }
+
+    set audioPlayer(value: AudioPlayer | null) {
+        this.player = value;
     }
 
     get thread(): ThreadChannel | null {
