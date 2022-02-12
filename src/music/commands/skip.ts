@@ -10,7 +10,8 @@ export class Skip extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !this.music.audioPlayer || this.music.paused) return;
+        if (!interaction || !this.music.audioPlayer || this.music.paused)
+            return;
         if (!this.music.loop) {
             const s: Song | undefined | null = this.music.queue?.dequeue();
             if (s && this.music.loopQueue) this.music.queue?.enqueueSong(s);

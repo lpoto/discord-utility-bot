@@ -64,7 +64,7 @@ export class QueueEmbed extends MessageEmbed {
                 )
                 .setCustomId(randomUUID()),
             new MessageButton()
-                .setDisabled(!this.music.queue || this.music.queue.size < 2)
+                .setDisabled(!this.music.queue || this.music.queue.size < 3)
                 .setLabel(QueueEmbed.actionRowLabels(this.music).shuffle)
                 .setStyle(MessageButtonStyles.SECONDARY)
                 .setCustomId(randomUUID()),

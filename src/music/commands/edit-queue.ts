@@ -1,29 +1,32 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { CommandName, MusicCommandOptions } from '.';
+import { MusicCommandOptions } from '.';
 import { Command } from './command';
 
-export class Replay extends Command {
+export class EditQueue extends Command {
     constructor(options: MusicCommandOptions) {
         super(options);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !this.music.audioPlayer || this.music.paused)
-            return;
-        this.music.audioPlayer.stop();
-        this.music.commands.execute({
-            name: CommandName.PLAY,
+        if (!interaction || !interaction.user || !this.music.thread) return;
+        interaction.reply({
+            content: 'Sori poba, tole pa se ne deva...',
+            ephemeral: true,
         });
-        if (interaction) interaction.deferUpdate();
     }
 
     get button(): MessageButton {
         return new MessageButton()
             .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'replay']),
+                this.translate([
+                    'music',
+                    'commands',
+                    'actionRow',
+                    'removeFromQueue',
+                ]),
             )
-            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
+            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

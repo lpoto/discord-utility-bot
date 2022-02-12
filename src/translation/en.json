@@ -34,18 +34,21 @@
             "pageBackward": "<",
             "loop": "Loop",
             "loopQueue": "Loop Queue",
-            "shuffle": "Shuffle"
+            "shuffle": "Shuffle",
+            "clear": "Clear"
         },
         "commands": {
             "actionRow": {
                 "skip": "⏩",
                 "pause": "⏸",
                 "stop": "◼",
-                "replay": "↺"
+                "replay": "↺",
+                "removeFromQueue": "Edit Queue"
             },
             "stop": {
                 "comfirm": "Click on `◼` again if you are sure you want to stop the music."
-            }
+            },
+            "editQueue": "You have 10 seconds: Send a message in this music's thread:\n `remove <idx>` removes a song with given index\n`forward <idx>` sets song with the given index next in the queue\n`clear` clear the queue."
         }
     }
 }

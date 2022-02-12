@@ -20,8 +20,7 @@ export class SongQueue {
         if (!this.songs) this.songs = [];
         const songs: Song[] | null = await Song.find(nameOrUrl);
         if (!songs) return;
-        for (const song of songs)
-            this.songs.push(song) 
+        for (const song of songs) this.songs.push(song);
     }
 
     public async enqueueFront(nameOrUrl: string): Promise<void> {
@@ -41,6 +40,13 @@ export class SongQueue {
         return song ? song : null;
     }
 
+    public forward(idx: number): void {
+        if (idx < 2 || this.size < 3 || idx >= this.size) return;
+        const song: Song = this.songs[1];
+        this.songs[1] = this.songs[idx];
+        this.songs[idx] = song;
+    }
+
     public async shuffle(): Promise<void> {
         if (this.size < 3) return;
         for (let i: number = this.size - 1; i > 1; i--) {
@@ -52,6 +58,10 @@ export class SongQueue {
                 this.songs[i],
             ];
         }
+    }
+
+    public clear(): void {
+        this.songs = [];
     }
 
     public removeByName(songName: string): void {

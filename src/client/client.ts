@@ -106,17 +106,21 @@ export class MusicClient extends Client {
         if (!this.user) return;
         console.log('Refreshing application (/) commands.');
 
-        for (const guild of this.guilds.cache) {
-            try {
-                this.registerSlashCommand(guild[1].id, token);
-                console.log(
-                    `Successfully registered slash commands for guild "${guild[1].name}".`,
-                );
-            } catch (error) {
-                console.error(
-                    `Failed registering slash commands for guild "${guild[1].name}".`,
-                );
+        try {
+            for (const guild of this.guilds.cache) {
+                try {
+                    this.registerSlashCommand(guild[1].id, token);
+                    console.log(
+                        `Successfully registered slash commands for guild "${guild[1].name}".`,
+                    );
+                } catch (error) {
+                    console.error(
+                        `Failed registering slash commands for guild "${guild[1].name}".`,
+                    );
+                }
             }
+        } catch (e) {
+            console.log('Failed refresing application (/) commands.');
         }
     }
 
@@ -199,15 +203,19 @@ export class MusicClient extends Client {
         guildId: string,
         token: string,
     ): Promise<void> {
-        const commands = [this.slashCommand(guildId)];
-        const rest = new REST({ version: '9' }).setToken(token);
-        (async () => {
-            if (!this.user) return;
-            await rest.put(
-                Routes.applicationGuildCommands(this.user.id, guildId),
-                { body: commands },
-            );
-        })();
+        try {
+            const commands = [this.slashCommand(guildId)];
+            const rest = new REST({ version: '9' }).setToken(token);
+            (async () => {
+                if (!this.user) return;
+                await rest.put(
+                    Routes.applicationGuildCommands(this.user.id, guildId),
+                    { body: commands },
+                );
+            })();
+        } catch (e) {
+            return;
+        }
     }
 
     /** Subscribe to required client events for the music client and login */

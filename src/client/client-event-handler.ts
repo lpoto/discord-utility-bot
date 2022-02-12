@@ -76,7 +76,7 @@ export class ClientEventHandler {
              * deleted messages or missing permissions to delete threads...*/
             const discordError: DiscordAPIError = error as DiscordAPIError;
             if (
-                ['10008', '50013', '10003'].includes(
+                ['10008', '50013', '10003', '10062', '50001'].includes(
                     discordError.code.toString(),
                 )
             )
@@ -106,6 +106,7 @@ export class ClientEventHandler {
         if (
             !interaction.guildId ||
             (!interaction.isButton() && !interaction.isCommand()) ||
+            interaction.applicationId !== this.client.user?.id ||
             !interaction.member ||
             !(interaction.member instanceof GuildMember)
         )

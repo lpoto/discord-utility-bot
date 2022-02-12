@@ -62,23 +62,35 @@ export class MusicActions {
             !(interaction.member.voice.channel instanceof VoiceChannel)
         )
             return false;
+        let dc = false;
         this.connection = joinVoiceChannel({
             channelId: interaction.member.voice.channel.id,
             guildId: interaction.guild.id,
             adapterCreator: interaction.guild.voiceAdapterCreator,
             selfMute: false,
             selfDeaf: true,
-        }).on('stateChange', (statePrev, stateAfter) => {
-            if (statePrev.status === stateAfter.status) return;
+        })
+            .on('stateChange', (statePrev, stateAfter) => {
+                if (statePrev.status === stateAfter.status) return;
 
-            console.log(
-                `State change: ${statePrev.status} -> ${stateAfter.status}`,
-            );
+                console.log(
+                    `State change ${interaction.guildId}: ${statePrev.status} -> ${stateAfter.status}`,
+                );
 
-            if (stateAfter.status === VoiceConnectionStatus.Disconnected)
-                if (interaction.guildId)
-                    this.client.destroyMusic(interaction.guildId);
-        });
+                if (stateAfter.status === VoiceConnectionStatus.Disconnected) {
+                    dc = true;
+                    setTimeout(() => {
+                        if (interaction.guildId && dc)
+                            this.client.destroyMusic(interaction.guildId);
+                    }, 10000);
+                } else {
+                    dc = false;
+                }
+            })
+            .on('error', (error) => {
+                this.client.handleError(error);
+                this.joinVoice(interaction);
+            });
         return true;
     }
 
@@ -134,20 +146,11 @@ export class MusicActions {
         return this.updateQueueMessageWithInteraction(interaction);
     }
 
-    public async addSongToQueue(
-        songNamesOrUrls: string[],
-        front?: boolean,
-    ): Promise<boolean> {
-        if (!this.music.queue) return false;
-        const play: boolean = this.music.queue.size == 0;
-        if (!front)
-            for await (const n of songNamesOrUrls)
-                await this.music.queue.enqueue(n);
-        else
-            for await (const n of songNamesOrUrls)
-                await this.music.queue.enqueueFront(n);
-        if (play) this.music.commands.execute({name: CommandName.PLAY});
-        return this.updateQueueMessage();
+    public addSongToQueue(songNamesOrUrls: string[], front?: boolean): void {
+        if (!this.music.queue) return;
+        this.multipleSongsToQueue(songNamesOrUrls, front).then(() => {
+            return this.updateQueueMessage();
+        });
     }
 
     public async replyWithQueue(
@@ -210,6 +213,19 @@ export class MusicActions {
                 this.handleError(error);
                 return false;
             });
+    }
+
+    private async multipleSongsToQueue(
+        songNamesOrUrls: string[],
+        front?: boolean,
+    ): Promise<void> {
+        if (!this.music.queue) return;
+        for await (const n of songNamesOrUrls) {
+            if (front) await this.music.queue.enqueueFront(n);
+            else await this.music.queue.enqueue(n);
+            if (this.music.queue.size === 1 && !this.music.paused)
+                this.music.commands.execute({ name: CommandName.PLAY });
+        }
     }
 
     private getQueueOptions(): InteractionReplyOptions {

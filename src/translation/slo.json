@@ -34,18 +34,21 @@
             "pageBackward": "<",
             "loop": "Loop",
             "loopQueue": "Loop Queue",
-            "shuffle": "Shuffle"
+            "shuffle": "Shuffle",
+            "clear": "Clear"
         },
         "commands": {
             "actionRow": {
                 "skip": "⏩",
                 "pause": "⏸",
                 "stop": "◼",
-                "replay": "↺"
+                "replay": "↺",
+                "removeFromQueue": "Edit Queue"
             },
             "stop": {
-                "comfirm": "Click on '◼' again if you are sure you want to stop the music."
-            }
+                "comfirm": "Click on `◼` again if you are sure you want to stop the music."
+            },
+            "editQueue": "asdasd"
         }
     }
 }

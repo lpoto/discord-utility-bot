@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import { Music } from '../music';
 import { Command } from './command';
+import { EditQueue } from './edit-queue';
 import { Pause } from './pause';
 import { Play } from './play';
 import { Replay } from './replay';
@@ -19,6 +20,7 @@ export enum CommandName {
     PAUSE,
     REPLAY,
     STOP,
+    REMOVE_FROM_QUEUE,
 }
 
 export interface MusicCommandOptionsPartial {
@@ -43,10 +45,16 @@ export class MusicCommands {
         options2.music = this.music;
         const command: Command | null = this.get(options2);
         if (!command) return;
-        command.execute();
+        try {
+            command.execute();
+        } catch (e) {
+            console.error('Error when executing command');
+        }
     }
 
-    public async executeFromInteraction(interaction: ButtonInteraction) {
+    public async executeFromInteraction(
+        interaction: ButtonInteraction,
+    ): Promise<void> {
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
             const command: Command | null = this.get({
                 name: i,
@@ -56,7 +64,11 @@ export class MusicCommands {
             const button: MessageButton | null = command.button;
             if (!button) continue;
             if (button.label && interaction.component.label === button.label)
-                return await command.execute(interaction);
+                try {
+                    return command.execute(interaction);
+                } catch (e) {
+                    console.log('Error when executing command');
+                }
         }
     }
 
@@ -85,6 +97,8 @@ export class MusicCommands {
                 return new Stop(options);
             case CommandName.PAUSE:
                 return new Pause(options);
+            case CommandName.REMOVE_FROM_QUEUE:
+                return new EditQueue(options);
             default:
                 return null;
         }

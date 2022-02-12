@@ -2,7 +2,7 @@
 
 A discord bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
 
-[invite bot](https://discord.com/api/oauth2/authorize?client_id=826508834238627840&permissions=51576309760&scope=bot%20applications.commands)
+[invite bot](https://discord.com/api/oauth2/authorize?client_id=806226473069314048&permissions=51576375296&scope=bot%20applications.commands)
 
 ## Features
 
