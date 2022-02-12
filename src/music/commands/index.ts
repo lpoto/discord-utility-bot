@@ -4,11 +4,15 @@ import {
     MessageButton,
 } from 'discord.js';
 import { Music } from '../music';
+import { Clear } from './clear';
 import { Command } from './command';
 import { EditQueue } from './edit-queue';
+import { Forward } from './forward';
 import { Pause } from './pause';
 import { Play } from './play';
+import { Remove } from './remove';
 import { Replay } from './replay';
+import { Shuffle } from './shuffle';
 import { Skip } from './skip';
 import { Stop } from './stop';
 
@@ -20,7 +24,11 @@ export enum CommandName {
     PAUSE,
     REPLAY,
     STOP,
-    REMOVE_FROM_QUEUE,
+    EDIT,
+    FORWARD,
+    REMOVE,
+    SHUFFLE,
+    CLEAR
 }
 
 export interface MusicCommandOptionsPartial {
@@ -72,17 +80,28 @@ export class MusicCommands {
         }
     }
 
-    public getCommandsActionRow(): MessageActionRow | null {
-        const row: MessageActionRow = new MessageActionRow();
+    public getCommandsActionRow(): MessageActionRow[] | null {
+        const buttons: MessageButton[] = [];
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
             const command: Command | null = this.get({
                 name: i,
                 music: this.music,
             });
             if (!command || !command.button) continue;
-            row.addComponents(command.button);
+            buttons.push(command.button);
         }
-        return row.components.length === 0 ? null : row;
+        if (buttons.length < 1) return null;
+        const rows: MessageActionRow[] = [];
+        rows.push(new MessageActionRow());
+        let idx: number = 0;
+        for (let i = 0; i < buttons.length; i++) {
+            if (buttons.length > 5 && i > 0 && i % 5 == 0) {
+                rows.push(new MessageActionRow())
+                idx += 1;
+            }
+            rows[idx].addComponents(buttons[i]);
+        }
+        return rows;
     }
 
     private get(options: MusicCommandOptions): Command | null {
@@ -97,8 +116,16 @@ export class MusicCommands {
                 return new Stop(options);
             case CommandName.PAUSE:
                 return new Pause(options);
-            case CommandName.REMOVE_FROM_QUEUE:
+            case CommandName.EDIT:
                 return new EditQueue(options);
+            case CommandName.CLEAR:
+                return new Clear(options);
+            case CommandName.REMOVE:
+                return new Remove(options);
+            case CommandName.FORWARD:
+                return new Forward(options);
+            case CommandName.SHUFFLE:
+                return new Shuffle(options);
             default:
                 return null;
         }

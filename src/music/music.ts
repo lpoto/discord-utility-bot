@@ -23,6 +23,7 @@ export class Music {
     private isStopRequested: boolean;
     private isLoopQueue: boolean;
     private isPaused: boolean;
+    private isEditing: boolean;
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
@@ -36,6 +37,7 @@ export class Music {
         this.isLoopQueue = false;
         this.isPaused = false;
         this.isStopRequested = false;
+        this.isEditing = false;
         this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
@@ -76,6 +78,14 @@ export class Music {
 
     get queue(): SongQueue | null {
         return this.songQueue;
+    }
+
+    get editing(): boolean {
+        return this.isEditing;
+    }
+
+    set editing(value: boolean) {
+        this.isEditing = value;
     }
 
     get loop(): boolean {

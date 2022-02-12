@@ -3,28 +3,32 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
 import { Command } from './command';
 
-export class EditQueue extends Command {
+export class Remove extends Command {
     constructor(options: MusicCommandOptions) {
         super(options);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || !this.music.thread) return;
-        this.music.editing = !this.music.editing;
-        this.music.actions.updateQueueMessageWithInteraction(interaction);
+        interaction.reply({
+            content: 'Sori poba, tole pa se ne deva...',
+            ephemeral: true,
+        });
     }
 
     get button(): MessageButton | null {
+        if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'edit']),
+                this.translate([
+                    'music',
+                    'commands',
+                    'actionRow',
+                    'remove',
+                ]),
             )
-            .setDisabled(false)
-            .setStyle(
-                this.music.editing
-                    ? MessageButtonStyles.SUCCESS
-                    : MessageButtonStyles.SECONDARY,
-            )
+            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
 }

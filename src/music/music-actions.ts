@@ -36,7 +36,7 @@ export class MusicActions {
         return this.music.client;
     }
 
-    get commandActionRow(): MessageActionRow | null {
+    get commandActionRow(): MessageActionRow[] | null {
         return this.music.commands.getCommandsActionRow();
     }
 
@@ -103,8 +103,6 @@ export class MusicActions {
                 return await this.changeQueueSongsOffset(true, interaction);
             case this.translate(['music', 'actionRow', 'pageBackward']):
                 return await this.changeQueueSongsOffset(false, interaction);
-            case this.translate(['music', 'actionRow', 'shuffle']):
-                return await this.shuffleQueue(interaction);
             case this.translate(['music', 'actionRow', 'loop']):
                 return await this.loopSong(interaction);
             case this.translate(['music', 'actionRow', 'loopQueue']):
@@ -123,15 +121,6 @@ export class MusicActions {
                 return this.updateQueueMessageWithInteraction(interaction);
             });
         return this.music.decrementOffset().then(() => {
-            return this.updateQueueMessageWithInteraction(interaction);
-        });
-    }
-
-    public async shuffleQueue(
-        interaction: ButtonInteraction,
-    ): Promise<boolean> {
-        if (!this.music.queue) return false;
-        return this.music.queue.shuffle().then(() => {
             return this.updateQueueMessageWithInteraction(interaction);
         });
     }
@@ -232,9 +221,10 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow | null =
-            this.commandActionRow;
-        if (commandActionRow) components.push(commandActionRow);
+        const commandActionRow: MessageActionRow[] | null = this
+            .commandActionRow;
+        if (commandActionRow)
+            for (let row of commandActionRow) components.push(row);
         return {
             fetchReply: true,
             embeds: [embed],

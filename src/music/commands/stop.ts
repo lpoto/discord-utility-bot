@@ -14,9 +14,24 @@ export class Stop extends Command {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.component) return;
-        if (interaction.component.style === 'PRIMARY')
+        if (interaction.component.style === 'PRIMARY') {
             this.music.client.destroyMusic(this.music.guildId);
-        else {
+            if (this.music.queue && this.music.queue.size > 0)
+                interaction.user.send({
+                    content:
+                        this.translate([
+                            'music',
+                            'commands',
+                            'stop',
+                            'reply',
+                        ]) +
+                        '`' +
+                        this.music.queue.allSongs
+                            .map((s) => s.name)
+                            .join('\n') +
+                        '`',
+                });
+        } else {
             this.music.stopRequest = true;
             const webhook: InteractionWebhook = interaction.webhook;
             this.music.actions
@@ -28,11 +43,11 @@ export class Stop extends Command {
                             'music',
                             'commands',
                             'stop',
-                            'comfirm',
+                            'confirm',
                         ]),
                         ephemeral: true,
                     });
-                    setTimeout(async () => {
+                    setTimeout(() => {
                         this.music.stopRequest = false;
                         this.music.actions.updateQueueMessage();
                     }, 5000);

@@ -32,9 +32,8 @@
         "actionRow": {
             "pageForward": ">",
             "pageBackward": "<",
-            "loop": "Loop",
-            "loopQueue": "Loop Queue",
-            "shuffle": "Shuffle"
+            "loop": "Loop Song",
+            "loopQueue": "Loop\u2000Queue"
         },
         "commands": {
             "actionRow": {
@@ -42,12 +41,20 @@
                 "pause": "⏸",
                 "stop": "◼",
                 "replay": "↺",
-                "removeFromQueue": "Edit Queue"
+                "edit": "🛠️",
+                "remove": "Remove",
+                "clear": "Clear",
+                "translate": "Translate",
+                "forward": "Forward",
+                "shuffle": "Shuffle"
             },
             "stop": {
-                "comfirm": "Click on `◼` again if you are sure you want to stop the music."
+                "confirm": "Click on `◼` again if you are sure you want to stop the music.",
+                "reply": "You have deleted a queue with songs:\n"
             },
-            "editQueue": "You have 10 seconds: Send a message in this music's thread:\n `remove <idx>` removes a song with given index\n`forward <idx>` sets song with the given index next in the queue\n`clear` clear the queue."
+            "clear": {
+                "clearedSongs": "Songs you have cleared from the queue:\n"
+            }
         }
     }
 }

@@ -61,8 +61,8 @@ export class SongQueue {
         }
     }
 
-    public clear(): void {
-        this.songs = [];
+    public async clear(): Promise<void> {
+        this.songs = [this.songs[0]];
     }
 
     public removeByName(songName: string): void {

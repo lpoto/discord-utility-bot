@@ -63,11 +63,6 @@ export class QueueEmbed extends MessageEmbed {
                         : MessageButtonStyles.SECONDARY,
                 )
                 .setCustomId(randomUUID()),
-            new MessageButton()
-                .setDisabled(!this.music.queue || this.music.queue.size < 3)
-                .setLabel(QueueEmbed.actionRowLabels(this.music).shuffle)
-                .setStyle(MessageButtonStyles.SECONDARY)
-                .setCustomId(randomUUID()),
         ]);
     }
 
@@ -97,13 +92,10 @@ export class QueueEmbed extends MessageEmbed {
         );
     }
 
-    public static actionRowLabels(music: Music): {
-        [key in
-            | 'pageForward'
-            | 'pageBackward'
-            | 'loop'
-            | 'loopQueue'
-            | 'shuffle']: string;
+    public static actionRowLabels(
+        music: Music,
+    ): {
+        [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
     } {
         return {
             pageForward: music.translate([
@@ -118,7 +110,6 @@ export class QueueEmbed extends MessageEmbed {
             ]),
             loop: music.translate(['music', 'actionRow', 'loop']),
             loopQueue: music.translate(['music', 'actionRow', 'loopQueue']),
-            shuffle: music.translate(['music', 'actionRow', 'shuffle']),
         };
     }
 

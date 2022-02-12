@@ -19,7 +19,6 @@ export class Song {
 
     public toString(): string {
         let name: string = this.songName.replace('&#39;', '`');
-        console.log(name);
         if (name.length > 55) name = name.substring(0, 52) + '...';
         return name;
     }

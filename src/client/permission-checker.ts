@@ -136,6 +136,7 @@ export class PermissionChecker {
         }
         if (!music) return true;
         // if music check if member in the same voice channel as client!
+        // TODO
         return true;
     }
 }
