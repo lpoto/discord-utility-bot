@@ -85,11 +85,10 @@ export class PermissionChecker {
 
     public validateMemberVoiceFromThread(
         message: Message,
-        music: Music | null = null
+        music: Music | null = null,
     ): boolean {
         if (!message.guild || !message.member) return false;
         return this.validateMember(message.member, music);
-
     }
 
     private validateMember(

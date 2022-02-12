@@ -220,10 +220,11 @@ export class MusicActions {
         front?: boolean,
     ): Promise<void> {
         if (!this.music.queue) return;
+        const startPlaying: boolean = this.music.queue.size === 0;
         for await (const n of songNamesOrUrls) {
             if (front) await this.music.queue.enqueueFront(n);
             else await this.music.queue.enqueue(n);
-            if (this.music.queue.size === 1 && !this.music.paused)
+            if (this.music.queue.size === 1 || startPlaying)
                 this.music.commands.execute({ name: CommandName.PLAY });
         }
     }

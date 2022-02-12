@@ -1,109 +1,90 @@
-import { URL } from 'url';
-import * as ytdl from 'ytdl-core';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const ytSearch = require('yt-search');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const ytpl = require('ytpl');
+import { AudioResource, createAudioResource } from '@discordjs/voice';
+import ytdl from 'ytdl-core';
+import ytpl from 'ytpl';
+import * as yt from 'youtube-search-without-api-key';
 
 export class Song {
     // should be only initialized from find static method
     private songName: string;
-    private songUrl: URL;
-    private durationString: string;
+    private url: string;
 
-    constructor(songName: string, durationString: string, songUrl: URL) {
+    constructor(songName: string, url: string) {
         this.songName = songName;
-        this.durationString = durationString;
-        this.songUrl = songUrl;
+        this.url = url;
     }
 
     get name(): string {
         return this.songName;
     }
 
-    get duration(): string {
-        return this.durationString;
-    }
-
-    get url(): URL {
-        return this.songUrl;
-    }
-
     public toString(): string {
-        let name: string = this.songName;
-        if (name.length > 45) name = name.substring(0, 40) + '...';
-        name += `,\u3000Duration: **${this.durationString}**`;
+        let name: string = this.songName.replace('&#39;', '`');
+        console.log(name);
+        if (name.length > 55) name = name.substring(0, 52) + '...';
         return name;
     }
 
     public static async find(nameOrUrl: string): Promise<Song[] | null> {
-        try {
-            const playlist: {
-                [key: string]: { [key: string]: string }[];
-            } = await ytpl(nameOrUrl);
-            if (playlist && playlist.items && playlist.items.length > 0) {
-                return playlist.items.map((p: { [key: string]: string }) => {
-                    return new Song(p.title, p.duration, new URL(p.url));
-                });
-            }
-            return null;
-        } catch (e) {
-            try {
-                if (ytdl.validateURL(nameOrUrl)) {
-                    const songInfo: ytdl.videoInfo = await ytdl.getInfo(
-                        nameOrUrl,
-                    );
-                    const timestamp: string = Song.secondsToTimestamp(
-                        Number(songInfo.videoDetails.lengthSeconds),
-                    );
-                    return [
-                        new Song(
-                            songInfo.videoDetails.title,
-                            timestamp,
-                            new URL(songInfo.videoDetails.video_url),
-                        ),
-                    ];
-                } else {
-                    const videoFinder = async (
-                        query: string,
-                    ): Promise<{ [key: string]: string }> => {
-                        const videResult = await ytSearch(query);
-                        return videResult.videos.length > 1
-                            ? videResult.videos[0]
-                            : null;
-                    };
-                    const video: { [key: string]: string } = await videoFinder(
-                        nameOrUrl,
-                    );
-                    if (video) {
-                        return [
-                            new Song(
-                                video.title,
-                                video.timestamp,
-                                new URL(video.url),
-                            ),
-                        ];
-                    }
-                    return null;
-                }
-            } catch (e2) {
-                return null;
-            }
-        }
+        if (Song.isYoutubeUrl(nameOrUrl)) return Song.findByUrl(nameOrUrl);
+        return Song.findBySearch(nameOrUrl);
     }
 
-    private static secondsToTimestamp(lengthSeconds: number): string {
-        const hours: number = Math.floor(lengthSeconds / 3600);
-        const minutes: number = Math.floor((lengthSeconds % 3600) / 60);
-        const seconds: number = (lengthSeconds % 3600) % 60;
-        const secondsString: string =
-            seconds >= 10 ? seconds.toString() : '0' + seconds.toString();
-        const minutesString: string =
-            hours > 0 && minutes < 10
-                ? '0' + minutes.toString()
-                : minutes.toString();
-        return hours > 0
-            ? `${hours}:${minutesString}:${secondsString}`
-            : `${minutesString}:${secondsString}`;
+    public async getResource(): Promise<AudioResource | null> {
+        return createAudioResource(
+            ytdl(this.url, {
+                filter: 'audioonly',
+                highWaterMark: 1 << 25,
+                quality: 'lowest',
+            }),
+        );
+    }
+
+    private static async findByUrl(url: string): Promise<Song[] | null> {
+        return ytpl(url)
+            .then((playlist) => {
+                if (playlist && playlist.items && playlist.items.length > 0) {
+                    return playlist.items.map((p) => {
+                        return new Song(p.title, p.url);
+                    });
+                }
+                return null;
+            })
+            .catch(async () => {
+                return ytdl
+                    .getInfo(url)
+                    .then((result) => {
+                        return [
+                            new Song(
+                                result.videoDetails.title,
+                                result.videoDetails.video_url,
+                            ),
+                        ];
+                    })
+                    .catch(() => {
+                        console.log('no videos found');
+                        return null;
+                    });
+            });
+    }
+
+    private static async findBySearch(query: string): Promise<Song[] | null> {
+        return yt
+            .search(query)
+            .then(async (results) => {
+                if (!results || results.length < 1) return null;
+                return [new Song(results[0].snippet.title, results[0].url)];
+            })
+            .catch((e) => {
+                console.log('no search results found', e);
+                return null;
+            });
+    }
+
+    private static isYoutubeUrl(url: string): boolean {
+        // eslint-disable-next-line max-len
+        const regExp =
+            /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
+        const match: RegExpMatchArray | null = url.match(regExp);
+        return match !== null && match !== undefined;
     }
 }

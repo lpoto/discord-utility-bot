@@ -4,10 +4,8 @@ import {
     AudioPlayer,
     AudioPlayerStatus,
     createAudioPlayer,
-    createAudioResource,
 } from '@discordjs/voice';
 import { Song } from '../song';
-import ytdl from 'ytdl-core';
 import { ButtonInteraction } from 'discord.js';
 
 export class Play extends Command {
@@ -37,21 +35,23 @@ export class Play extends Command {
         const audioPlayer: AudioPlayer = createAudioPlayer();
         this.music.connection.subscribe(audioPlayer);
 
-        const stream = ytdl(song.url.toString(), { filter: 'audioonly' });
-        try {
-            audioPlayer.play(createAudioResource(stream));
-            audioPlayer
-                .on(AudioPlayerStatus.Idle, () => {
-                    this.next(interaction);
-                })
-                .on('error', () => {
-                    this.next(interaction);
-                });
-        } catch (e) {
-            console.error('Error when creating audio player');
-            this.music.audioPlayer = audioPlayer;
-            return;
-        }
+        song.getResource()
+            .then((resource) => {
+                if (!resource) return;
+                audioPlayer.play(resource);
+                audioPlayer
+                    .on(AudioPlayerStatus.Idle, () => {
+                        this.next(interaction);
+                    })
+                    .on('error', () => {
+                        this.next(interaction);
+                    });
+            })
+            .catch((e) => {
+                console.error('Error when creating audio player: ', e);
+                this.music.audioPlayer = audioPlayer;
+                return;
+            });
         this.music.audioPlayer = audioPlayer;
     }
 }

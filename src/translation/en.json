@@ -34,8 +34,7 @@
             "pageBackward": "<",
             "loop": "Loop",
             "loopQueue": "Loop Queue",
-            "shuffle": "Shuffle",
-            "clear": "Clear"
+            "shuffle": "Shuffle"
         },
         "commands": {
             "actionRow": {
