@@ -17,17 +17,18 @@ export class SongQueue {
     }
 
     public async enqueue(nameOrUrl: string): Promise<void> {
-        if (!this.songs) this.songs = [];
-        const songs: Song[] | null = await Song.find(nameOrUrl);
-        if (!songs) return;
-        for (const song of songs) this.songs.push(song);
+        return Song.find(nameOrUrl).then((songs) => {
+            if (!songs) return;
+            for (const song of songs) this.songs.push(song);
+        });
     }
 
     public async enqueueFront(nameOrUrl: string): Promise<void> {
         if (!this.songs) this.songs = [];
-        const songs: Song[] | null = await Song.find(nameOrUrl);
-        if (!songs) return;
-        for (const song of songs) this.songs.unshift(song);
+        Song.find(nameOrUrl).then((songs) => {
+            if (!songs) return;
+            for (const song of songs) this.songs.unshift(song);
+        });
     }
 
     public enqueueSong(song: Song) {

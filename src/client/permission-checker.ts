@@ -1,6 +1,8 @@
 import {
+    ButtonInteraction,
     CommandInteraction,
     GuildMember,
+    Message,
     PermissionResolvable,
     Role,
     TextBasedChannel,
@@ -66,10 +68,10 @@ export class PermissionChecker {
         );
     }
 
-    public async validateMemberVoice(
-        interaction: CommandInteraction,
+    public validateMemberVoice(
+        interaction: CommandInteraction | ButtonInteraction,
         music: Music | null = null,
-    ): Promise<boolean> {
+    ): boolean {
         if (
             !interaction.guild ||
             !interaction.guildId ||
@@ -78,43 +80,63 @@ export class PermissionChecker {
             !(interaction.member instanceof GuildMember)
         )
             return false;
-        if (!interaction.member.voice.channel) {
-            await interaction.reply({
-                content: this.client.translate(interaction.guildId, [
-                    'error',
-                    'voice',
-                    'user',
-                    'notConnected',
-                ]),
-                ephemeral: true,
-            });
+        return this.validateMember(interaction.member, music, interaction);
+    }
+
+    public validateMemberVoiceFromThread(
+        message: Message,
+        music: Music | null = null
+    ): boolean {
+        if (!message.guild || !message.member) return false;
+        return this.validateMember(message.member, music);
+
+    }
+
+    private validateMember(
+        member: GuildMember,
+        music: Music | null,
+        interaction?: CommandInteraction | ButtonInteraction,
+    ): boolean {
+        if (!member.voice.channel) {
+            if (interaction)
+                interaction.reply({
+                    content: this.client.translate(interaction.guildId, [
+                        'error',
+                        'voice',
+                        'user',
+                        'notConnected',
+                    ]),
+                    ephemeral: true,
+                });
             return false;
         }
-        if (!(interaction.member.voice.channel instanceof VoiceChannel)) {
-            await interaction.reply({
-                content: this.client.translate(interaction.guildId, [
-                    'error',
-                    'voice',
-                    'invalid',
-                ]),
-                ephemeral: true,
-            });
+        if (!(member.voice.channel instanceof VoiceChannel)) {
+            if (interaction)
+                interaction.reply({
+                    content: this.client.translate(interaction.guildId, [
+                        'error',
+                        'voice',
+                        'invalid',
+                    ]),
+                    ephemeral: true,
+                });
             return false;
         }
-        if (!this.checkClientVoice(interaction.member.voice.channel)) {
-            await interaction.reply({
-                content: this.client.translate(interaction.guildId, [
-                    'error',
-                    'voice',
-                    'client',
-                    'noPermissions',
-                ]),
-                ephemeral: true,
-            });
+        if (!this.checkClientVoice(member.voice.channel)) {
+            if (interaction)
+                interaction.reply({
+                    content: this.client.translate(interaction.guildId, [
+                        'error',
+                        'voice',
+                        'client',
+                        'noPermissions',
+                    ]),
+                    ephemeral: true,
+                });
             return false;
         }
         if (!music) return true;
         // if music check if member in the same voice channel as client!
-        return false;
+        return true;
     }
 }

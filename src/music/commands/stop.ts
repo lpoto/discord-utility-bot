@@ -35,7 +35,7 @@ export class Stop extends Command {
                     setTimeout(async () => {
                         this.music.stopRequest = false;
                         this.music.actions.updateQueueMessage();
-                    }, 10000);
+                    }, 5000);
                 });
         }
     }

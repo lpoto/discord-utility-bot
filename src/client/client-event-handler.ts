@@ -91,18 +91,24 @@ export class ClientEventHandler {
     private handleThreadMessage(message: Message): void {
         if (
             message.guildId &&
+            message.member instanceof GuildMember &&
             this.guildMusic[message.guildId] &&
             message.channel instanceof ThreadChannel &&
             message.content &&
             message.channel.ownerId === this.client.user?.id
         ) {
+            if (
+                !this.permissionChecker.checkMemberRoles(message.member) ||
+                !this.permissionChecker.validateMemberVoiceFromThread(message)
+            )
+                return;
             this.guildMusic[message.guildId].actions.addSongToQueue(
                 message.content.split('\n'),
             );
         }
     }
 
-    private async handleInteraction(interaction: Interaction): Promise<void> {
+    private handleInteraction(interaction: Interaction): void {
         if (
             !interaction.guildId ||
             (!interaction.isButton() && !interaction.isCommand()) ||
@@ -112,7 +118,7 @@ export class ClientEventHandler {
         )
             return;
         if (!this.permissionChecker.checkMemberRoles(interaction.member)) {
-            await interaction.reply({
+            interaction.reply({
                 content:
                     this.client.translate(interaction.guildId, [
                         'error',
@@ -122,6 +128,7 @@ export class ClientEventHandler {
             });
             return;
         }
+        if (!this.permissionChecker.validateMemberVoice(interaction)) return;
         if (
             interaction.isButton() &&
             interaction.component instanceof MessageButton
@@ -218,24 +225,17 @@ export class ClientEventHandler {
             } else {
                 // if valid member start a new music object in the channel
 
-                this.permissionChecker
-                    .validateMemberVoice(interaction)
-                    .then((result) => {
-                        if (!result) return;
+                if (!this.permissionChecker.validateMemberVoice(interaction))
+                    return;
 
-                        console.log(
-                            `Initializing queue message in guild ${interaction.guildId}`,
-                        );
+                console.log(
+                    `Initializing queue message in guild ${interaction.guildId}`,
+                );
 
-                        Music.newMusic(this.client, interaction).then(
-                            (music) => {
-                                if (interaction.guildId && music)
-                                    this.client.guildMusic[
-                                        interaction.guildId
-                                    ] = music;
-                            },
-                        );
-                    });
+                Music.newMusic(this.client, interaction).then((music) => {
+                    if (interaction.guildId && music)
+                        this.client.guildMusic[interaction.guildId] = music;
+                });
             }
         }
         this.slashCommandQueue.shift();
