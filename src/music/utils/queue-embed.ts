@@ -122,7 +122,7 @@ export class QueueEmbed extends MessageEmbed {
             '**' + this.secondsToTimeString(this.music.updater.time) + '**';
         const rightTime: string =
             '**' + this.secondsToTimeString(song.seconds) + '**';
-        const x: number = Math.floor(
+        const x: number = Math.round(
             (this.music.updater.time / (song.seconds > 0 ? song.seconds : 1)) *
                 30,
         );

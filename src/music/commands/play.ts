@@ -38,9 +38,9 @@ export class Play extends Command {
         song.getResource()
             .then((resource) => {
                 if (!resource) return;
-                audioPlayer.play(resource);
                 this.music.updater.resetTimer();
                 this.music.playing = true;
+                audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         this.music.playing = false;
