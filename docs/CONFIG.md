@@ -2,57 +2,40 @@
 
 - nodeJS
 - npm
-- typescript
-
-## Prerequisites
-
-- Create your [discord bot client](CREATING_CLIENT.md)
-
-- Clone the repository:
-
-```
-git clone https://github.com/lpoto/discord-music-bot.git
-cd discord-music-bot
-```
-
-- Install dependencies:
-
-```
-npm install
-```
-
-- Create `config.json` file in `src/` and add your discord bot token:
-
-```
-{
-    "token": "discord-bot-token",
-}
-```
+- your own [discord bot client](CREATING_CLIENT.md)
 
 ## Running the bot
 
-
-- Compile:
-
+```bash
+git clone https://github.com/lpoto/discord-music-bot.git
+cd ./discord-music-bot
+npm install
 ```
+```bash
+export DISCORD_TOKEN=your-discord-client-token
+```
+```bash
 npm run build
-```
-
-- Run:
-
-```
 npm run start
-```
-
-- Alternatively run the bot with nodemon:
-
-```
+#or
 npm run dev
 ```
 
+## Running the bot in a docker container
 
-## Run the bot in a docker container
 
+- Create a `.env` file and add your discord token:
+
+```bash
+DISCORD_TOKEN: your-token
 ```
+
+- Run with docker-compose:
+
+```bash
 docker-compose up -d --build
 ```
+
+**NOTE** You can add multiple discord tokens in the `.env` file and 
+create additional services in `docker-compose.yaml`, so you can run multiple instances
+of the bot at once.

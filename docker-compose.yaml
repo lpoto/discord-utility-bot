@@ -1,7 +1,20 @@
 version: '3'
 
 services:
-  client:
+  client-1:
     build:
       context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+
+# client-2:
+#   build:
+#     context: .
+#     dockerfile: Dockerfile
+#   restart: unless-stopped
+#   environment:
+#     DISCORD_TOKEN: ${DISCORD_TOKEN_2}
+# 
+

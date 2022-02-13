@@ -13,7 +13,8 @@
                 "noPermissions": "I am missing the required permissions to join your channel!"
             },
             "user": {
-                "notConnected": "You are not in a  voice channel!"
+                "notConnected": "You are not in a  voice channel!",
+                "differentChannel": "We are not in the same channel!"
             }
         }
     },

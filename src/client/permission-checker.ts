@@ -135,8 +135,19 @@ export class PermissionChecker {
             return false;
         }
         if (!music) return true;
-        // if music check if member in the same voice channel as client!
-        // TODO
+        if (member.guild.me?.voice.channel !== member.voice.channel) {
+            if (interaction)
+                interaction.reply({
+                    content: this.client.translate(interaction.guildId, [
+                        'error',
+                        'voice',
+                        'user',
+                        'differentChannel',
+                    ]),
+                    ephemeral: true,
+                });
+            return false;
+        }
         return true;
     }
 }

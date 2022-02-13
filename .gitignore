@@ -1,5 +1,7 @@
+.env
 config.json
 
+.nvimrc
 .vscode
 
 dist

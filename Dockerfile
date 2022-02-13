@@ -9,6 +9,7 @@ COPY src /app/src
 RUN ls -a
 
 RUN npm install
+
 RUN npm run build
 
-cmd ["npm", "run", "start"]
+cmd npm run start

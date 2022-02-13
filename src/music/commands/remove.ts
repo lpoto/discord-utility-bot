@@ -24,16 +24,15 @@ export class Remove extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !interaction.user || !this.music.thread) return;
-        const removeDropdown: MessageSelectMenu | null = this.removeDropdown();
-        if (!removeDropdown) {
-            try {
-                interaction.deferReply();
-            } catch (e) {
-                return;
-            }
+        if (
+            !interaction ||
+            !interaction.user ||
+            !this.music.thread ||
+            interaction.deferred
+        )
             return;
-        }
+        const removeDropdown: MessageSelectMenu | null = this.removeDropdown();
+        if (!removeDropdown) return;
         interaction
             .reply({
                 content: this.translate([
@@ -92,7 +91,7 @@ export class Remove extends Command {
                     this.music.actions.updateQueueMessage();
                     const removeDd: MessageSelectMenu | null =
                         this.removeDropdown(start);
-                    if (!removeDd) return;
+                    if (!removeDd || interaction2.deferred) return;
                     try {
                         interaction2.update({
                             content: this.translate([
@@ -109,6 +108,9 @@ export class Remove extends Command {
                         return;
                     }
                 });
+            })
+            .catch((e) => {
+                console.log('Error when removing:', e);
             });
     }
 

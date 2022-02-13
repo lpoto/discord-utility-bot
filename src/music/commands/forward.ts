@@ -24,17 +24,16 @@ export class Forward extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !interaction.user || !this.music.thread) return;
+        if (
+            !interaction ||
+            !interaction.user ||
+            !this.music.thread ||
+            interaction.deferred
+        )
+            return;
         const forwardDropdown: MessageSelectMenu | null =
             this.forwardDropdown();
-        if (!forwardDropdown) {
-            try {
-                interaction.deferReply();
-            } catch (e) {
-                return;
-            }
-            return;
-        }
+        if (!forwardDropdown) return;
         interaction
             .reply({
                 content: this.translate([
@@ -89,7 +88,7 @@ export class Forward extends Command {
                     try {
                         const forwardDd: MessageSelectMenu | null =
                             this.forwardDropdown(start);
-                        if (!forwardDd) return;
+                        if (!forwardDd || interaction2.deferred) return;
                         interaction2.update({
                             content: this.translate([
                                 'music',
@@ -107,6 +106,9 @@ export class Forward extends Command {
                         return;
                     }
                 });
+            })
+            .catch((e) => {
+                console.log('Error when forwarding:', e);
             });
     }
 

@@ -81,6 +81,10 @@ export class MusicClient extends Client {
         return false;
     }
 
+    public getMusic(guildId: string): Music | null {
+        return guildId in this.guildMusic ? this.guildMusic[guildId] : null;
+    }
+
     public setup(token: string): void {
         if (!this.user) return;
 

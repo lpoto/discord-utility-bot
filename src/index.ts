@@ -1,6 +1,5 @@
 import { Intents, Permissions } from 'discord.js';
 import { MusicClient } from './client';
-import config from './config.json';
 import { LanguageString } from './translation';
 
 const client: MusicClient = new MusicClient({
@@ -23,4 +22,6 @@ const client: MusicClient = new MusicClient({
     requiredMemberRoles: ['DJ'],
 });
 
-MusicClient.run(client, config.token);
+if (process.env.DISCORD_TOKEN)
+    MusicClient.run(client, process.env.DISCORD_TOKEN);
+else console.log('Missing `DISCORD_TOKEN` env variable');

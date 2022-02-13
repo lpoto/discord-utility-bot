@@ -99,7 +99,10 @@ export class ClientEventHandler {
         ) {
             if (
                 !this.permissionChecker.checkMemberRoles(message.member) ||
-                !this.permissionChecker.validateMemberVoiceFromThread(message)
+                !this.permissionChecker.validateMemberVoiceFromThread(
+                    message,
+                    this.client.getMusic(message.guildId),
+                )
             )
                 return;
             this.guildMusic[message.guildId].actions.songsToQueue(
@@ -129,7 +132,13 @@ export class ClientEventHandler {
             });
             return;
         }
-        if (!this.permissionChecker.validateMemberVoice(interaction)) return;
+        if (
+            !this.permissionChecker.validateMemberVoice(
+                interaction,
+                this.client.getMusic(interaction.guildId),
+            )
+        )
+            return;
         if (
             interaction.isButton() &&
             interaction.component instanceof MessageButton
