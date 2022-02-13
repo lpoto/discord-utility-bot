@@ -73,7 +73,7 @@ export class QueueEmbed extends MessageEmbed {
                 (song, index) => {
                     if (index > 0)
                         return `***${index}.***\u3000${song.toString()}`;
-                    return song.name;
+                    return this.wrapString50(song.name);
                 },
             );
             if (!songs || songs.length < 1) return '';
@@ -89,13 +89,13 @@ export class QueueEmbed extends MessageEmbed {
                               this.songsOffset + QueueEmbed.songsPerPage(),
                           )
                           .join('\n');
-            description += `\n\n> **${this.music.translate([
+            description += `\n\n**${this.music.translate([
                 'music',
                 'queue',
                 'curPlaying',
             ])}**`;
             description +=
-                spacer + headSong + '\n\n' + spacer + this.songLoader();
+                spacer + headSong + '\n' + spacer + this.songLoader();
             return description;
         } catch (e) {
             console.error('Queue embed error: ', e);
@@ -172,6 +172,10 @@ export class QueueEmbed extends MessageEmbed {
         return hours > 0
             ? `${hours}:${minutesString}:${secondsString}`
             : `${minutesString}:${secondsString}`;
+    }
+
+    private wrapString50(text: string) {
+        return text.replace(/([^\n]{1,50})/g, '$1\n');
     }
 
     public static songsPerPage(): number {
