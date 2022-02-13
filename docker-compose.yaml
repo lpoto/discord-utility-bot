@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  client-1:
+  client:
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,7 +9,7 @@ services:
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
 
-# client-2:
+# client2:
 #   build:
 #     context: .
 #     dockerfile: Dockerfile

@@ -42,6 +42,10 @@ music commands.
 - Speak
 - Use Voice Activity
 
+##
+
+![Queue](assets/queue.png)
+
 ## Development
 
 For more info on developing the bot see [config](docs/CONFIG.md)
