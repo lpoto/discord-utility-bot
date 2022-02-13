@@ -164,7 +164,7 @@ export class Forward extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'actionRow', 'forward']),
             )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setDisabled(!this.music.queue || this.music.queue?.size < 3)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

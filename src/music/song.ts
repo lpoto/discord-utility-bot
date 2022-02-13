@@ -33,7 +33,7 @@ export class Song {
             ytdl(this.url, {
                 filter: 'audioonly',
                 highWaterMark: 1 << 25,
-                quality: 'lowest',
+                quality: 'highestaudio',
             }),
         );
     }
