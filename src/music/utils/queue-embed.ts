@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Music } from '../music';
+import { Song } from '../song';
 
 export class QueueEmbed extends MessageEmbed {
     private music: Music;
@@ -75,21 +76,23 @@ export class QueueEmbed extends MessageEmbed {
         );
         if (!songs || songs.length < 1) return '';
         const headSong = songs.shift();
-        return (
-            (songs.length === 0
+        const spacer = '\u3000\u3000';
+        let description: string =
+            songs.length === 0
                 ? ''
                 : songs
                       .slice(
                           this.songsOffset,
                           this.songsOffset + QueueEmbed.songsPerPage(),
                       )
-                      .join('\n')) +
-            `\n\n**${this.music.translate([
-                'music',
-                'queue',
-                'curPlaying',
-            ])}**\n\u3000\u2000${headSong}`
-        );
+                      .join('\n');
+        description += `\n\n**${this.music.translate([
+            'music',
+            'queue',
+            'curPlaying',
+        ])}**\n`;
+        description += spacer + headSong + '\n' + spacer + this.songLoader();
+        return description;
     }
 
     public static actionRowLabels(music: Music): {
@@ -109,6 +112,39 @@ export class QueueEmbed extends MessageEmbed {
             loop: music.translate(['music', 'actionRow', 'loop']),
             loopQueue: music.translate(['music', 'actionRow', 'loopQueue']),
         };
+    }
+
+    private songLoader(): string {
+        if (!this.music.queue) return '';
+        const song: Song | null = this.music.queue?.head;
+        if (!song) return '';
+        let leftTime: string =
+            '**' + this.secondsToTimeString(this.music.updater.time) + '**';
+        const rightTime: string =
+            '**' + this.secondsToTimeString(song.seconds) + '**';
+        const x: number = Math.floor(
+            (this.music.updater.time / (song.seconds > 0 ? song.seconds : 1)) *
+                30,
+        );
+        leftTime += '\u2000' + '▮'.repeat(x) + '▯'.repeat(30 - x) + '\u2000';
+        return leftTime + rightTime;
+    }
+
+    private secondsToTimeString(seconds: number) {
+        const hours: number = Math.floor(seconds / 3600);
+        const minutes: number = Math.floor((seconds % 3600) / 60);
+        const newSeconds: number = (seconds % 3600) % 60;
+        const minutesString: string =
+            hours === 0 || minutes < 10
+                ? minutes.toString()
+                : '0' + minutes.toString();
+        const secondsString: string =
+            newSeconds < 10
+                ? '0' + newSeconds.toString()
+                : newSeconds.toString();
+        return hours > 0
+            ? `${hours}:${minutesString}:${secondsString}`
+            : `${minutesString}:${secondsString}`;
     }
 
     public static songsPerPage(): number {

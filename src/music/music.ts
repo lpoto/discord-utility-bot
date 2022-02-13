@@ -9,6 +9,7 @@ import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
 import { MusicCommands } from './commands';
 import { MusicActions } from './music-actions';
+import { MusicUpdater } from './music-updater';
 import { SongQueue } from './song-queue';
 import { QueueEmbed } from './utils';
 
@@ -24,9 +25,11 @@ export class Music {
     private isLoopQueue: boolean;
     private isPaused: boolean;
     private isEditing: boolean;
+    private isPlaying: boolean;
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
+    private musicUpdater: MusicUpdater;
 
     constructor(client: MusicClient, guildId: string) {
         this.songQueue = null;
@@ -38,9 +41,11 @@ export class Music {
         this.isPaused = false;
         this.isStopRequested = false;
         this.isEditing = false;
+        this.isPlaying = false;
         this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
+        this.musicUpdater = new MusicUpdater(this);
         this.player = null;
     }
 
@@ -50,6 +55,10 @@ export class Music {
 
     get actions(): MusicActions {
         return this.musicActions;
+    }
+
+    get updater(): MusicUpdater {
+        return this.musicUpdater;
     }
 
     get connection(): VoiceConnection | null {
@@ -86,6 +95,14 @@ export class Music {
 
     set editing(value: boolean) {
         this.isEditing = value;
+    }
+
+    get playing(): boolean {
+        return !this.paused && this.isPlaying;
+    }
+
+    set playing(value: boolean) {
+        this.isPlaying = value;
     }
 
     get loop(): boolean {

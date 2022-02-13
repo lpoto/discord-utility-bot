@@ -6,15 +6,21 @@ import * as yt from 'youtube-search-without-api-key';
 export class Song {
     // should be only initialized from find static method
     private songName: string;
+    private timeInSeconds: number;
     private url: string;
 
-    constructor(songName: string, url: string) {
+    constructor(songName: string, url: string, timeInSeconds: number) {
         this.songName = songName;
         this.url = url;
+        this.timeInSeconds = timeInSeconds;
     }
 
     get name(): string {
         return this.songName;
+    }
+
+    get seconds(): number {
+        return this.timeInSeconds;
     }
 
     public toString(): string {
@@ -43,7 +49,7 @@ export class Song {
             .then((playlist) => {
                 if (playlist && playlist.items && playlist.items.length > 0) {
                     return playlist.items.map((p) => {
-                        return new Song(p.title, p.url);
+                        return new Song(p.title, p.url, Number(p.durationSec));
                     });
                 }
                 return null;
@@ -56,6 +62,7 @@ export class Song {
                             new Song(
                                 result.videoDetails.title,
                                 result.videoDetails.video_url,
+                                Number(result.videoDetails.lengthSeconds),
                             ),
                         ];
                     })
@@ -71,7 +78,13 @@ export class Song {
             .search(query)
             .then(async (results) => {
                 if (!results || results.length < 1) return null;
-                return [new Song(results[0].snippet.title, results[0].url)];
+                return [
+                    new Song(
+                        results[0].snippet.title,
+                        results[0].url,
+                        Song.durationStringToSeconds(results[0].duration_raw),
+                    ),
+                ];
             })
             .catch((e) => {
                 console.log('no search results found', e);
@@ -85,5 +98,13 @@ export class Song {
             /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
         const match: RegExpMatchArray | null = url.match(regExp);
         return match !== null && match !== undefined;
+    }
+
+    private static durationStringToSeconds(duration: string): number {
+        const hms: number[] = duration.split(':').map((t) => Number(t));
+        if (hms.length === 3) return hms[0] * 3600 + hms[1] * 60 + hms[2];
+        else if (hms.length === 2) return hms[0] * 60 + hms[1];
+        else if (hms.length === 1) return hms[0];
+        return 0;
     }
 }

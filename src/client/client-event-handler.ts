@@ -94,6 +94,8 @@ export class ClientEventHandler {
             message.member instanceof GuildMember &&
             this.guildMusic[message.guildId] &&
             message.channel instanceof ThreadChannel &&
+            message.channel.name ===
+                this.translate(message.guildId, ['music', 'thread', 'name']) &&
             message.content &&
             message.channel.ownerId === this.client.user?.id
         ) {

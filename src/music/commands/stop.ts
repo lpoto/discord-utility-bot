@@ -49,7 +49,7 @@ export class Stop extends Command {
                     });
                     setTimeout(() => {
                         this.music.stopRequest = false;
-                        this.music.actions.updateQueueMessage();
+                        this.music.updater.needsUpdate();
                     }, 5000);
                 });
         }

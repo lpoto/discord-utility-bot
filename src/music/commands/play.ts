@@ -39,17 +39,23 @@ export class Play extends Command {
             .then((resource) => {
                 if (!resource) return;
                 audioPlayer.play(resource);
+                this.music.updater.resetTimer();
+                this.music.playing = true;
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
+                        this.music.playing = false;
                         this.next(interaction);
                     })
                     .on('error', () => {
+                        this.music.playing = false;
+                        this.music.updater.resetTimer();
                         this.next(interaction);
                     });
             })
             .catch((e) => {
                 console.error('Error when creating audio player: ', e);
-                this.music.audioPlayer = audioPlayer;
+                this.music.audioPlayer = null;
+                this.music.playing = false;
                 return;
             });
         this.music.audioPlayer = audioPlayer;

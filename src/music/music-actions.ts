@@ -137,18 +137,19 @@ export class MusicActions {
 
     public songsToQueue(songNamesOrUrls: string[]): void {
         if (!this.music.queue) return;
-        const jmp = 5;
-        const timer = 250;
-        this.multipleSongsToQueue(songNamesOrUrls.slice(0, jmp))
-            .then(() => {
-                if (songNamesOrUrls.length <= jmp) return;
-                setTimeout(() => {
-                    this.songsToQueue(songNamesOrUrls.slice(jmp));
-                }, timer);
-            })
-            .then(() => {
-                this.updateQueueMessage();
+        let startPlaying: boolean = this.music.queue.size === 0;
+        for (const n of songNamesOrUrls) {
+            this.music.queue.enqueue(n).then(() => {
+                this.music.updater.needsUpdate();
+                if (
+                    (this.music.queue && this.music.queue.size === 1) ||
+                    startPlaying
+                ) {
+                    startPlaying = false;
+                    this.music.commands.execute({ name: CommandName.PLAY });
+                }
             });
+        }
     }
 
     public async replyWithQueue(
@@ -211,20 +212,6 @@ export class MusicActions {
                 this.handleError(error);
                 return false;
             });
-    }
-
-    private async multipleSongsToQueue(
-        songNamesOrUrls: string[],
-    ): Promise<void> {
-        if (!this.music.queue) return;
-        let startPlaying: boolean = this.music.queue.size === 0;
-        for await (const n of songNamesOrUrls) {
-            await this.music.queue.enqueue(n);
-            if (this.music.queue.size === 1 || startPlaying) {
-                startPlaying = false;
-                this.music.commands.execute({ name: CommandName.PLAY });
-            }
-        }
     }
 
     private getQueueOptions(): InteractionReplyOptions {
