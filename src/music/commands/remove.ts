@@ -124,7 +124,7 @@ export class Remove extends Command {
                     label:
                         `${index + start * this.songsPerPage + 1}.\u3000` +
                         s.toString(),
-                    value: index.toString(),
+                    value: (index + 1).toString(),
                 };
             },
         );

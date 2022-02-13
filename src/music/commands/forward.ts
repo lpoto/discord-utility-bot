@@ -25,8 +25,7 @@ export class Forward extends Command {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || !this.music.thread) return;
-        const forwardDropdown: MessageSelectMenu | null =
-            this.forwardDropdown();
+        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown();
         if (!forwardDropdown) {
             try {
                 interaction.deferReply();
@@ -70,7 +69,7 @@ export class Forward extends Command {
                         interaction2.values.length !== 1
                     )
                         return;
-                    let start = -1;
+                    let start = 0;
                     const value: string = interaction2.values[0];
                     try {
                         if (value.startsWith('prev: ')) {
@@ -84,33 +83,26 @@ export class Forward extends Command {
                     } catch (e) {
                         return;
                     }
-                    if (start !== -1) {
-                        try {
-                            const forwardDd: MessageSelectMenu | null =
-                                this.forwardDropdown(start);
-                            if (!forwardDd) return;
-                            interaction2.update({
-                                content: this.translate([
-                                    'music',
-                                    'commands',
-                                    'actionRow',
-                                    'forward',
-                                ]),
-                                components: [
-                                    new MessageActionRow().addComponents(
-                                        forwardDd,
-                                    ),
-                                ],
-                            });
-                        } catch (e) {
-                            return;
-                        }
-                    } else {
-                        try {
-                            interaction2.deferUpdate();
-                        } catch (e) {
-                            return;
-                        }
+                    try {
+                        const forwardDd: MessageSelectMenu | null = this.forwardDropdown(
+                            start,
+                        );
+                        if (!forwardDd) return;
+                        interaction2.update({
+                            content: this.translate([
+                                'music',
+                                'commands',
+                                'actionRow',
+                                'forward',
+                            ]),
+                            components: [
+                                new MessageActionRow().addComponents(
+                                    forwardDd,
+                                ),
+                            ],
+                        });
+                    } catch (e) {
+                        return;
                     }
                 });
             });
@@ -130,7 +122,7 @@ export class Forward extends Command {
                     label:
                         `${index + start * this.songsPerPage + 1}.\u3000` +
                         s.toString(),
-                    value: index.toString(),
+                    value: (index + 1).toString(),
                 };
             },
         );

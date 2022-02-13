@@ -102,7 +102,7 @@ export class ClientEventHandler {
                 !this.permissionChecker.validateMemberVoiceFromThread(message)
             )
                 return;
-            this.guildMusic[message.guildId].actions.addSongToQueue(
+            this.guildMusic[message.guildId].actions.songsToQueue(
                 message.content.split('\n'),
             );
         }

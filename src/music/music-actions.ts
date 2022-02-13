@@ -135,11 +135,18 @@ export class MusicActions {
         return this.updateQueueMessageWithInteraction(interaction);
     }
 
-    public addSongToQueue(songNamesOrUrls: string[], front?: boolean): void {
+    public songsToQueue(songNamesOrUrls: string[]): void {
         if (!this.music.queue) return;
-        this.multipleSongsToQueue(songNamesOrUrls, front).then(() => {
-            return this.updateQueueMessage();
-        });
+        const jmp: number = 5;
+        const timer: number = 500;
+        this.multipleSongsToQueue(songNamesOrUrls.slice(0, jmp)).then(() => {
+            if (songNamesOrUrls.length <= jmp) return;
+            setTimeout(() => {
+                this.songsToQueue(songNamesOrUrls.slice(jmp));
+            }, timer)
+        }).then(() => {
+            this.updateQueueMessage();
+        })
     }
 
     public async replyWithQueue(
@@ -206,23 +213,23 @@ export class MusicActions {
 
     private async multipleSongsToQueue(
         songNamesOrUrls: string[],
-        front?: boolean,
     ): Promise<void> {
         if (!this.music.queue) return;
-        const startPlaying: boolean = this.music.queue.size === 0;
+        let startPlaying: boolean = this.music.queue.size === 0;
         for await (const n of songNamesOrUrls) {
-            if (front) await this.music.queue.enqueueFront(n);
-            else await this.music.queue.enqueue(n);
-            if (this.music.queue.size === 1 || startPlaying)
+            await this.music.queue.enqueue(n);
+            if (this.music.queue.size === 1 || startPlaying) {
+                startPlaying = false;
                 this.music.commands.execute({ name: CommandName.PLAY });
+            }
         }
     }
 
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow[] | null =
-            this.commandActionRow;
+        const commandActionRow: MessageActionRow[] | null = this
+            .commandActionRow;
         if (commandActionRow)
             for (const row of commandActionRow) components.push(row);
         return {
