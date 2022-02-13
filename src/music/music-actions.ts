@@ -221,10 +221,10 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow[] | null = this
-            .commandActionRow;
+        const commandActionRow: MessageActionRow[] | null =
+            this.commandActionRow;
         if (commandActionRow)
-            for (let row of commandActionRow) components.push(row);
+            for (const row of commandActionRow) components.push(row);
         return {
             fetchReply: true,
             embeds: [embed],

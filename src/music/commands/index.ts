@@ -28,7 +28,7 @@ export enum CommandName {
     FORWARD,
     REMOVE,
     SHUFFLE,
-    CLEAR
+    CLEAR,
 }
 
 export interface MusicCommandOptionsPartial {
@@ -93,10 +93,10 @@ export class MusicCommands {
         if (buttons.length < 1) return null;
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
-        let idx: number = 0;
+        let idx = 0;
         for (let i = 0; i < buttons.length; i++) {
-            if (buttons.length > 5 && i > 0 && i % 5 == 0) {
-                rows.push(new MessageActionRow())
+            if (buttons.length > 5 && i > 0 && i % 5 === 0) {
+                rows.push(new MessageActionRow());
                 idx += 1;
             }
             rows[idx].addComponents(buttons[i]);

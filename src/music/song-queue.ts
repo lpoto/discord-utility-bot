@@ -78,4 +78,11 @@ export class SongQueue {
         if (this.size <= songIndex || songIndex < 0) return;
         this.songs.splice(songIndex, 1);
     }
+
+    public forwardByIndex(index: number): void {
+        if (this.size < 3 || index >= this.size) return;
+        const toReplace: Song = this.songs[1];
+        this.songs[1] = this.songs[index];
+        this.songs[index] = toReplace;
+    }
 }

@@ -92,9 +92,7 @@ export class QueueEmbed extends MessageEmbed {
         );
     }
 
-    public static actionRowLabels(
-        music: Music,
-    ): {
+    public static actionRowLabels(music: Music): {
         [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
     } {
         return {

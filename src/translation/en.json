@@ -54,6 +54,16 @@
             },
             "clear": {
                 "clearedSongs": "Songs you have cleared from the queue:\n"
+            },
+            "remove": {
+                "dropdown": {
+                    "placeholder": "Select the songs you want to remove."
+                }
+            },
+            "forward": {
+                "dropdown": {
+                    "placeholder": "Select the songs you want to push to the front of the queue."
+                }
             }
         }
     }
