@@ -190,6 +190,7 @@ export class MusicActions {
         return interaction
             .update(this.getQueueOptions())
             .then(() => {
+                this.music.updater.updated();
                 return true;
             })
             .catch((error) => {
@@ -205,6 +206,7 @@ export class MusicActions {
             .then((message) => {
                 if (!message) return false;
                 return message.edit(this.getQueueOptions()).then(() => {
+                    this.music.updater.updated();
                     return true;
                 });
             })

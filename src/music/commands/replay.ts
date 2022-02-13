@@ -12,6 +12,8 @@ export class Replay extends Command {
         if (!interaction || !this.music.audioPlayer || this.music.paused)
             return;
         this.music.audioPlayer.stop();
+        this.music.updater.resetTimer();
+        this.music.updater.needsUpdate();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });

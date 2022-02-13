@@ -12,7 +12,7 @@ export class MusicUpdater {
         this.timer = 0;
         this.music = music;
         this.startedTimer = true;
-        this.interval = 2500;
+        this.interval = 3000;
         this.updateTimer();
         this.updateQueue();
     }
@@ -21,8 +21,13 @@ export class MusicUpdater {
         return this.timer;
     }
 
+
     public needsUpdate(): void {
         this.shouldUpdate = true;
+    }
+
+    public updated(): void {
+        this.shouldUpdate = false;
     }
 
     public resetTimer(): void {

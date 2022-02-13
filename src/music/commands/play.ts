@@ -49,11 +49,13 @@ export class Play extends Command {
                     .on('error', () => {
                         this.music.playing = false;
                         this.music.updater.resetTimer();
+                        this.music.updater.needsUpdate();
                         this.next(interaction);
                     });
             })
             .catch((e) => {
                 console.error('Error when creating audio player: ', e);
+                this.music.updater.needsUpdate();
                 this.music.audioPlayer = null;
                 this.music.playing = false;
                 return;

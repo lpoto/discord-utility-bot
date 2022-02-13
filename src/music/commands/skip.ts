@@ -18,6 +18,8 @@ export class Skip extends Command {
             this.music.actions.updateQueueMessage();
         }
         this.music.audioPlayer.stop();
+        this.music.updater.resetTimer();
+        this.music.updater.needsUpdate();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });
