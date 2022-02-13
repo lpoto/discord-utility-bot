@@ -22,7 +22,7 @@ export class QueueEmbed extends MessageEmbed {
                 'music',
                 'queue',
                 'songNumber',
-            ])} **${queueSize.toString()}**`,
+            ])} ***${queueSize.toString()}***`,
         );
     }
 
@@ -68,34 +68,44 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private buildDescription(): string {
-        const songs: string[] | undefined = this.music.queue?.allSongs.map(
-            (song, index) => {
-                if (index > 0) return `**${index}.**\u3000${song.toString()}`;
-                return song.toString();
-            },
-        );
-        if (!songs || songs.length < 1) return '';
-        const headSong = songs.shift();
-        const spacer = '\u3000\u3000';
-        let description: string =
-            songs.length === 0
-                ? ''
-                : songs
-                      .slice(
-                          this.songsOffset,
-                          this.songsOffset + QueueEmbed.songsPerPage(),
-                      )
-                      .join('\n');
-        description += `\n\n**${this.music.translate([
-            'music',
-            'queue',
-            'curPlaying',
-        ])}**\n`;
-        description += spacer + headSong + '\n' + spacer + this.songLoader();
-        return description;
+        try {
+            const songs: string[] | undefined = this.music.queue?.allSongs.map(
+                (song, index) => {
+                    if (index > 0)
+                        return `***${index}.***\u3000${song.toString()}`;
+                    return song.name;
+                },
+            );
+            if (!songs || songs.length < 1) return '';
+            let headSong: string | undefined = songs.shift();
+            if (!headSong) headSong = '';
+            const spacer = '\u3000';
+            let description: string =
+                songs.length === 0
+                    ? ''
+                    : songs
+                          .slice(
+                              this.songsOffset,
+                              this.songsOffset + QueueEmbed.songsPerPage(),
+                          )
+                          .join('\n');
+            description += `\n\n> **${this.music.translate([
+                'music',
+                'queue',
+                'curPlaying',
+            ])}**`;
+            description +=
+                spacer + headSong + '\n\n' + spacer + this.songLoader();
+            return description;
+        } catch (e) {
+            console.error('Queue embed error: ', e);
+            return '';
+        }
     }
 
-    public static actionRowLabels(music: Music): {
+    public static actionRowLabels(
+        music: Music,
+    ): {
         [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
     } {
         return {
@@ -116,18 +126,35 @@ export class QueueEmbed extends MessageEmbed {
 
     private songLoader(): string {
         if (!this.music.queue) return '';
-        const song: Song | null = this.music.queue?.head;
-        if (!song) return '';
-        let leftTime: string =
-            '**' + this.secondsToTimeString(this.music.updater.time) + '**';
-        const rightTime: string =
-            '**' + this.secondsToTimeString(song.seconds) + '**';
-        const x: number = Math.round(
-            (this.music.updater.time / (song.seconds > 0 ? song.seconds : 1)) *
-                30,
-        );
-        leftTime += '\u2000' + '▮'.repeat(x) + '▯'.repeat(30 - x) + '\u2000';
-        return leftTime + rightTime;
+        try {
+            const song: Song | null = this.music.queue?.head;
+            if (!song) return '';
+            let leftTime: string = this.secondsToTimeString(
+                this.music.updater.time,
+            );
+            let rightTime: string = this.secondsToTimeString(song.seconds);
+            let steps: number = 16;
+            if ((leftTime + rightTime).length > 4) steps = 15;
+            if ((leftTime + rightTime).length > 7) steps = 14;
+            leftTime = `***${leftTime}***`;
+            rightTime = `***${rightTime}***`;
+            const x: number = Math.round(
+                (this.music.updater.time /
+                    (song.seconds > 0 ? song.seconds : 1)) *
+                    steps,
+            );
+            leftTime += '\u2000';
+            if (x > 1) {
+                leftTime += '—'.repeat(x - 1);
+            }
+            leftTime += '●';
+            steps = x === 0 ? steps - 1 : steps;
+            if (steps - x > 0) leftTime += '\u2000 ·'.repeat(steps - x);
+            return `${leftTime}\u2000${rightTime}`;
+        } catch (e) {
+            console.error('Song loader error: ', e);
+            return '';
+        }
     }
 
     private secondsToTimeString(seconds: number) {

@@ -21,7 +21,6 @@ export class MusicUpdater {
         return this.timer;
     }
 
-
     public needsUpdate(): void {
         this.shouldUpdate = true;
     }

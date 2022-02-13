@@ -23,7 +23,7 @@
             "title": "Music queue",
             "footer": "Type the name/url of a youtube song/playlist in this message's thread!",
             "songNumber": "Number of songs in the queue: ",
-            "curPlaying": "Currently playing:"
+            "curPlaying": "Now: "
         },
         "thread": {
             "name": "Music thread!",
