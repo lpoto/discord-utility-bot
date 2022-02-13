@@ -12,11 +12,16 @@ export abstract class Command {
 
     constructor(options: MusicCommandOptions) {
         this.options = options;
-        this.commandId = randomUUID();
+        this.commandId = this.name + randomUUID();
     }
 
     get id(): string {
         return this.commandId;
+    }
+
+    get name(): string {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (<any>this).constructor.name;
     }
 
     get music(): Music {

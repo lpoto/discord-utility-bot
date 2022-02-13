@@ -25,7 +25,8 @@ export class Forward extends Command {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || !this.music.thread) return;
-        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown();
+        const forwardDropdown: MessageSelectMenu | null =
+            this.forwardDropdown();
         if (!forwardDropdown) {
             try {
                 interaction.deferReply();
@@ -58,6 +59,8 @@ export class Forward extends Command {
                         !interaction2.isSelectMenu() ||
                         interaction2.applicationId !==
                             this.music.client.user?.id ||
+                        !interaction2.customId.startsWith(this.name) ||
+                        interaction2.deferred ||
                         interaction2.component.placeholder !==
                             this.translate([
                                 'music',
@@ -84,9 +87,8 @@ export class Forward extends Command {
                         return;
                     }
                     try {
-                        const forwardDd: MessageSelectMenu | null = this.forwardDropdown(
-                            start,
-                        );
+                        const forwardDd: MessageSelectMenu | null =
+                            this.forwardDropdown(start);
                         if (!forwardDd) return;
                         interaction2.update({
                             content: this.translate([
@@ -128,7 +130,7 @@ export class Forward extends Command {
         );
         if (start > 0) {
             dropdownOptions.push({
-                label: '<<<',
+                label: '<<',
                 value: 'prev: ' + (start - 1).toString(),
             });
         }
@@ -137,7 +139,7 @@ export class Forward extends Command {
             start * this.songsPerPage + dropdownOptions.length
         ) {
             dropdownOptions.push({
-                label: '>>>',
+                label: '>>',
                 value: 'next: ' + (start + 1).toString(),
             });
         }

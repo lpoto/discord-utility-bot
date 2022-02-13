@@ -58,6 +58,8 @@ export class Remove extends Command {
                         !interaction2.isSelectMenu() ||
                         interaction2.applicationId !==
                             this.music.client.user?.id ||
+                        !interaction2.customId.startsWith(this.name) ||
+                        interaction2.deferred ||
                         interaction2.component.placeholder !==
                             this.translate([
                                 'music',

@@ -137,16 +137,18 @@ export class MusicActions {
 
     public songsToQueue(songNamesOrUrls: string[]): void {
         if (!this.music.queue) return;
-        const jmp: number = 5;
-        const timer: number = 500;
-        this.multipleSongsToQueue(songNamesOrUrls.slice(0, jmp)).then(() => {
-            if (songNamesOrUrls.length <= jmp) return;
-            setTimeout(() => {
-                this.songsToQueue(songNamesOrUrls.slice(jmp));
-            }, timer)
-        }).then(() => {
-            this.updateQueueMessage();
-        })
+        const jmp = 5;
+        const timer = 250;
+        this.multipleSongsToQueue(songNamesOrUrls.slice(0, jmp))
+            .then(() => {
+                if (songNamesOrUrls.length <= jmp) return;
+                setTimeout(() => {
+                    this.songsToQueue(songNamesOrUrls.slice(jmp));
+                }, timer);
+            })
+            .then(() => {
+                this.updateQueueMessage();
+            });
     }
 
     public async replyWithQueue(
@@ -228,8 +230,8 @@ export class MusicActions {
     private getQueueOptions(): InteractionReplyOptions {
         const embed: QueueEmbed = new QueueEmbed(this.music);
         const components: MessageActionRow[] = [embed.getActionRow()];
-        const commandActionRow: MessageActionRow[] | null = this
-            .commandActionRow;
+        const commandActionRow: MessageActionRow[] | null =
+            this.commandActionRow;
         if (commandActionRow)
             for (const row of commandActionRow) components.push(row);
         return {
