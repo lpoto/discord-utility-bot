@@ -30,7 +30,7 @@ export class Remove extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'remove', 'label']))
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setDisabled(this.music.getQueueSize() < 2)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -96,7 +96,7 @@ export class Remove extends Command {
                                 );
                             } else {
                                 const idx = Number(value);
-                                this.music.queue?.removeByIndex(idx);
+                                this.music.removeFromQueueByIndex(idx);
                             }
                         } catch (e) {
                             continue;
@@ -134,8 +134,9 @@ export class Remove extends Command {
     }
 
     private removeDropdown(start: number = 0): MessageSelectMenu | null {
-        if (!this.music.queue || this.music.queue.size < 2) return null;
-        const songs: Song[] = this.music.queue.allSongs
+        if (this.music.getQueueSize() < 2) return null;
+        const songs: Song[] = this.music
+            .getAllQueueSongs()
             .slice(1)
             .slice(
                 start * this.songsPerPage,
@@ -158,7 +159,7 @@ export class Remove extends Command {
             });
         }
         if (
-            this.music.queue.size - 1 >
+            this.music.getQueueSize() - 1 >
             start * this.songsPerPage + dropdownOptions.length
         ) {
             dropdownOptions.push({

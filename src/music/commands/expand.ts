@@ -16,7 +16,7 @@ export class Expand extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'expand', 'label']))
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setDisabled(this.music.getQueueSize() < 2)
             .setStyle(
                 this.music.expanded
                     ? MessageButtonStyles.SUCCESS
@@ -26,13 +26,7 @@ export class Expand extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
-        )
-            return;
+        if (!interaction || !interaction.user || !this.music.thread) return;
         this.music.expanded = !this.music.expanded;
         this.music.actions.updateQueueMessageWithInteraction(interaction);
     }

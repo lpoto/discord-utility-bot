@@ -20,7 +20,7 @@ export class Clear extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setDisabled(this.music.getQueueSize() < 2)
             .setStyle(
                 this.music.clearRequest
                     ? MessageButtonStyles.PRIMARY
@@ -36,17 +36,19 @@ export class Clear extends Command {
             interaction.replied ||
             !interaction.component ||
             !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
+            !this.music.thread
         )
             return;
         if (interaction.component.style === 'PRIMARY') {
             const songs: string =
                 '`' +
-                this.music.queue.allSongs.map((s) => s.name).join('\n') +
+                this.music
+                    .getAllQueueSongs()
+                    .map((s) => s.name)
+                    .join('\n') +
                 '`';
             this.music.clearRequest = false;
-            this.music.queue.clear().then(() => {
+            this.music.clearQueue().then(() => {
                 this.music.actions
                     .updateQueueMessageWithInteraction(interaction)
                     .then(() => {
@@ -79,7 +81,8 @@ export class Clear extends Command {
                     });
                     setTimeout(() => {
                         this.music.clearRequest = false;
-                        this.music.needsUpdate = true;
+                        if (!this.music.timer?.isActive)
+                            this.music.actions.updateQueueMessage();
                     }, 5000);
                 });
         }

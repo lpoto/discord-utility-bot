@@ -12,7 +12,7 @@ export class QueueEmbed extends MessageEmbed {
         });
         this.music = music;
         this.setDescription(this.buildDescription());
-        const queueSize: number = music.queue ? music.queue.size : 0;
+        const queueSize: number = music.getQueueSize();
         this.setDescription(
             `${this.description}\n\n${this.music.translate([
                 'music',
@@ -28,15 +28,15 @@ export class QueueEmbed extends MessageEmbed {
 
     private buildDescription(): string {
         try {
-            const songs: string[] | undefined = this.music.queue?.allSongs.map(
-                (song, index) => {
+            const songs: string[] | undefined = this.music
+                .getAllQueueSongs()
+                .map((song, index) => {
                     if (index > 0)
                         return `***${index}.***\u3000${song.toStringShortened(
                             this.music.expanded,
                         )}`;
                     return song.toStringWrapped50();
-                },
-            );
+                });
             if (!songs || songs.length < 1) return '';
             let headSong: string | undefined = songs.shift();
             if (!headSong) headSong = '';
@@ -65,18 +65,21 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private songLoader(): string {
-        if (!this.music.queue) return '';
+        if (!this.music.timer) return '';
         try {
-            const song: Song | null = this.music.queue?.head;
+            const song: Song | null = this.music.getQueueHead();
             if (!song) return '';
-            let leftTime: string = this.secondsToTimeString(this.music.time);
+            let leftTime: string = this.secondsToTimeString(
+                this.music.timer.time,
+            );
             let rightTime: string = this.secondsToTimeString(song.seconds);
             let steps = 15;
             if ((leftTime + rightTime).length > 7) steps = 14;
             leftTime = `***${leftTime}***`;
             rightTime = `***${rightTime}***`;
             const x: number = Math.round(
-                (this.music.time / (song.seconds > 0 ? song.seconds : 1)) *
+                (this.music.timer.time /
+                    (song.seconds > 0 ? song.seconds : 1)) *
                     steps,
             );
             leftTime += '\u2000';

@@ -38,7 +38,7 @@ export class Stop extends Command {
             return;
         if (interaction.component.style === 'PRIMARY') {
             this.music.client.destroyMusic(this.music.guildId);
-            if (this.music.queue && this.music.queue.size > 0)
+            if (this.music.getQueueSize() > 0)
                 interaction.user.send({
                     content:
                         this.translate([
@@ -48,7 +48,8 @@ export class Stop extends Command {
                             'reply',
                         ]) +
                         '`' +
-                        this.music.queue.allSongs
+                        this.music
+                            .getAllQueueSongs()
                             .map((s) => s.name)
                             .join('\n') +
                         '`',
@@ -71,7 +72,8 @@ export class Stop extends Command {
                     });
                     setTimeout(() => {
                         this.music.stopRequest = false;
-                        this.music.needsUpdate = true;
+                        if (!this.music.timer?.isActive)
+                            this.music.actions.updateQueueMessage();
                     }, 5000);
                 });
         }

@@ -18,13 +18,7 @@ export class PageBackward extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
-        )
-            return;
+        if (!interaction || !interaction.user || !this.music.thread) return;
 
         return this.music.decrementOffset().then(() => {
             this.music.actions.updateQueueMessageWithInteraction(interaction);

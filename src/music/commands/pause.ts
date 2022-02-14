@@ -15,7 +15,7 @@ export class Pause extends Command {
     get button(): MessageButton {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'pause', 'label']))
-            .setDisabled(this.music.queue?.size === 0)
+            .setDisabled(this.music.getQueueSize() === 0)
             .setStyle(
                 this.music.paused
                     ? MessageButtonStyles.SUCCESS

@@ -7,22 +7,15 @@ export interface MusicActivityOptions {
     isEditing?: boolean;
     isPlaying?: boolean;
     isExpanded?: boolean;
-    needsUpdate?: boolean;
-}
-
-export interface TimerOptions {
-    totalTimer?: number;
-    timer?: number;
-    tickSize?: number;
+    offsetChanged?: boolean;
+    queueChanged?: boolean;
 }
 
 export abstract class AbstractMusic {
     private options: MusicActivityOptions;
-    private timerOptions: TimerOptions;
 
-    constructor(options?: MusicActivityOptions, timerOptions?: TimerOptions) {
+    constructor(options?: MusicActivityOptions) {
         this.options = options ? options : {};
-        this.timerOptions = timerOptions ? timerOptions : {};
     }
 
     get loop(): boolean {
@@ -93,43 +86,19 @@ export abstract class AbstractMusic {
         this.options.isExpanded = value;
     }
 
-    get needsUpdate(): boolean {
-        return (
-            this.playing ||
-            (this.options.needsUpdate ? this.options.needsUpdate : false)
-        );
+    get offsetChanged(): boolean {
+        return this.options.offsetChanged ? this.options.offsetChanged : false;
     }
 
-    set needsUpdate(value: boolean) {
-        this.options.needsUpdate = value;
+    set offsetChanged(value: boolean) {
+        this.options.offsetChanged = value;
     }
 
-    get time(): number {
-        if (!this.timerOptions.timer) this.timerOptions.timer = 0;
-        return this.timerOptions.timer;
-    }
-    get totalTime(): number {
-        if (!this.timerOptions.totalTimer) this.timerOptions.totalTimer = 0;
-        return this.timerOptions.totalTimer;
+    get queueChanged(): boolean {
+        return this.options.queueChanged ? this.options.queueChanged : false;
     }
 
-    public resetTimer(): void {
-        this.timerOptions.timer = 0;
-    }
-
-    protected onTimerTick(): void {
-        return;
-    }
-
-    protected startTimer(): void {
-        const tickSize: number = this.timerOptions.tickSize
-            ? this.timerOptions.tickSize
-            : 1000;
-        setTimeout(() => {
-            this.timerOptions.totalTimer = this.totalTime + 1;
-            this.timerOptions.timer = this.time + 1;
-            this.onTimerTick();
-            this.startTimer();
-        }, tickSize);
+    set queueChanged(value: boolean) {
+        this.options.queueChanged = value;
     }
 }

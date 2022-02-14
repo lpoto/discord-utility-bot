@@ -15,7 +15,7 @@ export class Skip extends Command {
     get button(): MessageButton {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
-            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
+            .setDisabled(this.music.getQueueSize() === 0 || this.music.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -24,12 +24,13 @@ export class Skip extends Command {
         if (!interaction || !this.music.audioPlayer || this.music.paused)
             return;
         if (!this.music.loop) {
-            const s: Song | undefined | null = this.music.queue?.dequeue();
-            if (s && this.music.loopQueue) this.music.queue?.enqueueSong(s);
+            const s: Song | undefined | null = this.music.dequeue();
+            if (s && this.music.loopQueue) this.music.enqueueSong(s);
             this.music.actions.updateQueueMessage();
         }
         this.music.audioPlayer.stop();
-        this.music.resetTimer();
+        this.music.timer?.stop();
+        this.music.timer = null;
         this.music.commands.execute({
             name: CommandName.PLAY,
         });

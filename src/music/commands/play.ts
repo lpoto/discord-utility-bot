@@ -5,7 +5,7 @@ import {
     createAudioPlayer,
 } from '@discordjs/voice';
 import { ButtonInteraction } from 'discord.js';
-import { Command, Song } from '../models';
+import { Command, Song, Timer } from '../models';
 
 export class Play extends Command {
     constructor(options: MusicCommandOptions) {
@@ -18,16 +18,16 @@ export class Play extends Command {
 
     private next(interaction?: ButtonInteraction, retries: number = 0): void {
         if (!this.music.loop) {
-            const s: Song | undefined | null = this.music.queue?.dequeue();
-            if (s && this.music.loopQueue) this.music.queue?.enqueueSong(s);
+            const s: Song | undefined | null = this.music.dequeue();
+            if (s && this.music.loopQueue) this.music.enqueueSong(s);
             if (interaction)
                 this.music.actions.updateQueueMessageWithInteraction(
                     interaction,
                 );
             else this.music.actions.updateQueueMessage();
         }
-        this.music.resetTimer();
-        this.music.needsUpdate = true;
+        this.music.timer?.stop();
+        this.music.timer = null;
         this.music.playing = false;
         this.execute(interaction, retries);
     }
@@ -36,10 +36,14 @@ export class Play extends Command {
         interaction?: ButtonInteraction,
         retries: number = 0,
     ): Promise<void> {
-        if (!this.music.queue || !this.music.connection) return;
+        if (!this.music.connection) return;
         this.music.audioPlayer = null;
-        const song: Song | null = this.music.queue.head;
+        const song: Song | null = this.music.getQueueHead();
         if (song === null) return;
+
+        this.music.timer = new Timer(song.seconds, 3000, () => {
+            this.music.actions.updateQueueMessage();
+        });
 
         const audioPlayer: AudioPlayer = createAudioPlayer();
         this.music.connection.subscribe(audioPlayer);
@@ -47,8 +51,8 @@ export class Play extends Command {
         song.getResource()
             .then((resource) => {
                 if (!resource) return;
-                this.music.resetTimer();
                 this.music.playing = true;
+                this.music.timer?.start();
                 audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
@@ -56,12 +60,14 @@ export class Play extends Command {
                         this.next(interaction);
                     })
                     .on('error', () => {
+                        this.music.playing = false;
                         this.next(interaction);
                     });
             })
             .catch((e) => {
                 console.error('Error when creating audio player: ', e);
-                this.music.needsUpdate = true;
+                this.music.timer?.stop();
+                this.music.timer = null;
                 this.music.audioPlayer = null;
                 this.music.playing = false;
                 if (retries < 5) this.next(interaction, retries + 1);

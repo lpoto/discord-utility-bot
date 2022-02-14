@@ -3,7 +3,6 @@ import { ButtonInteraction, MessageButton, ThreadChannel } from 'discord.js';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
 import { MusicCommandOptions } from '../commands';
-import { SongQueue } from '../models';
 import { Music } from '../music';
 
 export abstract class Command {
@@ -34,10 +33,6 @@ export abstract class Command {
 
     get thread(): ThreadChannel | null {
         return this.options.music.thread;
-    }
-
-    get queue(): SongQueue | null {
-        return this.options.music.queue;
     }
 
     get guildId(): string {

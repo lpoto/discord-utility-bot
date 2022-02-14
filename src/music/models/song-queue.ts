@@ -23,14 +23,6 @@ export class SongQueue {
         });
     }
 
-    public async enqueueFront(nameOrUrl: string): Promise<void> {
-        if (!this.songs) this.songs = [];
-        Song.find(nameOrUrl).then((songs) => {
-            if (!songs) return;
-            for (const song of songs) this.songs.unshift(song);
-        });
-    }
-
     public enqueueSong(song: Song) {
         this.songs.push(song);
     }
@@ -63,14 +55,6 @@ export class SongQueue {
 
     public async clear(): Promise<void> {
         this.songs = [this.songs[0]];
-    }
-
-    public removeByName(songName: string): void {
-        if (!this.songs) this.songs = [];
-        const songIndex = this.songs.findIndex(
-            (song) => song.name === songName,
-        );
-        if (songIndex !== -1) this.removeByIndex(songIndex);
     }
 
     public removeByIndex(songIndex: number): void {

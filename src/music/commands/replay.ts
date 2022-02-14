@@ -15,7 +15,7 @@ export class Replay extends Command {
     get button(): MessageButton {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'replay', 'label']))
-            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
+            .setDisabled(this.music.getQueueSize() === 0 || this.music.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -24,11 +24,11 @@ export class Replay extends Command {
         if (!interaction || !this.music.audioPlayer || this.music.paused)
             return;
         this.music.audioPlayer.stop();
+        this.music.timer?.stop();
+        this.music.timer = null;
         this.music.commands.execute({
             name: CommandName.PLAY,
         });
-        this.music.resetTimer();
-        this.music.needsUpdate = true;
         if (interaction) interaction.deferUpdate();
     }
 }

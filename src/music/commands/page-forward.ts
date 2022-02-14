@@ -19,13 +19,7 @@ export class PageForward extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
-        )
-            return;
+        if (!interaction || !interaction.user || !this.music.thread) return;
 
         return this.music.incrementOffset().then(() => {
             this.music.actions.updateQueueMessageWithInteraction(interaction);
@@ -38,9 +32,8 @@ export class PageForward extends Command {
                 this.translate(['music', 'commands', 'pageForward', 'label']),
             )
             .setDisabled(
-                !this.music.queue ||
-                    this.music.queueOffset + QueueEmbed.songsPerPage() >=
-                        this.music.queue.size - 1,
+                this.music.queueOffset + QueueEmbed.songsPerPage() >=
+                    this.music.getQueueSize() - 1,
             )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);

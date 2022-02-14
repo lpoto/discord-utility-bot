@@ -18,20 +18,14 @@ export class Shuffle extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'shuffle', 'label']),
             )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setDisabled(this.music.getQueueSize() < 2)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
-        )
-            return;
-        this.music.queue.shuffle().then(() => {
+        if (!interaction || !interaction.user || !this.music.thread) return;
+        this.music.shuffleQueue().then(() => {
             this.music.actions.updateQueueMessageWithInteraction(interaction);
         });
     }

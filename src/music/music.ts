@@ -7,7 +7,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { QueueEmbed } from './models';
+import { QueueEmbed, Song, Timer } from './models';
 import { AbstractMusic, MusicActivityOptions } from './models/abstract-music';
 import { SongQueue } from './models/song-queue';
 import { MusicActions } from './music-actions';
@@ -17,13 +17,13 @@ export class Music extends AbstractMusic {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
     private musicGuildId: string;
-    private songQueue: SongQueue | null;
+    private queue: SongQueue | null;
     private musicThread: ThreadChannel | null;
-    private musicActions: MusicActions;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
     private con: VoiceConnection | null;
     private offset: number;
+    private musicTimer: Timer | null;
 
     constructor(
         client: MusicClient,
@@ -31,15 +31,15 @@ export class Music extends AbstractMusic {
         options?: MusicActivityOptions,
     ) {
         super(options);
-        this.songQueue = null;
+        this.queue = null;
         this.musicThread = null;
         this.musicClient = client;
         this.musicGuildId = guildId;
-        this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
         this.con = null;
         this.player = null;
         this.offset = 0;
+        this.musicTimer = null;
     }
 
     get client(): MusicClient {
@@ -54,8 +54,16 @@ export class Music extends AbstractMusic {
         this.con = value;
     }
 
+    get timer(): Timer | null {
+        return this.musicTimer;
+    }
+
+    set timer(value: Timer | null) {
+        this.musicTimer = value;
+    }
+
     get actions(): MusicActions {
-        return this.musicActions;
+        return new MusicActions(this);
     }
 
     get commands(): MusicCommands {
@@ -78,10 +86,6 @@ export class Music extends AbstractMusic {
         this.musicThread = value;
     }
 
-    get queue(): SongQueue | null {
-        return this.songQueue;
-    }
-
     get guildId(): string {
         return this.musicGuildId;
     }
@@ -90,11 +94,60 @@ export class Music extends AbstractMusic {
         return this.offset;
     }
 
+    public getQueueHead(): Song | null {
+        if (!this.queue) return null;
+        return this.queue.head;
+    }
+
+    public getAllQueueSongs(): Song[] {
+        if (!this.queue) return [];
+        return this.queue.allSongs;
+    }
+
+    public getQueueSize(): number {
+        return this.queue ? this.queue.size : 0;
+    }
+
+    public async enqueue(name: string): Promise<void> {
+        if (!this.queue) return;
+        this.queueChanged = true;
+        await this.queue.enqueue(name);
+    }
+
+    public enqueueSong(song: Song): void {
+        if (!this.queue) return;
+        this.queueChanged = true;
+        this.queue.enqueueSong(song);
+    }
+
+    public async clearQueue(): Promise<void> {
+        await this.queue?.clear();
+    }
+
+    public forwardQueueByIndex(idx: number): void {
+        this.queue?.forwardByIndex(idx);
+    }
+
+    public removeFromQueueByIndex(idx: number): void {
+        this.queue?.removeByIndex(idx);
+    }
+
+    public async shuffleQueue(): Promise<void> {
+        return this.queue?.shuffle();
+    }
+
+    public dequeue(): Song | null {
+        if (!this.queue) return null;
+        return this.queue.dequeue();
+    }
+
     public async incrementOffset(): Promise<void> {
+        this.offsetChanged = true;
         this.offset += QueueEmbed.songsPerPage();
     }
 
     public async decrementOffset(): Promise<void> {
+        this.offsetChanged = true;
         this.offset =
             this.offset > 0 ? this.offset - QueueEmbed.songsPerPage() : 0;
     }
@@ -139,7 +192,6 @@ export class Music extends AbstractMusic {
             if (!result) return this;
             return this.actions.joinVoice(interaction).then((result2) => {
                 if (result2) {
-                    this.startTimer();
                     return this;
                 }
                 return null;
@@ -153,7 +205,7 @@ export class Music extends AbstractMusic {
     ): Promise<boolean> {
         if (!interaction.channel || !interaction.guild) return false;
 
-        this.songQueue = new SongQueue();
+        this.queue = new SongQueue();
         return this.actions.replyWithQueue(interaction);
     }
 
@@ -171,13 +223,5 @@ export class Music extends AbstractMusic {
                 return music2;
             return null;
         });
-    }
-
-    protected onTimerTick(): void {
-        super.onTimerTick();
-        if (this.totalTime > 0 && this.totalTime % 20 === 0) {
-            this.musicActions.stopUpdatingQueue();
-            this.musicActions = new MusicActions(this);
-        }
     }
 }

@@ -18,13 +18,7 @@ export class LoopQueue extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            !this.music.thread ||
-            !this.music.queue
-        )
-            return;
+        if (!interaction || !interaction.user || !this.music.thread) return;
         this.music.loopQueue = !this.music.loopQueue;
         if (this.music.loopQueue) this.music.loop = false;
         this.music.actions.updateQueueMessageWithInteraction(interaction);
@@ -35,7 +29,7 @@ export class LoopQueue extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'loopQueue', 'label']),
             )
-            .setDisabled(!this.music.queue || this.music.queue.size < 1)
+            .setDisabled(this.music.getQueueSize() < 1)
             .setStyle(
                 this.music.loopQueue
                     ? MessageButtonStyles.SUCCESS

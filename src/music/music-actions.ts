@@ -21,14 +21,9 @@ import { Music } from './music';
 
 export class MusicActions {
     private music: Music;
-    private interval: number;
-    private stopUpdating: boolean;
 
     constructor(music: Music) {
         this.music = music;
-        this.interval = 3000;
-        this.stopUpdating = false;
-        this.updateOnInterval();
     }
 
     get connection(): VoiceConnection | null {
@@ -41,10 +36,6 @@ export class MusicActions {
 
     get commandActionRow(): MessageActionRow[] {
         return this.music.commands.getCommandsActionRow();
-    }
-
-    public stopUpdatingQueue(): void {
-        this.stopUpdating = true;
     }
 
     public translate(keys: LanguageKeyPath) {
@@ -101,20 +92,24 @@ export class MusicActions {
         return true;
     }
 
-    public songsToQueue(songNamesOrUrls: string[]): void {
-        if (!this.music.queue) return;
-        let startPlaying: boolean = this.music.queue.size === 0;
-        for (const n of songNamesOrUrls) {
-            this.music.queue.enqueue(n).then(() => {
-                this.music.needsUpdate = true;
-                if (
-                    (this.music.queue && this.music.queue.size === 1) ||
-                    startPlaying
-                ) {
+    public async songsToQueue(songNamesOrUrls: string[]): Promise<void> {
+        try {
+            let startPlaying: boolean = this.music.getQueueSize() === 0;
+            const jmp = 5;
+            for await (const i of songNamesOrUrls.length <= jmp
+                ? songNamesOrUrls
+                : songNamesOrUrls.slice(0, jmp)) {
+                await this.music.enqueue(i);
+                if (this.music.getQueueSize() === 1 || startPlaying) {
                     startPlaying = false;
                     this.music.commands.execute({ name: CommandName.PLAY });
                 }
-            });
+            }
+            if (!this.music.timer?.isActive) this.updateQueueMessage();
+            if (songNamesOrUrls.length > jmp)
+                this.songsToQueue(songNamesOrUrls.slice(jmp));
+        } catch (e) {
+            console.error('Error addings songs to the queue: ', e);
         }
     }
 
@@ -157,7 +152,6 @@ export class MusicActions {
         return interaction
             .update(this.getQueueOptions())
             .then(() => {
-                this.music.needsUpdate = false;
                 return true;
             })
             .catch((error) => {
@@ -173,7 +167,6 @@ export class MusicActions {
             .then((message) => {
                 if (!message) return false;
                 return message.edit(this.getQueueOptions()).then(() => {
-                    this.music.needsUpdate = false;
                     return true;
                 });
             })
@@ -181,23 +174,6 @@ export class MusicActions {
                 this.handleError(error);
                 return false;
             });
-    }
-
-    public updateOnInterval(): void {
-        let repeated = 0;
-        setTimeout(() => {
-            try {
-                if (this.music.needsUpdate) {
-                    this.music.needsUpdate = false;
-                    this.updateQueueMessage();
-                }
-                repeated++;
-                if (!this.stopUpdating && repeated <= 10)
-                    this.updateOnInterval();
-            } catch (error) {
-                console.error('Error when updating on interval: ', error);
-            }
-        }, this.interval);
     }
 
     private getQueueOptions(): InteractionReplyOptions {

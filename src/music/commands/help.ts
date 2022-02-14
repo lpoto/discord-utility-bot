@@ -13,8 +13,7 @@ export class Help extends Command {
             !interaction ||
             !interaction.user ||
             interaction.replied ||
-            !this.music.thread ||
-            !this.music.queue
+            !this.music.thread
         )
             return;
 
