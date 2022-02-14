@@ -24,9 +24,25 @@ export class Song {
     }
 
     public toString(): string {
-        let name: string = this.songName.replace('&#39;', '`');
+        let name: string = this.songName;
         if (name.length > 55) name = name.substring(0, 52) + '...';
         return name;
+    }
+
+    public toStringShortened(expanded?: boolean): string {
+        const name: string = this.songName;
+        if (!expanded && name.length > 46)
+            return name.substring(0, 43) + '...';
+        return this.toStringWrapped50();
+    }
+
+    public toStringWrapped50(): string {
+        const name: string = this.songName;
+        if (name.length < 47) return name;
+        return name.replace(
+            /(?![^\n]{1,43}$)([^\n]{1,43})\s/g,
+            '$1\n\u3000\u3000',
+        );
     }
 
     public static async find(nameOrUrl: string): Promise<Song[] | null> {

@@ -201,7 +201,8 @@ export class MusicActions {
     public async updateQueueMessageWithInteraction(
         interaction: ButtonInteraction,
     ): Promise<boolean> {
-        if (!this.music.thread) return false;
+        if (!this.music.thread || interaction.deferred || interaction.replied)
+            return false;
         return interaction
             .update(this.getQueueOptions())
             .then(() => {

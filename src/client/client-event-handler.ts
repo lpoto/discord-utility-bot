@@ -183,6 +183,7 @@ export class ClientEventHandler {
                         if (
                             value ||
                             !interaction.guildId ||
+                            !interaction.component ||
                             !interaction.component.label
                         )
                             return;

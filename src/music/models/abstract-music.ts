@@ -5,6 +5,7 @@ export interface MusicActivityOptions {
     isPaused?: boolean;
     isEditing?: boolean;
     isPlaying?: boolean;
+    isExpanded?: boolean;
     needsUpdate?: boolean;
 }
 
@@ -63,6 +64,14 @@ export abstract class AbstractMusic {
 
     set playing(value: boolean) {
         this.options.isPlaying = value;
+    }
+
+    get expanded(): boolean {
+        return this.options.isExpanded ? this.options.isExpanded : false;
+    }
+
+    set expanded(value: boolean) {
+        this.options.isExpanded = value;
     }
 
     get needsUpdate(): boolean {

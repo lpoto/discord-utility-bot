@@ -21,7 +21,7 @@
     "music": {
         "queue": {
             "title": "Music queue",
-            "footer": "Type the name/url of a youtube song/playlist in this message's thread!",
+            "footer": "Send the Name / Url of a Youtube Song / Playlist in the Thread!",
             "songNumber": "Number of songs in the queue: ",
             "curPlaying": "Now: "
         },
@@ -44,10 +44,12 @@
                 "replay": "↺",
                 "edit": "🛠️",
                 "remove": "Remove",
-                "clear": "Clear",
                 "translate": "Translate",
                 "forward": "Forward",
-                "shuffle": "Shuffle"
+                "shuffle": "Shuffle",
+                "expand": "Expand",
+                "clear": "Clear",
+                "help": "Help"
             },
             "stop": {
                 "confirm": "Click on `◼` again if you are sure you want to stop the music.",
@@ -67,5 +69,6 @@
                 }
             }
         }
-    }
+    },
+    "help": "Help is currently unavailable, just press some buttons or something..."
 }

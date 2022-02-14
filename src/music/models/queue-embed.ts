@@ -72,10 +72,10 @@ export class QueueEmbed extends MessageEmbed {
             const songs: string[] | undefined = this.music.queue?.allSongs.map(
                 (song, index) => {
                     if (index > 0)
-                        return `***${index}.***\u3000${song.toString()}`;
-                    return song.name.length > 55
-                        ? this.wrapString50(song.name)
-                        : song.name;
+                        return `***${index}.***\u3000${song.toStringShortened(
+                            this.music.expanded,
+                        )}`;
+                    return song.toStringWrapped50();
                 },
             );
             if (!songs || songs.length < 1) return '';
@@ -171,10 +171,6 @@ export class QueueEmbed extends MessageEmbed {
         return hours > 0
             ? `${hours}:${minutesString}:${secondsString}`
             : `${minutesString}:${secondsString}`;
-    }
-
-    private wrapString50(text: string) {
-        return text.replace(/(?![^\n]{1,50}$)([^\n]{1,50})\s/g, '$1\n\u3000');
     }
 
     public static songsPerPage(): number {

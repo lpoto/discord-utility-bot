@@ -65,8 +65,12 @@ export class MusicCommands {
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
         let idx = 0;
+        let len = 5;
+        let lenIdx = 0;
         for (let i = 0; i < buttons.length; i++) {
-            if (buttons.length > 5 && i > 0 && i % 5 === 0) {
+            if (buttons.length > len && i === lenIdx + len) {
+                lenIdx += len;
+                len = 4;
                 rows.push(new MessageActionRow());
                 idx += 1;
             }

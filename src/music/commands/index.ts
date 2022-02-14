@@ -2,7 +2,9 @@ import { Command } from '../models';
 import { Music } from '../music';
 import { Clear } from './clear';
 import { EditQueue } from './edit-queue';
+import { Expand } from './expand';
 import { Forward } from './forward';
+import { Help } from './help';
 import { Pause } from './pause';
 import { Play } from './play';
 import { Remove } from './remove';
@@ -22,6 +24,8 @@ export enum CommandName {
     REMOVE,
     SHUFFLE,
     CLEAR,
+    EXPAND,
+    HELP,
 }
 
 export interface MusicCommandOptionsPartial {
@@ -56,6 +60,10 @@ export function getCommand(options: MusicCommandOptions): Command | null {
             return new Forward(options);
         case CommandName.SHUFFLE:
             return new Shuffle(options);
+        case CommandName.EXPAND:
+            return new Expand(options);
+        case CommandName.HELP:
+            return new Help(options);
         default:
             return null;
     }
