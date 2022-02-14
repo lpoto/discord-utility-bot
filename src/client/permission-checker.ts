@@ -135,7 +135,10 @@ export class PermissionChecker {
             return false;
         }
         if (!music) return true;
-        if (member.guild.me?.voice.channel !== member.voice.channel) {
+        if (
+            member.guild.me?.voice.channel &&
+            member.guild.me?.voice.channel !== member.voice.channel
+        ) {
             if (interaction)
                 interaction.reply({
                     content: this.client.translate(interaction.guildId, [

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { ButtonInteraction, MessageButton, ThreadChannel } from 'discord.js';
+import { ButtonInteraction, Guild, MessageButton, ThreadChannel } from 'discord.js';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
 import { MusicCommandOptions } from '../commands';
@@ -36,7 +36,11 @@ export abstract class Command {
     }
 
     get guildId(): string {
-        return this.options.music.guildId;
+        return this.options.music.guild.id;
+    }
+
+    get guild(): Guild {
+        return this.options.music.guild;
     }
 
     get button(): MessageButton | null {

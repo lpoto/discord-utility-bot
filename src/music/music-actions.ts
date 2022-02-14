@@ -1,17 +1,13 @@
-import {
-    joinVoiceChannel,
-    VoiceConnection,
-    VoiceConnectionStatus,
-} from '@discordjs/voice';
+import { joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
 import {
     ButtonInteraction,
     CommandInteraction,
+    Guild,
     GuildMember,
     InteractionReplyOptions,
     Message,
     MessageActionRow,
     StartThreadOptions,
-    VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
@@ -50,21 +46,36 @@ export class MusicActions {
         this.connection?.destroy();
     }
 
-    public async joinVoice(interaction: CommandInteraction): Promise<boolean> {
+    public async joinVoice(
+        interaction: CommandInteraction | ButtonInteraction | null = null,
+        message: Message | null = null,
+        retry: number = 0,
+    ): Promise<boolean> {
+        let voiceChannelId: string;
+        let guild: Guild;
         if (
-            !interaction.member ||
-            !interaction.guild ||
-            !(interaction.member instanceof GuildMember) ||
-            !interaction.member.voice ||
-            !interaction.member.voice.channel ||
-            !(interaction.member.voice.channel instanceof VoiceChannel)
-        )
+            interaction &&
+            interaction.member instanceof GuildMember &&
+            interaction.member.voice.channel &&
+            interaction.guild
+        ) {
+            voiceChannelId = interaction.member.voice.channel.id;
+            guild = interaction.guild;
+        } else if (
+            message &&
+            message.member &&
+            message.member.voice.channel &&
+            message.guild
+        ) {
+            voiceChannelId = message.member.voice.channel.id;
+            guild = message.guild;
+        } else {
             return false;
-        let dc = false;
+        }
         this.music.connection = joinVoiceChannel({
-            channelId: interaction.member.voice.channel.id,
-            guildId: interaction.guild.id,
-            adapterCreator: interaction.guild.voiceAdapterCreator,
+            channelId: voiceChannelId,
+            guildId: guild.id,
+            adapterCreator: guild.voiceAdapterCreator,
             selfMute: false,
             selfDeaf: true,
         })
@@ -72,22 +83,12 @@ export class MusicActions {
                 if (statePrev.status === stateAfter.status) return;
 
                 console.log(
-                    `State change ${interaction.guildId}: ${statePrev.status} -> ${stateAfter.status}`,
+                    `State change ${guild.id}: ${statePrev.status} -> ${stateAfter.status}`,
                 );
-
-                if (stateAfter.status === VoiceConnectionStatus.Disconnected) {
-                    dc = true;
-                    setTimeout(() => {
-                        if (interaction.guildId && dc)
-                            this.client.destroyMusic(interaction.guildId);
-                    }, 2000);
-                } else {
-                    dc = false;
-                }
             })
             .on('error', (error) => {
                 this.client.handleError(error);
-                this.joinVoice(interaction);
+                if (retry < 5) this.joinVoice(interaction, message, retry + 1);
             });
         return true;
     }
@@ -105,7 +106,11 @@ export class MusicActions {
                     this.music.commands.execute({ name: CommandName.PLAY });
                 }
             }
-            if (!this.music.timer?.isActive || this.music.timer?.isPaused)
+            if (
+                !this.music.timer?.isActive ||
+                this.music.timer?.isPaused ||
+                !this.music.guild.me?.voice.channel
+            )
                 this.updateQueueMessage();
             if (songNamesOrUrls.length > jmp)
                 this.songsToQueue(songNamesOrUrls.slice(jmp));

@@ -1,3 +1,5 @@
+import { Music } from '../music';
+
 export class Timer {
     private duration: number;
     private tick: number;
@@ -5,8 +7,15 @@ export class Timer {
     private func: () => void;
     private ended: boolean;
     private paused: boolean;
+    private music: Music;
 
-    constructor(duration: number, tick: number, func: () => void) {
+    constructor(
+        music: Music,
+        duration: number,
+        tick: number,
+        func: () => void,
+    ) {
+        this.music = music;
         this.duration = duration;
         this.tick = tick;
         this.timer = 0;
@@ -39,6 +48,8 @@ export class Timer {
     public start(): void {
         setTimeout(() => {
             if (this.ended || this.paused) return;
+            if (this.music.connection?.state.status !== 'ready')
+                return this.start();
             this.timer += this.tick / 1000;
             if (this.timer >= this.duration) return;
             this.func();

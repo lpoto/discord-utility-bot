@@ -41,7 +41,7 @@ export class Play extends Command {
         const song: Song | null = this.music.getQueueHead();
         if (song === null) return;
 
-        this.music.timer = new Timer(song.seconds, 3000, () => {
+        this.music.timer = new Timer(this.music, song.seconds, 3000, () => {
             this.music.actions.updateQueueMessage();
         });
 

@@ -107,6 +107,16 @@ export class ClientEventHandler {
                 )
             )
                 return;
+
+            try {
+                if (!message.guild?.me?.voice.channel)
+                    this.client
+                        .getMusic(message.guildId)
+                        ?.actions.joinVoice(null, message);
+            } catch (e) {
+                console.error('Error when joining channel: ', e);
+            }
+
             this.guildMusic[message.guildId].actions.songsToQueue(
                 message.content.split('\n'),
             );
@@ -142,6 +152,12 @@ export class ClientEventHandler {
             )
         )
             return;
+
+        if (!interaction.guild?.me?.voice.channel)
+            this.client
+                .getMusic(interaction.guildId)
+                ?.actions.joinVoice(interaction);
+
         if (
             interaction.isButton() &&
             interaction.component instanceof MessageButton

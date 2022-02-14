@@ -1,6 +1,7 @@
 import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import {
     CommandInteraction,
+    Guild,
     GuildMember,
     ThreadChannel,
     VoiceChannel,
@@ -16,7 +17,7 @@ import { MusicCommands } from './music-commands';
 export class Music extends AbstractMusic {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
-    private musicGuildId: string;
+    private musicGuild: Guild;
     private queue: SongQueue | null;
     private musicThread: ThreadChannel | null;
     private musicCommands: MusicCommands;
@@ -27,14 +28,14 @@ export class Music extends AbstractMusic {
 
     constructor(
         client: MusicClient,
-        guildId: string,
+        guild: Guild,
         options?: MusicActivityOptions,
     ) {
         super(options);
         this.queue = null;
         this.musicThread = null;
         this.musicClient = client;
-        this.musicGuildId = guildId;
+        this.musicGuild = guild;
         this.musicCommands = new MusicCommands(this);
         this.con = null;
         this.player = null;
@@ -86,8 +87,12 @@ export class Music extends AbstractMusic {
         this.musicThread = value;
     }
 
+    get guild(): Guild {
+        return this.musicGuild;
+    }
+
     get guildId(): string {
-        return this.musicGuildId;
+        return this.musicGuild.id;
     }
 
     get queueOffset(): number {
@@ -157,7 +162,7 @@ export class Music extends AbstractMusic {
     }
 
     public translate(keys: LanguageKeyPath) {
-        return this.client.translate(this.musicGuildId, keys);
+        return this.client.translate(this.musicGuild.id, keys);
     }
 
     /** join the voice channel, send a queue message
@@ -215,11 +220,12 @@ export class Music extends AbstractMusic {
         client: MusicClient,
         interaction: CommandInteraction,
     ): Promise<Music | null> {
-        if (!interaction.guildId || !client.user) return null;
-        const music: Music = new Music(client, interaction.guildId);
+        if (!interaction.guildId || !client.user || !interaction.guild)
+            return null;
+        const music: Music = new Music(client, interaction.guild);
         if (!music) return null;
         return music.setup(interaction).then((music2) => {
-            if (music2 && music2.client && music2.guildId && music2.thread)
+            if (music2 && music2.client && music2.guild && music2.thread)
                 return music2;
             return null;
         });
