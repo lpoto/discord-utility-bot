@@ -7,46 +7,37 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { MusicCommands } from './commands';
+import { QueueEmbed } from './models';
+import { AbstractMusic, MusicActivityOptions } from './models/abstract-music';
+import { SongQueue } from './models/song-queue';
 import { MusicActions } from './music-actions';
-import { MusicUpdater } from './music-updater';
-import { SongQueue } from './song-queue';
-import { QueueEmbed } from './utils';
+import { MusicCommands } from './music-commands';
 
-export class Music {
+export class Music extends AbstractMusic {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
     private musicGuildId: string;
     private songQueue: SongQueue | null;
     private musicThread: ThreadChannel | null;
-    private offset: number;
-    private isLoop: boolean;
-    private isStopRequested: boolean;
-    private isLoopQueue: boolean;
-    private isPaused: boolean;
-    private isEditing: boolean;
-    private isPlaying: boolean;
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
-    private musicUpdater: MusicUpdater;
+    private offset: number;
 
-    constructor(client: MusicClient, guildId: string) {
+    constructor(
+        client: MusicClient,
+        guildId: string,
+        options?: MusicActivityOptions,
+    ) {
+        super(options);
         this.songQueue = null;
         this.musicThread = null;
         this.musicClient = client;
         this.musicGuildId = guildId;
-        this.isLoop = false;
-        this.isLoopQueue = false;
-        this.isPaused = false;
-        this.isStopRequested = false;
-        this.isEditing = false;
-        this.isPlaying = false;
-        this.offset = 0;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
-        this.musicUpdater = new MusicUpdater(this);
         this.player = null;
+        this.offset = 0;
     }
 
     get client(): MusicClient {
@@ -55,10 +46,6 @@ export class Music {
 
     get actions(): MusicActions {
         return this.musicActions;
-    }
-
-    get updater(): MusicUpdater {
-        return this.musicUpdater;
     }
 
     get connection(): VoiceConnection | null {
@@ -87,56 +74,6 @@ export class Music {
 
     get queue(): SongQueue | null {
         return this.songQueue;
-    }
-
-    get editing(): boolean {
-        return this.isEditing;
-    }
-
-    set editing(value: boolean) {
-        this.isEditing = value;
-    }
-
-    get playing(): boolean {
-        return !this.paused && this.isPlaying;
-    }
-
-    set playing(value: boolean) {
-        this.isPlaying = value;
-    }
-
-    get loop(): boolean {
-        return this.isLoop;
-    }
-
-    set loop(value: boolean) {
-        if (value) this.loopQueue = false;
-        this.isLoop = value;
-    }
-
-    get loopQueue(): boolean {
-        return this.isLoopQueue;
-    }
-
-    set loopQueue(value: boolean) {
-        if (value) this.loop = false;
-        this.isLoopQueue = value;
-    }
-
-    get paused(): boolean {
-        return this.isPaused;
-    }
-
-    set paused(value: boolean) {
-        this.isPaused = value;
-    }
-
-    get stopRequest(): boolean {
-        return this.isStopRequested;
-    }
-
-    set stopRequest(value: boolean) {
-        this.isStopRequested = value;
     }
 
     get guildId(): string {
@@ -195,7 +132,11 @@ export class Music {
         return this.initializeQueueMessage(interaction).then((result) => {
             if (!result) return this;
             return this.actions.joinVoice(interaction).then((result2) => {
-                if (result2) return this;
+                if (result2) {
+                    this.actions.startTimer();
+                    this.actions.updateOnInterval();
+                    return this;
+                }
                 return null;
             });
         });

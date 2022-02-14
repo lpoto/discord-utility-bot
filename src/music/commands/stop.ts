@@ -5,7 +5,7 @@ import {
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
-import { Command } from './command';
+import { Command } from '../models';
 
 export class Stop extends Command {
     constructor(options: MusicCommandOptions) {
@@ -49,7 +49,7 @@ export class Stop extends Command {
                     });
                     setTimeout(() => {
                         this.music.stopRequest = false;
-                        this.music.updater.needsUpdate();
+                        this.music.needsUpdate = true;
                     }, 5000);
                 });
         }

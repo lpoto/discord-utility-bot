@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
-import { Command } from './command';
+import { Command } from '../models';
 
 export class Clear extends Command {
     constructor(options: MusicCommandOptions) {

@@ -12,8 +12,7 @@ import {
     MessageButtonStyles,
 } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
-import { Song } from '../song';
-import { Command } from './command';
+import { Command, Song } from '../models';
 
 export class Remove extends Command {
     private songsPerPage: number;
@@ -91,9 +90,8 @@ export class Remove extends Command {
                         }
                     }
                     this.music.actions.updateQueueMessage();
-                    const removeDd: MessageSelectMenu | null = this.removeDropdown(
-                        start,
-                    );
+                    const removeDd: MessageSelectMenu | null =
+                        this.removeDropdown(start);
                     if (
                         !removeDd ||
                         interaction2.deferred ||

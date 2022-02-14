@@ -1,8 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { CommandName, MusicCommandOptions } from '.';
-import { Song } from '../song';
-import { Command } from './command';
+import { Command, Song } from '../models';
 
 export class Skip extends Command {
     constructor(options: MusicCommandOptions) {
@@ -18,8 +17,7 @@ export class Skip extends Command {
             this.music.actions.updateQueueMessage();
         }
         this.music.audioPlayer.stop();
-        this.music.updater.resetTimer();
-        this.music.updater.needsUpdate();
+        this.music.actions.resetTimer();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });

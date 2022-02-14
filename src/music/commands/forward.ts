@@ -12,8 +12,7 @@ import {
     MessageButtonStyles,
 } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
-import { Song } from '../song';
-import { Command } from './command';
+import { Command, Song } from '../models';
 
 export class Forward extends Command {
     private songsPerPage: number;
@@ -32,7 +31,8 @@ export class Forward extends Command {
             interaction.replied
         )
             return;
-        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown();
+        const forwardDropdown: MessageSelectMenu | null =
+            this.forwardDropdown();
         if (!forwardDropdown) return;
         interaction
             .reply({
@@ -87,9 +87,8 @@ export class Forward extends Command {
                         return;
                     }
                     try {
-                        const forwardDd: MessageSelectMenu | null = this.forwardDropdown(
-                            start,
-                        );
+                        const forwardDd: MessageSelectMenu | null =
+                            this.forwardDropdown(start);
                         if (
                             !forwardDd ||
                             interaction2.deferred ||

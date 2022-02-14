@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Music } from '../music';
-import { Song } from '../song';
+import { Song } from './song';
 
 export class QueueEmbed extends MessageEmbed {
     private music: Music;
@@ -73,7 +73,9 @@ export class QueueEmbed extends MessageEmbed {
                 (song, index) => {
                     if (index > 0)
                         return `***${index}.***\u3000${song.toString()}`;
-                    return this.wrapString50(song.name);
+                    return song.name.length > 55
+                        ? this.wrapString50(song.name)
+                        : song.name;
                 },
             );
             if (!songs || songs.length < 1) return '';
@@ -95,7 +97,7 @@ export class QueueEmbed extends MessageEmbed {
                 'curPlaying',
             ])}**`;
             description +=
-                spacer + headSong + '\n' + spacer + this.songLoader();
+                spacer + headSong + '\n\n' + spacer + this.songLoader();
             return description;
         } catch (e) {
             console.error('Queue embed error: ', e);
@@ -128,16 +130,15 @@ export class QueueEmbed extends MessageEmbed {
             const song: Song | null = this.music.queue?.head;
             if (!song) return '';
             let leftTime: string = this.secondsToTimeString(
-                this.music.updater.time,
+                this.music.actions.time,
             );
             let rightTime: string = this.secondsToTimeString(song.seconds);
-            let steps = 16;
-            if ((leftTime + rightTime).length > 4) steps = 15;
+            let steps = 15;
             if ((leftTime + rightTime).length > 7) steps = 14;
             leftTime = `***${leftTime}***`;
             rightTime = `***${rightTime}***`;
             const x: number = Math.round(
-                (this.music.updater.time /
+                (this.music.actions.time /
                     (song.seconds > 0 ? song.seconds : 1)) *
                     steps,
             );
@@ -173,7 +174,7 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private wrapString50(text: string) {
-        return text.replace(/([^\n]{1,50})/g, '$1\n');
+        return text.replace(/(?![^\n]{1,50}$)([^\n]{1,50})\s/g, '$1\n\u3000');
     }
 
     public static songsPerPage(): number {

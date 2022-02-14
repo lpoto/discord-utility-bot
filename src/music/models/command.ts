@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 import { ButtonInteraction, MessageButton, ThreadChannel } from 'discord.js';
-import { MusicCommandOptions } from '.';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
+import { MusicCommandOptions } from '../commands';
+import { SongQueue } from '../models';
 import { Music } from '../music';
-import { SongQueue } from '../song-queue';
 
 export abstract class Command {
     private options: MusicCommandOptions;

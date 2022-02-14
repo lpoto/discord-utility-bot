@@ -16,16 +16,22 @@ import {
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
 import { CommandName } from './commands';
+import { QueueEmbed } from './models';
 import { Music } from './music';
-import { QueueEmbed } from './utils';
 
 export class MusicActions {
     private music: Music;
     private connection: VoiceConnection | null;
+    private timer: number;
+    private startedTimer: boolean;
+    private interval: number;
 
     constructor(music: Music) {
         this.music = music;
         this.connection = null;
+        this.timer = 0;
+        this.startedTimer = false;
+        this.interval = 3000;
     }
 
     get con(): VoiceConnection | null {
@@ -36,8 +42,17 @@ export class MusicActions {
         return this.music.client;
     }
 
+    get time(): number {
+        return this.timer;
+    }
+
     get commandActionRow(): MessageActionRow[] | null {
         return this.music.commands.getCommandsActionRow();
+    }
+
+    public resetTimer(): void {
+        this.startedTimer = true;
+        this.timer = 0;
     }
 
     public translate(keys: LanguageKeyPath) {
@@ -140,7 +155,7 @@ export class MusicActions {
         let startPlaying: boolean = this.music.queue.size === 0;
         for (const n of songNamesOrUrls) {
             this.music.queue.enqueue(n).then(() => {
-                this.music.updater.needsUpdate();
+                this.music.needsUpdate = true;
                 if (
                     (this.music.queue && this.music.queue.size === 1) ||
                     startPlaying
@@ -190,7 +205,7 @@ export class MusicActions {
         return interaction
             .update(this.getQueueOptions())
             .then(() => {
-                this.music.updater.updated();
+                this.music.needsUpdate = false;
                 return true;
             })
             .catch((error) => {
@@ -206,7 +221,7 @@ export class MusicActions {
             .then((message) => {
                 if (!message) return false;
                 return message.edit(this.getQueueOptions()).then(() => {
-                    this.music.updater.updated();
+                    this.music.needsUpdate = false;
                     return true;
                 });
             })
@@ -214,6 +229,28 @@ export class MusicActions {
                 this.handleError(error);
                 return false;
             });
+    }
+
+    public updateOnInterval(): void {
+        setTimeout(() => {
+            try {
+                if (this.music.needsUpdate) {
+                    this.music.needsUpdate = false;
+                    this.updateQueueMessage();
+                }
+                this.updateOnInterval();
+            } catch (error) {
+                console.error('Error when updating on interval: ', error);
+            }
+        }, this.interval);
+    }
+
+    public startTimer(): void {
+        setTimeout(() => {
+            if (!this.startedTimer) this.timer++;
+            else this.startedTimer = false;
+            this.startTimer();
+        }, 1000);
     }
 
     private getQueueOptions(): InteractionReplyOptions {
