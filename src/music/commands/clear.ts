@@ -44,6 +44,7 @@ export class Clear extends Command {
                 '`' +
                 this.music
                     .getAllQueueSongs()
+                    .slice(1)
                     .map((s) => s.name)
                     .join('\n') +
                 '`';

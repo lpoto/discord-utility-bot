@@ -54,7 +54,8 @@ export class SongQueue {
     }
 
     public async clear(): Promise<void> {
-        this.songs = [this.songs[0]];
+        if (this.songs.length < 2) return;
+        this.songs.splice(1, this.songs.length - 1);
     }
 
     public removeByIndex(songIndex: number): void {
