@@ -28,7 +28,8 @@ export class Remove extends Command {
             !interaction ||
             !interaction.user ||
             !this.music.thread ||
-            interaction.deferred
+            interaction.deferred ||
+            interaction.replied
         )
             return;
         const removeDropdown: MessageSelectMenu | null = this.removeDropdown();
@@ -59,6 +60,7 @@ export class Remove extends Command {
                             this.music.client.user?.id ||
                         !interaction2.customId.startsWith(this.name) ||
                         interaction2.deferred ||
+                        interaction2.replied ||
                         interaction2.component.placeholder !==
                             this.translate([
                                 'music',
@@ -89,9 +91,15 @@ export class Remove extends Command {
                         }
                     }
                     this.music.actions.updateQueueMessage();
-                    const removeDd: MessageSelectMenu | null =
-                        this.removeDropdown(start);
-                    if (!removeDd || interaction2.deferred) return;
+                    const removeDd: MessageSelectMenu | null = this.removeDropdown(
+                        start,
+                    );
+                    if (
+                        !removeDd ||
+                        interaction2.deferred ||
+                        interaction2.replied
+                    )
+                        return;
                     try {
                         interaction2.update({
                             content: this.translate([

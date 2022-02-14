@@ -103,9 +103,7 @@ export class QueueEmbed extends MessageEmbed {
         }
     }
 
-    public static actionRowLabels(
-        music: Music,
-    ): {
+    public static actionRowLabels(music: Music): {
         [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
     } {
         return {
@@ -133,7 +131,7 @@ export class QueueEmbed extends MessageEmbed {
                 this.music.updater.time,
             );
             let rightTime: string = this.secondsToTimeString(song.seconds);
-            let steps: number = 16;
+            let steps = 16;
             if ((leftTime + rightTime).length > 4) steps = 15;
             if ((leftTime + rightTime).length > 7) steps = 14;
             leftTime = `***${leftTime}***`;

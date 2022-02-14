@@ -58,12 +58,12 @@
             },
             "remove": {
                 "dropdown": {
-                    "placeholder": "Select the songs you want to remove."
+                    "placeholder": "Select the song you want to remove."
                 }
             },
             "forward": {
                 "dropdown": {
-                    "placeholder": "Select the songs you want to push to the front of the queue."
+                    "placeholder": "Select the song you want to push to the front."
                 }
             }
         }

@@ -28,11 +28,11 @@ export class Forward extends Command {
             !interaction ||
             !interaction.user ||
             !this.music.thread ||
-            interaction.deferred
+            interaction.deferred ||
+            interaction.replied
         )
             return;
-        const forwardDropdown: MessageSelectMenu | null =
-            this.forwardDropdown();
+        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown();
         if (!forwardDropdown) return;
         interaction
             .reply({
@@ -60,6 +60,7 @@ export class Forward extends Command {
                             this.music.client.user?.id ||
                         !interaction2.customId.startsWith(this.name) ||
                         interaction2.deferred ||
+                        interaction2.replied ||
                         interaction2.component.placeholder !==
                             this.translate([
                                 'music',
@@ -86,9 +87,15 @@ export class Forward extends Command {
                         return;
                     }
                     try {
-                        const forwardDd: MessageSelectMenu | null =
-                            this.forwardDropdown(start);
-                        if (!forwardDd || interaction2.deferred) return;
+                        const forwardDd: MessageSelectMenu | null = this.forwardDropdown(
+                            start,
+                        );
+                        if (
+                            !forwardDd ||
+                            interaction2.deferred ||
+                            interaction2.replied
+                        )
+                            return;
                         interaction2.update({
                             content: this.translate([
                                 'music',

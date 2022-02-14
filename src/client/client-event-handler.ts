@@ -118,6 +118,7 @@ export class ClientEventHandler {
             !interaction.guildId ||
             (!interaction.isButton() && !interaction.isCommand()) ||
             interaction.deferred ||
+            interaction.replied ||
             interaction.applicationId !== this.client.user?.id ||
             !interaction.member ||
             !(interaction.member instanceof GuildMember)
