@@ -18,18 +18,29 @@ export class Help extends Command {
         )
             return;
 
-        interaction.reply({
-            content: this.translate(['help']),
-            ephemeral: true,
-        });
+        const descriptions: string[] =
+            this.music.commands.getAllDescriptions();
+        if (this.description?.length === 0) {
+            interaction.reply({
+                content: this.translate(['help']),
+                ephemeral: true,
+            });
+        } else {
+            interaction.reply({
+                content: descriptions
+                    .map((d) => {
+                        return '*\u3000' + d;
+                    })
+                    .join('\n'),
+                ephemeral: true,
+            });
+        }
     }
 
     get button(): MessageButton | null {
         if (!this.music.editing) return null;
         return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'help']),
-            )
+            .setLabel(this.translate(['music', 'commands', 'help', 'label']))
             .setDisabled(false)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);

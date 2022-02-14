@@ -5,6 +5,10 @@ import { EditQueue } from './edit-queue';
 import { Expand } from './expand';
 import { Forward } from './forward';
 import { Help } from './help';
+import { Loop } from './loop';
+import { LoopQueue } from './loop-queue';
+import { PageBackward } from './page-backward';
+import { PageForward } from './page-forward';
 import { Pause } from './pause';
 import { Play } from './play';
 import { Remove } from './remove';
@@ -15,12 +19,16 @@ import { Stop } from './stop';
 
 export enum CommandName {
     PLAY,
+    PAGE_BACKWARD,
+    PAGE_FORWARD,
+    LOOP,
+    LOOP_QUEUE,
     SKIP,
     PAUSE,
     REPLAY,
     STOP,
     EDIT,
-    FORWARD,
+    SONG_FORWARD,
     REMOVE,
     SHUFFLE,
     CLEAR,
@@ -42,6 +50,14 @@ export function getCommand(options: MusicCommandOptions): Command | null {
     switch (options.name) {
         case CommandName.PLAY:
             return new Play(options);
+        case CommandName.PAGE_FORWARD:
+            return new PageForward(options);
+        case CommandName.PAGE_BACKWARD:
+            return new PageBackward(options);
+        case CommandName.LOOP:
+            return new Loop(options);
+        case CommandName.LOOP_QUEUE:
+            return new LoopQueue(options);
         case CommandName.SKIP:
             return new Skip(options);
         case CommandName.REPLAY:
@@ -56,7 +72,7 @@ export function getCommand(options: MusicCommandOptions): Command | null {
             return new Clear(options);
         case CommandName.REMOVE:
             return new Remove(options);
-        case CommandName.FORWARD:
+        case CommandName.SONG_FORWARD:
             return new Forward(options);
         case CommandName.SHUFFLE:
             return new Shuffle(options);

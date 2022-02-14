@@ -51,7 +51,7 @@ export class MusicCommands {
         }
     }
 
-    public getCommandsActionRow(): MessageActionRow[] | null {
+    public getCommandsActionRow(): MessageActionRow[] {
         const buttons: MessageButton[] = [];
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
             const command: Command | null = getCommand({
@@ -61,21 +61,34 @@ export class MusicCommands {
             if (!command || !command.button) continue;
             buttons.push(command.button);
         }
-        if (buttons.length < 1) return null;
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
+        const rowLenSequence: number[] = [4, 5, 3, 3];
         let idx = 0;
-        let len = 5;
         let lenIdx = 0;
         for (let i = 0; i < buttons.length; i++) {
+            const len: number =
+                idx >= rowLenSequence.length ? 3 : rowLenSequence[idx];
             if (buttons.length > len && i === lenIdx + len) {
                 lenIdx += len;
-                len = 4;
                 rows.push(new MessageActionRow());
                 idx += 1;
             }
             rows[idx].addComponents(buttons[i]);
         }
         return rows;
+    }
+
+    public getAllDescriptions(): string[] {
+        const descriptions: string[] = [];
+        for (let i = 0; i < Object.keys(CommandName).length; i++) {
+            const command: Command | null = getCommand({
+                name: i,
+                music: this.music,
+            });
+            if (!command || !command.description) continue;
+            descriptions.push(command.description);
+        }
+        return descriptions;
     }
 }

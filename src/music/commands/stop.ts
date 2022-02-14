@@ -12,6 +12,21 @@ export class Stop extends Command {
         super(options);
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'stop', 'description']);
+    }
+
+    get button(): MessageButton {
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'stop', 'label']))
+            .setStyle(
+                this.music.stopRequest
+                    ? MessageButtonStyles.PRIMARY
+                    : MessageButtonStyles.SECONDARY,
+            )
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.component) return;
         if (interaction.component.style === 'PRIMARY') {
@@ -53,18 +68,5 @@ export class Stop extends Command {
                     }, 5000);
                 });
         }
-    }
-
-    get button(): MessageButton {
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'stop']),
-            )
-            .setStyle(
-                this.music.stopRequest
-                    ? MessageButtonStyles.PRIMARY
-                    : MessageButtonStyles.SECONDARY,
-            )
-            .setCustomId(this.id);
     }
 }

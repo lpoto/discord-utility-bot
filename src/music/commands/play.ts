@@ -12,6 +12,10 @@ export class Play extends Command {
         super(options);
     }
 
+    get description(): string | null {
+        return this.translate(['music', 'commands', 'play', 'description']);
+    }
+
     private next(interaction?: ButtonInteraction, retries: number = 0): void {
         if (!this.music.loop) {
             const s: Song | undefined | null = this.music.queue?.dequeue();
@@ -22,7 +26,7 @@ export class Play extends Command {
                 );
             else this.music.actions.updateQueueMessage();
         }
-        this.music.actions.resetTimer();
+        this.music.resetTimer();
         this.music.needsUpdate = true;
         this.music.playing = false;
         this.execute(interaction, retries);
@@ -43,7 +47,7 @@ export class Play extends Command {
         song.getResource()
             .then((resource) => {
                 if (!resource) return;
-                this.music.actions.resetTimer();
+                this.music.resetTimer();
                 this.music.playing = true;
                 audioPlayer.play(resource);
                 audioPlayer

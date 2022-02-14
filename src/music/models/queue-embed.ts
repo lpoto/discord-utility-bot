@@ -1,19 +1,15 @@
-import { randomUUID } from 'crypto';
-import { MessageActionRow, MessageButton, MessageEmbed } from 'discord.js';
-import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { MessageEmbed } from 'discord.js';
 import { Music } from '../music';
 import { Song } from './song';
 
 export class QueueEmbed extends MessageEmbed {
     private music: Music;
-    private songsPerSinglePage: number;
 
     constructor(music: Music) {
         super({
             title: music.translate(['music', 'queue', 'title']),
             footer: { text: music.translate(['music', 'queue', 'footer']) },
         });
-        this.songsPerSinglePage = QueueEmbed.songsPerPage();
         this.music = music;
         this.setDescription(this.buildDescription());
         const queueSize: number = music.queue ? music.queue.size : 0;
@@ -28,43 +24,6 @@ export class QueueEmbed extends MessageEmbed {
 
     get songsOffset() {
         return this.music.queueOffset;
-    }
-
-    public getActionRow(): MessageActionRow {
-        return new MessageActionRow().addComponents([
-            new MessageButton()
-                .setDisabled(this.songsOffset === 0)
-                .setLabel(QueueEmbed.actionRowLabels(this.music).pageBackward)
-                .setStyle(MessageButtonStyles.SECONDARY)
-                .setCustomId(randomUUID()),
-            new MessageButton()
-                .setDisabled(
-                    !this.music.queue ||
-                        this.songsOffset + this.songsPerSinglePage >=
-                            this.music.queue.size - 1,
-                )
-                .setLabel(QueueEmbed.actionRowLabels(this.music).pageForward)
-                .setStyle(MessageButtonStyles.SECONDARY)
-                .setCustomId(randomUUID()),
-            new MessageButton()
-                .setDisabled(!this.music.queue || this.music.queue.size === 0)
-                .setLabel(QueueEmbed.actionRowLabels(this.music).loop)
-                .setStyle(
-                    this.music && this.music.loop
-                        ? MessageButtonStyles.SUCCESS
-                        : MessageButtonStyles.SECONDARY,
-                )
-                .setCustomId(randomUUID()),
-            new MessageButton()
-                .setDisabled(!this.music.queue || this.music.queue.size === 0)
-                .setLabel(QueueEmbed.actionRowLabels(this.music).loopQueue)
-                .setStyle(
-                    this.music && this.music.loopQueue
-                        ? MessageButtonStyles.SUCCESS
-                        : MessageButtonStyles.SECONDARY,
-                )
-                .setCustomId(randomUUID()),
-        ]);
     }
 
     private buildDescription(): string {
@@ -105,41 +64,19 @@ export class QueueEmbed extends MessageEmbed {
         }
     }
 
-    public static actionRowLabels(music: Music): {
-        [key in 'pageForward' | 'pageBackward' | 'loop' | 'loopQueue']: string;
-    } {
-        return {
-            pageForward: music.translate([
-                'music',
-                'actionRow',
-                'pageForward',
-            ]),
-            pageBackward: music.translate([
-                'music',
-                'actionRow',
-                'pageBackward',
-            ]),
-            loop: music.translate(['music', 'actionRow', 'loop']),
-            loopQueue: music.translate(['music', 'actionRow', 'loopQueue']),
-        };
-    }
-
     private songLoader(): string {
         if (!this.music.queue) return '';
         try {
             const song: Song | null = this.music.queue?.head;
             if (!song) return '';
-            let leftTime: string = this.secondsToTimeString(
-                this.music.actions.time,
-            );
+            let leftTime: string = this.secondsToTimeString(this.music.time);
             let rightTime: string = this.secondsToTimeString(song.seconds);
             let steps = 15;
             if ((leftTime + rightTime).length > 7) steps = 14;
             leftTime = `***${leftTime}***`;
             rightTime = `***${rightTime}***`;
             const x: number = Math.round(
-                (this.music.actions.time /
-                    (song.seconds > 0 ? song.seconds : 1)) *
+                (this.music.time / (song.seconds > 0 ? song.seconds : 1)) *
                     steps,
             );
             leftTime += '\u2000';

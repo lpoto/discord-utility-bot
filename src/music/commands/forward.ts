@@ -22,6 +22,21 @@ export class Forward extends Command {
         this.songsPerPage = 23;
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'forward', 'description']);
+    }
+
+    get button(): MessageButton | null {
+        if (!this.music.editing) return null;
+        return new MessageButton()
+            .setLabel(
+                this.translate(['music', 'commands', 'forward', 'label']),
+            )
+            .setDisabled(!this.music.queue || this.music.queue?.size < 3)
+            .setStyle(MessageButtonStyles.SECONDARY)
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
@@ -39,8 +54,8 @@ export class Forward extends Command {
                 content: this.translate([
                     'music',
                     'commands',
-                    'actionRow',
                     'forward',
+                    'label',
                 ]),
                 components: [
                     new MessageActionRow().addComponents(forwardDropdown),
@@ -99,8 +114,8 @@ export class Forward extends Command {
                             content: this.translate([
                                 'music',
                                 'commands',
-                                'actionRow',
                                 'forward',
+                                'label',
                             ]),
                             components: [
                                 new MessageActionRow().addComponents(
@@ -164,16 +179,5 @@ export class Forward extends Command {
             customId: this.id,
             maxValues: 1,
         });
-    }
-
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'forward']),
-            )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 3)
-            .setStyle(MessageButtonStyles.SECONDARY)
-            .setCustomId(this.id);
     }
 }

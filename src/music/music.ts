@@ -22,6 +22,7 @@ export class Music extends AbstractMusic {
     private musicActions: MusicActions;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
+    private con: VoiceConnection | null;
     private offset: number;
 
     constructor(
@@ -36,6 +37,7 @@ export class Music extends AbstractMusic {
         this.musicGuildId = guildId;
         this.musicActions = new MusicActions(this);
         this.musicCommands = new MusicCommands(this);
+        this.con = null;
         this.player = null;
         this.offset = 0;
     }
@@ -44,12 +46,16 @@ export class Music extends AbstractMusic {
         return this.musicClient;
     }
 
-    get actions(): MusicActions {
-        return this.musicActions;
+    get connection(): VoiceConnection | null {
+        return this.con;
     }
 
-    get connection(): VoiceConnection | null {
-        return this.actions.con;
+    set connection(value: VoiceConnection | null) {
+        this.con = value;
+    }
+
+    get actions(): MusicActions {
+        return this.musicActions;
     }
 
     get commands(): MusicCommands {
@@ -133,8 +139,7 @@ export class Music extends AbstractMusic {
             if (!result) return this;
             return this.actions.joinVoice(interaction).then((result2) => {
                 if (result2) {
-                    this.actions.startTimer();
-                    this.actions.updateOnInterval();
+                    this.startTimer();
                     return this;
                 }
                 return null;
@@ -166,5 +171,13 @@ export class Music extends AbstractMusic {
                 return music2;
             return null;
         });
+    }
+
+    protected onTimerTick(): void {
+        super.onTimerTick();
+        if (this.totalTime > 0 && this.totalTime % 20 === 0) {
+            this.musicActions.stopUpdatingQueue();
+            this.musicActions = new MusicActions(this);
+        }
     }
 }

@@ -8,6 +8,22 @@ export class Pause extends Command {
         super(options);
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'pause', 'description']);
+    }
+
+    get button(): MessageButton {
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'pause', 'label']))
+            .setDisabled(this.music.queue?.size === 0)
+            .setStyle(
+                this.music.paused
+                    ? MessageButtonStyles.SUCCESS
+                    : MessageButtonStyles.SECONDARY,
+            )
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !this.music.audioPlayer) return;
         if (this.music.paused) this.music.audioPlayer.unpause();
@@ -16,19 +32,5 @@ export class Pause extends Command {
         await this.music.actions.updateQueueMessageWithInteraction(
             interaction,
         );
-    }
-
-    get button(): MessageButton {
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'pause']),
-            )
-            .setDisabled(this.music.queue?.size === 0)
-            .setStyle(
-                this.music.paused
-                    ? MessageButtonStyles.SUCCESS
-                    : MessageButtonStyles.SECONDARY,
-            )
-            .setCustomId(this.id);
     }
 }

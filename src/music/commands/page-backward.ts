@@ -3,24 +3,18 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
 import { Command } from '../models';
 
-export class Shuffle extends Command {
+export class PageBackward extends Command {
     constructor(options: MusicCommandOptions) {
         super(options);
     }
 
     get description(): string {
-        return this.translate(['music', 'commands', 'shuffle', 'description']);
-    }
-
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'shuffle', 'label']),
-            )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
-            .setStyle(MessageButtonStyles.SECONDARY)
-            .setCustomId(this.id);
+        return this.translate([
+            'music',
+            'commands',
+            'pageBackward',
+            'description',
+        ]);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
@@ -31,8 +25,19 @@ export class Shuffle extends Command {
             !this.music.queue
         )
             return;
-        this.music.queue.shuffle().then(() => {
+
+        return this.music.decrementOffset().then(() => {
             this.music.actions.updateQueueMessageWithInteraction(interaction);
         });
+    }
+
+    get button(): MessageButton | null {
+        return new MessageButton()
+            .setLabel(
+                this.translate(['music', 'commands', 'pageBackward', 'label']),
+            )
+            .setDisabled(this.music.queueOffset === 0)
+            .setStyle(MessageButtonStyles.SECONDARY)
+            .setCustomId(this.id);
     }
 }

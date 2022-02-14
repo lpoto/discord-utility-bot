@@ -8,6 +8,19 @@ export class Clear extends Command {
         super(options);
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'clear', 'description']);
+    }
+
+    get button(): MessageButton | null {
+        if (!this.music.editing) return null;
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
+            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setStyle(MessageButtonStyles.SECONDARY)
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
@@ -35,16 +48,5 @@ export class Clear extends Command {
                     });
                 });
         });
-    }
-
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'clear']),
-            )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
-            .setStyle(MessageButtonStyles.SECONDARY)
-            .setCustomId(this.id);
     }
 }

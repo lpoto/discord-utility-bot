@@ -177,20 +177,9 @@ export class ClientEventHandler {
                 interaction.component.label !== null &&
                 interaction.component.label !== undefined
             )
-                this.guildMusic[interaction.guildId].actions
-                    .executeActionFromInteraction(interaction)
-                    .then((value) => {
-                        if (
-                            value ||
-                            !interaction.guildId ||
-                            !interaction.component ||
-                            !interaction.component.label
-                        )
-                            return;
-                        this.guildMusic[
-                            interaction.guildId
-                        ].commands.executeFromInteraction(interaction);
-                    });
+                this.guildMusic[
+                    interaction.guildId
+                ].commands.executeFromInteraction(interaction);
         }
         this.buttonClickQueue[interaction.message.id].shift();
         if (this.buttonClickQueue[interaction.message.id].length === 0)

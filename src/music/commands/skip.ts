@@ -8,6 +8,18 @@ export class Skip extends Command {
         super(options);
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'skip', 'description']);
+    }
+
+    get button(): MessageButton {
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
+            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
+            .setStyle(MessageButtonStyles.SECONDARY)
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !this.music.audioPlayer || this.music.paused)
             return;
@@ -17,20 +29,10 @@ export class Skip extends Command {
             this.music.actions.updateQueueMessage();
         }
         this.music.audioPlayer.stop();
-        this.music.actions.resetTimer();
+        this.music.resetTimer();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });
         this.music.actions.updateQueueMessageWithInteraction(interaction);
-    }
-
-    get button(): MessageButton {
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'skip']),
-            )
-            .setDisabled(this.music.queue?.size === 0 || this.music.paused)
-            .setStyle(MessageButtonStyles.SECONDARY)
-            .setCustomId(this.id);
     }
 }

@@ -48,6 +48,10 @@ export abstract class Command {
         return null;
     }
 
+    get description(): string | null {
+        return null;
+    }
+
     public translate(keys: LanguageKeyPath) {
         return this.options.music.translate(keys);
     }

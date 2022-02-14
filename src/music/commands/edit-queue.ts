@@ -8,17 +8,13 @@ export class EditQueue extends Command {
         super(options);
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !interaction.user || !this.music.thread) return;
-        this.music.editing = !this.music.editing;
-        this.music.actions.updateQueueMessageWithInteraction(interaction);
+    get description(): string {
+        return this.translate(['music', 'commands', 'edit', 'description']);
     }
 
     get button(): MessageButton | null {
         return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'edit']),
-            )
+            .setLabel(this.translate(['music', 'commands', 'edit', 'label']))
             .setDisabled(false)
             .setStyle(
                 this.music.editing
@@ -26,5 +22,11 @@ export class EditQueue extends Command {
                     : MessageButtonStyles.SECONDARY,
             )
             .setCustomId(this.id);
+    }
+
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
+        if (!interaction || !interaction.user || !this.music.thread) return;
+        this.music.editing = !this.music.editing;
+        this.music.actions.updateQueueMessageWithInteraction(interaction);
     }
 }

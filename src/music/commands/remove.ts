@@ -22,6 +22,19 @@ export class Remove extends Command {
         this.songsPerPage = 23;
     }
 
+    get description(): string {
+        return this.translate(['music', 'commands', 'remove', 'description']);
+    }
+
+    get button(): MessageButton | null {
+        if (!this.music.editing) return null;
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'remove', 'label']))
+            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
+            .setStyle(MessageButtonStyles.SECONDARY)
+            .setCustomId(this.id);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
@@ -38,8 +51,8 @@ export class Remove extends Command {
                 content: this.translate([
                     'music',
                     'commands',
-                    'actionRow',
                     'remove',
+                    'label',
                 ]),
                 components: [
                     new MessageActionRow().addComponents(removeDropdown),
@@ -103,8 +116,8 @@ export class Remove extends Command {
                             content: this.translate([
                                 'music',
                                 'commands',
-                                'actionRow',
                                 'remove',
+                                'label',
                             ]),
                             components: [
                                 new MessageActionRow().addComponents(removeDd),
@@ -169,16 +182,5 @@ export class Remove extends Command {
                     ? dropdownOptions.length
                     : this.songsPerPage,
         });
-    }
-
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
-        return new MessageButton()
-            .setLabel(
-                this.translate(['music', 'commands', 'actionRow', 'remove']),
-            )
-            .setDisabled(!this.music.queue || this.music.queue?.size < 2)
-            .setStyle(MessageButtonStyles.SECONDARY)
-            .setCustomId(this.id);
     }
 }
