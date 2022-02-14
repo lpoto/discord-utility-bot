@@ -28,7 +28,14 @@ export class Stop extends Command {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !interaction.component) return;
+        if (
+            !interaction ||
+            !interaction.component ||
+            !interaction.user ||
+            interaction.deferred ||
+            interaction.replied
+        )
+            return;
         if (interaction.component.style === 'PRIMARY') {
             this.music.client.destroyMusic(this.music.guildId);
             if (this.music.queue && this.music.queue.size > 0)

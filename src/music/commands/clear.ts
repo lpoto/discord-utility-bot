@@ -1,4 +1,8 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    InteractionWebhook,
+    MessageButton,
+} from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicCommandOptions } from '.';
 import { Command } from '../models';
@@ -17,36 +21,67 @@ export class Clear extends Command {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
             .setDisabled(!this.music.queue || this.music.queue?.size < 2)
-            .setStyle(MessageButtonStyles.SECONDARY)
+            .setStyle(
+                this.music.clearRequest
+                    ? MessageButtonStyles.PRIMARY
+                    : MessageButtonStyles.SECONDARY,
+            )
             .setCustomId(this.id);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
+            interaction.deferred ||
+            interaction.replied ||
+            !interaction.component ||
             !interaction.user ||
             !this.music.thread ||
             !this.music.queue
         )
             return;
-        const songs: string =
-            '`' +
-            this.music.queue.allSongs.map((s) => s.name).join('\n') +
-            '`';
-        this.music.queue.clear().then(() => {
+        if (interaction.component.style === 'PRIMARY') {
+            const songs: string =
+                '`' +
+                this.music.queue.allSongs.map((s) => s.name).join('\n') +
+                '`';
+            this.music.clearRequest = false;
+            this.music.queue.clear().then(() => {
+                this.music.actions
+                    .updateQueueMessageWithInteraction(interaction)
+                    .then(() => {
+                        interaction.user.send({
+                            content:
+                                this.translate([
+                                    'music',
+                                    'commands',
+                                    'clear',
+                                    'clearedSongs',
+                                ]) + songs,
+                        });
+                    });
+            });
+        } else {
+            this.music.clearRequest = true;
+            const webhook: InteractionWebhook = interaction.webhook;
             this.music.actions
                 .updateQueueMessageWithInteraction(interaction)
-                .then(() => {
-                    interaction.user.send({
-                        content:
-                            this.translate([
-                                'music',
-                                'commands',
-                                'clear',
-                                'clearedSongs',
-                            ]) + songs,
+                .then((result) => {
+                    if (!result) return;
+                    webhook.send({
+                        content: this.translate([
+                            'music',
+                            'commands',
+                            'clear',
+                            'confirm',
+                        ]),
+                        ephemeral: true,
                     });
+                    setTimeout(() => {
+                        this.music.clearRequest = false;
+                        this.music.needsUpdate = true;
+                    }, 5000);
                 });
-        });
+        }
     }
 }

@@ -97,7 +97,8 @@
             "clear": {
                 "label": "Clear",
                 "description": "`Clear`: Removes all the songs from the queue.",
-                "clearedSongs": "Songs you have cleared from the queue:\n"
+                "clearedSongs": "Songs you have cleared from the queue:\n",
+                "confirm": "Click on `Clear` again if you are sure, you want to remove all the songs from the queue."
             },
             "help": {
                 "label": "Help"

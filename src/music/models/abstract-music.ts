@@ -2,6 +2,7 @@ export interface MusicActivityOptions {
     isLoop?: boolean;
     isLoopQueue?: boolean;
     isStopRequested?: boolean;
+    isClearRequested?: boolean;
     isPaused?: boolean;
     isEditing?: boolean;
     isPlaying?: boolean;
@@ -48,6 +49,16 @@ export abstract class AbstractMusic {
 
     set stopRequest(value: boolean) {
         this.options.isStopRequested = value;
+    }
+
+    get clearRequest(): boolean {
+        return this.options.isClearRequested
+            ? this.options.isClearRequested
+            : false;
+    }
+
+    set clearRequest(value: boolean) {
+        this.options.isClearRequested = value;
     }
 
     get paused(): boolean {
