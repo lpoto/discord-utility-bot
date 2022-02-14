@@ -17,7 +17,11 @@ export class Expand extends Command {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'expand', 'label']))
             .setDisabled(!this.music.queue || this.music.queue?.size < 2)
-            .setStyle(MessageButtonStyles.SECONDARY)
+            .setStyle(
+                this.music.expanded
+                    ? MessageButtonStyles.SUCCESS
+                    : MessageButtonStyles.SECONDARY,
+            )
             .setCustomId(this.id);
     }
 
