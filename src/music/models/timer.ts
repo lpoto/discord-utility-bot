@@ -5,9 +5,10 @@ export class Timer {
     private tick: number;
     private timer: number;
     private func: () => void;
-    private ended: boolean;
     private paused: boolean;
+    private ended: boolean;
     private music: Music;
+    private timeout: NodeJS.Timeout | null;
 
     constructor(
         music: Music,
@@ -20,8 +21,9 @@ export class Timer {
         this.tick = tick;
         this.timer = 0;
         this.func = func;
-        this.ended = false;
         this.paused = false;
+        this.ended = false;
+        this.timeout = null;
     }
 
     get time(): number {
@@ -29,7 +31,7 @@ export class Timer {
     }
 
     get isActive(): boolean {
-        return !this.ended && this.timer < this.duration;
+        return this.timer < this.duration;
     }
 
     get isPaused(): boolean {
@@ -37,6 +39,7 @@ export class Timer {
     }
 
     public pause(): void {
+        if (this.timeout) clearTimeout(this.timeout);
         this.paused = true;
     }
 
@@ -46,18 +49,29 @@ export class Timer {
     }
 
     public start(): void {
-        setTimeout(() => {
-            if (this.ended || this.paused) return;
-            if (this.music.connection?.state.status !== 'ready')
-                return this.start();
-            this.timer += this.tick / 1000;
-            if (this.timer >= this.duration) return;
-            this.func();
-            this.start();
-        }, this.tick);
+        if (this.timeout)
+            try {
+                clearTimeout(this.timeout);
+            } catch (e) {
+                return;
+            }
+        this.timeout = setTimeout(() => this.timerFun(), 1000);
+        this.timeout.unref();
     }
 
     public stop(): void {
         this.ended = true;
+        if (!this.timeout) return;
+        clearTimeout(this.timeout);
+    }
+
+    private timerFun(): void {
+        if (this.paused || this.ended) return;
+        if (this.music.connection?.state.status !== 'ready')
+            return this.start();
+        this.timer += 1;
+        if (this.timer >= this.duration) return;
+        if (this.timer % this.tick === 0) this.func();
+        return this.start();
     }
 }

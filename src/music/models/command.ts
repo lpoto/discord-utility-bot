@@ -1,5 +1,10 @@
 import { randomUUID } from 'crypto';
-import { ButtonInteraction, Guild, MessageButton, ThreadChannel } from 'discord.js';
+import {
+    ButtonInteraction,
+    Guild,
+    MessageButton,
+    ThreadChannel,
+} from 'discord.js';
 import { MusicClient } from '../../client';
 import { LanguageKeyPath } from '../../translation';
 import { MusicCommandOptions } from '../commands';

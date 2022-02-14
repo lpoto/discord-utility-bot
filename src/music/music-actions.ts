@@ -85,6 +85,9 @@ export class MusicActions {
                 console.log(
                     `State change ${guild.id}: ${statePrev.status} -> ${stateAfter.status}`,
                 );
+
+                if (stateAfter.status !== 'ready') this.music.timer?.pause();
+                else this.music.timer?.unpause();
             })
             .on('error', (error) => {
                 this.client.handleError(error);
