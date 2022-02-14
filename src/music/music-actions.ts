@@ -105,7 +105,8 @@ export class MusicActions {
                     this.music.commands.execute({ name: CommandName.PLAY });
                 }
             }
-            if (!this.music.timer?.isActive) this.updateQueueMessage();
+            if (!this.music.timer?.isActive || this.music.timer?.isPaused)
+                this.updateQueueMessage();
             if (songNamesOrUrls.length > jmp)
                 this.songsToQueue(songNamesOrUrls.slice(jmp));
         } catch (e) {

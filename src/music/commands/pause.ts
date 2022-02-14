@@ -26,8 +26,13 @@ export class Pause extends Command {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !this.music.audioPlayer) return;
-        if (this.music.paused) this.music.audioPlayer.unpause();
-        else this.music.audioPlayer.pause();
+        if (this.music.paused) {
+            this.music.timer?.unpause();
+            this.music.audioPlayer.unpause();
+        } else {
+            this.music.timer?.pause();
+            this.music.audioPlayer.pause();
+        }
         this.music.paused = !this.music.paused;
         await this.music.actions.updateQueueMessageWithInteraction(
             interaction,

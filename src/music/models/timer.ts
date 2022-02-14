@@ -4,6 +4,7 @@ export class Timer {
     private timer: number;
     private func: () => void;
     private ended: boolean;
+    private paused: boolean;
 
     constructor(duration: number, tick: number, func: () => void) {
         this.duration = duration;
@@ -11,6 +12,7 @@ export class Timer {
         this.timer = 0;
         this.func = func;
         this.ended = false;
+        this.paused = false;
     }
 
     get time(): number {
@@ -21,9 +23,22 @@ export class Timer {
         return !this.ended && this.timer < this.duration;
     }
 
+    get isPaused(): boolean {
+        return this.paused;
+    }
+
+    public pause(): void {
+        this.paused = true;
+    }
+
+    public unpause(): void {
+        this.paused = false;
+        this.start();
+    }
+
     public start(): void {
         setTimeout(() => {
-            if (this.ended) return;
+            if (this.ended || this.paused) return;
             this.timer += this.tick / 1000;
             if (this.timer >= this.duration) return;
             this.func();

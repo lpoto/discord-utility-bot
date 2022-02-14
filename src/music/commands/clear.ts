@@ -82,7 +82,10 @@ export class Clear extends Command {
                     });
                     setTimeout(() => {
                         this.music.clearRequest = false;
-                        if (!this.music.timer?.isActive)
+                        if (
+                            !this.music.timer?.isActive ||
+                            this.music.timer.isPaused
+                        )
                             this.music.actions.updateQueueMessage();
                     }, 5000);
                 });
