@@ -82,7 +82,7 @@ export class MusicActions {
                     setTimeout(() => {
                         if (interaction.guildId && dc)
                             this.client.destroyMusic(interaction.guildId);
-                    }, 10000);
+                    }, 2000);
                 } else {
                     dc = false;
                 }
