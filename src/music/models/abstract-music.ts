@@ -3,9 +3,7 @@ export interface MusicActivityOptions {
     isLoopQueue?: boolean;
     isStopRequested?: boolean;
     isClearRequested?: boolean;
-    isPaused?: boolean;
     isEditing?: boolean;
-    isPlaying?: boolean;
     isExpanded?: boolean;
     offsetChanged?: boolean;
     queueChanged?: boolean;
@@ -54,28 +52,12 @@ export abstract class AbstractMusic {
         this.options.isClearRequested = value;
     }
 
-    get paused(): boolean {
-        return this.options.isPaused ? this.options.isPaused : false;
-    }
-
-    set paused(value: boolean) {
-        this.options.isPaused = value;
-    }
-
     get editing(): boolean {
         return this.options.isEditing ? this.options.isEditing : false;
     }
 
     set editing(value: boolean) {
         this.options.isEditing = value;
-    }
-
-    get playing(): boolean {
-        return this.options.isPlaying ? this.options.isPlaying : false;
-    }
-
-    set playing(value: boolean) {
-        this.options.isPlaying = value;
     }
 
     get expanded(): boolean {

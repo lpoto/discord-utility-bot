@@ -20,7 +20,7 @@ export class Clear extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
-            .setDisabled(this.music.getQueueSize() < 2)
+            .setDisabled(this.music.queue.size < 2)
             .setStyle(
                 this.music.clearRequest
                     ? MessageButtonStyles.PRIMARY
@@ -42,14 +42,13 @@ export class Clear extends Command {
         if (interaction.component.style === 'PRIMARY') {
             const songs: string =
                 '`' +
-                this.music
-                    .getAllQueueSongs()
+                this.music.queue.allSongs
                     .slice(1)
                     .map((s) => s.name)
                     .join('\n') +
                 '`';
             this.music.clearRequest = false;
-            this.music.clearQueue().then(() => {
+            this.music.queue.clear().then(() => {
                 this.music.actions
                     .updateQueueMessageWithInteraction(interaction)
                     .then(() => {
@@ -80,14 +79,12 @@ export class Clear extends Command {
                         ]),
                         ephemeral: true,
                     });
-                    setTimeout(() => {
+                    const x: NodeJS.Timeout = setTimeout(() => {
                         this.music.clearRequest = false;
-                        if (
-                            !this.music.timer?.isActive ||
-                            this.music.timer.isPaused
-                        )
+                        if (!this.music.timer.isActive)
                             this.music.actions.updateQueueMessage();
                     }, 5000);
+                    x.unref();
                 });
         }
     }

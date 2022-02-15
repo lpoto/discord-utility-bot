@@ -33,7 +33,7 @@ export class PageForward extends Command {
             )
             .setDisabled(
                 this.music.queueOffset + QueueEmbed.songsPerPage() >=
-                    this.music.getQueueSize() - 1,
+                    this.music.queue.size - 1,
             )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);

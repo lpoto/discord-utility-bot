@@ -1,4 +1,8 @@
-import { joinVoiceChannel, VoiceConnection } from '@discordjs/voice';
+import {
+    AudioPlayerStatus,
+    joinVoiceChannel,
+    VoiceConnection,
+} from '@discordjs/voice';
 import {
     ButtonInteraction,
     CommandInteraction,
@@ -85,9 +89,6 @@ export class MusicActions {
                 console.log(
                     `State change ${guild.id}: ${statePrev.status} -> ${stateAfter.status}`,
                 );
-
-                if (stateAfter.status !== 'ready') this.music.timer?.pause();
-                else this.music.timer?.unpause();
             })
             .on('error', (error) => {
                 this.client.handleError(error);
@@ -97,28 +98,24 @@ export class MusicActions {
     }
 
     public async songsToQueue(songNamesOrUrls: string[]): Promise<void> {
-        try {
-            let startPlaying: boolean = this.music.getQueueSize() === 0;
-            const jmp = 5;
-            for await (const i of songNamesOrUrls.length <= jmp
-                ? songNamesOrUrls
-                : songNamesOrUrls.slice(0, jmp)) {
-                await this.music.enqueue(i);
-                if (this.music.getQueueSize() === 1 || startPlaying) {
-                    startPlaying = false;
-                    this.music.commands.execute({ name: CommandName.PLAY });
-                }
-            }
+        let idx = 0;
+        for (const song of songNamesOrUrls) {
+            await this.music.queue.enqueue(song);
             if (
-                !this.music.timer?.isActive ||
-                this.music.timer?.isPaused ||
-                !this.music.guild.me?.voice.channel
-            )
+                this.music.audioPlayer?.state.status !==
+                    AudioPlayerStatus.Playing &&
+                this.music.audioPlayer?.state.status !==
+                    AudioPlayerStatus.Paused
+            ) {
+                this.music.commands.execute({ name: CommandName.PLAY });
+            }
+            idx++;
+            if (
+                !this.music.timer.isActive &&
+                (idx === songNamesOrUrls.length - 1 || idx % 5 === 0)
+            ) {
                 this.updateQueueMessage();
-            if (songNamesOrUrls.length > jmp)
-                this.songsToQueue(songNamesOrUrls.slice(jmp));
-        } catch (e) {
-            console.error('Error addings songs to the queue: ', e);
+            }
         }
     }
 
@@ -155,11 +152,13 @@ export class MusicActions {
 
     public async updateQueueMessageWithInteraction(
         interaction: ButtonInteraction,
+        embedOnly?: boolean,
+        componentsOnly?: boolean,
     ): Promise<boolean> {
         if (!this.music.thread || interaction.deferred || interaction.replied)
             return false;
         return interaction
-            .update(this.getQueueOptions())
+            .update(this.getQueueOptions(embedOnly, componentsOnly))
             .then(() => {
                 return true;
             })
@@ -169,15 +168,20 @@ export class MusicActions {
             });
     }
 
-    public async updateQueueMessage(): Promise<boolean> {
+    public async updateQueueMessage(
+        embedOnly?: boolean,
+        componentsOnly?: boolean,
+    ): Promise<boolean> {
         if (!this.music.thread) return false;
         return this.music.thread
             .fetchStarterMessage()
             .then((message) => {
                 if (!message) return false;
-                return message.edit(this.getQueueOptions()).then(() => {
-                    return true;
-                });
+                return message
+                    .edit(this.getQueueOptions(embedOnly, componentsOnly))
+                    .then(() => {
+                        return true;
+                    });
             })
             .catch((error) => {
                 this.handleError(error);
@@ -185,14 +189,25 @@ export class MusicActions {
             });
     }
 
-    private getQueueOptions(): InteractionReplyOptions {
-        const embed: QueueEmbed = new QueueEmbed(this.music);
+    private getQueueOptions(
+        embedOnly?: boolean,
+        componentsOnly?: boolean,
+    ): InteractionReplyOptions {
+        if (embedOnly) {
+            return {
+                embeds: [new QueueEmbed(this.music)],
+            };
+        }
         const components: MessageActionRow[] = [];
         const commandActionRow: MessageActionRow[] = this.commandActionRow;
         for (const row of commandActionRow) components.push(row);
+        if (componentsOnly) {
+            return {
+                components: components,
+            };
+        }
         return {
-            fetchReply: true,
-            embeds: [embed],
+            embeds: [new QueueEmbed(this.music)],
             components: components,
         };
     }

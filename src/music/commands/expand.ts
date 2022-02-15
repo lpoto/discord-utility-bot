@@ -16,7 +16,7 @@ export class Expand extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'expand', 'label']))
-            .setDisabled(this.music.getQueueSize() < 2)
+            .setDisabled(this.music.queue.size < 2)
             .setStyle(
                 this.music.expanded
                     ? MessageButtonStyles.SUCCESS

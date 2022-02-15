@@ -64,6 +64,14 @@ export class SongQueue {
         this.songs.splice(songIndex, 1);
     }
 
+    public removeIndexes(indexes: number[]): void {
+        try {
+            this.songs = this.songs.filter((_, idx) => !indexes.includes(idx));
+        } catch (e) {
+            console.error('Error removing songs from queue: ', e);
+        }
+    }
+
     public forwardByIndex(index: number): void {
         if (this.size < 3 || index >= this.size) return;
         const toReplace: Song = this.songs[1];

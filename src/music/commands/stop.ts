@@ -38,7 +38,7 @@ export class Stop extends Command {
             return;
         if (interaction.component.style === 'PRIMARY') {
             this.music.client.destroyMusic(this.music.guildId);
-            if (this.music.getQueueSize() > 0)
+            if (this.music.queue.size > 0)
                 interaction.user.send({
                     content:
                         this.translate([
@@ -48,8 +48,7 @@ export class Stop extends Command {
                             'reply',
                         ]) +
                         '`' +
-                        this.music
-                            .getAllQueueSongs()
+                        this.music.queue.allSongs
                             .map((s) => s.name)
                             .join('\n') +
                         '`',
@@ -58,7 +57,7 @@ export class Stop extends Command {
             this.music.stopRequest = true;
             const webhook: InteractionWebhook = interaction.webhook;
             this.music.actions
-                .updateQueueMessageWithInteraction(interaction)
+                .updateQueueMessageWithInteraction(interaction, false, true)
                 .then((result) => {
                     if (!result) return;
                     webhook.send({
@@ -70,14 +69,12 @@ export class Stop extends Command {
                         ]),
                         ephemeral: true,
                     });
-                    setTimeout(() => {
+                    const x: NodeJS.Timeout = setTimeout(() => {
                         this.music.stopRequest = false;
-                        if (
-                            !this.music.timer?.isActive ||
-                            this.music.timer.isPaused
-                        )
-                            this.music.actions.updateQueueMessage();
+                        if (!this.music.timer?.isActive)
+                            this.music.actions.updateQueueMessage(false, true);
                     }, 5000);
+                    x.unref();
                 });
         }
     }

@@ -30,7 +30,7 @@ export class Remove extends Command {
         if (!this.music.editing) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'remove', 'label']))
-            .setDisabled(this.music.getQueueSize() < 2)
+            .setDisabled(this.music.queue.size < 2)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -84,6 +84,7 @@ export class Remove extends Command {
                     )
                         return;
                     let start = 0;
+                    const indexes: number[] = [];
                     for (const value of interaction2.values) {
                         try {
                             if (value.startsWith('prev: ')) {
@@ -96,12 +97,13 @@ export class Remove extends Command {
                                 );
                             } else {
                                 const idx = Number(value);
-                                this.music.removeFromQueueByIndex(idx);
+                                indexes.push(idx);
                             }
                         } catch (e) {
                             continue;
                         }
                     }
+                    this.music.queue.removeIndexes(indexes);
                     this.music.actions.updateQueueMessage();
                     const removeDd: MessageSelectMenu | null =
                         this.removeDropdown(start);
@@ -134,9 +136,8 @@ export class Remove extends Command {
     }
 
     private removeDropdown(start: number = 0): MessageSelectMenu | null {
-        if (this.music.getQueueSize() < 2) return null;
-        const songs: Song[] = this.music
-            .getAllQueueSongs()
+        if (this.music.queue.size < 2) return null;
+        const songs: Song[] = this.music.queue.allSongs
             .slice(1)
             .slice(
                 start * this.songsPerPage,
@@ -159,7 +160,7 @@ export class Remove extends Command {
             });
         }
         if (
-            this.music.getQueueSize() - 1 >
+            this.music.queue.size - 1 >
             start * this.songsPerPage + dropdownOptions.length
         ) {
             dropdownOptions.push({

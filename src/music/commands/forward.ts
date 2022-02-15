@@ -32,7 +32,7 @@ export class Forward extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'forward', 'label']),
             )
-            .setDisabled(this.music.getQueueSize() < 3)
+            .setDisabled(this.music.queue.size < 3)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -95,7 +95,7 @@ export class Forward extends Command {
                         } else if (value.startsWith('next: ')) {
                             start = Number(value.replace('next: ', '').trim());
                         } else {
-                            this.music.forwardQueueByIndex(Number(value));
+                            this.music.queue.forwardByIndex(Number(value));
                             this.music.actions.updateQueueMessage();
                         }
                     } catch (e) {
@@ -134,9 +134,8 @@ export class Forward extends Command {
     }
 
     private forwardDropdown(start: number = 0): MessageSelectMenu | null {
-        if (this.music.getQueueSize() < 2) return null;
-        const songs: Song[] = this.music
-            .getAllQueueSongs()
+        if (this.music.queue.size < 2) return null;
+        const songs: Song[] = this.music.queue.allSongs
             .slice(1)
             .slice(
                 start * this.songsPerPage,
@@ -159,7 +158,7 @@ export class Forward extends Command {
             });
         }
         if (
-            this.music.getQueueSize() - 1 >
+            this.music.queue.size - 1 >
             start * this.songsPerPage + dropdownOptions.length
         ) {
             dropdownOptions.push({

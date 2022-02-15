@@ -27,6 +27,10 @@ export class EditQueue extends Command {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || !this.music.thread) return;
         this.music.editing = !this.music.editing;
-        this.music.actions.updateQueueMessageWithInteraction(interaction);
+        this.music.actions.updateQueueMessageWithInteraction(
+            interaction,
+            false,
+            true,
+        );
     }
 }

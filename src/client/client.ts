@@ -53,14 +53,10 @@ export class MusicClient extends Client {
     }
 
     public destroyMusic(guildId: string): void {
-        if (
-            !(guildId in this.guildMusic) ||
-            !this.guildMusic[guildId] ||
-            !this.user
-        )
-            return;
+        if (!this.getMusic(guildId) || !this.user) return;
         console.log('Destroy music in guild: ', guildId);
 
+        this.getMusic(guildId)?.timer.destroy();
         this.guildMusic[guildId].actions.leaveVoice();
         this.archiveMusicThread(this.guildMusic[guildId].thread, this);
         delete this.guildMusic[guildId];

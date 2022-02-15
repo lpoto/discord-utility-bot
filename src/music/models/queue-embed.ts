@@ -12,7 +12,7 @@ export class QueueEmbed extends MessageEmbed {
         });
         this.music = music;
         this.setDescription(this.buildDescription());
-        const queueSize: number = music.getQueueSize();
+        const queueSize: number = music.queue.size;
         this.setDescription(
             `${this.description}\n\n${this.music.translate([
                 'music',
@@ -28,15 +28,15 @@ export class QueueEmbed extends MessageEmbed {
 
     private buildDescription(): string {
         try {
-            const songs: string[] | undefined = this.music
-                .getAllQueueSongs()
-                .map((song, index) => {
+            const songs: string[] | undefined = this.music.queue.allSongs.map(
+                (song, index) => {
                     if (index > 0)
                         return `***${index}.***\u3000${song.toStringShortened(
                             this.music.expanded,
                         )}`;
                     return song.toStringWrapped50();
-                });
+                },
+            );
             if (!songs || songs.length < 1) return '';
             let headSong: string | undefined = songs.shift();
             if (!headSong) headSong = '';
@@ -67,7 +67,7 @@ export class QueueEmbed extends MessageEmbed {
     private songLoader(): string {
         if (!this.music.timer) return '';
         try {
-            const song: Song | null = this.music.getQueueHead();
+            const song: Song | null = this.music.queue.head;
             if (!song) return '';
             let leftTime: string = this.secondsToTimeString(
                 this.music.timer.time,

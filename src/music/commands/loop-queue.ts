@@ -21,7 +21,11 @@ export class LoopQueue extends Command {
         if (!interaction || !interaction.user || !this.music.thread) return;
         this.music.loopQueue = !this.music.loopQueue;
         if (this.music.loopQueue) this.music.loop = false;
-        this.music.actions.updateQueueMessageWithInteraction(interaction);
+        this.music.actions.updateQueueMessageWithInteraction(
+            interaction,
+            false,
+            true,
+        );
     }
 
     get button(): MessageButton | null {
@@ -29,7 +33,7 @@ export class LoopQueue extends Command {
             .setLabel(
                 this.translate(['music', 'commands', 'loopQueue', 'label']),
             )
-            .setDisabled(this.music.getQueueSize() < 1)
+            .setDisabled(this.music.queue.size < 1)
             .setStyle(
                 this.music.loopQueue
                     ? MessageButtonStyles.SUCCESS

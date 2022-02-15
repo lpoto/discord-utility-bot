@@ -1,4 +1,8 @@
-import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
+import {
+    AudioPlayer,
+    AudioPlayerStatus,
+    VoiceConnection,
+} from '@discordjs/voice';
 import {
     CommandInteraction,
     Guild,
@@ -8,7 +12,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { QueueEmbed, Song, Timer } from './models';
+import { QueueEmbed, Timer } from './models';
 import { AbstractMusic, MusicActivityOptions } from './models/abstract-music';
 import { SongQueue } from './models/song-queue';
 import { MusicActions } from './music-actions';
@@ -18,13 +22,13 @@ export class Music extends AbstractMusic {
     // should only be created from newMusic static method
     private musicClient: MusicClient;
     private musicGuild: Guild;
-    private queue: SongQueue | null;
+    private musicQueue: SongQueue;
     private musicThread: ThreadChannel | null;
     private musicCommands: MusicCommands;
     private player: AudioPlayer | null;
     private con: VoiceConnection | null;
     private offset: number;
-    private musicTimer: Timer | null;
+    private musicTimer: Timer;
 
     constructor(
         client: MusicClient,
@@ -32,7 +36,7 @@ export class Music extends AbstractMusic {
         options?: MusicActivityOptions,
     ) {
         super(options);
-        this.queue = null;
+        this.musicQueue = new SongQueue();
         this.musicThread = null;
         this.musicClient = client;
         this.musicGuild = guild;
@@ -40,7 +44,17 @@ export class Music extends AbstractMusic {
         this.con = null;
         this.player = null;
         this.offset = 0;
-        this.musicTimer = null;
+        this.musicTimer = new Timer(
+            () => {
+                this.actions.updateQueueMessage();
+            },
+            () => {
+                return (
+                    this.audioPlayer?.state.status ===
+                    AudioPlayerStatus.Playing
+                );
+            },
+        );
     }
 
     get client(): MusicClient {
@@ -55,12 +69,8 @@ export class Music extends AbstractMusic {
         this.con = value;
     }
 
-    get timer(): Timer | null {
+    get timer(): Timer {
         return this.musicTimer;
-    }
-
-    set timer(value: Timer | null) {
-        this.musicTimer = value;
     }
 
     get actions(): MusicActions {
@@ -95,55 +105,12 @@ export class Music extends AbstractMusic {
         return this.musicGuild.id;
     }
 
+    get queue(): SongQueue {
+        return this.musicQueue;
+    }
+
     get queueOffset(): number {
         return this.offset;
-    }
-
-    public getQueueHead(): Song | null {
-        if (!this.queue) return null;
-        return this.queue.head;
-    }
-
-    public getAllQueueSongs(): Song[] {
-        if (!this.queue) return [];
-        return this.queue.allSongs;
-    }
-
-    public getQueueSize(): number {
-        return this.queue ? this.queue.size : 0;
-    }
-
-    public async enqueue(name: string): Promise<void> {
-        if (!this.queue) return;
-        this.queueChanged = true;
-        await this.queue.enqueue(name);
-    }
-
-    public enqueueSong(song: Song): void {
-        if (!this.queue) return;
-        this.queueChanged = true;
-        this.queue.enqueueSong(song);
-    }
-
-    public async clearQueue(): Promise<void> {
-        await this.queue?.clear();
-    }
-
-    public forwardQueueByIndex(idx: number): void {
-        this.queue?.forwardByIndex(idx);
-    }
-
-    public removeFromQueueByIndex(idx: number): void {
-        this.queue?.removeByIndex(idx);
-    }
-
-    public async shuffleQueue(): Promise<void> {
-        return this.queue?.shuffle();
-    }
-
-    public dequeue(): Song | null {
-        if (!this.queue) return null;
-        return this.queue.dequeue();
     }
 
     public async incrementOffset(): Promise<void> {
@@ -210,7 +177,6 @@ export class Music extends AbstractMusic {
     ): Promise<boolean> {
         if (!interaction.channel || !interaction.guild) return false;
 
-        this.queue = new SongQueue();
         return this.actions.replyWithQueue(interaction);
     }
 
