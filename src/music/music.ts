@@ -29,6 +29,7 @@ export class Music extends AbstractMusic {
     private con: VoiceConnection | null;
     private offset: number;
     private musicTimer: Timer;
+    private shouldUpdate: boolean;
 
     constructor(
         client: MusicClient,
@@ -44,9 +45,11 @@ export class Music extends AbstractMusic {
         this.con = null;
         this.player = null;
         this.offset = 0;
+        this.shouldUpdate = true;
         this.musicTimer = new Timer(
             () => {
-                this.actions.updateQueueMessage();
+                if (!this.shouldUpdate) this.shouldUpdate = true;
+                else this.actions.updateQueueMessage(false, false, true);
             },
             () => {
                 return (
@@ -111,6 +114,14 @@ export class Music extends AbstractMusic {
 
     get queueOffset(): number {
         return this.offset;
+    }
+
+    get needsUpdate(): boolean {
+        return this.shouldUpdate;
+    }
+
+    set needsUpdate(value: boolean) {
+        this.shouldUpdate = value;
     }
 
     public async incrementOffset(): Promise<void> {

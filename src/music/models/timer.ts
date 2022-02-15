@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 export class Timer {
     private timer: number;
     private execute: () => void;
@@ -28,11 +30,13 @@ export class Timer {
     }
 
     private start(): void {
+        const id: string = randomUUID();
         const interval: NodeJS.Timer = setInterval(() => {
             if (this.dest) clearInterval(interval);
             if (this.check()) {
                 this.timer += 0.5;
                 if (this.timer % 3 === 0) this.execute();
+                if (this.timer % 300 === 0) console.log(id);
             }
         }, 500);
         interval.unref();

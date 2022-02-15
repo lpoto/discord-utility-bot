@@ -46,8 +46,7 @@ export class Play extends Command {
                 if (!resource) return;
                 this.music.timer.reset();
                 audioPlayer.play(resource);
-                if (!this.music.timer.isActive())
-                    this.music.actions.updateQueueMessage();
+                this.music.actions.updateQueueMessage(true);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         this.next(interaction);
