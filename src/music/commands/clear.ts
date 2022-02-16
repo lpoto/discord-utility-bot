@@ -81,8 +81,7 @@ export class Clear extends Command {
                     });
                     const x: NodeJS.Timeout = setTimeout(() => {
                         this.music.clearRequest = false;
-                        if (!this.music.timer.isActive)
-                            this.music.actions.updateQueueMessage();
+                        this.music.actions.updateQueueMessage();
                     }, 5000);
                     x.unref();
                 });

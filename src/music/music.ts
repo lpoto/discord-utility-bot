@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { LanguageKeyPath } from '../translation';
-import { QueueEmbed, Timer } from './models';
+import { QueueEmbed } from './models';
 import { AbstractMusic, MusicActivityOptions } from './models/abstract-music';
 import { SongQueue } from './models/song-queue';
 import { MusicActions } from './music-actions';
@@ -28,7 +28,6 @@ export class Music extends AbstractMusic {
     private player: AudioPlayer | null;
     private con: VoiceConnection | null;
     private offset: number;
-    private musicTimer: Timer;
     private shouldUpdate: boolean;
 
     constructor(
@@ -46,18 +45,6 @@ export class Music extends AbstractMusic {
         this.player = null;
         this.offset = 0;
         this.shouldUpdate = true;
-        this.musicTimer = new Timer(
-            () => {
-                if (!this.shouldUpdate) this.shouldUpdate = true;
-                else this.actions.updateQueueMessage(false, false, true);
-            },
-            () => {
-                return (
-                    this.audioPlayer?.state.status ===
-                    AudioPlayerStatus.Playing
-                );
-            },
-        );
     }
 
     get client(): MusicClient {
@@ -70,10 +57,6 @@ export class Music extends AbstractMusic {
 
     set connection(value: VoiceConnection | null) {
         this.con = value;
-    }
-
-    get timer(): Timer {
-        return this.musicTimer;
     }
 
     get actions(): MusicActions {

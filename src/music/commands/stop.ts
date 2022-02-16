@@ -71,8 +71,7 @@ export class Stop extends Command {
                     });
                     const x: NodeJS.Timeout = setTimeout(() => {
                         this.music.stopRequest = false;
-                        if (!this.music.timer?.isActive)
-                            this.music.actions.updateQueueMessage(false, true);
+                        this.music.actions.updateQueueMessage(false, true);
                     }, 5000);
                     x.unref();
                 });

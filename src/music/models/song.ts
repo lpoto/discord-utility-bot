@@ -10,7 +10,7 @@ export class Song {
     private url: string;
 
     constructor(songName: string, url: string, timeInSeconds: number) {
-        this.songName = songName;
+        this.songName = songName.replace(/\|/gi, '│').replace(/--/gi, '-');
         this.url = url;
         this.timeInSeconds = timeInSeconds;
     }
@@ -61,6 +61,7 @@ export class Song {
     }
 
     private static async findByUrl(url: string): Promise<Song[] | null> {
+        if (!url) return null;
         return ytpl(url)
             .then((playlist) => {
                 if (playlist && playlist.items && playlist.items.length > 0) {
@@ -90,6 +91,7 @@ export class Song {
     }
 
     private static async findBySearch(query: string): Promise<Song[] | null> {
+        if (!query) return null;
         return yt
             .search(query)
             .then(async (results) => {
@@ -109,14 +111,15 @@ export class Song {
     }
 
     private static isYoutubeUrl(url: string): boolean {
+        if (!url) return false;
         // eslint-disable-next-line max-len
-        const regExp =
-            /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
+        const regExp = /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
         const match: RegExpMatchArray | null = url.match(regExp);
         return match !== null && match !== undefined;
     }
 
     private static durationStringToSeconds(duration: string): number {
+        if (!duration) return 0;
         const hms: number[] = duration.split(':').map((t) => Number(t));
         if (hms.length === 3) return hms[0] * 3600 + hms[1] * 60 + hms[2];
         else if (hms.length === 2) return hms[0] * 60 + hms[1];

@@ -17,15 +17,18 @@ export class Play extends Command {
     }
 
     private next(interaction?: ButtonInteraction, retries: number = 0): void {
-        if (!this.music.loop && retries === 0) {
-            const s: Song | undefined | null = this.music.queue.dequeue();
-            if (s && this.music.loopQueue) this.music.queue.enqueueSong(s);
-            if (interaction)
-                this.music.actions.updateQueueMessageWithInteraction(
-                    interaction,
-                );
-            else this.music.actions.updateQueueMessage();
-        }
+        if (!this.music.loop && retries === 0)
+            try {
+                const s: Song | undefined | null = this.music.queue.dequeue();
+                if (s && this.music.loopQueue) this.music.queue.enqueueSong(s);
+                if (interaction)
+                    this.music.actions.updateQueueMessageWithInteraction(
+                        interaction,
+                    );
+                else this.music.actions.updateQueueMessage();
+            } catch (e) {
+                console.error(e);
+            }
         this.execute(interaction, retries);
     }
 
@@ -33,7 +36,10 @@ export class Play extends Command {
         interaction?: ButtonInteraction,
         retries: number = 0,
     ): Promise<void> {
-        if (!this.music.connection) return;
+
+        if (!this.music.connection) {
+            return;
+        }
         this.music.audioPlayer = null;
         const song: Song | null = this.music.queue.head;
         if (song === null) return;
@@ -44,15 +50,17 @@ export class Play extends Command {
         song.getResource()
             .then((resource) => {
                 if (!resource) return;
-                this.music.timer.reset();
                 audioPlayer.play(resource);
-                this.music.actions.updateQueueMessage(true);
+                this.music.actions.updateQueueMessage(false, false);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         this.next(interaction);
                     })
-                    .on('error', () => {
+                    .on('error', (e) => {
+                        console.log('Error when playing: ', e);
                         this.next(interaction, retries + 1);
+                    }).on('unsubscribe', () => {
+                        console.log('Unsubscribed audio player');
                     });
             })
             .catch((e) => {

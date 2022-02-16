@@ -37,7 +37,6 @@ export class Skip extends Command {
             if (s && this.music.loopQueue) this.music.queue.enqueueSong(s);
         }
         this.music.audioPlayer.stop();
-        this.music.timer.reset();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });

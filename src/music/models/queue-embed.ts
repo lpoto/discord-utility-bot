@@ -56,7 +56,7 @@ export class QueueEmbed extends MessageEmbed {
                 'curPlaying',
             ])}**`;
             description +=
-                spacer + headSong + '\n\n' + spacer + this.songLoader();
+                spacer + headSong + '\n\n' + spacer + this.durationString();
             return description;
         } catch (e) {
             console.error('Queue embed error: ', e);
@@ -64,36 +64,14 @@ export class QueueEmbed extends MessageEmbed {
         }
     }
 
-    private songLoader(): string {
-        if (!this.music.timer) return '';
-        try {
-            const song: Song | null = this.music.queue.head;
-            if (!song) return '';
-            let leftTime: string = this.secondsToTimeString(
-                this.music.timer.time,
-            );
-            let rightTime: string = this.secondsToTimeString(song.seconds);
-            let steps = 15;
-            if ((leftTime + rightTime).length > 7) steps = 14;
-            leftTime = `***${leftTime}***`;
-            rightTime = `***${rightTime}***`;
-            const x: number = Math.round(
-                (this.music.timer.time /
-                    (song.seconds > 0 ? song.seconds : 1)) *
-                    steps,
-            );
-            leftTime += '\u2000';
-            if (x > 1) {
-                leftTime += '—'.repeat(x - 1);
-            }
-            leftTime += '●';
-            steps = x === 0 ? steps - 1 : steps;
-            if (steps - x > 0) leftTime += '\u2000 ·'.repeat(steps - x);
-            return `${leftTime}\u2000${rightTime}`;
-        } catch (e) {
-            console.error('Song loader error: ', e);
-            return '';
-        }
+    private durationString(): string {
+        const song: Song | null = this.music.queue.head;
+        if (!song) return '';
+        return `${this.music.translate([
+            'music',
+            'queue',
+            'duration',
+        ])}: **${this.secondsToTimeString(song.seconds)}**`;
     }
 
     private secondsToTimeString(seconds: number) {

@@ -98,10 +98,14 @@ export class MusicActions {
     }
 
     public async songsToQueue(songNamesOrUrls: string[]): Promise<void> {
-        let idx = 0;
-        for (const song of songNamesOrUrls) {
-            await this.music.queue.enqueue(song);
-            this.music.needsUpdate = true;
+        for (
+            let i: number = 0;
+            i < Math.ceil(songNamesOrUrls.length / 5);
+            i++
+        ) {
+            for (let i2: number = i * 5; i2 < i * 5 + 5; i2++) {
+                await this.music.queue.enqueue(songNamesOrUrls[i2]);
+            }
             if (
                 this.music.audioPlayer?.state.status !==
                     AudioPlayerStatus.Playing &&
@@ -109,13 +113,8 @@ export class MusicActions {
                     AudioPlayerStatus.Paused
             ) {
                 this.music.commands.execute({ name: CommandName.PLAY });
-            }
-            idx++;
-            if (
-                !this.music.timer.isActive &&
-                (idx === songNamesOrUrls.length - 1 || idx % 5 === 0)
-            ) {
-                this.updateQueueMessage();
+            } else {
+                this.music.actions.updateQueueMessage(false, false);
             }
         }
     }
@@ -161,8 +160,6 @@ export class MusicActions {
         return interaction
             .update(this.getQueueOptions(embedOnly, componentsOnly))
             .then(() => {
-                if (!embedOnly && !componentsOnly)
-                    this.music.needsUpdate = false;
                 return true;
             })
             .catch((error) => {
@@ -174,7 +171,6 @@ export class MusicActions {
     public async updateQueueMessage(
         embedOnly?: boolean,
         componentsOnly?: boolean,
-        needsUpdate?: boolean,
     ): Promise<boolean> {
         if (!this.music.thread) return false;
         return this.music.thread
@@ -184,9 +180,6 @@ export class MusicActions {
                 return message
                     .edit(this.getQueueOptions(embedOnly, componentsOnly))
                     .then(() => {
-                        if (needsUpdate) this.music.needsUpdate = true;
-                        else if (!embedOnly && !componentsOnly)
-                            this.music.needsUpdate = false;
                         return true;
                     });
             })

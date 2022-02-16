@@ -33,7 +33,6 @@ export class Replay extends Command {
         )
             return;
         this.music.audioPlayer.stop();
-        this.music.timer.reset();
         this.music.commands.execute({
             name: CommandName.PLAY,
         });
