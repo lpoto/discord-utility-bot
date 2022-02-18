@@ -11,14 +11,15 @@ import {
     InteractionTypes,
     MessageButtonStyles,
 } from 'discord.js/typings/enums';
-import { MusicCommandOptions } from '.';
-import { Command, Song } from '../models';
+import { MusicClient } from '../client';
+import { Queue, Song } from '../entities';
+import { AbstractCommand } from '../models';
 
-export class Remove extends Command {
+export class Remove extends AbstractCommand {
     private songsPerPage: number;
 
-    constructor(options: MusicCommandOptions) {
-        super(options);
+    constructor(client: MusicClient, guildId: string) {
+        super(client, guildId);
         this.songsPerPage = 23;
     }
 
@@ -26,11 +27,12 @@ export class Remove extends Command {
         return this.translate(['music', 'commands', 'remove', 'description']);
     }
 
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
+    public button(queue: Queue): MessageButton | null {
+        if (!this.connection || !queue.options.includes('editing'))
+            return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'remove', 'label']))
-            .setDisabled(this.music.queue.size < 2)
+            .setDisabled(queue.songs.length < 2)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -39,12 +41,15 @@ export class Remove extends Command {
         if (
             !interaction ||
             !interaction.user ||
-            !this.music.thread ||
             interaction.deferred ||
             interaction.replied
         )
             return;
-        const removeDropdown: MessageSelectMenu | null = this.removeDropdown();
+        const queue: Queue | undefined = await this.getQueue();
+        if (!queue) return;
+
+        const removeDropdown: MessageSelectMenu | null =
+            this.removeDropdown(queue);
         if (!removeDropdown) return;
         interaction
             .reply({
@@ -62,14 +67,13 @@ export class Remove extends Command {
             })
             .then((message) => {
                 if (!(message instanceof Message) || !message.channel) return;
-                new InteractionCollector(this.music.client, {
+                new InteractionCollector(this.client, {
                     channel: message.channel,
                     interactionType: InteractionTypes.MESSAGE_COMPONENT,
-                }).on('collect', (interaction2) => {
+                }).on('collect', async (interaction2) => {
                     if (
                         !interaction2.isSelectMenu() ||
-                        interaction2.applicationId !==
-                            this.music.client.user?.id ||
+                        interaction2.applicationId !== this.client.user?.id ||
                         !interaction2.customId.startsWith(this.name) ||
                         interaction2.deferred ||
                         interaction2.replied ||
@@ -103,16 +107,12 @@ export class Remove extends Command {
                             continue;
                         }
                     }
-                    this.music.queue.removeIndexes(indexes);
-                    this.music.actions.updateQueueMessage();
+                    await queue.reload();
+                    await this.removeIndexes(queue, indexes);
+                    this.client.musicActions.updateQueueMessage(queue);
                     const removeDd: MessageSelectMenu | null =
-                        this.removeDropdown(start);
-                    if (
-                        !removeDd ||
-                        interaction2.deferred ||
-                        interaction2.replied
-                    )
-                        return;
+                        this.removeDropdown(queue, start);
+                    if (interaction2.deferred || interaction2.replied) return;
                     try {
                         interaction2.update({
                             content: this.translate([
@@ -121,9 +121,13 @@ export class Remove extends Command {
                                 'remove',
                                 'label',
                             ]),
-                            components: [
-                                new MessageActionRow().addComponents(removeDd),
-                            ],
+                            components: !removeDd
+                                ? []
+                                : [
+                                      new MessageActionRow().addComponents(
+                                          removeDd,
+                                      ),
+                                  ],
                         });
                     } catch (e) {
                         return;
@@ -135,24 +139,26 @@ export class Remove extends Command {
             });
     }
 
-    private removeDropdown(start: number = 0): MessageSelectMenu | null {
-        if (this.music.queue.size < 2) return null;
-        const songs: Song[] = this.music.queue.allSongs
-            .slice(1)
-            .slice(
-                start * this.songsPerPage,
-                start * this.songsPerPage + this.songsPerPage,
-            );
-        const dropdownOptions: MessageSelectOptionData[] = songs.map(
-            (s, index) => {
+    private removeDropdown(
+        queue: Queue,
+        start: number = 0,
+    ): MessageSelectMenu | null {
+        if (queue.songs.length < 2) return null;
+        const songs: Song[] = queue.songs.slice(
+            start * this.songsPerPage,
+            start * this.songsPerPage + this.songsPerPage,
+        );
+        const dropdownOptions: MessageSelectOptionData[] = songs
+            .map((s, index) => {
                 return {
                     label:
-                        `${index + start * this.songsPerPage + 1}.\u3000` +
+                        `${index + start * this.songsPerPage}.\u3000` +
                         s.toString(),
-                    value: (index + 1).toString(),
+                    value: index.toString(),
                 };
-            },
-        );
+            })
+            .slice(1);
+
         if (start > 0) {
             dropdownOptions.push({
                 label: '<<',
@@ -160,7 +166,7 @@ export class Remove extends Command {
             });
         }
         if (
-            this.music.queue.size - 1 >
+            queue.songs.length - 1 >
             start * this.songsPerPage + dropdownOptions.length
         ) {
             dropdownOptions.push({
@@ -184,5 +190,19 @@ export class Remove extends Command {
                     ? dropdownOptions.length
                     : this.songsPerPage,
         });
+    }
+
+    private async removeIndexes(
+        queue: Queue,
+        indexes: number[],
+    ): Promise<void> {
+        try {
+            queue.songs = queue.songs.filter(
+                (_, idx) => !indexes.includes(idx),
+            );
+            await queue.save();
+        } catch (e) {
+            console.error('Error removing songs from queue: ', e);
+        }
     }
 }

@@ -1,5 +1,5 @@
-import { Command } from '../models';
-import { Music } from '../music';
+import { AbstractCommand } from '../models/abstract-command';
+import { MusicClient } from '../client';
 import { Clear } from './clear';
 import { EditQueue } from './edit-queue';
 import { Expand } from './expand';
@@ -16,9 +16,11 @@ import { Replay } from './replay';
 import { Shuffle } from './shuffle';
 import { Skip } from './skip';
 import { Stop } from './stop';
+import { Join } from './join';
 
 export enum CommandName {
     PLAY,
+    JOIN,
     PAGE_BACKWARD,
     PAGE_FORWARD,
     LOOP,
@@ -36,50 +38,46 @@ export enum CommandName {
     HELP,
 }
 
-export interface MusicCommandOptionsPartial {
-    name: CommandName;
-    musicString?: string;
-    duration?: number;
-}
-
-export interface MusicCommandOptions extends MusicCommandOptionsPartial {
-    music: Music;
-}
-
-export function getCommand(options: MusicCommandOptions): Command | null {
-    switch (options.name) {
+export function getCommand(
+    name: CommandName,
+    guildId: string,
+    client: MusicClient,
+): AbstractCommand | null {
+    switch (name) {
         case CommandName.PLAY:
-            return new Play(options);
+            return new Play(client, guildId);
+        case CommandName.JOIN:
+            return new Join(client, guildId);
         case CommandName.PAGE_FORWARD:
-            return new PageForward(options);
+            return new PageForward(client, guildId);
         case CommandName.PAGE_BACKWARD:
-            return new PageBackward(options);
+            return new PageBackward(client, guildId);
         case CommandName.LOOP:
-            return new Loop(options);
+            return new Loop(client, guildId);
         case CommandName.LOOP_QUEUE:
-            return new LoopQueue(options);
+            return new LoopQueue(client, guildId);
         case CommandName.SKIP:
-            return new Skip(options);
-        case CommandName.REPLAY:
-            return new Replay(options);
-        case CommandName.STOP:
-            return new Stop(options);
+            return new Skip(client, guildId);
         case CommandName.PAUSE:
-            return new Pause(options);
+            return new Pause(client, guildId);
+        case CommandName.REPLAY:
+            return new Replay(client, guildId);
+        case CommandName.STOP:
+            return new Stop(client, guildId);
         case CommandName.EDIT:
-            return new EditQueue(options);
+            return new EditQueue(client, guildId);
         case CommandName.CLEAR:
-            return new Clear(options);
+            return new Clear(client, guildId);
         case CommandName.REMOVE:
-            return new Remove(options);
+            return new Remove(client, guildId);
         case CommandName.SONG_FORWARD:
-            return new Forward(options);
+            return new Forward(client, guildId);
         case CommandName.SHUFFLE:
-            return new Shuffle(options);
+            return new Shuffle(client, guildId);
         case CommandName.EXPAND:
-            return new Expand(options);
+            return new Expand(client, guildId);
         case CommandName.HELP:
-            return new Help(options);
+            return new Help(client, guildId);
         default:
             return null;
     }

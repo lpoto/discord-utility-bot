@@ -1,23 +1,28 @@
 import { REST } from '@discordjs/rest';
+import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { Routes } from 'discord-api-types/v9';
-import { Client, ThreadChannel } from 'discord.js';
+import { Client } from 'discord.js';
 import { MusicClientOptions } from '.';
-import { Music } from '../music';
+import { MusicActions } from '../music-actions';
 import { Translator, LanguageKeyPath } from '../translation';
 import { ClientEventHandler } from './client-event-handler';
 import { PermissionChecker } from './permission-checker';
 
 export class MusicClient extends Client {
-    private musicDictionary: { [guildId: string]: Music };
     private translator: Translator;
     private permissionChecker: PermissionChecker;
     private eventsHandler: ClientEventHandler;
+    private voiceConnections: { [guildId: string]: VoiceConnection };
+    private audioPlayers: { [guildId: string]: AudioPlayer };
+    private musicactions: MusicActions;
 
     constructor(options: MusicClientOptions) {
         super(options);
-        this.musicDictionary = {};
+        this.voiceConnections = {};
+        this.audioPlayers = {};
         this.translator = new Translator(options.defaultLanguage);
         this.eventsHandler = new ClientEventHandler(this);
+        this.musicactions = new MusicActions(this);
         this.permissionChecker = new PermissionChecker(
             options.clientVoicePermissions,
             options.clientTextPermissions,
@@ -30,8 +35,40 @@ export class MusicClient extends Client {
         return this.permissionChecker;
     }
 
-    get guildMusic(): { [guildId: string]: Music } {
-        return this.musicDictionary;
+    get musicActions() {
+        return this.musicactions;
+    }
+
+    public getVoiceConnection(guildId: string): VoiceConnection | null {
+        return guildId in this.voiceConnections
+            ? this.voiceConnections[guildId]
+            : null;
+    }
+
+    public setVoiceConnection(
+        guildId: string,
+        connection: VoiceConnection,
+    ): void {
+        this.voiceConnections[guildId] = connection;
+    }
+
+    public destroyVoiceConnection(guildId: string): void {
+        if (!(guildId in this.voiceConnections)) return;
+        this.voiceConnections[guildId].destroy();
+        delete this.voiceConnections[guildId];
+    }
+
+    public getAudioPlayer(guildId: string): AudioPlayer | null {
+        return guildId in this.audioPlayers
+            ? this.audioPlayers[guildId]
+            : null;
+    }
+
+    public setAudioPlayer(guildId: string, player: AudioPlayer | null): void {
+        if (!player) {
+            if (guildId in this.audioPlayers)
+                delete this.audioPlayers[guildId];
+        } else this.audioPlayers[guildId] = player;
     }
 
     public translate(guildId: string | null, keys: LanguageKeyPath): string {
@@ -52,34 +89,6 @@ export class MusicClient extends Client {
         };
     }
 
-    public destroyMusic(guildId: string): void {
-        if (!this.getMusic(guildId) || !this.user) return;
-        console.log('Destroy music in guild: ', guildId);
-
-        this.guildMusic[guildId].actions.leaveVoice();
-        this.archiveMusicThread(this.guildMusic[guildId].thread, this);
-        delete this.guildMusic[guildId];
-    }
-
-    /** Check if there is already an active music object in the server */
-    public musicExists(guildId: string): boolean {
-        if (guildId in this.musicDictionary) {
-            if (
-                !this.musicDictionary[guildId] ||
-                !this.musicDictionary[guildId].thread
-            ) {
-                delete this.musicDictionary[guildId];
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    public getMusic(guildId: string): Music | null {
-        return guildId in this.guildMusic ? this.guildMusic[guildId] : null;
-    }
-
     public setup(token: string): void {
         if (!this.user) return;
 
@@ -88,7 +97,6 @@ export class MusicClient extends Client {
         console.log('------------------------------------');
 
         this.registerSlashCommands(token);
-        this.archiveOldThreads();
         this.user.setActivity(
             '/' + this.translate(null, ['slashCommand', 'name']),
             {
@@ -123,80 +131,6 @@ export class MusicClient extends Client {
         }
     }
 
-    /** Archive old music threads that were not closed properly.*/
-    public archiveOldThreads(): void {
-        console.log('Archiving old music threads.');
-
-        for (const i of this.guilds.cache) {
-            i[1].channels.fetchActiveThreads().then((fetched) => {
-                if (!fetched || !fetched.threads || fetched.threads.size === 0)
-                    return;
-                for (const thread of fetched.threads)
-                    if (this.user) this.archiveMusicThread(thread[1], this);
-            });
-        }
-    }
-
-    /** Archive a music thread, delete it if possible and delete
-     * the queue message */
-    public async archiveMusicThread(
-        thread: ThreadChannel | null,
-        client: MusicClient,
-    ): Promise<void> {
-        if (
-            !thread ||
-            !thread.guild ||
-            !thread.guildId ||
-            !thread.parentId ||
-            thread.ownerId !== client.user?.id
-        )
-            return;
-        thread
-            .fetchStarterMessage()
-            .then(async (message) => {
-                if (!message || !message.deletable) return;
-                try {
-                    await message.delete();
-                } catch (error) {
-                    return error;
-                }
-            })
-            .catch((error) => {
-                this.handleError(error);
-            });
-        thread
-            .setName(
-                this.translate(thread.guildId, [
-                    'music',
-                    'thread',
-                    'archivedName',
-                ]),
-            )
-            .then(() => {
-                thread
-                    .setArchived()
-                    .then(() => {
-                        console.log(`Archived thread: ${thread.id}`);
-                    })
-                    .catch(() => {
-                        console.log('Could not archive the thread!');
-                    })
-                    .then(() => {
-                        thread
-                            .delete()
-                            .then(() => {
-                                console.log(`Deleted thread: ${thread.id}`);
-                            })
-                            .catch((error) => {
-                                this.handleError(error);
-                            });
-                    })
-                    .catch(() => {
-                        console.log('Could not delete the thread!');
-                    });
-            });
-    }
-
     /** Register a new music command that initializes the music in the server */
     public async registerSlashCommand(
         guildId: string,
@@ -215,6 +149,10 @@ export class MusicClient extends Client {
         } catch (e) {
             return;
         }
+    }
+
+    public async destroyMusic(guildId: string): Promise<void> {
+        return this.eventsHandler.destroyMusic(guildId);
     }
 
     /** Subscribe to required client events for the music client and login */

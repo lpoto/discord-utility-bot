@@ -3,26 +3,24 @@ import {
     MessageActionRow,
     MessageButton,
 } from 'discord.js';
-import {
-    CommandName,
-    getCommand,
-    MusicCommandOptions,
-    MusicCommandOptionsPartial,
-} from './commands';
-import { Music } from '../music';
-import { Command } from './models/command';
+import { CommandName, getCommand } from './commands';
+import { MusicClient } from './client';
+import { AbstractCommand } from './models';
+import { Queue } from './entities';
 
 export class MusicCommands {
-    private music: Music;
+    private client: MusicClient;
 
-    constructor(music: Music) {
-        this.music = music;
+    constructor(client: MusicClient) {
+        this.client = client;
     }
 
-    public async execute(options: MusicCommandOptionsPartial): Promise<void> {
-        const options2: MusicCommandOptions = options as MusicCommandOptions;
-        options2.music = this.music;
-        const command: Command | null = getCommand(options2);
+    public async execute(name: CommandName, guildId: string): Promise<void> {
+        const command: AbstractCommand | null = getCommand(
+            name,
+            guildId,
+            this.client,
+        );
         if (!command) return;
         try {
             command.execute();
@@ -34,32 +32,42 @@ export class MusicCommands {
     public async executeFromInteraction(
         interaction: ButtonInteraction,
     ): Promise<void> {
+        if (!interaction.guildId || !this.client.user) return;
+        const queue: Queue | undefined = await Queue.findOne({
+            guildId: interaction.guildId,
+            clientId: this.client.user.id,
+        });
+        if (!queue) return;
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: Command | null = getCommand({
-                name: i,
-                music: this.music,
-            });
+            const command: AbstractCommand | null = getCommand(
+                i,
+                interaction.guildId,
+                this.client,
+            );
             if (!command) continue;
-            const button: MessageButton | null = command.button;
+            const button: MessageButton | null = command.button2(queue);
             if (!button) continue;
             if (button.label && interaction.component.label === button.label)
                 try {
                     return command.execute(interaction);
                 } catch (e) {
-                    console.log('Error when executing command');
+                    console.error('Error when executing command');
                 }
         }
     }
 
-    public getCommandsActionRow(): MessageActionRow[] {
+    public getCommandsActionRow(queue: Queue): MessageActionRow[] {
         const buttons: MessageButton[] = [];
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: Command | null = getCommand({
-                name: i,
-                music: this.music,
-            });
-            if (!command || !command.button) continue;
-            buttons.push(command.button);
+            const command: AbstractCommand | null = getCommand(
+                i,
+                queue.guildId,
+                this.client,
+            );
+            const button: MessageButton | null | undefined =
+                command?.button(queue);
+            if (!command || !button) continue;
+            buttons.push(button);
         }
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
@@ -76,16 +84,18 @@ export class MusicCommands {
             }
             rows[idx].addComponents(buttons[i]);
         }
+        if (rows[0].components.length === 0) return [];
         return rows;
     }
 
-    public getAllDescriptions(): string[] {
+    public getAllDescriptions(guildId: string): string[] {
         const descriptions: string[] = [];
         for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: Command | null = getCommand({
-                name: i,
-                music: this.music,
-            });
+            const command: AbstractCommand | null = getCommand(
+                i,
+                guildId,
+                this.client,
+            );
             if (!command || !command.description) continue;
             descriptions.push(command.description);
         }

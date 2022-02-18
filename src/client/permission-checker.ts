@@ -11,7 +11,6 @@ import {
     VoiceBasedChannel,
     VoiceChannel,
 } from 'discord.js';
-import { Music } from '../music';
 import { MusicClient } from './client';
 
 export class PermissionChecker {
@@ -70,7 +69,6 @@ export class PermissionChecker {
 
     public validateMemberVoice(
         interaction: CommandInteraction | ButtonInteraction,
-        music: Music | null = null,
     ): boolean {
         if (
             !interaction.guild ||
@@ -80,20 +78,16 @@ export class PermissionChecker {
             !(interaction.member instanceof GuildMember)
         )
             return false;
-        return this.validateMember(interaction.member, music, interaction);
+        return this.validateMember(interaction.member, interaction);
     }
 
-    public validateMemberVoiceFromThread(
-        message: Message,
-        music: Music | null = null,
-    ): boolean {
+    public validateMemberVoiceFromThread(message: Message): boolean {
         if (!message.guild || !message.member) return false;
-        return this.validateMember(message.member, music);
+        return this.validateMember(message.member);
     }
 
     private validateMember(
         member: GuildMember,
-        music: Music | null,
         interaction?: CommandInteraction | ButtonInteraction,
     ): boolean {
         if (!member.voice.channel) {
@@ -134,7 +128,6 @@ export class PermissionChecker {
                 });
             return false;
         }
-        if (!music) return true;
         if (
             member.guild.me?.voice.channel &&
             member.guild.me?.voice.channel !== member.voice.channel

@@ -1,0 +1,131 @@
+import {
+    AudioPlayer,
+    AudioPlayerStatus,
+    createAudioPlayer,
+    VoiceConnection,
+} from '@discordjs/voice';
+import { ButtonInteraction } from 'discord.js';
+import { MusicClient } from '../client';
+import { Queue, Song } from '../entities';
+import { AbstractCommand } from '../models';
+
+export class Play extends AbstractCommand {
+    constructor(client: MusicClient, guildId: string) {
+        super(client, guildId);
+    }
+
+    get description(): string | null {
+        return this.translate(['music', 'commands', 'play', 'description']);
+    }
+
+    private async next(
+        queue: Queue,
+        interaction?: ButtonInteraction,
+        retries: number = 0,
+        replay?: boolean,
+    ): Promise<void> {
+        if (!replay && !queue.options.includes('loop') && retries === 0)
+            try {
+                const s: Song | undefined = queue.songs.shift();
+                if (s) {
+                    await s.remove();
+                    if (queue.options.includes('loopQueue')) {
+                        queue.songs.push(
+                            Song.create({
+                                queue: queue,
+                                name: s.name,
+                                url: s.url,
+                                durationString: s.durationString,
+                                durationSeconds: s.durationSeconds,
+                            }),
+                        );
+                    }
+                }
+                queue = await queue.save();
+                if (interaction)
+                    this.client.musicActions.updateQueueMessageWithInteraction(
+                        interaction,
+                        queue,
+                    );
+                else this.client.musicActions.updateQueueMessage(queue);
+            } catch (e) {
+                console.error(e);
+            }
+        this.execute(interaction, retries);
+    }
+
+    public async execute(
+        interaction?: ButtonInteraction,
+        retries: number = 0,
+    ): Promise<void> {
+        if (!this.client.user) return;
+
+        const connection: VoiceConnection | null =
+            this.client.getVoiceConnection(this.guildId);
+        if (!connection) return;
+
+        const queue: Queue | undefined = await Queue.findOne({
+            clientId: this.client.user.id,
+            guildId: this.guildId,
+        });
+
+        if (!queue || queue.songs.length < 1) return;
+
+        const song: Song = queue.songs[0];
+
+        let audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
+            queue.guildId,
+        );
+        if (!audioPlayer) audioPlayer = createAudioPlayer();
+
+        if (
+            audioPlayer.state.status === AudioPlayerStatus.Playing ||
+            audioPlayer.state.status === AudioPlayerStatus.Paused
+        )
+            return;
+
+        this.client.setAudioPlayer(queue.guildId, audioPlayer);
+        connection.removeAllListeners();
+        connection.subscribe(audioPlayer);
+
+        song.getResource()
+            .then((resource) => {
+                if (!resource || !audioPlayer) return;
+                audioPlayer.play(resource);
+                this.client.musicActions.updateQueueMessage(queue);
+                audioPlayer
+                    .on(AudioPlayerStatus.Idle, () => {
+                        audioPlayer?.removeAllListeners();
+                        this.next(queue, interaction);
+                    })
+                    .on('error', (e) => {
+                        audioPlayer?.removeAllListeners();
+                        console.log('Error when playing: ', e);
+                        this.next(queue, interaction, retries + 1);
+                    })
+                    .on('unsubscribe', () => {
+                        audioPlayer?.removeAllListeners();
+                        console.log('Unsubscribed audio player');
+                    })
+                    .on('debug', (message) => {
+                        if (message === 'replay' || message === 'skip') {
+                            audioPlayer?.removeAllListeners();
+                            audioPlayer?.stop();
+                            this.client.setAudioPlayer(queue.guildId, null);
+                            this.next(
+                                queue,
+                                interaction,
+                                0,
+                                message === 'replay',
+                            );
+                        }
+                    });
+            })
+            .catch((e) => {
+                console.error('Error when creating audio player: ', e);
+                this.client.setAudioPlayer(queue.guildId, null);
+                if (retries < 5) this.next(queue, interaction, retries + 1);
+                return;
+            });
+    }
+}

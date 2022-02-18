@@ -1,0 +1,115 @@
+import {
+    ButtonInteraction,
+    InteractionWebhook,
+    MessageAttachment,
+    MessageButton,
+} from 'discord.js';
+import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { MusicClient } from '../client';
+import { Queue } from '../entities';
+import { AbstractCommand } from '../models';
+
+export class Stop extends AbstractCommand {
+    constructor(client: MusicClient, guildId: string) {
+        super(client, guildId);
+    }
+
+    get description(): string {
+        return this.translate(['music', 'commands', 'stop', 'description']);
+    }
+
+    public button(queue: Queue): MessageButton | null {
+        if (!this.connection) return null;
+        return new MessageButton()
+            .setLabel(this.translate(['music', 'commands', 'stop', 'label']))
+            .setStyle(
+                queue.options.includes('stopRequest')
+                    ? MessageButtonStyles.PRIMARY
+                    : MessageButtonStyles.SECONDARY,
+            )
+            .setCustomId(this.id);
+    }
+
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
+        if (
+            !interaction ||
+            !interaction.component ||
+            !interaction.user ||
+            interaction.deferred ||
+            interaction.replied
+        )
+            return;
+        const queue: Queue | undefined = await this.getQueue();
+        if (!queue) return;
+        if (interaction.component.style === 'PRIMARY') {
+            if (queue.songs.length > 0) {
+                const attachment = new MessageAttachment(
+                    Buffer.from(
+                        queue.songs
+                            .map(
+                                (s) =>
+                                    `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
+                            )
+                            .join('\n'),
+                        'utf-8',
+                    ),
+                    'removed-songs.txt',
+                );
+                interaction.user.send({
+                    content: this.translate([
+                        'music',
+                        'commands',
+                        'stop',
+                        'reply',
+                    ]),
+                    files: [attachment],
+                });
+            }
+            this.client.destroyMusic(this.guildId);
+        } else {
+            if (!queue.options.includes('stopRequest'))
+                queue.options.push('stopRequest');
+            await queue.save();
+            const webhook: InteractionWebhook = interaction.webhook;
+            this.client.musicActions
+                .updateQueueMessageWithInteraction(
+                    interaction,
+                    queue,
+                    false,
+                    true,
+                )
+                .then((result) => {
+                    if (!result) return;
+                    webhook.send({
+                        content: this.translate([
+                            'music',
+                            'commands',
+                            'stop',
+                            'confirm',
+                        ]),
+                        ephemeral: true,
+                    });
+                    const x: NodeJS.Timeout = setTimeout(async () => {
+                        queue
+                            .reload()
+                            .then(() => {
+                                queue.options = queue.options.filter(
+                                    (o) => o !== 'stopRequest',
+                                );
+                                queue.save().then(() => {
+                                    this.client.musicActions.updateQueueMessage(
+                                        queue,
+                                        false,
+                                        true,
+                                    );
+                                });
+                            })
+                            .catch(() => {
+                                return;
+                            });
+                    }, 5000);
+                    x.unref();
+                });
+        }
+    }
+}

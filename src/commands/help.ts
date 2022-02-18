@@ -1,24 +1,19 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { MusicCommandOptions } from '.';
-import { Command } from '../models';
+import { MusicClient } from '../client';
+import { Queue } from '../entities';
+import { AbstractCommand } from '../models';
 
-export class Help extends Command {
-    constructor(options: MusicCommandOptions) {
-        super(options);
+export class Help extends AbstractCommand {
+    constructor(client: MusicClient, guildId: string) {
+        super(client, guildId);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !interaction.user ||
-            interaction.replied ||
-            !this.music.thread
-        )
-            return;
+        if (!interaction || !interaction.user || interaction.replied) return;
 
         const descriptions: string[] =
-            this.music.commands.getAllDescriptions();
+            this.client.musicActions.commands.getAllDescriptions(this.guildId);
         if (this.description?.length === 0) {
             interaction.reply({
                 content: this.translate(['help']),
@@ -36,8 +31,8 @@ export class Help extends Command {
         }
     }
 
-    get button(): MessageButton | null {
-        if (!this.music.editing) return null;
+    public button(queue: Queue): MessageButton | null {
+        if (!queue.options.includes('editing')) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'help', 'label']))
             .setDisabled(false)
