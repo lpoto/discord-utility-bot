@@ -6,6 +6,7 @@ def get_required_database_env_variables():
     info = {
             'database': 'MYSQL_DATABASE',
             'host': 'MYSQL_HOST',
+            'port': 'MYSQL_PORT',
             'user': 'MYSQL_USER',
             'password': 'MYSQL_PASSWORD'
             }

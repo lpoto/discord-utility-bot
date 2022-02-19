@@ -41,7 +41,7 @@ class Messages:
             self, id: int, *, info: bool = False
     ) -> dict or None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(dictionary=True)
+        cursor = cnx.cursor()
         cursor.execute(f'SELECT * FROM message WHERE id = {id}')
         msg = cursor.fetchone()
         cursor.close()
@@ -56,7 +56,7 @@ class Messages:
             self, id: int, *, name: str = None, user_id: int = None
     ) -> list:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(dictionary=True)
+        cursor = cnx.cursor()
         query = f'SELECT * FROM message_info WHERE message_id = {id}'
         if name is not None:
             query += f' AND name = "{name}"'
@@ -70,7 +70,7 @@ class Messages:
 
     async def get_messages_by_info(self, *, name: str) -> list:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(dictionary=True)
+        cursor = cnx.cursor()
         cursor.execute(
             'SELECT m.id, m.channel_id, m.author_id, m.type, ' +
             'i.name as info_name, i.info, i.user_id as info_user_id ' +
@@ -91,7 +91,7 @@ class Messages:
             'NULL' if not type else f'"{type}"',
             'NULL' if not author_id else author_id)
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(f'INSERT INTO message({keys}) VALUES ({values})')
         if info is not None and len(info) > 0:
             cursor.execute('INSERT INTO message_info ({}) VALUES {}'.format(
@@ -106,7 +106,7 @@ class Messages:
 
     async def update_message_author(self, id, *, author_id):
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(
             'UPDATE message SET author_id = {} WHERE id = {}'.format(
                 'NULL' if not author_id else author_id, id))
@@ -116,7 +116,7 @@ class Messages:
 
     async def delete_message(self, id: int) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(f'DELETE FROM message WHERE id = {id}')
         cnx.commit()
         cursor.close()
@@ -131,7 +131,7 @@ class Messages:
             'NULL' if not info else f'"{info}"',
             "NULL" if not user_id else user_id)
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(f'INSERT INTO message_info({keys}) VALUES ({values})')
         cnx.commit()
         cursor.close()
@@ -141,7 +141,7 @@ class Messages:
             self, id: int, *, name: str, user_id: int = None
     ) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute('{} {} {}'.format(
             'DELETE FROM message_info WHERE ',
             f'message_id = {id} AND name = "{name}" ',

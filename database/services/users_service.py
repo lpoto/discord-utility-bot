@@ -34,7 +34,7 @@ class Users:
 
     async def get_info(self, *, guild_id: int, name: str) -> dict:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(dictionary=True)
+        cursor = cnx.cursor()
         cursor.execute('{} {}'.format(
             'SELECT * FROM user_info WHERE ',
             f'guild_id = {guild_id} AND name = "{name}"'))
@@ -47,7 +47,7 @@ class Users:
             self, id: int, *, guild_id: int, name: str, info: str
     ) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute('INSERT INTO user_info ({}) VALUES ({})'.format(
             'user_id, guild_id, name, info',
             f'{id}, {guild_id}, "{name}", "{info}"'))
@@ -59,7 +59,7 @@ class Users:
             self, id: int, *, guild_id: int, name: str, info: str
     ) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute('UPDATE user_info set info = "{}" {}'.format(
             info,
             'WHERE user_id = {} AND guild_id = {} and name = "{}"'.format(
@@ -72,7 +72,7 @@ class Users:
             self, id: int, *, guild_id: int, name: str
     ) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute('DELETE FROM user_info {}'.format(
             'WHERE user_id = {} AND guild_id = {} and name = "{}"'.format(
                 id, guild_id, name)))

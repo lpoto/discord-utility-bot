@@ -48,7 +48,7 @@ class Config:
             self, *, guild_id: int, name: str, info: list
     ) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute('{} {}'.format(
             'INSERT INTO option (guild_id, name) ',
             f'VALUES ({guild_id}, "{name}")'))
@@ -68,7 +68,7 @@ class Config:
 
     async def delete_option(self, *, guild_id: int, name: str) -> None:
         cnx = self.database.connection_object
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(
             'DELETE FROM option WHERE guild_id = {} AND name = "{}"'
             .format(guild_id, name))

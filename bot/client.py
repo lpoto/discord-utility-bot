@@ -601,7 +601,7 @@ class UtilityClient(nextcord.Client):
             '{}({})\n{}'.format(str(ex_type.__name__), str(ex), 56 * '-')
         ]
         if str(ex) == 'MySQL Connection not available.':
-            await self.database.connect_database()
+            await self.database.connect_database(self.database.info)
             return
         for i in x:
             if root_dir in i and 'super()._run_event' not in i:

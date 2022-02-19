@@ -1,6 +1,5 @@
 import logging
 import nextcord
-from dotenv import load_dotenv
 
 from bot.utils import get_required_bot_env_variables
 from bot import UtilityClient, __version__
@@ -37,7 +36,6 @@ def run_the_client(database_info, token, version, bot_logging, db_logging):
     client.run(token=token, reconnect=False)
 
 
-load_dotenv()
 set_default_logging()
 DISCORD_TOKEN, CLIENT_LOGGING = get_required_bot_env_variables()
 DATABASE_INFO, DB_LOGGING = get_required_database_env_variables()

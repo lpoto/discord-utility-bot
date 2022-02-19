@@ -1,5 +1,5 @@
 import logging
-from mysql.connector import pooling, Error, PoolError
+import pymysql
 
 import database.services as services
 
@@ -8,7 +8,7 @@ class MySQL:
     def __init__(self, info, log_level):
         self.logger = logging.getLogger('database')
         self.logger.setLevel(logging.INFO if not log_level else int(log_level))
-        self.connection_pool = None
+        self.info = info
         if not self.connect_database(info):
             return
 
@@ -30,11 +30,16 @@ class MySQL:
         self.logger.debug(msg='Database ready!\n')
 
     @property
-    def connection_object(self) -> None or pooling.PooledMySQLConnection:
+    def connection_object(self):
         try:
-            if self.connection_pool is not None:
-                return self.connection_pool.get_connection()
-        except PoolError as err:
+            return pymysql.connect(
+                host=self.info['host'],
+                user=self.info['user'],
+                database=self.info['database'],
+                password=self.info['password'],
+                cursorclass=pymysql.cursors.DictCursor
+            )
+        except pymysql.Error as err:
             self.logger.warning(
                 f'Error getting connection object:\n{str(err)}')
 
@@ -44,18 +49,18 @@ class MySQL:
         # to a database
         try:
             cnx = self.connection_object
-            if cnx is None:
+            if not cnx:
                 return False
-            c = cnx.is_connected()
             cnx.close()
-            return c
+            return True
         except Exception as err:
-            self.logger.error(str(err))
+            self.logger.error('Error checking db connection' + str(err))
             return False
 
     def connect_database(self, info: dict) -> bool:
 
         self.logger.debug(msg='Connecting database\n')
+        self.logger.debug(info)
 
         cnx = None
         cursor = None
@@ -65,17 +70,10 @@ class MySQL:
         try:
             # create a pool as the bot is accessing the
             # database quite often
-            self.connection_pool = pooling.MySQLConnectionPool(
-                pool_name='pool',
-                pool_size=5,
-                pool_reset_session=True,
-                host=info['host'],
-                database=info['database'],
-                user=info['user'],
-                password=info['password'])
-
             cnx = self.connection_object
-            if cnx is None or not cnx.is_connected():
+
+            self.logger.debug(dir(cnx))
+            if not cnx:
                 self.logger.warn(
                     msg='Failed to establish database connection.')
                 return False
@@ -85,10 +83,11 @@ class MySQL:
 
             self.logger.info(msg=f'Database: {result}')
 
-        except Error as err:
-            if err.errno == 2006:
+        except pymysql.Error as e:
+            if hasattr(e, 'errno') and e.errno == 2006:
                 return self.connect_database(info)
-            self.logger.error(msg=str(err))
+            self.logger.error(
+                msg='Error when connecting database' + str(e))
         finally:
             if cursor:
                 cursor.close()
@@ -146,6 +145,7 @@ class MySQL:
             cnx.close()
             self.logger.debug(msg='Service ready!')
             return True
-        except Exception as err:
-            self.logger.warning(f'Error creating tables: {str(err)}')
+        except Exception as e:
+            self.logger.error(
+                msg='Error when creating tables' + str(e))
             return False

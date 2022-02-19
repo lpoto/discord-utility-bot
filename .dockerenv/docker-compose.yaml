@@ -1,0 +1,42 @@
+version: '3'
+services:
+
+  client:
+    build:
+      context: ..
+      dockerfile: .dockerenv/Dockerfile
+    restart: unless-stopped
+    container_name: discord-utility-client
+    environment:
+      DISCORD_TOKEN: your_token
+      # Logging levels: 50 (CRITICAL), 40 (ERROR), 30 (WARNING), 20 (INFO), 10 (DEBUG)
+      CLIENT_LOGGING: 10
+      MYSQL_LOGGING: 10
+      MYSQL_HOST: mysqldb
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: discord_utility_bot
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    depends_on:
+      - mysqldb
+
+  mysqldb:
+    image: mysql:8
+    container_name: mysqldb
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    expose:
+      - 3306
+    environment:
+      MYSQL_DATABASE: discord_utility_bot
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
+    driver: local
+
