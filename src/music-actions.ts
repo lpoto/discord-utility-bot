@@ -60,7 +60,7 @@ export class MusicActions {
                     await queue.reload();
                 }
                 idx++;
-                if (idx % 10 === 0 && idx < songNames.length - 8) {
+                if (idx % 10 === 0 && idx < songNames.length - 1) {
                     this.updateQueueMessage(queue);
                 }
                 if (
@@ -119,37 +119,10 @@ export class MusicActions {
                 adapterCreator: guild.voiceAdapterCreator,
                 selfMute: false,
                 selfDeaf: true,
-            })
-                .on('stateChange', (statePrev, stateAfter) => {
-                    if (statePrev.status === stateAfter.status) return;
-
-                    console.log(
-                        `State change ${guild.id}: ${statePrev.status} -> ${stateAfter.status}`,
-                    );
-
-                    if (stateAfter.status === 'disconnected')
-                        setTimeout(() => {
-                            if (
-                                this.client.getVoiceConnection(guild.id)?.state
-                                    .status === 'disconnected' &&
-                                this.client.user
-                            ) {
-                                this.client.destroyVoiceConnection(guild.id);
-                                Queue.findOne({
-                                    guildId: guild.id,
-                                    clientId: this.client.user.id,
-                                }).then((queue) => {
-                                    if (!queue) return;
-                                    this.updateQueueMessage(queue);
-                                });
-                            }
-                        }, 1000);
-                })
-                .on('error', (error) => {
-                    this.client.handleError(error);
-                    if (retry < 5)
-                        this.joinVoice(interaction, message, retry + 1);
-                }),
+            }).on('error', (error) => {
+                this.client.handleError(error);
+                if (retry < 5) this.joinVoice(interaction, message, retry + 1);
+            }),
         );
         return true;
     }
@@ -260,12 +233,22 @@ export class MusicActions {
         embedOnly?: boolean,
         componentsOnly?: boolean,
     ): InteractionReplyOptions {
+        if (embedOnly) {
+            return {
+                embeds: [new QueueEmbed(this.client, queue)],
+            };
+        }
         const components: MessageActionRow[] = [];
         let commandActionRow: MessageActionRow[] = [];
         commandActionRow = commandActionRow.concat(
             this.musicCommands.getCommandsActionRow(queue),
         );
         for (const row of commandActionRow) components.push(row);
+        if (componentsOnly) {
+            return {
+                components: components,
+            };
+        }
         return {
             embeds: [new QueueEmbed(this.client, queue)],
             components: components,

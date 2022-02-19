@@ -8,3 +8,6 @@ dist
 *.js
 
 node_modules
+
+docker-compose.yaml
+!.dockerenv/docker-compose.yaml

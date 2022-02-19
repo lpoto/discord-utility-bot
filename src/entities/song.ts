@@ -35,11 +35,13 @@ export class Song extends BaseEntity {
         const name: string = this.name;
         if (!expanded && name.length > 46)
             return name.substring(0, 43) + '...';
+        if (expanded)
+            return this.toString(`,\u3000**${this.durationString}**`);
         return this.toString();
     }
 
-    public toString(): string {
-        const name: string = this.name;
+    public toString(add?: string): string {
+        const name: string = add ? this.name + add : this.name;
         if (name.length < 47) return name;
         return name.replace(
             /(?![^\n]{1,43}$)([^\n]{1,43})\s/g,

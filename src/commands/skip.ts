@@ -60,15 +60,26 @@ export class Skip extends AbstractCommand {
             }
         }
 
-        this.client.musicActions.commands.execute(
-            CommandName.PLAY,
-            this.guildId,
-        );
-        if (interaction && !interaction.deferred && !interaction.replied)
-            try {
-                interaction.deferUpdate();
-            } catch (e) {
-                return;
-            }
+        if (queue.songs.length > 0) {
+            this.client.musicActions.commands.execute(
+                CommandName.PLAY,
+                this.guildId,
+            );
+            if (interaction && !interaction.deferred && !interaction.replied)
+                try {
+                    interaction.deferUpdate();
+                } catch (e) {
+                    return;
+                }
+        } else if (
+            interaction &&
+            !interaction.deferred &&
+            !interaction.replied
+        ) {
+            this.client.musicActions.updateQueueMessageWithInteraction(
+                interaction,
+                queue,
+            );
+        }
     }
 }

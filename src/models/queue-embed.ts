@@ -21,6 +21,7 @@ export class QueueEmbed extends MessageEmbed {
                     'footer',
                 ]),
             },
+            color: queue.color,
         });
         this.queue = queue;
         this.client = client;

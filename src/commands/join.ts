@@ -16,7 +16,7 @@ export class Join extends AbstractCommand {
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (this.connection || queue.songs.length < 1) return null;
+        if (this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'join', 'label']))
             .setDisabled(false)
@@ -33,9 +33,6 @@ export class Join extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (interaction && !interaction.deferred && !interaction.replied)
-            interaction.deferUpdate();
-
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         const audioPlayer: AudioPlayer | null = this.audioPlayer;
@@ -45,10 +42,23 @@ export class Join extends AbstractCommand {
                 audioPlayer.state.status === AudioPlayerStatus.Playing)
         )
             return;
-        if (queue.songs.length > 0)
+        if (queue.songs.length > 0) {
+            if (interaction && !interaction.deferred && !interaction.replied)
+                interaction.deferUpdate();
+
             this.client.musicActions.commands.execute(
                 CommandName.PLAY,
                 this.guildId,
             );
+        } else if (
+            interaction &&
+            !interaction.deferred &&
+            !interaction.replied
+        ) {
+            this.client.musicActions.updateQueueMessageWithInteraction(
+                interaction,
+                queue,
+            );
+        }
     }
 }

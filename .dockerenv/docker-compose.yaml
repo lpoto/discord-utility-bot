@@ -6,36 +6,29 @@ services:
     container_name: postgresdb
     restart: unless-stopped
     ports:
-      - 5432:5432
-    expose:
-      - 5432
+      - 5433:5432
     environment:
       POSTGRES_DB: discord_music_bot
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password
     volumes:
       - db-data:/var/lib/postgresql/data
 
   client:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: .dockerenv/Dockerfile
     container_name: discord-music-client
     restart: unless-stopped
     environment:
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_TOKEN: your-token
+      POSTGRES_DB: discord_music_bot
+      POSTGRES_USER: postgres_user
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_HOST: postgresdb
+      POSTGRES_PORT: 5432
     depends_on:
       - postgresdb
-
-# client2:
-#   build:
-#     context: .
-#     dockerfile: Dockerfile
-    container_name: discord-music-client-2
-#   restart: unless-stopped
-#   environment:
-#     DISCORD_TOKEN: ${DISCORD_TOKEN_2}
-# 
 
 volumes:
   db-data:

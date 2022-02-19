@@ -56,12 +56,12 @@
                 "description": "`<`: Show the previous page of songs in the queue."
             },
             "skip": {
-                "label": "⏩",
-                "description": "`⏩`: Skip the currently playing song."
+                "label": ">>",
+                "description": "`>>`: Skip the currently playing song."
             },
             "pause": {
-                "label": "⏸",
-                "description": "`⏸`: Pause the currently playing song."
+                "label": "ll",
+                "description": "`ll`: Pause the currently playing song."
             },
             "stop": {
                 "label": "◼",

@@ -8,6 +8,7 @@ import {
     MessageButton,
     TextChannel,
     ThreadChannel,
+    VoiceState,
 } from 'discord.js';
 import { Queue } from '../entities';
 import { LanguageKeyPath } from '../translation';
@@ -46,6 +47,13 @@ export class ClientEventHandler {
             });
             this.client.setup(token);
         });
+
+        this.client.on(
+            'voiceStateUpdate',
+            (voiceStatePrev, voiceStateAfter) => {
+                this.handleVoiceStateUpdate(voiceStatePrev, voiceStateAfter);
+            },
+        );
 
         this.client.on('error', (error: Error) => {
             this.handleError(error);
@@ -92,6 +100,26 @@ export class ClientEventHandler {
             return;
         }
         console.error(error);
+    }
+
+    private handleVoiceStateUpdate(
+        voiceStatePrev: VoiceState,
+        voiceStateAfter: VoiceState,
+    ): void {
+        if (voiceStatePrev.channel?.id === voiceStateAfter.channel?.id) return;
+        const guildId: string = voiceStateAfter.guild.id;
+        if (voiceStateAfter.channel?.id === undefined && this.client.user) {
+            this.client.destroyVoiceConnection(guildId);
+            Queue.findOne({
+                guildId: guildId,
+                clientId: this.client.user.id,
+            }).then((queue) => {
+                if (queue) this.actions.updateQueueMessage(queue);
+            });
+        }
+        const prevId: string | undefined = voiceStatePrev.channel?.id;
+        const afterId: string | undefined = voiceStateAfter.channel?.id;
+        console.log(`Voice channel update: ${prevId} -> ${afterId}`);
     }
 
     private handleThreadMessage(message: Message): void {
@@ -283,6 +311,9 @@ export class ClientEventHandler {
                     this.client.handleError(error);
                     return null;
                 });
+        }).catch((e) => {
+            this.client.handleError(e);
+            return null;
         });
     }
 
@@ -334,6 +365,7 @@ export class ClientEventHandler {
                     offset: 0,
                     songs: [],
                     options: [],
+                    color: Math.floor(Math.random() * 16777215),
                 });
 
                 this.actions.replyWithQueue(q, interaction).then((result) => {
