@@ -34,7 +34,7 @@ def run_the_client(database_info, token, version, bot_logging, db_logging):
         database=database,
         log_level=bot_logging,
     )
-    client.run(token=token, reconnect=True)
+    client.run(token=token, reconnect=False)
 
 
 load_dotenv()
