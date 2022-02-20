@@ -5,8 +5,10 @@ import {
     MessageButton,
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
+import moment from 'moment';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { Notification } from '../entities/notification';
 import { AbstractCommand } from '../models';
 
 export class Clear extends AbstractCommand {
@@ -85,16 +87,34 @@ export class Clear extends AbstractCommand {
             this.client.musicActions
                 .updateQueueMessageWithInteraction(interaction, queue)
                 .then((result) => {
-                    if (!result) return;
-                    webhook.send({
-                        content: this.translate([
-                            'music',
-                            'commands',
-                            'clear',
-                            'confirm',
-                        ]),
-                        ephemeral: true,
+                    if (!result || !this.client.user) return;
+                    const notification: Notification = Notification.create({
+                        userId: interaction.user.id,
+                        clientId: this.client.user.id,
+                        guildId: this.guildId,
+                        expires: moment(moment.now()).add(24, 'h').toDate(),
+                        name: 'clearRequest',
                     });
+                    Notification.findOne({
+                        userId: notification.userId,
+                        clientId: notification.clientId,
+                        guildId: notification.guildId,
+                        name: notification.name,
+                    }).then((n) => {
+                        if (n) return;
+                        notification.save().then(() => {
+                            webhook.send({
+                                content: this.translate([
+                                    'music',
+                                    'commands',
+                                    'clear',
+                                    'confirm',
+                                ]),
+                                ephemeral: true,
+                            });
+                        });
+                    });
+
                     const x: NodeJS.Timeout = setTimeout(() => {
                         queue
                             .reload()

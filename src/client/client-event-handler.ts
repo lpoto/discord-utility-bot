@@ -108,8 +108,13 @@ export class ClientEventHandler {
     ): void {
         if (voiceStatePrev.channel?.id === voiceStateAfter.channel?.id) return;
         const guildId: string = voiceStateAfter.guild.id;
-        if (voiceStateAfter.channel?.id === undefined && this.client.user) {
-            this.client.destroyVoiceConnection(guildId);
+        if (
+            (voiceStateAfter.channel?.id === undefined ||
+                voiceStatePrev.channel?.id === undefined) &&
+            this.client.user
+        ) {
+            if (voiceStateAfter.channel?.id === undefined)
+                this.client.destroyVoiceConnection(guildId);
             Queue.findOne({
                 guildId: guildId,
                 clientId: this.client.user.id,
@@ -280,41 +285,47 @@ export class ClientEventHandler {
         queue: Queue,
         update?: boolean,
     ): Promise<Message | null> {
-        return this.client.channels.fetch(queue.channelId).then((channel) => {
-            if (!channel || !(channel instanceof TextChannel)) return null;
-            return channel.threads
-                .fetch(queue.threadId)
-                .then((thread) => {
-                    return channel.messages
-                        .fetch(queue.messageId)
-                        .then((message) => {
-                            if (!message && thread) {
+        return this.client.channels
+            .fetch(queue.channelId)
+            .then((channel) => {
+                if (!channel || !(channel instanceof TextChannel)) return null;
+                return channel.threads
+                    .fetch(queue.threadId)
+                    .then((thread) => {
+                        return channel.messages
+                            .fetch(queue.messageId)
+                            .then((message) => {
+                                if (!message && thread) {
+                                    this.archiveMusicThread(thread);
+                                    return null;
+                                }
+                                if (!thread && message) {
+                                    message
+                                        .delete()
+                                        .catch((error) =>
+                                            this.handleError(error),
+                                        );
+                                    return null;
+                                }
+                                if (update)
+                                    this.actions.updateQueueMessage(queue);
+                                return message;
+                            })
+                            .catch((e) => {
+                                this.client.handleError(e);
                                 this.archiveMusicThread(thread);
                                 return null;
-                            }
-                            if (!thread && message) {
-                                message
-                                    .delete()
-                                    .catch((error) => this.handleError(error));
-                                return null;
-                            }
-                            if (update) this.actions.updateQueueMessage(queue);
-                            return message;
-                        })
-                        .catch((e) => {
-                            this.client.handleError(e);
-                            this.archiveMusicThread(thread);
-                            return null;
-                        });
-                })
-                .catch((error) => {
-                    this.client.handleError(error);
-                    return null;
-                });
-        }).catch((e) => {
-            this.client.handleError(e);
-            return null;
-        });
+                            });
+                    })
+                    .catch((error) => {
+                        this.client.handleError(error);
+                        return null;
+                    });
+            })
+            .catch((e) => {
+                this.client.handleError(e);
+                return null;
+            });
     }
 
     private async handleSlashCommand(

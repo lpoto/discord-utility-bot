@@ -2,6 +2,7 @@ import { Intents, Permissions } from 'discord.js';
 import { createConnection } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
+import { Notification } from './entities/notification';
 import { LanguageString } from './translation';
 
 createConnection({
@@ -12,7 +13,7 @@ createConnection({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     synchronize: true,
-    entities: [Queue, Song],
+    entities: [Queue, Song, Notification],
 }).then(() => {
     const client: MusicClient = new MusicClient({
         intents: [
@@ -33,6 +34,8 @@ createConnection({
         ],
         requiredMemberRoles: ['DJ'],
     });
+
+    Notification.purgeOldNotifications();
 
     if (process.env.DISCORD_TOKEN)
         MusicClient.run(client, process.env.DISCORD_TOKEN);

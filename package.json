@@ -28,6 +28,7 @@
         "discord.js": "^13.6.0",
         "ffmpeg-static": "^4.4.1",
         "libsodium-wrappers": "^0.7.9",
+        "moment": "^2.29.1",
         "pg": "^8.7.3",
         "typeorm": "^0.2.42",
         "youtube-search-without-api-key": "^1.0.7",
