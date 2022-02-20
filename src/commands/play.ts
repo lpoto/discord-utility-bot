@@ -19,11 +19,14 @@ export class Play extends AbstractCommand {
     }
 
     private async next(
-        queue: Queue,
         interaction?: ButtonInteraction,
         retries: number = 0,
         replay?: boolean,
     ): Promise<void> {
+        if (!this.client.user) return;
+        let queue: Queue | undefined = await Queue.findOne({clientId: this.client.user.id, guildId: this.guildId})
+        if (!queue) return;
+
         if (!replay && !queue.options.includes('loop') && retries === 0)
             try {
                 const s: Song | undefined = queue.songs.shift();
@@ -95,12 +98,12 @@ export class Play extends AbstractCommand {
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         audioPlayer?.removeAllListeners();
-                        this.next(queue, interaction);
+                        this.next(interaction);
                     })
                     .on('error', (e) => {
                         audioPlayer?.removeAllListeners();
                         console.log('Error when playing: ', e);
-                        this.next(queue, interaction, retries + 1);
+                        this.next(interaction, retries + 1);
                     })
                     .on('unsubscribe', () => {
                         audioPlayer?.removeAllListeners();
@@ -112,7 +115,6 @@ export class Play extends AbstractCommand {
                             audioPlayer?.stop();
                             this.client.setAudioPlayer(queue.guildId, null);
                             this.next(
-                                queue,
                                 interaction,
                                 0,
                                 message === 'replay',
@@ -123,7 +125,7 @@ export class Play extends AbstractCommand {
             .catch((e) => {
                 console.error('Error when creating audio player: ', e);
                 this.client.setAudioPlayer(queue.guildId, null);
-                if (retries < 5) this.next(queue, interaction, retries + 1);
+                if (retries < 5) this.next(interaction, retries + 1);
                 return;
             });
     }
