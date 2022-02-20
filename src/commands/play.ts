@@ -28,7 +28,6 @@ export class Play extends AbstractCommand {
             try {
                 const s: Song | undefined = queue.songs.shift();
                 if (s) {
-                    await s.remove();
                     if (queue.options.includes('loopQueue')) {
                         queue.songs.push(
                             Song.create({
