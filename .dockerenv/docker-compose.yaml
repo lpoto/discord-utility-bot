@@ -2,6 +2,7 @@ version: '3'
 services:
 
   client:
+    # image: docker_id/docker_hub_repo:tag
     build:
       context: ..
       dockerfile: .dockerenv/Dockerfile

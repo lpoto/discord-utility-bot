@@ -2,7 +2,8 @@ import logging
 import nextcord
 
 from bot.utils import get_required_bot_env_variables
-from bot import UtilityClient, __version__
+from bot import UtilityClient
+from version import __version__
 from database import MySQL
 from database.utils import get_required_database_env_variables
 

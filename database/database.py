@@ -72,7 +72,6 @@ class MySQL:
             # database quite often
             cnx = self.connection_object
 
-            self.logger.debug(dir(cnx))
             if not cnx:
                 self.logger.warn(
                     msg='Failed to establish database connection.')

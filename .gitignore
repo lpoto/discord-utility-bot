@@ -1,2 +1,5 @@
 __pycache__/
 .env
+.nvimrc
+docker-compose.yaml
+!.dockerenv/docker-compose.yaml
