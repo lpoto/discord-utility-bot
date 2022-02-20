@@ -15,6 +15,7 @@ services:
       - db-data:/var/lib/postgresql/data
 
   client:
+    # image: docker_id/docker_hub_repo:tag
     build:
       context: ..
       dockerfile: .dockerenv/Dockerfile

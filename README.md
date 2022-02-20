@@ -13,19 +13,20 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 - Only a single queue with a music thread may be active at once in a server.
 
 - Queue message offers commands by clicking on buttons:
+    - loop,
+    - loop queue,
     - skip,
     - pause,
     - replay,
     - stop,
-    - loop,
-    - loop queue,
-    - shuffle.
+    - shuffle,
+    - clear,
+    - remove,
+    - forward.
 
 - Songs are added by typing the name/url of a youtube song/playlist in the music thread.
 
 - Deleting the queue message or thread will stop the music.
-
-- Bot will remove the queue message when leaving the channel.
 
 - User may only use music commands if they are in a voice channel and bot is either
 in the same channel or not connected to any.
