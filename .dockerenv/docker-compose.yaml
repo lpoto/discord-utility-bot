@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: postgres_user
       POSTGRES_PASSWORD: postgres_password
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
 
   client:
     # image: docker_id/docker_hub_repo:tag
@@ -32,6 +32,6 @@ services:
       - postgresdb
 
 volumes:
-  db-data:
+  postgres-data:
     driver: local
 
