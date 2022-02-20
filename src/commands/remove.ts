@@ -38,6 +38,7 @@ export class Remove extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
+        try {
         if (
             !interaction ||
             !interaction.user ||
@@ -137,6 +138,9 @@ export class Remove extends AbstractCommand {
             .catch((e) => {
                 console.log('Error when removing:', e);
             });
+        } catch (e) {
+            console.error("Error when removing: ", e);
+        }
     }
 
     private removeDropdown(

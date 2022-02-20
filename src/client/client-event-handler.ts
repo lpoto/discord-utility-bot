@@ -106,6 +106,7 @@ export class ClientEventHandler {
         voiceStatePrev: VoiceState,
         voiceStateAfter: VoiceState,
     ): void {
+        if (voiceStatePrev.member?.id !== this.client.user?.id) return;
         if (voiceStatePrev.channel?.id === voiceStateAfter.channel?.id) return;
         const guildId: string = voiceStateAfter.guild.id;
         if (
