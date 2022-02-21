@@ -30,7 +30,7 @@ class Users:
         opt = cursor.fetchone()
         cursor.close()
         cnx.close()
-        return None if not opt or len(opt) == 0 else opt[0]
+        return None if not opt or len(opt) == 0 else opt.get('info')
 
     async def get_info(self, *, guild_id: int, name: str) -> dict:
         cnx = self.database.connection_object
