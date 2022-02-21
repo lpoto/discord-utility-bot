@@ -44,7 +44,6 @@ export class Skip extends AbstractCommand {
         if (!queue.options.includes('loop')) {
             const s: Song | undefined = queue.songs.shift();
             if (s) {
-                await s.remove();
                 if (queue.options.includes('loopQueue')) {
                     queue.songs.push(
                         Song.create({
@@ -55,9 +54,9 @@ export class Skip extends AbstractCommand {
                             durationSeconds: s.durationSeconds,
                         }),
                     );
-                    queue = await queue.save();
                 }
             }
+            queue = await queue.save();
         }
 
         if (queue.songs.length > 0) {
