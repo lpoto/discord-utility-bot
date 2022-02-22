@@ -24,13 +24,16 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
     - shuffle,
     - clear,
     - remove,
-    - forward.
+    - forward,
+    - help.
 
 - User may only use music commands if they are in a voice channel and bot is either
 in the same channel or not connected to any.
 
 - Bot requires a `DJ` role. Only users with the same role may use the
 music commands.
+
+- For more info on the commands, click on settings button and then `Help` in the queue message in a discord channel.
 
 ## Required permissions
 
