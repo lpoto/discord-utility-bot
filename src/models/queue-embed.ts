@@ -56,22 +56,23 @@ export class QueueEmbed extends MessageEmbed {
             let headSong: string | undefined = songs.shift();
             if (!headSong) headSong = '';
             const spacer = '\u3000';
-            let description: string =
-                songs.length === 0
-                    ? ''
-                    : songs
-                          .slice(
-                              this.queue.offset,
-                              this.queue.offset + QueueEmbed.songsPerPage(),
-                          )
-                          .join('\n');
-            description += `\n\n**${this.client.translate(this.queue.guildId, [
+            let description = `**${this.client.translate(this.queue.guildId, [
                 'music',
                 'queue',
                 'curPlaying',
             ])}**`;
             description +=
                 spacer + headSong + '\n\n' + spacer + this.durationString();
+            if (songs.length > 0) {
+                description +=
+                    '\n\n' +
+                    songs
+                        .slice(
+                            this.queue.offset,
+                            this.queue.offset + QueueEmbed.songsPerPage(),
+                        )
+                        .join('\n');
+            }
             return description;
         } catch (e) {
             console.error('Queue embed error: ', e);
