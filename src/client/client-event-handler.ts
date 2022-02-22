@@ -78,7 +78,7 @@ export class ClientEventHandler {
 
         this.client.on('threadDelete', (thread) => {
             if (thread.guildId && thread.ownerId === this.client.user?.id)
-                this.destroyMusic(thread.guildId);
+                this.destroyMusic(thread.guildId, thread.id);
         });
 
         this.client.on('guildCreate', (guild) => {
@@ -444,13 +444,14 @@ export class ClientEventHandler {
             this.handleSlashCommand(this.slashCommandQueue[0]);
     }
 
-    public destroyMusic(guildId: string): void {
+    public destroyMusic(guildId: string, threadId?: string): void {
         if (!this.client.user) return;
         Queue.findOne({
             guildId: guildId,
             clientId: this.client.user.id,
         }).then((result) => {
             if (!result) return;
+            if (threadId && result.threadId !== threadId) return;
             this.client.channels
                 .fetch(result.channelId)
                 .then((channel) => {
