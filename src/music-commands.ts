@@ -22,11 +22,10 @@ export class MusicCommands {
             this.client,
         );
         if (!command) return;
-        try {
-            command.execute();
-        } catch (e) {
+        command.execute().catch((e) => {
             console.error('Error when executing command');
-        }
+            this.client.handleError(e);
+        });
     }
 
     public async executeFromInteraction(
@@ -48,11 +47,10 @@ export class MusicCommands {
             const button: MessageButton | null = command.button2(queue);
             if (!button) continue;
             if (button.label && interaction.component.label === button.label)
-                try {
-                    return command.execute(interaction);
-                } catch (e) {
+                return command.execute(interaction).catch((e) => {
                     console.error('Error when executing command');
-                }
+                    this.client.handleError(e);
+                });
         }
     }
 

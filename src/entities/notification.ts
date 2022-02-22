@@ -9,8 +9,8 @@ import {
 @Entity('notification')
 @Index(['name', 'clientId', 'guildId', 'userId'], { unique: true })
 export class Notification extends BaseEntity {
-    @PrimaryGeneratedColumn('increment')
-    readonly id: number;
+    @PrimaryGeneratedColumn('uuid')
+    readonly id: string;
 
     @Column('timestamp', { default: () => '((CURRENT_TIMESTAMP))' })
     readonly created: Date;
@@ -30,7 +30,7 @@ export class Notification extends BaseEntity {
     @Column({ nullable: true })
     userId: string;
 
-    @Column({ nullable: false })
+    @Column({ nullable: true })
     content: string;
 
     static async purgeOldNotifications(): Promise<void> {

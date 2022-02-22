@@ -24,35 +24,49 @@ export class Play extends AbstractCommand {
         replay?: boolean,
     ): Promise<void> {
         if (!this.client.user) return;
-        let queue: Queue | undefined = await Queue.findOne({clientId: this.client.user.id, guildId: this.guildId})
+        const queue: Queue | undefined = await Queue.findOne({
+            clientId: this.client.user.id,
+            guildId: this.guildId,
+        });
         if (!queue) return;
 
-        if (!replay && !queue.options.includes('loop') && retries === 0)
+        if (!replay && !queue.options.includes('loop') && retries === 0) {
             try {
-                const s: Song | undefined = queue.songs.shift();
-                if (s) {
+                const song: Song | undefined = queue.songs.shift();
+                if (song) {
                     if (queue.options.includes('loopQueue')) {
-                        queue.songs.push(
-                            Song.create({
-                                queue: queue,
-                                name: s.name,
-                                url: s.url,
-                                durationString: s.durationString,
-                                durationSeconds: s.durationSeconds,
-                            }),
-                        );
+                        song.position =
+                            Math.max.apply(
+                                null,
+                                queue.songs.map((s) => s.position),
+                            ) + 1;
+                        await song.save();
+                    } else {
+                        await song.remove();
                     }
                 }
-                queue = await queue.save();
                 if (interaction)
                     this.client.musicActions.updateQueueMessageWithInteraction(
                         interaction,
                         queue,
+                        false,
+                        false,
+                        true,
                     );
-                else this.client.musicActions.updateQueueMessage(queue);
+                else
+                    this.client.musicActions.updateQueueMessage(
+                        queue,
+                        true,
+                        false,
+                        true,
+                    );
             } catch (e) {
-                console.error(e);
+                console.error('Error when playing next song: ', e);
+            } finally {
+                await queue.reload();
             }
+        }
+
         this.execute(interaction, retries);
     }
 
@@ -114,11 +128,7 @@ export class Play extends AbstractCommand {
                             audioPlayer?.removeAllListeners();
                             audioPlayer?.stop();
                             this.client.setAudioPlayer(queue.guildId, null);
-                            this.next(
-                                interaction,
-                                0,
-                                message === 'replay',
-                            );
+                            this.next(interaction, 0, message === 'replay');
                         }
                     });
             })

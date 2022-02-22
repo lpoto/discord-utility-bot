@@ -13,22 +13,29 @@ import { Queue } from './queue';
 
 @Entity('song')
 export class Song extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    readonly id: number;
+    @PrimaryGeneratedColumn('uuid')
+    readonly id: string;
 
-    @Column()
+    @Column({ nullable: false })
     url: string;
 
-    @Column()
+    @Column({ nullable: false })
     name: string;
 
-    @Column()
+    @Column({ nullable: false })
     durationSeconds: number;
 
-    @Column()
+    @Column({ nullable: false })
     durationString: string;
 
-    @ManyToOne(() => Queue, (queue) => queue.songs, { onDelete: 'CASCADE' })
+    @Column({ nullable: false })
+    position: number;
+
+    @ManyToOne(() => Queue, (queue) => queue.songs, {
+        onDelete: 'CASCADE',
+        nullable: false,
+        orphanedRowAction: 'delete',
+    })
     queue: Queue;
 
     public toStringShortened(expanded?: boolean): string {
@@ -51,20 +58,11 @@ export class Song extends BaseEntity {
 
     public static async findOnYoutube(
         nameOrUrl: string,
+        position: number,
     ): Promise<Song[] | null> {
-        if (Song.isYoutubeUrl(nameOrUrl)) return Song.findByUrl(nameOrUrl);
-        return Song.findBySearch(nameOrUrl);
-    }
-
-    public static async findAllOnYoutube(
-        nameOrUrl: string[],
-    ): Promise<Song[] | null> {
-        let songs: Song[] = [];
-        for await (const name of nameOrUrl) {
-            const songs2: Song[] | null = await this.findOnYoutube(name);
-            if (songs2) songs = songs.concat(songs2);
-        }
-        return songs;
+        if (Song.isYoutubeUrl(nameOrUrl))
+            return Song.findByUrl(nameOrUrl, position);
+        return Song.findBySearch(nameOrUrl, position);
     }
 
     public async getResource(): Promise<AudioResource | null> {
@@ -77,15 +75,19 @@ export class Song extends BaseEntity {
         );
     }
 
-    private static async findByUrl(url: string): Promise<Song[] | null> {
+    private static async findByUrl(
+        url: string,
+        position: number,
+    ): Promise<Song[] | null> {
         if (!url) return null;
         return ytpl(url)
             .then((playlist) => {
                 if (playlist && playlist.items && playlist.items.length > 0) {
-                    return playlist.items.map((p) => {
+                    return playlist.items.map((p, index) => {
                         return Song.create({
                             name: p.title,
                             url: p.url,
+                            position: position + index,
                             durationSeconds: Number(p.durationSec),
                             durationString: this.secondsToTimeString(
                                 Number(p.durationSec),
@@ -103,6 +105,7 @@ export class Song extends BaseEntity {
                             this.create({
                                 name: result.videoDetails.title,
                                 url: result.videoDetails.video_url,
+                                position: position,
                                 durationSeconds: Number(
                                     result.videoDetails.lengthSeconds,
                                 ),
@@ -119,7 +122,10 @@ export class Song extends BaseEntity {
             });
     }
 
-    private static async findBySearch(query: string): Promise<Song[] | null> {
+    private static async findBySearch(
+        query: string,
+        position: number,
+    ): Promise<Song[] | null> {
         if (!query) return null;
         return yt
             .search(query)
@@ -129,6 +135,7 @@ export class Song extends BaseEntity {
                     this.create({
                         name: results[0].snippet.title,
                         url: results[0].url,
+                        position: position,
                         durationString: results[0].duration_raw,
                         durationSeconds: Song.durationStringToSeconds(
                             results[0].duration_raw,

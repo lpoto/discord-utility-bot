@@ -10,7 +10,9 @@ import {
     ThreadChannel,
     VoiceState,
 } from 'discord.js';
+import moment from 'moment';
 import { Queue } from '../entities';
+import { Notification } from '../entities/notification';
 import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
 
@@ -90,16 +92,21 @@ export class ClientEventHandler {
              * deleted messages or missing permissions to delete threads...*/
             const discordError: DiscordAPIError = error as DiscordAPIError;
             if (
-                ['10008', '50013', '10003', '10062', '50001'].includes(
-                    discordError.code.toString(),
-                )
+                [
+                    '10008',
+                    '50013',
+                    '10003',
+                    '10062',
+                    '50001',
+                    '40060',
+                ].includes(discordError.code.toString())
             )
                 return;
         } catch (e) {
-            console.error(error);
+            console.error('Error handler: ', e);
             return;
         }
-        console.error(error);
+        console.error('Error handler: ', error);
     }
 
     private handleVoiceStateUpdate(
@@ -171,7 +178,47 @@ export class ClientEventHandler {
                         return n;
                     });
 
-                this.actions.songsToQueue(queue, songs);
+                this.actions.songsToQueue(queue, songs).then((exit) => {
+                    if (exit === 100 && this.client.user && message.guildId) {
+                        const notification: Notification = Notification.create(
+                            {
+                                userId: message.author.id,
+                                clientId: this.client.user.id,
+                                guildId: message.guildId,
+                                expires: moment(moment.now())
+                                    .add(24, 'h')
+                                    .toDate(),
+                                name: 'maxSongs',
+                            },
+                        );
+                        Notification.findOne({
+                            userId: notification.userId,
+                            clientId: notification.clientId,
+                            guildId: notification.guildId,
+                            name: notification.name,
+                        }).then((n) => {
+                            if (n) return;
+                            notification.save().then(() => {
+                                message
+                                    .reply({
+                                        content: this.translate(
+                                            message.guildId,
+                                            [
+                                                'music',
+                                                'commands',
+                                                'play',
+                                                'maxSongs',
+                                            ],
+                                        ),
+                                    })
+                                    .catch((e) => {
+                                        this.client.handleError(e);
+                                    });
+                            });
+                        });
+                        notification;
+                    }
+                });
             });
         }
     }

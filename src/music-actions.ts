@@ -42,22 +42,45 @@ export class MusicActions {
     public async songsToQueue(
         queue: Queue,
         songNames: string[],
-    ): Promise<void> {
+    ): Promise<number> {
         const player: AudioPlayer | null = this.client.getAudioPlayer(
             queue.guildId,
         );
+        if (queue.songs.length >= 100) {
+            if (
+                !player ||
+                (player &&
+                    player.state.status !== AudioPlayerStatus.Playing &&
+                    player.state.status !== AudioPlayerStatus.Paused)
+            ) {
+                await this.commands.execute(CommandName.PLAY, queue.guildId);
+            }
+            return 100;
+        }
+        let position =
+            queue.songs.length > 0
+                ? queue.songs[queue.songs.length - 1].position + 1
+                : 0;
         let played = false;
         try {
+            let exit = 0;
             let idx = 0;
             for await (const songName of songNames) {
+                if (exit > 0) break;
                 const songs: Song[] | null = await Song.findOnYoutube(
                     songName,
+                    position,
                 );
-                if (!songs || songs.length < 1) return;
+                if (!songs || songs.length < 1) return 1;
+                position += songs.length;
                 for await (const s of songs) {
                     s.queue = queue;
                     await s.save();
                     await queue.reload();
+                    if (queue.songs.length >= 100) {
+                        exit = 100;
+                        break;
+                    }
                 }
                 idx++;
                 if (idx % 10 === 0 && idx < songNames.length - 1) {
@@ -79,9 +102,10 @@ export class MusicActions {
                 }
             }
             this.updateQueueMessage(queue);
+            return exit;
         } catch (error) {
             if (!(error instanceof QueryFailedError)) console.error(error);
-            return;
+            return 1;
         }
     }
 
@@ -121,7 +145,12 @@ export class MusicActions {
                 selfDeaf: true,
             }).on('error', (error) => {
                 this.client.handleError(error);
-                if (retry < 5) this.joinVoice(interaction, message, retry + 1);
+                if (retry < 5)
+                    this.joinVoice(interaction, message, retry + 1).catch(
+                        (e) => {
+                            this.client.handleError(e);
+                        },
+                    );
             }),
         );
         return true;
@@ -182,7 +211,7 @@ export class MusicActions {
         reload?: boolean,
     ): Promise<boolean> {
         if (interaction.deferred || interaction.replied) return false;
-        if (reload) queue.reload();
+        if (reload) await queue.reload();
         return interaction
             .update(this.getQueueOptions(queue, embedOnly, componentsOnly))
             .then(() => {
@@ -209,7 +238,7 @@ export class MusicActions {
             queue.threadId,
         );
         if (!thread) return false;
-        if (reload) queue.reload();
+        if (reload) await queue.reload();
         return thread
             .fetchStarterMessage()
             .then((message) => {

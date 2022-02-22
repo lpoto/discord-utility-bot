@@ -29,56 +29,66 @@ export class Skip extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            !this.audioPlayer ||
-            this.audioPlayer.state.status === AudioPlayerStatus.Paused
-        )
-            return;
-        let queue: Queue | undefined = await this.getQueue();
-        if (!queue) return;
+        try {
+            if (
+                !interaction ||
+                !this.audioPlayer ||
+                this.audioPlayer.state.status === AudioPlayerStatus.Paused
+            )
+                return;
+            const queue: Queue | undefined = await this.getQueue();
+            if (!queue) return;
 
-        this.audioPlayer.stop();
-        this.audioPlayer.removeAllListeners();
-        this.client.setAudioPlayer(queue.guildId, null);
-        if (!queue.options.includes('loop')) {
-            const s: Song | undefined = queue.songs.shift();
-            if (s) {
-                if (queue.options.includes('loopQueue')) {
-                    queue.songs.push(
-                        Song.create({
-                            queue: queue,
-                            name: s.name,
-                            url: s.url,
-                            durationString: s.durationString,
-                            durationSeconds: s.durationSeconds,
-                        }),
-                    );
+            this.audioPlayer.stop();
+            this.audioPlayer.removeAllListeners();
+            this.client.setAudioPlayer(queue.guildId, null);
+            if (!queue.options.includes('loop')) {
+                const song: Song | undefined = queue.songs.shift();
+                if (song) {
+                    if (queue.options.includes('loopQueue')) {
+                        song.position =
+                            Math.max.apply(
+                                null,
+                                queue.songs.map((s) => s.position),
+                            ) + 1;
+                        await song.save();
+                    } else {
+                        await song.remove();
+                    }
+                    await queue.reload();
                 }
             }
-            queue = await queue.save();
-        }
 
-        if (queue.songs.length > 0) {
-            this.client.musicActions.commands.execute(
-                CommandName.PLAY,
-                this.guildId,
-            );
-            if (interaction && !interaction.deferred && !interaction.replied)
-                try {
-                    interaction.deferUpdate();
-                } catch (e) {
-                    return;
-                }
-        } else if (
-            interaction &&
-            !interaction.deferred &&
-            !interaction.replied
-        ) {
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                queue,
-            );
+            if (queue.songs.length > 0) {
+                this.client.musicActions.commands.execute(
+                    CommandName.PLAY,
+                    this.guildId,
+                );
+                if (
+                    interaction &&
+                    !interaction.deferred &&
+                    !interaction.replied
+                )
+                    interaction
+                        .deferUpdate()
+                        .catch((e) => this.client.handleError(e));
+            } else if (
+                interaction &&
+                !interaction.deferred &&
+                !interaction.replied
+            ) {
+                this.client.musicActions
+                    .updateQueueMessageWithInteraction(
+                        interaction,
+                        queue,
+                        false,
+                        false,
+                        true,
+                    )
+                    .catch((e) => this.client.handleError(e));
+            }
+        } catch (e) {
+            console.error('Error when skipping: ', e);
         }
     }
 }

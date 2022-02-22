@@ -103,15 +103,19 @@ export class Clear extends AbstractCommand {
                     }).then((n) => {
                         if (n) return;
                         notification.save().then(() => {
-                            webhook.send({
-                                content: this.translate([
-                                    'music',
-                                    'commands',
-                                    'clear',
-                                    'confirm',
-                                ]),
-                                ephemeral: true,
-                            });
+                            webhook
+                                .send({
+                                    content: this.translate([
+                                        'music',
+                                        'commands',
+                                        'clear',
+                                        'confirm',
+                                    ]),
+                                    ephemeral: true,
+                                })
+                                .catch((e) => {
+                                    this.client.handleError(e);
+                                });
                         });
                     });
 

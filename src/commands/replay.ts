@@ -47,10 +47,6 @@ export class Replay extends AbstractCommand {
         );
 
         if (interaction && !interaction.deferred && !interaction.replied)
-            try {
-                interaction.deferUpdate();
-            } catch (e) {
-                return;
-            }
+            interaction.deferUpdate().catch((e) => this.client.handleError(e));
     }
 }

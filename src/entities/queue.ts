@@ -1,4 +1,12 @@
-import { BaseEntity, Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
+import {
+    AfterLoad,
+    BaseEntity,
+    Column,
+    Entity,
+    OneToMany,
+    OneToOne,
+    PrimaryColumn,
+} from 'typeorm';
 import { Song } from './song';
 
 @Entity('queue')
@@ -28,8 +36,14 @@ export class Queue extends BaseEntity {
     options: string[];
 
     @OneToMany(() => Song, (song) => song.queue, {
-        cascade: true,
+        cascade: ['insert', 'update', 'remove'],
+        orphanedRowAction: 'delete',
         eager: true,
     })
     songs: Song[];
+
+    @AfterLoad()
+    sortSongs(): void {
+        this.songs.sort((s1, s2) => s1.position - s2.position);
+    }
 }

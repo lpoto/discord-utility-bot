@@ -30,48 +30,39 @@ export class Shuffle extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         if (queue.songs.length < 3) {
-            try {
-                if (!interaction.deferred && !interaction.replied)
-                    interaction.deferUpdate();
-            } catch (e) {
-                return;
-            }
+            if (!interaction.deferred && !interaction.replied)
+                interaction
+                    .deferUpdate()
+                    .catch((e) => this.client.handleError(e));
             return;
         }
 
-        const items: { [key: string]: string | number }[] = queue.songs
-            .slice(1)
-            .map((s) => {
-                return {
-                    name: s.name,
-                    url: s.url,
-                    durationSeconds: s.durationSeconds,
-                    durationString: s.durationString,
-                };
-            });
-
-        for (let i: number = items.length - 1; i > 0; i--) {
-            const randomIndex: number = Math.floor(Math.random() * i);
-            [items[i], items[randomIndex]] = [items[randomIndex], items[i]];
-        }
-
-        queue.songs = [queue.songs[0]].concat(
-            items.map((i) => {
-                return Song.create({
-                    queue: queue,
-                    name: i.name.toString(),
-                    durationString: i.durationString.toString(),
-                    durationSeconds: Number(i.durationSeconds),
-                    url: i.url.toString(),
-                });
-            }),
+        const arr: number[] = Array.from(Array(queue.songs.length).keys());
+        arr.shift();
+        let minPos: number = Math.min.apply(
+            null,
+            queue.songs.map((s) => s.position),
         );
-        queue.save().then(() => {
-            if (!queue) return;
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                queue,
-            );
-        });
+        for await (const song of queue.songs) {
+            if (song.position === minPos) {
+                song.position = 0;
+                minPos = 0;
+            } else {
+                const randomIndex: number = Math.floor(
+                    Math.random() * arr.length,
+                );
+                song.position = arr[randomIndex];
+                arr.splice(randomIndex, 1);
+            }
+        }
+        await queue.save();
+
+        this.client.musicActions.updateQueueMessageWithInteraction(
+            interaction,
+            queue,
+            true,
+            false,
+            true,
+        );
     }
 }

@@ -111,7 +111,12 @@ export class Forward extends AbstractCommand {
                     }
                     await queue.reload();
                     await this.forwardIndexes(queue, indexes);
-                    this.client.musicActions.updateQueueMessage(queue);
+                    this.client.musicActions.updateQueueMessage(
+                        queue,
+                        true,
+                        false,
+                        true,
+                    );
                     const forwardDd: MessageSelectMenu | null =
                         this.forwardDropdown(queue, start);
                     if (interaction2.deferred || interaction2.replied) return;
@@ -156,7 +161,7 @@ export class Forward extends AbstractCommand {
                     label:
                         `${index + start * this.songsPerPage}.\u3000` +
                         s.toString(),
-                    value: index.toString(),
+                    value: s.position.toString(),
                 };
             })
             .slice(1);
@@ -196,35 +201,27 @@ export class Forward extends AbstractCommand {
 
     private async forwardIndexes(
         queue: Queue,
-        indexes: number[],
+        positions: number[],
     ): Promise<void> {
         if (queue.songs.length < 2) return;
-
-        const items: { [key: string]: string | number }[] = queue.songs.map(
-            (s) => {
-                return {
-                    name: s.name,
-                    url: s.url,
-                    durationSeconds: s.durationSeconds,
-                    durationString: s.durationString,
-                };
-            },
+        let idx = 1;
+        let idx2: number = positions.length + 1;
+        let minPos: number = Math.min.apply(
+            null,
+            queue.songs.map((s) => s.position),
         );
-        const items1 = items.filter(
-            (_, idx) => idx === 0 || indexes.includes(idx),
-        );
-        const items2 = items.filter(
-            (_, idx) => idx > 0 && !indexes.includes(idx),
-        );
-        (queue.songs = items1.concat(items2).map((i) => {
-            return Song.create({
-                queue: queue,
-                name: i.name.toString(),
-                durationString: i.durationString.toString(),
-                durationSeconds: Number(i.durationSeconds),
-                url: i.url.toString(),
-            });
-        })),
-            await queue.save();
+        for (const song of queue.songs) {
+            if (song.position === minPos) {
+                minPos = 0;
+                song.position = minPos;
+            } else if (positions.includes(song.position)) {
+                song.position = idx;
+                idx++;
+            } else {
+                song.position = idx2;
+                idx2++;
+            }
+        }
+        await queue.save();
     }
 }

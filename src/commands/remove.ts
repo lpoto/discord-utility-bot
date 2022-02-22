@@ -39,107 +39,115 @@ export class Remove extends AbstractCommand {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         try {
-        if (
-            !interaction ||
-            !interaction.user ||
-            interaction.deferred ||
-            interaction.replied
-        )
-            return;
-        const queue: Queue | undefined = await this.getQueue();
-        if (!queue) return;
+            if (
+                !interaction ||
+                !interaction.user ||
+                interaction.deferred ||
+                interaction.replied
+            )
+                return;
+            const queue: Queue | undefined = await this.getQueue();
+            if (!queue) return;
 
-        const removeDropdown: MessageSelectMenu | null =
-            this.removeDropdown(queue);
-        if (!removeDropdown) return;
-        interaction
-            .reply({
-                content: this.translate([
-                    'music',
-                    'commands',
-                    'remove',
-                    'label',
-                ]),
-                components: [
-                    new MessageActionRow().addComponents(removeDropdown),
-                ],
-                ephemeral: true,
-                fetchReply: true,
-            })
-            .then((message) => {
-                if (!(message instanceof Message) || !message.channel) return;
-                new InteractionCollector(this.client, {
-                    channel: message.channel,
-                    interactionType: InteractionTypes.MESSAGE_COMPONENT,
-                }).on('collect', async (interaction2) => {
-                    if (
-                        !interaction2.isSelectMenu() ||
-                        interaction2.applicationId !== this.client.user?.id ||
-                        !interaction2.customId.startsWith(this.name) ||
-                        interaction2.deferred ||
-                        interaction2.replied ||
-                        interaction2.component.placeholder !==
-                            this.translate([
-                                'music',
-                                'commands',
-                                'remove',
-                                'dropdown',
-                                'placeholder',
-                            ])
-                    )
+            const removeDropdown: MessageSelectMenu | null =
+                this.removeDropdown(queue);
+            if (!removeDropdown) return;
+            interaction
+                .reply({
+                    content: this.translate([
+                        'music',
+                        'commands',
+                        'remove',
+                        'label',
+                    ]),
+                    components: [
+                        new MessageActionRow().addComponents(removeDropdown),
+                    ],
+                    ephemeral: true,
+                    fetchReply: true,
+                })
+                .then((message) => {
+                    if (!(message instanceof Message) || !message.channel)
                         return;
-                    let start = 0;
-                    const indexes: number[] = [];
-                    for (const value of interaction2.values) {
-                        try {
-                            if (value.startsWith('prev: ')) {
-                                start = Number(
-                                    value.replace('prev: ', '').trim(),
-                                );
-                            } else if (value.startsWith('next: ')) {
-                                start = Number(
-                                    value.replace('next: ', '').trim(),
-                                );
-                            } else {
-                                const idx = Number(value);
-                                indexes.push(idx);
+                    new InteractionCollector(this.client, {
+                        channel: message.channel,
+                        interactionType: InteractionTypes.MESSAGE_COMPONENT,
+                    }).on('collect', async (interaction2) => {
+                        if (
+                            !interaction2.isSelectMenu() ||
+                            interaction2.applicationId !==
+                                this.client.user?.id ||
+                            !interaction2.customId.startsWith(this.name) ||
+                            interaction2.deferred ||
+                            interaction2.replied ||
+                            interaction2.component.placeholder !==
+                                this.translate([
+                                    'music',
+                                    'commands',
+                                    'remove',
+                                    'dropdown',
+                                    'placeholder',
+                                ])
+                        )
+                            return;
+                        let start = 0;
+                        const indexes: number[] = [];
+                        for (const value of interaction2.values) {
+                            try {
+                                if (value.startsWith('prev: ')) {
+                                    start = Number(
+                                        value.replace('prev: ', '').trim(),
+                                    );
+                                } else if (value.startsWith('next: ')) {
+                                    start = Number(
+                                        value.replace('next: ', '').trim(),
+                                    );
+                                } else {
+                                    const idx = Number(value);
+                                    indexes.push(idx);
+                                }
+                            } catch (e) {
+                                continue;
                             }
-                        } catch (e) {
-                            continue;
                         }
-                    }
-                    await queue.reload();
-                    await this.removeIndexes(queue, indexes);
-                    this.client.musicActions.updateQueueMessage(queue);
-                    const removeDd: MessageSelectMenu | null =
-                        this.removeDropdown(queue, start);
-                    if (interaction2.deferred || interaction2.replied) return;
-                    try {
-                        interaction2.update({
-                            content: this.translate([
-                                'music',
-                                'commands',
-                                'remove',
-                                'label',
-                            ]),
-                            components: !removeDd
-                                ? []
-                                : [
-                                      new MessageActionRow().addComponents(
-                                          removeDd,
-                                      ),
-                                  ],
-                        });
-                    } catch (e) {
-                        return;
-                    }
+                        await queue.reload();
+                        await this.removeIndexes(queue, indexes);
+                        this.client.musicActions.updateQueueMessage(
+                            queue,
+                            false,
+                            false,
+                            true,
+                        );
+                        const removeDd: MessageSelectMenu | null =
+                            this.removeDropdown(queue, start);
+                        if (interaction2.deferred || interaction2.replied)
+                            return;
+                        try {
+                            interaction2.update({
+                                content: this.translate([
+                                    'music',
+                                    'commands',
+                                    'remove',
+                                    'label',
+                                ]),
+                                components: !removeDd
+                                    ? []
+                                    : [
+                                          new MessageActionRow().addComponents(
+                                              removeDd,
+                                          ),
+                                      ],
+                            });
+                        } catch (e) {
+                            return;
+                        }
+                    });
+                })
+                .catch((e) => {
+                    console.log('Error when removing:', e);
                 });
-            })
-            .catch((e) => {
-                console.log('Error when removing:', e);
-            });
         } catch (e) {
-            console.error("Error when removing: ", e);
+            console.error('Error when removing: ', e);
         }
     }
 

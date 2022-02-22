@@ -44,7 +44,9 @@ export class Join extends AbstractCommand {
             return;
         if (queue.songs.length > 0) {
             if (interaction && !interaction.deferred && !interaction.replied)
-                interaction.deferUpdate();
+                interaction
+                    .deferUpdate()
+                    .catch((e) => this.client.handleError(e));
 
             this.client.musicActions.commands.execute(
                 CommandName.PLAY,
@@ -58,6 +60,8 @@ export class Join extends AbstractCommand {
             this.client.musicActions.updateQueueMessageWithInteraction(
                 interaction,
                 queue,
+                false,
+                true,
             );
         }
     }
