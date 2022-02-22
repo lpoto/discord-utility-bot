@@ -88,7 +88,7 @@ export class QueueEmbed extends MessageEmbed {
             'music',
             'queue',
             'duration',
-        ])}: **${Song.secondsToTimeString(song.durationSeconds)}**`;
+        ])}**${Song.secondsToTimeString(song.durationSeconds)}**`;
     }
 
     public static songsPerPage(): number {
