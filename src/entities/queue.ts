@@ -4,7 +4,6 @@ import {
     Column,
     Entity,
     OneToMany,
-    OneToOne,
     PrimaryColumn,
 } from 'typeorm';
 import { Song } from './song';
@@ -44,6 +43,6 @@ export class Queue extends BaseEntity {
 
     @AfterLoad()
     sortSongs(): void {
-        this.songs.sort((s1, s2) => s1.position - s2.position);
+        if (this.songs) this.songs.sort((s1, s2) => s1.position - s2.position);
     }
 }

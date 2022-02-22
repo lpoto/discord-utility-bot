@@ -13,7 +13,7 @@ RUN npm install
 RUN npm run build
 RUN npm prune --production
 
-FROM node:17-alpine.14
+FROM node:17-alpine3.14
 
 COPY --from=BUILD_IMAGE /app/package*.json ./
 COPY --from=BUILD_IMAGE /app/dist ./dist
