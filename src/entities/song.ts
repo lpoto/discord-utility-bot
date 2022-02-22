@@ -40,8 +40,53 @@ export class Song extends BaseEntity {
 
     public toStringShortened(expanded?: boolean): string {
         const name: string = this.name;
-        if (!expanded && name.length > 46)
-            return name.substring(0, 43) + '...';
+        if (!expanded && name.length > 48) {
+            let count = 0;
+            const chars: string[] = [
+                'A',
+                'E',
+                'O',
+                '0',
+                'K',
+                'M',
+                'N',
+                'C',
+                'B',
+                'V',
+                'F',
+                'S',
+                'T',
+                'Z',
+                'D',
+                'W',
+                'Y',
+                'H',
+                ' ',
+            ];
+            const chars2: string[] = [
+                'I',
+                'l',
+                'i',
+                '.',
+                ',',
+                '-',
+                'f',
+                'j',
+                'k',
+                '1',
+                '|',
+                '(',
+                ')',
+            ];
+            chars.map((c) => {
+                count += name.split(c).length - 1;
+            });
+            chars2.map((c) => {
+                count -= name.split(c).length - 1;
+            });
+            const x: number = 48 - Math.round(count / 2);
+            return name.substring(0, x).trim() + '...';
+        }
         if (expanded)
             return this.toString(`,\u3000**${this.durationString}**`);
         return this.toString();
