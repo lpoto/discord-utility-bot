@@ -38,10 +38,13 @@ export class Join extends AbstractCommand {
         const audioPlayer: AudioPlayer | null = this.audioPlayer;
         if (
             audioPlayer &&
-            (audioPlayer.state.status === AudioPlayerStatus.Paused ||
-                audioPlayer.state.status === AudioPlayerStatus.Playing)
+            audioPlayer.state.status === AudioPlayerStatus.Playing
         )
             return;
+        try {
+            audioPlayer?.stop();
+        } catch (e) {}
+        this.client.setAudioPlayer(queue.guildId, null);
         if (queue.songs.length > 0) {
             if (interaction && !interaction.deferred && !interaction.replied)
                 interaction

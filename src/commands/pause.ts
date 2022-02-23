@@ -1,6 +1,7 @@
 import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { CommandName } from '.';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
