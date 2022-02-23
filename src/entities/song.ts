@@ -39,7 +39,7 @@ export class Song extends BaseEntity {
     queue: Queue;
 
     public toStringShortened(expanded?: boolean): string {
-        const name: string = this.name;
+        const name: string = this.name.replace(/\|/g, '│');
         if (!expanded && name.length > 43) {
             let count = 0;
             const chars: string[] = [
@@ -98,14 +98,21 @@ export class Song extends BaseEntity {
             const x: number = 48 - Math.round(count / 2);
             return name.substring(0, x).trim() + '...';
         }
-        if (expanded)
+        if (
+            expanded &&
+            this.durationString &&
+            this.durationString.trim().length > 0
+        )
             return this.toString(`,\u3000**${this.durationString}**`);
         return this.toString();
     }
 
     public toString(add?: string, type: number = 0): string {
-        let name: string = add ? this.name + add : this.name;
-        if (name.length > 100) name = name.substring(0, 100);
+        let name: string = this.name.replace(/\|/g, '│');
+        const addLength: number = add ? add.length : 0;
+        if (name.length + addLength > 100)
+            name = name.substring(0, 100 - addLength);
+        if (add) name += add;
         if (name.length < (type === 0 ? 47 : 43)) return name;
         if (type === 0)
             return name.replace(
