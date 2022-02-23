@@ -40,7 +40,7 @@ export class Song extends BaseEntity {
 
     public toStringShortened(expanded?: boolean): string {
         const name: string = this.name;
-        if (!expanded && name.length > 48) {
+        if (!expanded && name.length > 43) {
             let count = 0;
             const chars: string[] = [
                 'A',
@@ -90,7 +90,7 @@ export class Song extends BaseEntity {
             chars.map((c) => {
                 count +=
                     name.split(c).length -
-                    (count > 30 ? 2 : count > 10 ? 1 : 0);
+                    (count > 25 ? 2 : count > 10 ? 1 : 0);
             });
             chars2.map((c) => {
                 count -= name.split(c).length - 1;
