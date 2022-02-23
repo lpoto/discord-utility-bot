@@ -11,6 +11,8 @@ import {
     VoiceBasedChannel,
     VoiceChannel,
 } from 'discord.js';
+import moment from 'moment';
+import { Notification } from '../entities/notification';
 import { MusicClient } from './client';
 
 export class PermissionChecker {
@@ -90,33 +92,65 @@ export class PermissionChecker {
         member: GuildMember,
         interaction?: CommandInteraction | ButtonInteraction,
     ): boolean {
+        if (!this.client.user || !member.guild.id) return false;
+        const notification: Notification = Notification.create({
+            clientId: this.client.user.id,
+            userId: member.id,
+            guildId: member.guild.id,
+            expires: moment(moment.now()).add(1, 'h').toDate(),
+            name: '?',
+        });
+
         if (!member.voice.channel) {
-            if (interaction)
-                interaction.reply({
-                    content: this.client.translate(interaction.guildId, [
-                        'error',
-                        'voice',
-                        'user',
-                        'notConnected',
-                    ]),
-                    ephemeral: true,
-                });
+            Notification.findOne({
+                userId: member.id,
+                guildId: member.guild.id,
+                clientId: this.client.user.id,
+                name: 'memberNoVoice',
+            }).then((r) => {
+                if (r) return;
+                if (interaction) {
+                    notification.name = 'memberNoVoice';
+                    notification.save().then(() => {
+                        interaction.reply({
+                            content: this.client.translate(
+                                interaction.guildId,
+                                ['error', 'voice', 'user', 'notConnected'],
+                            ),
+                            ephemeral: true,
+                        });
+                    });
+                }
+            });
             return false;
         }
+
         if (!(member.voice.channel instanceof VoiceChannel)) {
-            if (interaction)
-                interaction.reply({
-                    content: this.client.translate(interaction.guildId, [
-                        'error',
-                        'voice',
-                        'invalid',
-                    ]),
-                    ephemeral: true,
-                });
+            Notification.findOne({
+                userId: member.id,
+                guildId: member.guild.id,
+                clientId: this.client.user.id,
+                name: 'invalidVoice',
+            }).then((r) => {
+                if (r) return;
+                if (interaction) {
+                    notification.name = 'invalidVoice';
+                    notification.save().then(() => {
+                        interaction.reply({
+                            content: this.client.translate(
+                                interaction.guildId,
+                                ['error', 'voice', 'invalid'],
+                            ),
+                            ephemeral: true,
+                        });
+                    });
+                }
+            });
             return false;
         }
+
         if (!this.checkClientVoice(member.voice.channel)) {
-            if (interaction)
+            if (interaction) {
                 interaction.reply({
                     content: this.client.translate(interaction.guildId, [
                         'error',
@@ -126,22 +160,34 @@ export class PermissionChecker {
                     ]),
                     ephemeral: true,
                 });
+            }
             return false;
         }
+
         if (
             member.guild.me?.voice.channel &&
             member.guild.me?.voice.channel !== member.voice.channel
         ) {
-            if (interaction)
-                interaction.reply({
-                    content: this.client.translate(interaction.guildId, [
-                        'error',
-                        'voice',
-                        'user',
-                        'differentChannel',
-                    ]),
-                    ephemeral: true,
-                });
+            Notification.findOne({
+                userId: member.id,
+                guildId: member.guild.id,
+                clientId: this.client.user.id,
+                name: 'memberDifferentChannel',
+            }).then((r) => {
+                if (r) return;
+                if (interaction) {
+                    notification.name = 'memberDifferentChannel';
+                    notification.save().then(() => {
+                        interaction.reply({
+                            content: this.client.translate(
+                                interaction.guildId,
+                                ['error', 'voice', 'user', 'differentChannel'],
+                            ),
+                            ephemeral: true,
+                        });
+                    });
+                }
+            });
             return false;
         }
         return true;
