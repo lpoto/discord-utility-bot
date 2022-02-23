@@ -109,16 +109,26 @@ export class Forward extends AbstractCommand {
                             continue;
                         }
                     }
-                    await queue.reload();
-                    await this.forwardIndexes(queue, indexes);
-                    this.client.musicActions.updateQueueMessage(
-                        queue,
-                        true,
-                        false,
-                        true,
-                    );
-                    const forwardDd: MessageSelectMenu | null =
-                        this.forwardDropdown(queue, start);
+                    try {
+                        await queue.reload();
+                        await this.forwardIndexes(queue, indexes);
+                        this.client.musicActions.updateQueueMessage(
+                            queue,
+                            true,
+                            false,
+                            true,
+                        );
+                    } catch (e) {
+                        console.error('Error when forwarding indexes: ', e);
+                        return;
+                    }
+                    let forwardDd: MessageSelectMenu | null = null;
+                    try {
+                        forwardDd = this.forwardDropdown(queue, start);
+                    } catch (e) {
+                        console.error('Forward dropdown error: ', e);
+                        return;
+                    }
                     if (interaction2.deferred || interaction2.replied) return;
                     try {
                         interaction2.update({
@@ -153,17 +163,16 @@ export class Forward extends AbstractCommand {
         if (queue.songs.length < 2) return null;
         const songs: Song[] = queue.songs.slice(
             start * this.songsPerPage,
-            start * this.songsPerPage + this.songsPerPage,
+            start * this.songsPerPage + this.songsPerPage + 1,
         );
         const dropdownOptions: MessageSelectOptionData[] = songs
             .map((s, index) => {
-                let label = `${
-                    index + start + this.songsPerPage
-                }.\u3000${s.toString()}`;
+                const idx: number = index + start * this.songsPerPage;
+                let label = `${idx}.\u3000${s.toString()}`;
                 if (label.length > 100) label = label.substring(0, 100);
                 return {
                     label: label,
-                    value: s.position.toString(),
+                    value: idx.toString(),
                 };
             })
             .slice(1);
@@ -203,27 +212,22 @@ export class Forward extends AbstractCommand {
 
     private async forwardIndexes(
         queue: Queue,
-        positions: number[],
+        indexes: number[],
     ): Promise<void> {
         if (queue.songs.length < 2) return;
-        let idx = 1;
-        let idx2: number = positions.length + 1;
-        let minPos: number = Math.min.apply(
-            null,
-            queue.songs.map((s) => s.position),
-        );
-        for (const song of queue.songs) {
-            if (song.position === minPos) {
-                minPos = 0;
-                song.position = minPos;
-            } else if (positions.includes(song.position)) {
-                song.position = idx;
-                idx++;
-            } else {
-                song.position = idx2;
-                idx2++;
-            }
-        }
+        const songs1: Song[] = queue.songs
+            .filter((_, idx) => idx === 0 || indexes.includes(idx))
+            .map((s, idx) => {
+                s.position = idx;
+                return s;
+            });
+        const songs2: Song[] = queue.songs
+            .filter((_, idx) => idx !== 0 && !indexes.includes(idx))
+            .map((s, idx) => {
+                s.position = idx + songs1.length;
+                return s;
+            });
+        queue.songs = songs1.concat(songs2);
         await queue.save();
     }
 }

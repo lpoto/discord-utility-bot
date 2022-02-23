@@ -110,16 +110,26 @@ export class Remove extends AbstractCommand {
                                 continue;
                             }
                         }
-                        await queue.reload();
-                        await this.removeIndexes(queue, indexes);
-                        this.client.musicActions.updateQueueMessage(
-                            queue,
-                            false,
-                            false,
-                            true,
-                        );
-                        const removeDd: MessageSelectMenu | null =
-                            this.removeDropdown(queue, start);
+                        try {
+                            await queue.reload();
+                            await this.removeIndexes(queue, indexes);
+                            this.client.musicActions.updateQueueMessage(
+                                queue,
+                                false,
+                                false,
+                                true,
+                            );
+                        } catch (e) {
+                            console.error('Error when removing indexes: ', e);
+                            return;
+                        }
+                        let removeDd: MessageSelectMenu | null = null;
+                        try {
+                            removeDd = this.removeDropdown(queue, start);
+                        } catch (e) {
+                            console.error('Remove dropdown error', e);
+                            return;
+                        }
                         if (interaction2.deferred || interaction2.replied)
                             return;
                         try {
@@ -158,17 +168,16 @@ export class Remove extends AbstractCommand {
         if (queue.songs.length < 2) return null;
         const songs: Song[] = queue.songs.slice(
             start * this.songsPerPage,
-            start * this.songsPerPage + this.songsPerPage,
+            start * this.songsPerPage + this.songsPerPage + 1,
         );
         const dropdownOptions: MessageSelectOptionData[] = songs
             .map((s, index) => {
-                let label = `${
-                    index + start + this.songsPerPage
-                }.\u3000${s.toString()}`;
+                const idx: number = index + start * this.songsPerPage;
+                let label = `${idx}.\u3000${s.toString()}`;
                 if (label.length > 100) label = label.substring(0, 100);
                 return {
                     label: label,
-                    value: index.toString(),
+                    value: idx.toString(),
                 };
             })
             .slice(1);

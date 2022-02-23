@@ -36,7 +36,9 @@ export class MusicActions {
     }
 
     public executeFromInteraction(interaction: ButtonInteraction) {
-        this.commands.executeFromInteraction(interaction);
+        this.commands.executeFromInteraction(interaction).catch((e) => {
+            this.client.handleError(e);
+        });
     }
 
     public async songsToQueue(
@@ -53,7 +55,11 @@ export class MusicActions {
                     player.state.status !== AudioPlayerStatus.Playing &&
                     player.state.status !== AudioPlayerStatus.Paused)
             ) {
-                await this.commands.execute(CommandName.PLAY, queue.guildId);
+                await this.commands
+                    .execute(CommandName.PLAY, queue.guildId)
+                    .catch((e) => {
+                        this.client.handleError(e);
+                    });
             }
             return 100;
         }

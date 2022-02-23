@@ -99,6 +99,7 @@ export class ClientEventHandler {
                     '10062',
                     '50001',
                     '40060',
+                    '50083',
                 ].includes(discordError.code.toString())
             )
                 return;
