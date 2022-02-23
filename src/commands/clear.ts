@@ -47,6 +47,7 @@ export class Clear extends AbstractCommand {
         if (!queue) return;
 
         if (interaction.component.style === 'PRIMARY') {
+            queue.offset = 0;
             if (queue.songs.length > 0) {
                 const attachment = new MessageAttachment(
                     Buffer.from(
