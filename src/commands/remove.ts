@@ -162,10 +162,12 @@ export class Remove extends AbstractCommand {
         );
         const dropdownOptions: MessageSelectOptionData[] = songs
             .map((s, index) => {
+                let label = `${
+                    index + start + this.songsPerPage
+                }.\u3000${s.toString()}`;
+                if (label.length > 100) label = label.substring(0, 100);
                 return {
-                    label:
-                        `${index + start * this.songsPerPage}.\u3000` +
-                        s.toString(),
+                    label: label,
                     value: index.toString(),
                 };
             })
