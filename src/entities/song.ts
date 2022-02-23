@@ -44,23 +44,28 @@ export class Song extends BaseEntity {
             let count = 0;
             const chars: string[] = [
                 'A',
+                'B',
+                'C',
+                'D',
                 'E',
-                'O',
-                '0',
+                'F',
+                'G',
+                'H',
                 'K',
+                'L',
                 'M',
                 'N',
-                'C',
-                'B',
-                'V',
-                'F',
+                'O',
+                'P',
+                'R',
                 'S',
                 'T',
+                'U',
+                'V',
                 'Z',
-                'D',
-                'W',
                 'Y',
-                'H',
+                'X',
+                'W',
                 ' ',
             ];
             const chars2: string[] = [
@@ -77,9 +82,15 @@ export class Song extends BaseEntity {
                 '|',
                 '(',
                 ')',
+                '!',
+                '?',
+                'r',
+                't',
             ];
             chars.map((c) => {
-                count += name.split(c).length - 1;
+                count +=
+                    name.split(c).length -
+                    (count > 30 ? 2 : count > 10 ? 1 : 0);
             });
             chars2.map((c) => {
                 count -= name.split(c).length - 1;
@@ -92,13 +103,16 @@ export class Song extends BaseEntity {
         return this.toString();
     }
 
-    public toString(add?: string): string {
-        const name: string = add ? this.name + add : this.name;
-        if (name.length < 47) return name;
-        return name.replace(
-            /(?![^\n]{1,43}$)([^\n]{1,43})\s/g,
-            '$1\n\u3000\u3000',
-        );
+    public toString(add?: string, type: number = 0): string {
+        let name: string = add ? this.name + add : this.name;
+        if (name.length > 100) name = name.substring(0, 100);
+        if (name.length < (type === 0 ? 47 : 43)) return name;
+        if (type === 0)
+            return name.replace(
+                /(?![^\n]{1,43}$)([^\n]{1,43})\s/g,
+                '$1\n\u2000',
+            );
+        return name.replace(/(?![^\n]{1,38}$)([^\n]{1,38})\s/g, '$1\n\u2000');
     }
 
     public static async findOnYoutube(

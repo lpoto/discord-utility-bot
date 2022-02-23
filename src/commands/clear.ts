@@ -93,7 +93,7 @@ export class Clear extends AbstractCommand {
                         clientId: this.client.user.id,
                         guildId: this.guildId,
                         expires: moment(moment.now()).add(24, 'h').toDate(),
-                        name: 'clearRequest',
+                        name: 'clearStopRequest',
                     });
                     Notification.findOne({
                         userId: notification.userId,
