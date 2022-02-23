@@ -76,8 +76,8 @@
                 "description": "`↺`: Replays the currently playing song from the beginning."
             },
             "edit": {
-                "label": "🛠️",
-                "description": "`🛠️`: Shows additional buttons for managing the queue."
+                "label": "▼",
+                "description": "`▼`: Shows additional buttons for managing the queue."
             },
             "remove": {
                 "label": "Remove",
