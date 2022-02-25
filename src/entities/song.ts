@@ -107,19 +107,33 @@ export class Song extends BaseEntity {
         return this.toString();
     }
 
-    public toString(add?: string, type: number = 0): string {
+    public toString(
+        add?: string,
+        lineLength: number = 43,
+        spacer?: string,
+    ): string {
         let name: string = this.name.replace(/\|/g, '│');
         const addLength: number = add ? add.length : 0;
+        const split: string = spacer ? spacer : '\n\u2000';
         if (name.length + addLength > 100)
             name = name.substring(0, 100 - addLength);
         if (add) name += add;
-        if (name.length < (type === 0 ? 47 : 43)) return name;
-        if (type === 0)
-            return name.replace(
-                /(?![^\n]{1,43}$)([^\n]{1,43})\s/g,
-                '$1\n\u2000',
+        const re: RegExp = new RegExp(
+            `(?![^\n]{1,${lineLength}}$)([^\n]{1,${lineLength}})\\s`,
+            'g',
+        );
+        name = name.replace(re, `$1${split}`);
+        const nameList: string[] = name.split(split);
+        if (nameList.length > 1) {
+            const dif: number = Math.round(
+                (lineLength - nameList[nameList.length - 1].length) / 3,
             );
-        return name.replace(/(?![^\n]{1,38}$)([^\n]{1,38})\s/g, '$1\n\u2000');
+            if (dif > 0) {
+                nameList[nameList.length - 1] =
+                    '\u2000'.repeat(dif) + nameList[nameList.length - 1];
+            }
+        }
+        return nameList.join(split);
     }
 
     public static async findOnYoutube(
@@ -218,8 +232,7 @@ export class Song extends BaseEntity {
     private static isYoutubeUrl(url: string): boolean {
         if (!url) return false;
         // eslint-disable-next-line max-len
-        const regExp =
-            /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
+        const regExp = /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
         const match: RegExpMatchArray | null = url.match(regExp);
         return match !== null && match !== undefined;
     }

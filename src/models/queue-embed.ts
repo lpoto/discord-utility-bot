@@ -25,41 +25,35 @@ export class QueueEmbed extends MessageEmbed {
         });
         this.queue = queue;
         this.client = client;
+        const spacer: string = '\n> \u3000\u2000\u2000';
         const songs: string[] | undefined = this.queue.songs.map(
             (song, index) => {
                 if (index > 0)
                     return `***${index}.***\u3000*${song.toStringShortened(
                         this.queue.options.includes('expanded'),
                     )}*`;
-                return `*${song.toString(undefined, 1)}*`;
+                return `${song.toString(undefined, 38, spacer)}`;
             },
         );
-        const headSong: string | undefined = songs.shift();
+        let headSong: string | undefined = songs.shift();
         if (!headSong) return;
+        const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
         const duration: string = queue.songs[0].durationString;
+        headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`
+        if (addEmpty) headSong += `\n> ㅤ`
 
         // this.setDescription(this.buildDescription());
-        this.setFields([
-            {
-                name: this.client.translate(this.queue.guildId, [
-                    'music',
-                    'queue',
-                    'curPlaying',
-                ]),
-                value: '\u2000' + headSong,
-                inline: true,
-            },
-            {
-                name: this.client.translate(this.queue.guildId, [
-                    'music',
-                    'queue',
-                    'duration',
-                ]),
-                value: `***${duration}***`,
-                inline: true,
-            },
-        ]);
+        this.addField(
+            this.client.translate(this.queue.guildId, [
+                'music',
+                'queue',
+                'curPlaying',
+            ]),
+            '\u2000' + headSong,
+            false,
+        );
         const queueSize: number = queue.songs.length;
+        const sngs: string = songs.slice(this.queue.offset, this.queue.offset + QueueEmbed.songsPerPage()).join('\n')
         if (queueSize > 1) {
             this.addField(
                 this.client.translate(this.queue.guildId, [
@@ -67,12 +61,7 @@ export class QueueEmbed extends MessageEmbed {
                     'queue',
                     'next',
                 ]),
-                songs
-                    .slice(
-                        this.queue.offset,
-                        this.queue.offset + QueueEmbed.songsPerPage(),
-                    )
-                    .join('\n'),
+                sngs.length > 0 ? sngs : '-'
             );
             this.addField(
                 this.client.translate(this.queue.guildId, [
