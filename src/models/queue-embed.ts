@@ -26,20 +26,25 @@ export class QueueEmbed extends MessageEmbed {
         this.queue = queue;
         this.client = client;
         const spacer = '\n> \u3000\u2000\u2000';
+        if (this.queue.songs.length < 1) return;
         const songs: string[] | undefined = this.queue.songs
+            .slice(1)
             .slice(
                 this.queue.offset,
                 this.queue.offset + QueueEmbed.songsPerPage(),
             )
             .map((song, index) => {
-                if (index > 0)
-                    return `***${index}.***\u3000*${song.toStringShortened(
-                        this.queue.options.includes('expanded'),
-                    )}*`;
-                return `*${song.toString(undefined, 36, spacer)}*`;
+                return `***${
+                    index + this.queue.offset + 1
+                }.***\u3000*${song.toStringShortened(
+                    this.queue.options.includes('expanded'),
+                )}*`;
             });
-        let headSong: string | undefined = songs.shift();
-        if (!headSong) return;
+        let headSong = `*${this.queue.songs[0].toString(
+            undefined,
+            36,
+            spacer,
+        )}*`;
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
         const duration: string = queue.songs[0].durationString;
         headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
