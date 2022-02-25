@@ -34,7 +34,7 @@ export class Forward extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'forward', 'label']),
             )
-            .setDisabled(queue.songs.length < 2)
+            .setDisabled(queue.songs.length < 3)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -50,9 +50,8 @@ export class Forward extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown(
-            queue,
-        );
+        const forwardDropdown: MessageSelectMenu | null =
+            this.forwardDropdown(queue);
         if (!forwardDropdown) return;
         interaction
             .reply({

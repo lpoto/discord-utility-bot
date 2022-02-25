@@ -48,7 +48,7 @@ export class Queue extends BaseEntity {
     sortSongs(): void {
         if (this.songs) this.songs.sort((s1, s2) => s1.position - s2.position);
         if (this.offset && this.songs)
-            while  (this.offset >= this.songs.length - 1)
+            while (this.offset >= this.songs.length - 1)
                 this.offset -= QueueEmbed.songsPerPage();
         if (this.offset < 0) this.offset = 0;
     }

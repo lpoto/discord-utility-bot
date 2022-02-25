@@ -25,7 +25,7 @@ export class QueueEmbed extends MessageEmbed {
         });
         this.queue = queue;
         this.client = client;
-        const spacer: string = '\n> \u3000\u2000\u2000';
+        const spacer = '\n> \u3000\u2000\u2000';
         const songs: string[] | undefined = this.queue.songs
             .slice(
                 this.queue.offset,
@@ -43,7 +43,7 @@ export class QueueEmbed extends MessageEmbed {
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
         const duration: string = queue.songs[0].durationString;
         headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
-        if (addEmpty) headSong += `\n> ㅤ`;
+        if (addEmpty) headSong += '\n> ㅤ';
 
         this.addField(
             this.client.translate(this.queue.guildId, [
@@ -67,7 +67,11 @@ export class QueueEmbed extends MessageEmbed {
                     'queue',
                     'next',
                 ]),
-                sngs.length > 0 ? sngs : '-',
+                sngs.length > 0
+                    ? sngs.length > 1024
+                        ? sngs.substring(0, 1024)
+                        : sngs
+                    : '-',
             );
         }
     }

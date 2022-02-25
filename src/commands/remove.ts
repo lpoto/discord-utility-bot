@@ -49,9 +49,8 @@ export class Remove extends AbstractCommand {
             const queue: Queue | undefined = await this.getQueue();
             if (!queue) return;
 
-            const removeDropdown: MessageSelectMenu | null = this.removeDropdown(
-                queue,
-            );
+            const removeDropdown: MessageSelectMenu | null =
+                this.removeDropdown(queue);
             if (!removeDropdown) return;
             interaction
                 .reply({

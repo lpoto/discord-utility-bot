@@ -115,7 +115,10 @@ export class Clear extends AbstractCommand {
                                     ephemeral: true,
                                 })
                                 .catch((e) => {
-                                    this.client.handleError(e, 'clear.ts -> execute');
+                                    this.client.handleError(
+                                        e,
+                                        'clear.ts -> execute',
+                                    );
                                 });
                         });
                     });

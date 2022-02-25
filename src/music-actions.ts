@@ -237,9 +237,8 @@ export class MusicActions {
     ): Promise<boolean> {
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return false;
-        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
-            queue.channelId,
-        );
+        const channel: NonThreadGuildBasedChannel | null =
+            await guild.channels.fetch(queue.channelId);
         if (!channel || !channel.isText()) return false;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,
