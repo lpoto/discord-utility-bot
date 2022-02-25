@@ -91,7 +91,7 @@ export class MusicActions {
                     }
                 }
                 idx++;
-                if (idx % 10 === 0 && idx < songNames.length - 1) {
+                if (idx % 8 === 0 && idx < songNames.length - 1) {
                     this.updateQueueMessage(queue);
                 }
                 if (

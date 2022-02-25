@@ -22,7 +22,7 @@
         "queue": {
             "title": "Music queue",
             "footer": "Send the Name / Url of a Youtube Song / Playlist in the Thread!",
-            "songNumber": "Number of songs in the queue",
+            "songNumber": "Songs in queue",
             "curPlaying": "Now",
             "duration": "Duration",
             "next": "Next"
