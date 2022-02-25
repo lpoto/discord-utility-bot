@@ -50,8 +50,9 @@ export class Forward extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        const forwardDropdown: MessageSelectMenu | null =
-            this.forwardDropdown(queue);
+        const forwardDropdown: MessageSelectMenu | null = this.forwardDropdown(
+            queue,
+        );
         if (!forwardDropdown) return;
         interaction
             .reply({
@@ -109,19 +110,16 @@ export class Forward extends AbstractCommand {
                             continue;
                         }
                     }
-                    try {
-                        await queue.reload();
-                        await this.forwardIndexes(queue, indexes);
-                        this.client.musicActions.updateQueueMessage(
-                            queue,
-                            true,
-                            false,
-                            true,
+                    await queue.reload();
+                    await this.forwardIndexes(queue, indexes);
+                    this.client.musicActions
+                        .updateQueueMessage(queue, true, false, true)
+                        .catch((e) =>
+                            this.client.handleError(
+                                e,
+                                'forward.ts -> forwarding indexes',
+                            ),
                         );
-                    } catch (e) {
-                        console.error('Error when forwarding indexes: ', e);
-                        return;
-                    }
                     let forwardDd: MessageSelectMenu | null = null;
                     try {
                         forwardDd = this.forwardDropdown(queue, start);
@@ -130,8 +128,8 @@ export class Forward extends AbstractCommand {
                         return;
                     }
                     if (interaction2.deferred || interaction2.replied) return;
-                    try {
-                        interaction2.update({
+                    interaction2
+                        .update({
                             content: this.translate([
                                 'music',
                                 'commands',
@@ -145,10 +143,13 @@ export class Forward extends AbstractCommand {
                                           forwardDd,
                                       ),
                                   ],
-                        });
-                    } catch (e) {
-                        return;
-                    }
+                        })
+                        .catch((e) =>
+                            this.client.handleError(
+                                e,
+                                'forward.ts -> execute',
+                            ),
+                        );
                 });
             })
             .catch((e) => {

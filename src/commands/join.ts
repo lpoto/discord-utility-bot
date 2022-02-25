@@ -49,7 +49,7 @@ export class Join extends AbstractCommand {
             if (interaction && !interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
-                    .catch((e) => this.client.handleError(e));
+                    .catch((e) => this.client.handleError(e, 'join.ts -> execute'));
 
             this.client.musicActions.commands.execute(
                 CommandName.PLAY,

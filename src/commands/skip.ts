@@ -71,7 +71,7 @@ export class Skip extends AbstractCommand {
                 )
                     interaction
                         .deferUpdate()
-                        .catch((e) => this.client.handleError(e));
+                        .catch((e) => this.client.handleError(e, 'skip.ts'));
             } else if (
                 interaction &&
                 !interaction.deferred &&
@@ -85,7 +85,7 @@ export class Skip extends AbstractCommand {
                         false,
                         true,
                     )
-                    .catch((e) => this.client.handleError(e));
+                    .catch((e) => this.client.handleError(e, 'skip.ts'));
             }
         } catch (e) {
             console.error('Error when skipping: ', e);

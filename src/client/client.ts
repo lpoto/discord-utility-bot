@@ -75,8 +75,8 @@ export class MusicClient extends Client {
         return this.translator.translate(guildId, keys);
     }
 
-    public handleError(error: Error): void {
-        return this.eventsHandler.handleError(error);
+    public handleError(error: Error, location?: string): void {
+        return this.eventsHandler.handleError(error, location);
     }
 
     public slashCommand(guildId: string): { [key: string]: string } {

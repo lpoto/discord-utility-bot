@@ -86,7 +86,7 @@ export class ClientEventHandler {
         });
     }
 
-    public handleError(error: Error): void {
+    public handleError(error: Error, location?: string): void {
         try {
             /* if discordApiError, do not log errors when fetching already
              * deleted messages or missing permissions to delete threads...*/
@@ -104,10 +104,10 @@ export class ClientEventHandler {
             )
                 return;
         } catch (e) {
-            console.error('Error handler: ', e);
+            console.error(location ? `Error (${location}): ` : 'Error: ', e);
             return;
         }
-        console.error('Error handler: ', error);
+        console.error(location ? `Error (${location}): ` : 'Error: ', error);
     }
 
     private handleVoiceStateUpdate(

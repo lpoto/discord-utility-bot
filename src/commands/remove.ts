@@ -49,8 +49,9 @@ export class Remove extends AbstractCommand {
             const queue: Queue | undefined = await this.getQueue();
             if (!queue) return;
 
-            const removeDropdown: MessageSelectMenu | null =
-                this.removeDropdown(queue);
+            const removeDropdown: MessageSelectMenu | null = this.removeDropdown(
+                queue,
+            );
             if (!removeDropdown) return;
             interaction
                 .reply({
@@ -110,19 +111,16 @@ export class Remove extends AbstractCommand {
                                 continue;
                             }
                         }
-                        try {
-                            await queue.reload();
-                            await this.removeIndexes(queue, indexes);
-                            this.client.musicActions.updateQueueMessage(
-                                queue,
-                                false,
-                                false,
-                                true,
+                        await queue.reload();
+                        await this.removeIndexes(queue, indexes);
+                        this.client.musicActions
+                            .updateQueueMessage(queue, false, false, true)
+                            .catch((e) =>
+                                this.client.handleError(
+                                    e,
+                                    'remove.ts -> Removing indexes',
+                                ),
                             );
-                        } catch (e) {
-                            console.error('Error when removing indexes: ', e);
-                            return;
-                        }
                         let removeDd: MessageSelectMenu | null = null;
                         try {
                             removeDd = this.removeDropdown(queue, start);
@@ -132,8 +130,8 @@ export class Remove extends AbstractCommand {
                         }
                         if (interaction2.deferred || interaction2.replied)
                             return;
-                        try {
-                            interaction2.update({
+                        interaction2
+                            .update({
                                 content: this.translate([
                                     'music',
                                     'commands',
@@ -147,10 +145,13 @@ export class Remove extends AbstractCommand {
                                               removeDd,
                                           ),
                                       ],
-                            });
-                        } catch (e) {
-                            return;
-                        }
+                            })
+                            .catch((e) =>
+                                this.client.handleError(
+                                    e,
+                                    'remove.ts -> execute',
+                                ),
+                            );
                     });
                 })
                 .catch((e) => {

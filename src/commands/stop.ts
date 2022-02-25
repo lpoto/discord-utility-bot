@@ -96,17 +96,32 @@ export class Stop extends AbstractCommand {
                         name: notification.name,
                     }).then((n) => {
                         if (n) return;
-                        notification.save().then(() => {
-                            webhook.send({
-                                content: this.translate([
-                                    'music',
-                                    'commands',
-                                    'stop',
-                                    'confirm',
-                                ]),
-                                ephemeral: true,
-                            });
-                        });
+                        notification
+                            .save()
+                            .then(() => {
+                                webhook
+                                    .send({
+                                        content: this.translate([
+                                            'music',
+                                            'commands',
+                                            'stop',
+                                            'confirm',
+                                        ]),
+                                        ephemeral: true,
+                                    })
+                                    .catch((e) =>
+                                        this.client.handleError(
+                                            e,
+                                            'stop.ts -> webhook send',
+                                        ),
+                                    );
+                            })
+                            .catch((e) =>
+                                this.client.handleError(
+                                    e,
+                                    'stop.ts -> notification save',
+                                ),
+                            );
                     });
 
                     const x: NodeJS.Timeout = setTimeout(async () => {
@@ -124,7 +139,11 @@ export class Stop extends AbstractCommand {
                                     );
                                 });
                             })
-                            .catch(() => {
+                            .catch((e) => {
+                                this.client.handleError(
+                                    e,
+                                    'stop.ts -> timeout',
+                                );
                                 return;
                             });
                     }, 5000);

@@ -3,7 +3,7 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { CommandName } from '.';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
+import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Replay extends AbstractCommand {
@@ -47,6 +47,10 @@ export class Replay extends AbstractCommand {
         );
 
         if (interaction && !interaction.deferred && !interaction.replied)
-            interaction.deferUpdate().catch((e) => this.client.handleError(e));
+            interaction
+                .deferUpdate()
+                .catch((e) =>
+                    this.client.handleError(e, 'replay.ts -> execute'),
+                );
     }
 }

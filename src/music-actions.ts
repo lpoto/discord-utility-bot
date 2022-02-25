@@ -36,9 +36,11 @@ export class MusicActions {
     }
 
     public executeFromInteraction(interaction: ButtonInteraction) {
-        this.commands.executeFromInteraction(interaction).catch((e) => {
-            this.client.handleError(e);
-        });
+        this.commands
+            .executeFromInteraction(interaction)
+            .catch((e) =>
+                this.client.handleError(e, 'executing with interaction'),
+            );
     }
 
     public async songsToQueue(
@@ -58,7 +60,7 @@ export class MusicActions {
                 await this.commands
                     .execute(CommandName.PLAY, queue.guildId)
                     .catch((e) => {
-                        this.client.handleError(e);
+                        this.client.handleError(e, 'adding songs -> playing');
                     });
             }
             return 100;
@@ -150,13 +152,8 @@ export class MusicActions {
                 selfMute: false,
                 selfDeaf: true,
             }).on('error', (error) => {
-                this.client.handleError(error);
-                if (retry < 5)
-                    this.joinVoice(interaction, message, retry + 1).catch(
-                        (e) => {
-                            this.client.handleError(e);
-                        },
-                    );
+                this.client.handleError(error, 'joining voice channel');
+                if (retry < 5) this.joinVoice(interaction, message, retry + 1);
             }),
         );
         return true;
@@ -198,13 +195,16 @@ export class MusicActions {
                                 });
                         }
                         message.delete().catch((error) => {
-                            this.client.handleError(error);
+                            this.client.handleError(
+                                error,
+                                'deleting message when replying with queue',
+                            );
                         });
                         return false;
                     });
             })
             .catch((error) => {
-                this.client.handleError(error);
+                this.client.handleError(error, 'replying with queue');
                 return false;
             });
     }
@@ -237,8 +237,9 @@ export class MusicActions {
     ): Promise<boolean> {
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return false;
-        const channel: NonThreadGuildBasedChannel | null =
-            await guild.channels.fetch(queue.channelId);
+        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
+            queue.channelId,
+        );
         if (!channel || !channel.isText()) return false;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,

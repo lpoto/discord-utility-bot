@@ -133,7 +133,7 @@ export class Play extends AbstractCommand {
                     });
             })
             .catch((e) => {
-                console.error('Error when creating audio player: ', e);
+                this.client.handleError(e, 'play.ts -> creating audio player');
                 this.client.setAudioPlayer(queue.guildId, null);
                 if (retries < 5) this.next(interaction, retries + 1);
                 return;
