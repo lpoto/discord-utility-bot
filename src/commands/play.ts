@@ -67,6 +67,9 @@ export class Play extends AbstractCommand {
             }
         }
 
+        queue.color = Math.floor(Math.random() * 16777215);
+        await queue.save();
+
         this.execute(interaction, retries);
     }
 

@@ -59,6 +59,9 @@ export class Skip extends AbstractCommand {
                 }
             }
 
+            queue.color = Math.floor(Math.random() * 16777215);
+            await queue.save();
+
             if (queue.songs.length > 0) {
                 this.client.musicActions.commands.execute(
                     CommandName.PLAY,

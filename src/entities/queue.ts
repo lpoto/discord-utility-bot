@@ -1,8 +1,6 @@
 import {
     AfterLoad,
     BaseEntity,
-    BeforeInsert,
-    BeforeUpdate,
     Column,
     Entity,
     OneToMany,
