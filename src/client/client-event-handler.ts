@@ -180,7 +180,7 @@ export class ClientEventHandler {
                     });
 
                 this.actions.songsToQueue(queue, songs).then((exit) => {
-                    if (exit === 100 && this.client.user && message.guildId) {
+                    if (exit === 300 && this.client.user && message.guildId) {
                         const notification: Notification = Notification.create(
                             {
                                 userId: message.author.id,

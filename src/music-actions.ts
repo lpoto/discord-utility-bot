@@ -50,7 +50,7 @@ export class MusicActions {
         const player: AudioPlayer | null = this.client.getAudioPlayer(
             queue.guildId,
         );
-        if (queue.songs.length >= 100) {
+        if (queue.songs.length >= 300) {
             if (
                 !player ||
                 (player &&
@@ -63,7 +63,7 @@ export class MusicActions {
                         this.client.handleError(e, 'adding songs -> playing');
                     });
             }
-            return 100;
+            return 300;
         }
         let position =
             queue.songs.length > 0
@@ -85,8 +85,8 @@ export class MusicActions {
                     s.queue = queue;
                     await s.save();
                     await queue.reload();
-                    if (queue.songs.length >= 100) {
-                        exit = 100;
+                    if (queue.songs.length >= 300) {
+                        exit = 300;
                         break;
                     }
                 }
