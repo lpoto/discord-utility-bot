@@ -50,7 +50,7 @@ class Users:
         cursor = cnx.cursor()
         cursor.execute('INSERT INTO user_info ({}) VALUES ({})'.format(
             'user_id, guild_id, name, info',
-            f'{id}, {guild_id}, "{name}", "{info}"'))
+            f"{id}, {guild_id}, '{name}', '{info}'"))
         cnx.commit()
         cursor.close()
         cnx.close()
@@ -60,7 +60,7 @@ class Users:
     ) -> None:
         cnx = self.database.connection_object
         cursor = cnx.cursor()
-        cursor.execute('UPDATE user_info set info = "{}" {}'.format(
+        cursor.execute("UPDATE user_info set info = '{}' {}".format(
             info,
             "WHERE user_id = {} AND guild_id = {} and name = '{}'".format(
                 id, guild_id, name)))

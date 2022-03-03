@@ -1,18 +1,15 @@
-FROM python:3.10-slim-buster AS BUILDER
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc mono-mcs && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get purge --auto-remove && \
-    apt-get clean
+FROM python:alpine3.15 AS BUILDER
 
 WORKDIR /app
 
 COPY requirements.txt requirements.txt
 
-RUN pip3 --no-cache-dir install -r requirements.txt
+RUN \
+ apk add --no-cache python3 postgresql-libs && \
+ apk add --no-cache --virtual .build-deps gcc python3-dev musl-dev postgresql-dev && \
+ python3 -m pip install -r requirements.txt --no-cache-dir && \
+ apk --purge del .build-deps
 
-RUN apt-get remove -y gcc mono-mcs && apt-get -y autoremove
 
 COPY . .
 

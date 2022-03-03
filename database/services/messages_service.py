@@ -58,7 +58,7 @@ class Messages:
         cursor = cnx.cursor()
         query = f'SELECT * FROM message_info WHERE message_id = {id}'
         if name is not None:
-            query += f' AND name = "{name}"'
+            query += f" AND name = '{name}'"
         if user_id is not None:
             query += f' AND user_id = {user_id}'
         cursor.execute(query)
@@ -87,7 +87,7 @@ class Messages:
         keys = 'id, channel_id, type, author_id'
         values = '{}, {}, {}, {}'.format(
             id, channel_id,
-            'NULL' if not type else f'"{type}"',
+            'NULL' if not type else f"'{type}'",
             'NULL' if not author_id else author_id)
         cnx = self.database.connection_object
         cursor = cnx.cursor()
@@ -95,7 +95,7 @@ class Messages:
         if info is not None and len(info) > 0:
             cursor.execute('INSERT INTO message_info ({}) VALUES {}'.format(
                 'message_id, name, info, user_id',
-                ', '.join('({}, "{}", "{}", {})'.format(
+                ', '.join("({}, '{}', '{}', {})".format(
                     id, i.get('name'), i.get('info'),
                     'NULL' if not i.get('user_id') else i.get('user_id')
                 ) for i in info)))
@@ -125,10 +125,10 @@ class Messages:
             self, id: int, *, name: str, info: str = None, user_id: int = None
     ) -> None:
         keys = 'message_id, name, info, user_id'
-        values = '{}, "{}", {}, {}'.format(
+        values = "{}, '{}', {}, {}".format(
             id, name,
-            'NULL' if not info else f'"{info}"',
-            "NULL" if not user_id else user_id)
+            'NULL' if not info else f"'{info}'",
+            'NULL' if not user_id else user_id)
         cnx = self.database.connection_object
         cursor = cnx.cursor()
         cursor.execute(f'INSERT INTO message_info({keys}) VALUES ({values})')
@@ -143,7 +143,7 @@ class Messages:
         cursor = cnx.cursor()
         cursor.execute('{} {} {}'.format(
             'DELETE FROM message_info WHERE ',
-            f'message_id = {id} AND name = "{name}" ',
+            f"message_id = {id} AND name = '{name}' ",
             f'AND user_id = {"NULL" if not user_id else user_id}'))
         cnx.commit()
         cursor.close()

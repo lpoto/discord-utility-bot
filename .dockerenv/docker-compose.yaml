@@ -12,28 +12,27 @@ services:
       DISCORD_TOKEN: your_token
       # Logging levels: 50 (CRITICAL), 40 (ERROR), 30 (WARNING), 20 (INFO), 10 (DEBUG)
       CLIENT_LOGGING: 20
-      MYSQL_LOGGING: 20
-      MYSQL_HOST: mysqldb
-      MYSQL_PORT: 3306
-      MYSQL_DATABASE: discord_utility_bot
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
+      POSTGRES_LOGGING: 20
+      POSTGRES_DB: discord_utility_bot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: postgresdb
+      POSTGRES_PORT: 5432
     depends_on:
-      - mysqldb
+      - postgresdb
 
-  mysqldb:
-    image: mysql:8
-    container_name: mysqldb
+  postgresdb:
+    image: postgres:14.1-alpine
+    container_name: postgresdb
     restart: unless-stopped
     ports:
-      - 3307:3306
+      - 5433:5432
     environment:
-      MYSQL_DATABASE: discord_utility_bot
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: discord_music_bot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
   mysql-data:

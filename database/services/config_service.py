@@ -50,11 +50,11 @@ class Config:
         cursor = cnx.cursor()
         cursor.execute('{} {}'.format(
             'INSERT INTO option (guild_id, name) ',
-            f'VALUES ({guild_id}, "{name}")'))
+            f"VALUES ({guild_id}, '{name}')"))
         if info and len(info) > 0:
             cursor.execute('{} {}'.format(
                 'INSERT INTO option_info (name, guild_id, info) VALUES ',
-                ', '.join(f'("{name}", {guild_id}, "{i}")' for i in info)))
+                ', '.join(f"('{name}', {guild_id}, '{i}')" for i in info)))
         cnx.commit()
         cursor.close()
         cnx.close()
