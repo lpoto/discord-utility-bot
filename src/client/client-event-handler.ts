@@ -16,7 +16,7 @@ import { Queue } from '../entities';
 import { Notification } from '../entities/notification';
 import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
-import fetch from 'node-fetch'
+import fetch from 'node-fetch';
 
 export class ClientEventHandler {
     private client: MusicClient;
@@ -163,36 +163,37 @@ export class ClientEventHandler {
                 )
                     this.actions.joinVoice(null, message);
 
-                let songs: string[] = message.content.split('\n')
+                let songs: string[] = [];
+                if (message.content) songs = message.content.split('\n');
 
                 if (message.attachments.size > 0) {
-                    for (let i:number = 0; i < message.attachments.size; i++) {
-                        const file: MessageAttachment | undefined = message.attachments.at(i);
+                    for (let i = 0; i < message.attachments.size; i++) {
+                        const file: MessageAttachment | undefined =
+                            message.attachments.at(i);
                         if (!file) continue;
                         const re = await fetch(file.url);
                         if (!re.ok) continue;
                         const text: string = await re.text();
                         if (text.length === 0) continue;
 
-                        songs = songs.concat(text.split('\n'))
+                        songs = songs.concat(text.split('\n'));
                     }
                 }
-                songs = songs
-                    .map((s) => {
-                        let n: string = s.trim();
-                        if (n[0] === '{' && n.includes('url:')) {
-                            n = s.substring(1, n.length - 1);
-                            n = n.split('url:')[1].split(',')[0].trim();
-                        }
-                        if (
-                            (n[0] === '"' && n[n.length - 1] === '"') ||
-                            // eslint-disable-next-line
-                            (n[0] === "'" && n[n.length - 1] === "'") ||
-                            (n[0] === '`' && n[n.length - 1] === '`')
-                        )
-                            n = n.substring(1, n.length - 1);
-                        return n;
-                    });
+                songs = songs.map((s) => {
+                    let n: string = s.trim();
+                    if (n[0] === '{' && n.includes('url:')) {
+                        n = s.substring(1, n.length - 1);
+                        n = n.split('url:')[1].split(',')[0].trim();
+                    }
+                    if (
+                        (n[0] === '"' && n[n.length - 1] === '"') ||
+                        // eslint-disable-next-line
+                        (n[0] === "'" && n[n.length - 1] === "'") ||
+                        (n[0] === '`' && n[n.length - 1] === '`')
+                    )
+                        n = n.substring(1, n.length - 1);
+                    return n;
+                });
 
                 this.actions.songsToQueue(queue, songs).then((exit) => {
                     if (exit === 300 && this.client.user && message.guildId) {
