@@ -1,5 +1,7 @@
+import moment from 'moment';
 import {
     BaseEntity,
+    BeforeInsert,
     Column,
     Entity,
     Index,
@@ -33,14 +35,19 @@ export class Notification extends BaseEntity {
     @Column({ nullable: true })
     content: string;
 
-    static async purgeOldNotifications(): Promise<void> {
-        const interval: NodeJS.Timer = setInterval(() => {
+    @BeforeInsert()
+    purgeAfterTimeout(): void {
+        if (this.expires === null || this.expires === undefined) return;
+        let dif: number = moment(this.expires).diff(moment.now());
+        if (dif < 0) dif = 0;
+        const timeout: NodeJS.Timeout = setTimeout(() => {
+            console.log('hehe');
             const currentDate: Date = new Date();
             Notification.createQueryBuilder('notification')
                 .delete()
                 .where('notification.expires <= :currentDate', { currentDate })
                 .execute();
-        }, 3600000);
-        interval.unref();
+        }, dif);
+        timeout.unref();
     }
 }

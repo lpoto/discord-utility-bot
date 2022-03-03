@@ -35,8 +35,6 @@ createConnection({
         requiredMemberRoles: ['DJ'],
     });
 
-    Notification.purgeOldNotifications();
-
     if (process.env.DISCORD_TOKEN)
         MusicClient.run(client, process.env.DISCORD_TOKEN);
     else console.log('Missing `DISCORD_TOKEN` env variable');

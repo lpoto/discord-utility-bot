@@ -63,6 +63,14 @@ export class ClientEventHandler {
             this.handleError(error);
         });
 
+        process.on('uncaughtException', (error: Error) => {
+            this.handleError(error);
+        });
+
+        process.on('unhandledRejection', (error: Error) => {
+            this.handleError(error);
+        });
+
         this.client.on('interactionCreate', (interaction) => {
             this.handleInteraction(interaction);
         });

@@ -122,40 +122,47 @@ export class MusicActions {
         message: Message | null = null,
         retry: number = 0,
     ): Promise<boolean> {
-        let voiceChannelId: string;
-        let guild: Guild;
-        if (
-            interaction &&
-            interaction.member instanceof GuildMember &&
-            interaction.member.voice.channel &&
-            interaction.guild
-        ) {
-            voiceChannelId = interaction.member.voice.channel.id;
-            guild = interaction.guild;
-        } else if (
-            message &&
-            message.member &&
-            message.member.voice.channel &&
-            message.guild
-        ) {
-            voiceChannelId = message.member.voice.channel.id;
-            guild = message.guild;
-        } else {
-            return false;
+        try {
+            let voiceChannelId: string;
+            let guild: Guild;
+            if (
+                interaction &&
+                interaction.member instanceof GuildMember &&
+                interaction.member.voice.channel &&
+                interaction.guild
+            ) {
+                voiceChannelId = interaction.member.voice.channel.id;
+                guild = interaction.guild;
+            } else if (
+                message &&
+                message.member &&
+                message.member.voice.channel &&
+                message.guild
+            ) {
+                voiceChannelId = message.member.voice.channel.id;
+                guild = message.guild;
+            } else {
+                return false;
+            }
+            this.client.setVoiceConnection(
+                guild.id,
+                joinVoiceChannel({
+                    channelId: voiceChannelId,
+                    guildId: guild.id,
+                    adapterCreator: guild.voiceAdapterCreator,
+                    selfMute: false,
+                    selfDeaf: true,
+                }).on('error', (error) => {
+                    this.client.handleError(error, 'joining voice channel');
+                    if (retry < 5)
+                        this.joinVoice(interaction, message, retry + 1);
+                }),
+            );
+        } catch (e) {
+            if (e instanceof Error)
+                this.client.handleError(e, 'actions - joinVoice');
+            else console.error('Error when joining voice: ', e);
         }
-        this.client.setVoiceConnection(
-            guild.id,
-            joinVoiceChannel({
-                channelId: voiceChannelId,
-                guildId: guild.id,
-                adapterCreator: guild.voiceAdapterCreator,
-                selfMute: false,
-                selfDeaf: true,
-            }).on('error', (error) => {
-                this.client.handleError(error, 'joining voice channel');
-                if (retry < 5) this.joinVoice(interaction, message, retry + 1);
-            }),
-        );
         return true;
     }
 

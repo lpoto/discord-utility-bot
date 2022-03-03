@@ -97,8 +97,8 @@ export class PermissionChecker {
             clientId: this.client.user.id,
             userId: member.id,
             guildId: member.guild.id,
-            expires: moment(moment.now()).add(1, 'h').toDate(),
             name: '?',
+            expires: moment(moment.now()).add(1, 'h').toDate(),
         });
 
         if (!member.voice.channel) {
