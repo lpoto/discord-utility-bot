@@ -33,8 +33,9 @@ export class Song extends BaseEntity {
 
     @ManyToOne(() => Queue, (queue) => queue.songs, {
         onDelete: 'CASCADE',
-        nullable: false,
+        onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',
+        nullable: false,
     })
     queue: Queue;
 
@@ -252,7 +253,7 @@ export class Song extends BaseEntity {
         const minutes: number = Math.floor((seconds % 3600) / 60);
         const newSeconds: number = (seconds % 3600) % 60;
         const minutesString: string =
-            hours === 0 || minutes < 10
+            hours === 0 || minutes >= 10
                 ? minutes.toString()
                 : '0' + minutes.toString();
         const secondsString: string =
