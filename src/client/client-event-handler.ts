@@ -145,7 +145,7 @@ export class ClientEventHandler {
             message.channel instanceof ThreadChannel &&
             message.channel.name ===
                 this.translate(message.guildId, ['music', 'thread', 'name']) &&
-            message.content &&
+            (message.content || message.attachments.size > 0) &&
             message.channel.ownerId === this.client.user?.id &&
             this.permissionChecker.checkMemberRoles(message.member) &&
             this.permissionChecker.validateMemberVoiceFromThread(message)
@@ -179,6 +179,7 @@ export class ClientEventHandler {
                         songs = songs.concat(text.split('\n'));
                     }
                 }
+
                 songs = songs.map((s) => {
                     let n: string = s.trim();
                     if (n[0] === '{' && n.includes('url:')) {
