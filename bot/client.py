@@ -107,7 +107,6 @@ class UtilityClient(nextcord.Client):
             id=msg_id,
             info=info
         )
-        print(msg_info)
         if not msg_info:
             return {}
         if msg_info.get('author_id') and str(user_id) != str(
@@ -600,7 +599,7 @@ class UtilityClient(nextcord.Client):
         result = [
             '{}({})\n{}'.format(str(ex_type.__name__), str(ex), 56 * '-')
         ]
-        if str(ex) == 'MySQL Connection not available.':
+        if str(ex) == 'Postgres Connection not available.':
             await self.database.connect_database(self.database.info)
             return
         for i in x:

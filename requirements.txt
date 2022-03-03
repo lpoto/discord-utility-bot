@@ -1,3 +1,2 @@
 nextcord==2.0.0a5
-PyMySQL==1.0.2
-PyMySQL[rsa]
+psycopg2==2.9.3

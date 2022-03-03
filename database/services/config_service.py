@@ -5,7 +5,7 @@ class Config:
     @property
     def required_tables(self) -> dict:
         return {
-            '`option`': {
+            'option': {
                 'columns': [
                     'name VARCHAR(50) NOT NULL',
                     'guild_id BIGINT NOT NULL',
@@ -16,15 +16,14 @@ class Config:
             },
             'option_info': {
                 'columns': [
-                    'id BIGINT NOT NULL AUTO_INCREMENT',
+                    'id SERIAL PRIMARY KEY',
                     'name VARCHAR(50) NOT NULL',
                     'guild_id BIGINT NOT NULL',
-                    'info TINYTEXT NOT NULL',
+                    'info TEXT NOT NULL',
                 ],
                 'constraints': [
-                    'PRIMARY KEY (id)',
                     ('FOREIGN KEY (name, guild_id) REFERENCES ' +
-                     '`option`(name, guild_id) ON DELETE CASCADE')
+                     'option(name, guild_id) ON DELETE CASCADE')
                 ],
                 'indexes': [
                     'name',
@@ -38,7 +37,7 @@ class Config:
         cursor = cnx.cursor()
         cursor.execute('{} {}'.format(
             'SELECT info FROM option_info ',
-            f'WHERE guild_id = {guild_id} AND name = "{name}"'))
+            f"WHERE guild_id = {guild_id} AND name = '{name}'"))
         opt = sum(cursor.fetchall(), ())
         cursor.close()
         cnx.close()
@@ -70,7 +69,7 @@ class Config:
         cnx = self.database.connection_object
         cursor = cnx.cursor()
         cursor.execute(
-            'DELETE FROM option WHERE guild_id = {} AND name = "{}"'
+            "DELETE FROM option WHERE guild_id = {} AND name = '{}'"
             .format(guild_id, name))
         cnx.commit()
         cursor.close()

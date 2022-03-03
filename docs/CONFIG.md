@@ -13,7 +13,7 @@ cd ./discord-music-bot
 
 - Add your discord token to [docker-compose.yaml](../.dockerenv/docker-compose.yaml) under `services/client/environment/DISCORD_TOKEN`.
 
-**NOTE** You may also replace other environment variables' values (ex. `MYSQL_PASSWORD`)
+**NOTE** You may also replace other environment variables' values (ex. `POSTGRES_PASSWORD`)
 
 ## Run the bot in a docker container
 
@@ -48,12 +48,12 @@ to run the pushed image with docker-compose.
 export DISCORD_TOKEN=your_token
 # Logging levels: 50 (CRITICAL), 40 (ERROR), 30 (WARNING), 20 (INFO), 10 (DEBUG)
 export CLIENT_LOGGING=10
-export MYSQL_LOGGING=10
-export MYSQL_DATABASE=database_name
-export MYSQL_USER=database_user
-export MYSQL_PASSWORD=database_password
-export MYSQL_HOST=database_host
-export MYSQL_PORT=database_port
+export POSTGRES_LOGGING=10
+export POSTGRES_DB=database_name
+export POSTGRES_USER=database_user
+export POSTGRES_PASSWORD=database_password
+export POSTGRES_HOST=database_host
+export POSTGRES_PORT=database_port
 
 pip install -r requirements.txt
 ```

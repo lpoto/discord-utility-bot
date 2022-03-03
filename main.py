@@ -4,7 +4,7 @@ import nextcord
 from bot.utils import get_required_bot_env_variables
 from bot import UtilityClient
 from version import __version__
-from database import MySQL
+from database import Postgres
 from database.utils import get_required_database_env_variables
 
 
@@ -22,7 +22,7 @@ def run_the_client(database_info, token, version, bot_logging, db_logging):
     if not database_info:
         return logging.critical(msg='Missing database info')
 
-    database = MySQL(
+    database = Postgres(
         info=database_info,
         log_level=db_logging)
     if not database or not database.connected:

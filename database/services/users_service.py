@@ -10,7 +10,7 @@ class Users:
                     'user_id BIGINT NOT NULL',
                     'guild_id BIGINT NOT NULL',
                     'name VARCHAR(50) NOT NULL',
-                    'info TINYTEXT NOT NULL',
+                    'info TEXT NOT NULL',
                 ],
                 'constraints': [
                     'PRIMARY KEY (user_id, guild_id, name)',
@@ -25,8 +25,8 @@ class Users:
         cursor = cnx.cursor()
         cursor.execute('{} {} {}'.format(
             'SELECT info FROM user_info ',
-            f'WHERE user_id = {id} AND guild_id = "{guild_id}" ',
-            f'AND name = "{name}"'))
+            f"WHERE user_id = {id} AND guild_id = '{guild_id}' ",
+            f"AND name = '{name}'"))
         opt = cursor.fetchone()
         cursor.close()
         cnx.close()
@@ -37,7 +37,7 @@ class Users:
         cursor = cnx.cursor()
         cursor.execute('{} {}'.format(
             'SELECT * FROM user_info WHERE ',
-            f'guild_id = {guild_id} AND name = "{name}"'))
+            f"guild_id = {guild_id} AND name = '{name}'"))
         opt = cursor.fetchall()
         cursor.close()
         cnx.close()
@@ -62,7 +62,7 @@ class Users:
         cursor = cnx.cursor()
         cursor.execute('UPDATE user_info set info = "{}" {}'.format(
             info,
-            'WHERE user_id = {} AND guild_id = {} and name = "{}"'.format(
+            "WHERE user_id = {} AND guild_id = {} and name = '{}'".format(
                 id, guild_id, name)))
         cnx.commit()
         cursor.close()
@@ -74,7 +74,7 @@ class Users:
         cnx = self.database.connection_object
         cursor = cnx.cursor()
         cursor.execute('DELETE FROM user_info {}'.format(
-            'WHERE user_id = {} AND guild_id = {} and name = "{}"'.format(
+            "WHERE user_id = {} AND guild_id = {} and name = '{}'".format(
                 id, guild_id, name)))
         cnx.commit()
         cursor.close()

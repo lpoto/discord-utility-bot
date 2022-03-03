@@ -1,10 +1,11 @@
 import logging
-import pymysql
+import psycopg2
+import psycopg2.extras
 
 import database.services as services
 
 
-class MySQL:
+class Postgres:
     def __init__(self, info, log_level):
         self.logger = logging.getLogger('database')
         self.logger.setLevel(logging.INFO if not log_level else int(log_level))
@@ -32,14 +33,14 @@ class MySQL:
     @property
     def connection_object(self):
         try:
-            return pymysql.connect(
+            return psycopg2.connect(
                 host=self.info['host'],
                 user=self.info['user'],
                 database=self.info['database'],
                 password=self.info['password'],
-                cursorclass=pymysql.cursors.DictCursor
+                cursor_factory=psycopg2.extras.RealDictCursor
             )
-        except pymysql.Error as err:
+        except psycopg2.Error as err:
             self.logger.warning(
                 f'Error getting connection object:\n{str(err)}')
 
@@ -77,12 +78,8 @@ class MySQL:
                     msg='Failed to establish database connection.')
                 return False
             cursor = cnx.cursor()
-            cursor.execute('select database();')
-            result = cursor.fetchone()[0]
 
-            self.logger.info(msg=f'Database: {result}')
-
-        except pymysql.Error as e:
+        except psycopg2.Error as e:
             if hasattr(e, 'errno') and e.errno == 2006:
                 return self.connect_database(info)
             self.logger.error(
@@ -110,9 +107,21 @@ class MySQL:
                 table_name = k.strip('`')
                 self.logger.debug(msg=f'Checking for table "{table_name}"')
 
-                cursor.execute(f"SHOW TABLES LIKE '{table_name}'")
+                cursor.execute(
+                    "select exists({}'{}')".format(
+                        'select relname from pg_class where relname=',
+                        table_name
+                    )
+                )
+
                 fetched = cursor.fetchone()
-                if not fetched and v.get('columns'):
+
+                if (
+                        (
+                            not fetched or
+                            not fetched.get('exists')
+                        ) and v.get('columns')
+                ):
                     self.logger.debug(msg=f'Creating table "{table_name}"')
 
                     constraints = v.get('columns')
@@ -123,22 +132,18 @@ class MySQL:
                         f"CREATE TABLE {k} ({', '.join(constraints)})")
                     self.logger.info(msg=f'Created table "{table_name}"')
 
-                if (v.get('indexes')):
-                    self.logger.debug(
-                        msg=f'Checking for indexes on table "{table_name}"')
-
-                    for column_name in v.get('indexes'):
-                        cursor.execute((
-                            "SHOW index FROM {} WHERE column_name = '{}'"
-                        ).format(k, column_name))
-                        fetched = cursor.fetchone()
-                        if not fetched:
+                    if (v.get('indexes')):
+                        for column_name in v.get('indexes'):
                             cursor.execute(
-                                "CREATE INDEX {}_index ON {}({})".format(
-                                    column_name, k, column_name
+                                "CREATE INDEX {}_{}_index ON {}({})".format(
+                                    table_name, column_name, k, column_name
                                 ))
                             self.logger.info(
-                                msg=f'Created index "{column_name}_index"')
+                                msg='Created index "{}_{}_index"'.format(
+                                    table_name, column_name
+                                )
+                            )
+                    cnx.commit()
 
             cursor.close()
             cnx.close()

@@ -18,14 +18,13 @@ class Messages:
             },
             'message_info': {
                 'columns': [
-                    'id BIGINT NOT NULL AUTO_INCREMENT',
+                    'id SERIAL PRIMARY KEY',
                     'message_id BIGINT NOT NULL',
                     'name VARCHAR(50) NOT NULL',
-                    'info TINYTEXT',
+                    'info TEXT',
                     'user_id BIGINT',
                 ],
                 'constraints': [
-                    'PRIMARY KEY(id)',
                     'UNIQUE (message_id, name, user_id)',
                     ('FOREIGN KEY (message_id) REFERENCES message(id) ' +
                      'ON DELETE CASCADE')
@@ -75,7 +74,7 @@ class Messages:
             'SELECT m.id, m.channel_id, m.author_id, m.type, ' +
             'i.name as info_name, i.info, i.user_id as info_user_id ' +
             'FROM message m JOIN' +
-            f' message_info i WHERE m.id = i.message_id AND i.name = "{name}"')
+            f" message_info i ON m.id = i.message_id WHERE i.name = '{name}'")
         info = cursor.fetchall()
         cursor.close()
         cnx.close()
