@@ -5,6 +5,7 @@ import {
     GuildMember,
     Interaction,
     Message,
+    MessageAttachment,
     MessageButton,
     TextChannel,
     ThreadChannel,
@@ -15,6 +16,7 @@ import { Queue } from '../entities';
 import { Notification } from '../entities/notification';
 import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
+import fetch from 'node-fetch'
 
 export class ClientEventHandler {
     private client: MusicClient;
@@ -151,7 +153,7 @@ export class ClientEventHandler {
             Queue.findOne({
                 guildId: message.guildId,
                 clientId: this.client.user.id,
-            }).then((queue) => {
+            }).then(async (queue) => {
                 if (!queue) return;
 
                 if (
@@ -161,8 +163,21 @@ export class ClientEventHandler {
                 )
                     this.actions.joinVoice(null, message);
 
-                const songs: string[] = message.content
-                    .split('\n')
+                let songs: string[] = message.content.split('\n')
+
+                if (message.attachments.size > 0) {
+                    for (let i:number = 0; i < message.attachments.size; i++) {
+                        const file: MessageAttachment | undefined = message.attachments.at(i);
+                        if (!file) continue;
+                        const re = await fetch(file.url);
+                        if (!re.ok) continue;
+                        const text: string = await re.text();
+                        if (text.length === 0) continue;
+
+                        songs = songs.concat(text.split('\n'))
+                    }
+                }
+                songs = songs
                     .map((s) => {
                         let n: string = s.trim();
                         if (n[0] === '{' && n.includes('url:')) {
