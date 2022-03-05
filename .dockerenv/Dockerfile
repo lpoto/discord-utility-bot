@@ -8,6 +8,8 @@ COPY src /app/src
 
 RUN ls -a
 
+RUN apk add --no-cache python3 build-base automake make linux-headers
+
 RUN npm install
 
 RUN npm run build

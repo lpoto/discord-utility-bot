@@ -19,9 +19,10 @@
     },
     "engines": {
         "npm": ">=7.0.0",
-        "node": ">=16.0.0"
+        "node": ">=17.0.0"
     },
     "dependencies": {
+        "@discordjs/opus": "^0.5.3",
         "@discordjs/rest": "^0.3.0",
         "@discordjs/voice": "^0.8.0",
         "discord-api-types": "^0.27.3",
@@ -33,6 +34,7 @@
         "moment": "^2.29.1",
         "opusscript": "^0.0.8",
         "pg": "^8.7.3",
+        "python": "^0.0.4",
         "typeorm": "^0.2.45",
         "youtube-search-without-api-key": "^1.0.7",
         "ytdl-core": "^4.10.1",
