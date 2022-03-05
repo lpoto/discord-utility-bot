@@ -104,6 +104,7 @@ export class ClientEventHandler {
              * deleted messages or missing permissions to delete threads...*/
             const discordError: DiscordAPIError = error as DiscordAPIError;
             if (
+                discordError.code &&
                 [
                     '10008',
                     '50013',
