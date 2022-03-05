@@ -1,8 +1,4 @@
-import {
-    AudioPlayer,
-    AudioPlayerStatus,
-    joinVoiceChannel,
-} from '@discordjs/voice';
+import { joinVoiceChannel } from '@discordjs/voice';
 import {
     ButtonInteraction,
     CommandInteraction,
@@ -17,7 +13,6 @@ import {
 } from 'discord.js';
 import { QueryFailedError } from 'typeorm';
 import { MusicClient } from './client';
-import { CommandName } from './commands';
 import { Queue, Song } from './entities';
 import { QueueEmbed } from './models';
 import { MusicCommands } from './music-commands';
@@ -43,74 +38,25 @@ export class MusicActions {
             );
     }
 
-    public async songsToQueue(
-        queue: Queue,
-        songNames: string[],
-    ): Promise<number> {
-        const player: AudioPlayer | null = this.client.getAudioPlayer(
-            queue.guildId,
-        );
-        if (queue.songs.length >= 300) {
-            if (
-                !player ||
-                (player &&
-                    player.state.status !== AudioPlayerStatus.Playing &&
-                    player.state.status !== AudioPlayerStatus.Paused)
-            ) {
-                await this.commands
-                    .execute(CommandName.PLAY, queue.guildId)
-                    .catch((e) => {
-                        this.client.handleError(e, 'adding songs -> playing');
-                    });
-            }
-            return 300;
-        }
-        let position =
+    public async songToQueue(queue: Queue, songName: string): Promise<number> {
+        if (queue.songs.length >= 300) return 300;
+        const position: number =
             queue.songs.length > 0
                 ? queue.songs[queue.songs.length - 1].position + 1
                 : 0;
-        let played = false;
         try {
-            let exit = 0;
-            let idx = 0;
-            for await (const songName of songNames) {
-                if (exit > 0) break;
-                const songs: Song[] | null = await Song.findOnYoutube(
-                    songName,
-                    position,
-                );
-                if (!songs || songs.length < 1) return 1;
-                position += songs.length;
-                for await (const s of songs) {
-                    s.queue = queue;
-                    await s.save();
-                    await queue.reload();
-                    if (queue.songs.length >= 300) {
-                        exit = 300;
-                        break;
-                    }
-                }
-                idx++;
-                if (idx % 8 === 0 && idx < songNames.length - 1) {
-                    this.updateQueueMessage(queue);
-                }
-                if (
-                    !played &&
-                    (!player ||
-                        (player &&
-                            player.state.status !==
-                                AudioPlayerStatus.Playing &&
-                            player.state.status !== AudioPlayerStatus.Paused))
-                ) {
-                    await this.commands.execute(
-                        CommandName.PLAY,
-                        queue.guildId,
-                    );
-                    played = true;
-                }
+            const songs: Song[] | null = await Song.findOnYoutube(
+                songName,
+                position,
+            );
+            if (!songs || songs.length < 1) return 1;
+            for await (const s of songs) {
+                s.queue = queue;
+                await s.save();
+                await queue.reload();
+                if (queue.songs.length >= 300) return 300;
             }
-            this.updateQueueMessage(queue);
-            return exit;
+            return 0;
         } catch (error) {
             if (!(error instanceof QueryFailedError)) console.error(error);
             return 1;

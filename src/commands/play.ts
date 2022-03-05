@@ -20,8 +20,8 @@ export class Play extends AbstractCommand {
 
     private async next(
         interaction?: ButtonInteraction,
-        retries: number = 0,
         replay?: boolean,
+        error?: boolean,
     ): Promise<void> {
         if (!this.client.user) return;
         const queue: Queue | undefined = await Queue.findOne({
@@ -30,16 +30,18 @@ export class Play extends AbstractCommand {
         });
         if (!queue) return;
 
-        if (!replay && !queue.options.includes('loop') && retries === 0) {
+        if (error || (!replay && !queue.options.includes('loop'))) {
             try {
                 const song: Song | undefined = queue.songs.shift();
                 if (song) {
-                    if (queue.options.includes('loopQueue')) {
-                        song.position =
+                    if (!error && queue.options.includes('loopQueue')) {
+                        let max: number =
                             Math.max.apply(
                                 null,
                                 queue.songs.map((s) => s.position),
                             ) + 1;
+                        if (max < 0) max = 0;
+                        song.position = max;
                         await song.save();
                     } else {
                         await song.remove();
@@ -70,13 +72,10 @@ export class Play extends AbstractCommand {
         queue.color = Math.floor(Math.random() * 16777215);
         await queue.save();
 
-        this.execute(interaction, retries);
+        this.execute(interaction);
     }
 
-    public async execute(
-        interaction?: ButtonInteraction,
-        retries: number = 0,
-    ): Promise<void> {
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!this.client.user) return;
 
         const connection: VoiceConnection | null =
@@ -110,17 +109,27 @@ export class Play extends AbstractCommand {
         song.getResource()
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
-                audioPlayer.play(resource);
                 this.client.musicActions.updateQueueMessage(queue);
+                audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         audioPlayer?.removeAllListeners();
+                        audioPlayer?.stop();
                         this.next(interaction);
                     })
                     .on('error', (e) => {
                         audioPlayer?.removeAllListeners();
-                        console.log('Error when playing: ', e);
-                        this.next(interaction, retries + 1);
+                        audioPlayer?.stop();
+                        this.getQueue().then((q) => {
+                            if (!q || q.songs.length === 0) return;
+                            const url: string = q.songs[0].url;
+                            q.songs = q.songs.filter((s) => s.url !== url);
+                            q.save().then(() => {
+                                this.next(interaction);
+                            });
+                        });
+                        console.log('Error when playing: ', e.message);
+                        this.next(interaction, false, true);
                     })
                     .on('unsubscribe', () => {
                         audioPlayer?.removeAllListeners();
@@ -131,14 +140,13 @@ export class Play extends AbstractCommand {
                             audioPlayer?.removeAllListeners();
                             audioPlayer?.stop();
                             this.client.setAudioPlayer(queue.guildId, null);
-                            this.next(interaction, 0, message === 'replay');
+                            this.next(interaction, message === 'replay');
                         }
                     });
             })
             .catch((e) => {
                 this.client.handleError(e, 'play.ts -> creating audio player');
                 this.client.setAudioPlayer(queue.guildId, null);
-                if (retries < 5) this.next(interaction, retries + 1);
                 return;
             });
     }

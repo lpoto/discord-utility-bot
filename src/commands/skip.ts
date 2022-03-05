@@ -46,11 +46,13 @@ export class Skip extends AbstractCommand {
                 const song: Song | undefined = queue.songs.shift();
                 if (song) {
                     if (queue.options.includes('loopQueue')) {
-                        song.position =
+                        let max: number =
                             Math.max.apply(
                                 null,
                                 queue.songs.map((s) => s.position),
                             ) + 1;
+                        if (max < 0) max = 0;
+                        song.position = max;
                         await song.save();
                     } else {
                         await song.remove();

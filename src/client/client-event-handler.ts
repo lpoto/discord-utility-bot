@@ -12,11 +12,13 @@ import {
     VoiceState,
 } from 'discord.js';
 import moment from 'moment';
-import { Queue } from '../entities';
+import { Queue, Song } from '../entities';
 import { Notification } from '../entities/notification';
 import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
+import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
+import { CommandName } from '../commands';
 
 export class ClientEventHandler {
     private client: MusicClient;
@@ -188,7 +190,11 @@ export class ClientEventHandler {
                     }
                 }
 
-                songs = songs.map((s) => {
+                const audioPlayer: AudioPlayer | null =
+                    this.client.getAudioPlayer(queue.guildId);
+
+                for (let i = 0; i < songs.length; i++) {
+                    const s: string = songs[i];
                     let n: string = s.trim();
                     if (n[0] === '{' && n.includes('url:')) {
                         n = s.substring(1, n.length - 1);
@@ -201,11 +207,19 @@ export class ClientEventHandler {
                         (n[0] === '`' && n[n.length - 1] === '`')
                     )
                         n = n.substring(1, n.length - 1);
-                    return n;
-                });
-
-                this.actions.songsToQueue(queue, songs).then((exit) => {
-                    if (exit === 300 && this.client.user && message.guildId) {
+                    await queue.reload();
+                    const exit: number = await this.actions.songToQueue(
+                        queue,
+                        n,
+                    );
+                    if (exit === 300) {
+                        await this.actions.updateQueueMessage(queue);
+                        if (
+                            !message.author ||
+                            !message.guildId ||
+                            !this.client.user
+                        )
+                            break;
                         const notification: Notification = Notification.create(
                             {
                                 userId: message.author.id,
@@ -222,8 +236,8 @@ export class ClientEventHandler {
                             clientId: notification.clientId,
                             guildId: notification.guildId,
                             name: notification.name,
-                        }).then((n) => {
-                            if (n) return;
+                        }).then((m) => {
+                            if (m) return;
                             notification.save().then(() => {
                                 message
                                     .reply({
@@ -242,9 +256,27 @@ export class ClientEventHandler {
                                     });
                             });
                         });
-                        notification;
+                        break;
                     }
-                });
+                    if (
+                        !audioPlayer ||
+                        (audioPlayer.state.status !==
+                            AudioPlayerStatus.Playing &&
+                            audioPlayer.state.status !==
+                                AudioPlayerStatus.Paused)
+                    ) {
+                        this.actions.commands.execute(
+                            CommandName.PLAY,
+                            queue.guildId,
+                        );
+                    }
+                    if (i % 6 === 0 || i === songs.length - 1)
+                        await this.actions.updateQueueMessage(
+                            queue,
+                            queue.songs.length <= 3 ||
+                                queue.songs.length % 10 === 0,
+                        );
+                }
             });
         }
     }

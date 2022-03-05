@@ -25,8 +25,11 @@ export class QueueEmbed extends MessageEmbed {
         });
         this.queue = queue;
         this.client = client;
+
         const spacer = '\n> \u3000\u2000\u2000';
+
         if (this.queue.songs.length < 1) return;
+
         const songs: string[] | undefined = this.queue.songs
             .slice(1)
             .slice(
