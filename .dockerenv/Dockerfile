@@ -1,4 +1,4 @@
-FROM node:17-alpine3.14 AS BUILD_IMAGE
+FROM node:17-alpine3.15 AS BUILD_IMAGE
 
 WORKDIR /app
 
@@ -15,10 +15,10 @@ RUN npm install
 RUN npm run build
 RUN npm prune --production
 
-FROM node:17-alpine3.14
+FROM node:17-alpine3.15
 
 COPY --from=BUILD_IMAGE /app/package*.json ./
 COPY --from=BUILD_IMAGE /app/dist ./dist
 COPY --from=BUILD_IMAGE /app/node_modules ./node_modules
 
-cmd npm run start
+CMD npm run start
