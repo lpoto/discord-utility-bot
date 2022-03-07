@@ -2,18 +2,21 @@ FROM node:17-alpine3.15 AS BUILD_IMAGE
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json ./
 COPY tsconfig.json ./
 COPY src /app/src
 
 RUN ls -a
 
-RUN apk add --no-cache python3 build-base automake make linux-headers
+RUN apk add --no-cache bash python3 build-base automake make linux-headers
 
 RUN npm install
+RUN npm install -g node-prune
 
 RUN npm run build
+
 RUN npm prune --production
+RUN node-prune
 
 FROM node:17-alpine3.15
 
