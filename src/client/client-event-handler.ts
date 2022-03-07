@@ -365,7 +365,6 @@ export class ClientEventHandler {
     }
 
     private handleButtonClick(interaction: ButtonInteraction): void {
-        console.log(this.buttonClickQueue);
         if (
             interaction.component !== undefined &&
             interaction.guildId !== undefined &&
@@ -418,7 +417,13 @@ export class ClientEventHandler {
                                     return null;
                                 }
                                 if (update)
-                                    this.actions.updateQueueMessage(queue);
+                                    this.actions.updateQueueMessage(
+                                        queue,
+                                        false,
+                                        false,
+                                        false,
+                                        true,
+                                    );
                                 return message;
                             })
                             .catch((e) => {

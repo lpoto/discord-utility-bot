@@ -187,6 +187,7 @@ export class MusicActions {
         embedOnly?: boolean,
         componentsOnly?: boolean,
         reload?: boolean,
+        clientRestart?: boolean,
     ): Promise<boolean> {
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return false;
@@ -204,7 +205,12 @@ export class MusicActions {
                 if (!message) return false;
                 return message
                     .edit(
-                        this.getQueueOptions(queue, embedOnly, componentsOnly),
+                        this.getQueueOptions(
+                            queue,
+                            embedOnly,
+                            componentsOnly,
+                            clientRestart,
+                        ),
                     )
                     .then(() => {
                         return true;
@@ -220,6 +226,7 @@ export class MusicActions {
         queue: Queue,
         embedOnly?: boolean,
         componentsOnly?: boolean,
+        clientRestart?: boolean,
     ): InteractionReplyOptions {
         if (embedOnly) {
             return {
@@ -238,7 +245,7 @@ export class MusicActions {
             };
         }
         return {
-            embeds: [new QueueEmbed(this.client, queue)],
+            embeds: [new QueueEmbed(this.client, queue, clientRestart)],
             components: components,
         };
     }

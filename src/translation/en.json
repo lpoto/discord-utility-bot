@@ -112,5 +112,6 @@
             }
         }
     },
+    "clientRestarted": "Bot has been restarted because of a new update.",
     "help": "Sorry, there is no help available."
 }
