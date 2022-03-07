@@ -12,7 +12,7 @@ import {
     VoiceState,
 } from 'discord.js';
 import moment from 'moment';
-import { Queue, Song } from '../entities';
+import { Queue } from '../entities';
 import { Notification } from '../entities/notification';
 import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
@@ -113,6 +113,7 @@ export class ClientEventHandler {
                     '50001',
                     '40060',
                     '50083',
+                    '50005',
                 ].includes(discordError.code.toString())
             )
                 return;
@@ -364,7 +365,9 @@ export class ClientEventHandler {
     }
 
     private handleButtonClick(interaction: ButtonInteraction): void {
+        console.log(this.buttonClickQueue);
         if (
+            interaction.component !== undefined &&
             interaction.guildId !== undefined &&
             this.client.user &&
             interaction.guildId !== null &&

@@ -31,11 +31,11 @@ export class MusicClient extends Client {
         );
     }
 
-    get permsChecker() {
+    get permsChecker(): PermissionChecker {
         return this.permissionChecker;
     }
 
-    get musicActions() {
+    get musicActions(): MusicActions {
         return this.musicactions;
     }
 
