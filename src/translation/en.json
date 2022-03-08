@@ -14,7 +14,8 @@
             },
             "user": {
                 "notConnected": "You are not in a  voice channel!",
-                "differentChannel": "We are not in the same channel!"
+                "differentChannel": "We are not in the same channel!",
+                "memberDeafened": "You need to undeafen!"
             }
         }
     },

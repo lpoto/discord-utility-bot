@@ -190,6 +190,31 @@ export class PermissionChecker {
             });
             return false;
         }
+
+        if (member.voice.deaf) {
+            Notification.findOne({
+                userId: member.id,
+                guildId: member.guild.id,
+                clientId: this.client.user.id,
+                name: 'memberDeafened',
+            }).then((r) => {
+                if (r) return;
+                if (interaction) {
+                    notification.name = 'memberDeafened';
+                    notification.save().then(() => {
+                        interaction.reply({
+                            content: this.client.translate(
+                                interaction.guildId,
+                                ['error', 'voice', 'user', 'memberDeafened'],
+                            ),
+                            ephemeral: true,
+                        });
+                    });
+                }
+            });
+            return false;
+        }
+
         return true;
     }
 }

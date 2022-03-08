@@ -14,6 +14,10 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 
 - Deleting the queue message or thread will stop the music.
 
+- Bot requires at least one unmuted (non bot) listener.
+    - If no unmuted members are in the channel, bot will eventually disconnect.
+    - You can reconnect it by clicking `Join`.
+
 - Queue message offers commands by clicking on buttons:
     - loop,
     - loop queue,
@@ -27,7 +31,7 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
     - forward,
     - help.
 
-- User may only use music commands if they are in a voice channel and bot is either
+- User may only use music commands if they are undeafened in a voice channel and bot is either
 in the same channel or not connected to any.
 
 - Bot requires a `DJ` role. Only users with the same role may use the
