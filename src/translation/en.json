@@ -112,6 +112,7 @@
             }
         }
     },
-    "clientRestarted": "Bot has been restarted because of a new update.",
+    "clientRestarted": "Bot has been restarted due to a new update.",
+    "innactivityDisconnect": "Bot has disconnected due to innactivity,\nor being disconnected by another member.",
     "help": "Sorry, there is no help available."
 }

@@ -2,6 +2,7 @@ import {
     ButtonInteraction,
     CommandInteraction,
     DiscordAPIError,
+    Guild,
     GuildMember,
     Interaction,
     Message,
@@ -124,25 +125,65 @@ export class ClientEventHandler {
         console.error(location ? `Error (${location}): ` : 'Error: ', error);
     }
 
-    private handleVoiceStateUpdate(
+    private async handleVoiceStateUpdate(
         voiceStatePrev: VoiceState,
         voiceStateAfter: VoiceState,
-    ): void {
-        if (voiceStatePrev.member?.id !== this.client.user?.id) return;
+    ): Promise<void> {
+        if (
+            voiceStatePrev.channel?.id === voiceStateAfter.channel?.id &&
+            voiceStatePrev.deaf === voiceStateAfter.deaf
+        )
+            return;
+        const guild: Guild = voiceStateAfter.guild;
+        const guildId: string = guild.id;
+        if (
+            voiceStateAfter.member?.id !== this.client.user?.id &&
+            guild.me?.voice.channel
+        ) {
+            const audioPlayer: AudioPlayer | null =
+                this.client.getAudioPlayer(guildId);
+            if (
+                (!audioPlayer ||
+                    (audioPlayer.state.status !== AudioPlayerStatus.Playing &&
+                        audioPlayer.state.status !==
+                            AudioPlayerStatus.Paused)) &&
+                voiceStateAfter.channel?.id === guild.me?.voice.channel.id &&
+                ((voiceStatePrev.deaf && !voiceStateAfter.deaf) ||
+                    (voiceStatePrev.channel?.id !==
+                        voiceStateAfter.channel?.id &&
+                        !voiceStateAfter.deaf))
+            ) {
+                this.client.musicActions.commands.execute(
+                    CommandName.PLAY,
+                    guildId,
+                );
+            }
+            return;
+        }
         if (voiceStatePrev.channel?.id === voiceStateAfter.channel?.id) return;
-        const guildId: string = voiceStateAfter.guild.id;
         if (
             (voiceStateAfter.channel?.id === undefined ||
                 voiceStatePrev.channel?.id === undefined) &&
             this.client.user
         ) {
-            if (voiceStateAfter.channel?.id === undefined)
+            let innactivityDc = false;
+            if (voiceStateAfter.channel?.id === undefined) {
                 this.client.destroyVoiceConnection(guildId);
+                innactivityDc = true;
+            }
             Queue.findOne({
                 guildId: guildId,
                 clientId: this.client.user.id,
             }).then((queue) => {
-                if (queue) this.actions.updateQueueMessage(queue);
+                if (queue)
+                    this.actions.updateQueueMessage(
+                        queue,
+                        false,
+                        false,
+                        false,
+                        false,
+                        innactivityDc,
+                    );
             });
         }
         const prevId: string | undefined = voiceStatePrev.channel?.id;
@@ -175,6 +216,9 @@ export class ClientEventHandler {
                 )
                     this.actions.joinVoice(null, message);
 
+                // get songs from message content and from all text file attachments
+                // multiple songs may be added, each in its own line
+
                 let songs: string[] = [];
                 if (message.content) songs = message.content.split('\n');
 
@@ -196,6 +240,9 @@ export class ClientEventHandler {
                     this.client.getAudioPlayer(queue.guildId);
 
                 for (let i = 0; i < songs.length; i++) {
+                    /* filter songs, if both name and url provided, extract url
+                     * else it will be determined when fetchign songs from youtube
+                     * */
                     const s: string = songs[i];
                     let n: string = s.trim();
                     if (n[0] === '{' && n.includes('url:')) {

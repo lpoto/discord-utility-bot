@@ -6,7 +6,12 @@ export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
     private client: MusicClient;
 
-    constructor(client: MusicClient, queue: Queue, clientRestart?: boolean) {
+    constructor(
+        client: MusicClient,
+        queue: Queue,
+        clientRestart?: boolean,
+        innactivity?: boolean,
+    ) {
         super({
             title: client.translate(queue.guildId, [
                 'music',
@@ -21,7 +26,11 @@ export class QueueEmbed extends MessageEmbed {
                 ]),
             },
             description: !clientRestart
-                ? ''
+                ? !innactivity
+                    ? ''
+                    : client.translate(queue.guildId, [
+                          'innactivityDisconnect',
+                      ])
                 : client.translate(queue.guildId, ['clientRestarted']),
             color: queue.color,
         });

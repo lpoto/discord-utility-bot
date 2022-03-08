@@ -4,7 +4,12 @@ import {
     createAudioPlayer,
     VoiceConnection,
 } from '@discordjs/voice';
-import { ButtonInteraction } from 'discord.js';
+import {
+    ButtonInteraction,
+    Guild,
+    NonThreadGuildBasedChannel,
+    VoiceChannel,
+} from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
 import { AbstractCommand } from '../models';
@@ -30,6 +35,10 @@ export class Play extends AbstractCommand {
         });
         if (!queue) return;
 
+        /*
+         * Determine if a song needs to be removed from the queue,
+         * pushed to the back of the queue or nothing at all.
+         */
         if (error || (!replay && !queue.options.includes('loop'))) {
             try {
                 const song: Song | undefined = queue.songs.shift();
@@ -47,21 +56,6 @@ export class Play extends AbstractCommand {
                         await song.remove();
                     }
                 }
-                if (interaction)
-                    this.client.musicActions.updateQueueMessageWithInteraction(
-                        interaction,
-                        queue,
-                        false,
-                        false,
-                        true,
-                    );
-                else
-                    this.client.musicActions.updateQueueMessage(
-                        queue,
-                        true,
-                        false,
-                        true,
-                    );
             } catch (e) {
                 console.error('Error when playing next song: ', e);
             } finally {
@@ -71,6 +65,22 @@ export class Play extends AbstractCommand {
 
         queue.color = Math.floor(Math.random() * 16777215);
         await queue.save();
+
+        if (interaction)
+            this.client.musicActions.updateQueueMessageWithInteraction(
+                interaction,
+                queue,
+                false,
+                false,
+                true,
+            );
+        else
+            this.client.musicActions.updateQueueMessage(
+                queue,
+                true,
+                false,
+                true,
+            );
 
         this.execute(interaction);
     }
@@ -89,6 +99,25 @@ export class Play extends AbstractCommand {
 
         if (!queue || queue.songs.length < 1) return;
 
+        // play music when at least one (non bot) listener (unmuted)
+        // music is auto started when first user joins or unmutes
+        const guild: Guild | void = await this.client.guilds
+            .fetch(queue.guildId)
+            .catch((e) => this.client.handleError(e));
+        if (!guild || !this.connection?.joinConfig.channelId) return;
+        const channel: NonThreadGuildBasedChannel | null =
+            await guild.channels.fetch(this.connection?.joinConfig.channelId);
+        if (
+            !channel ||
+            !(channel instanceof VoiceChannel) ||
+            channel.members.filter((m) => !m.user.bot && !m.voice.deaf)
+                .size === 0
+        ) {
+            // update queue message even if no member listeners
+            this.client.musicActions.updateQueueMessage(queue);
+            return;
+        }
+
         const song: Song = queue.songs[0];
 
         let audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
@@ -96,6 +125,7 @@ export class Play extends AbstractCommand {
         );
         if (!audioPlayer) audioPlayer = createAudioPlayer();
 
+        // only play a song if the audioPlayer is not already playing or paused
         if (
             audioPlayer.state.status === AudioPlayerStatus.Playing ||
             audioPlayer.state.status === AudioPlayerStatus.Paused

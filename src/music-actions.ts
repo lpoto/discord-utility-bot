@@ -188,6 +188,7 @@ export class MusicActions {
         componentsOnly?: boolean,
         reload?: boolean,
         clientRestart?: boolean,
+        innactivity?: boolean,
     ): Promise<boolean> {
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return false;
@@ -210,6 +211,7 @@ export class MusicActions {
                             embedOnly,
                             componentsOnly,
                             clientRestart,
+                            innactivity,
                         ),
                     )
                     .then(() => {
@@ -227,10 +229,18 @@ export class MusicActions {
         embedOnly?: boolean,
         componentsOnly?: boolean,
         clientRestart?: boolean,
+        innactivity?: boolean,
     ): InteractionReplyOptions {
         if (embedOnly) {
             return {
-                embeds: [new QueueEmbed(this.client, queue)],
+                embeds: [
+                    new QueueEmbed(
+                        this.client,
+                        queue,
+                        clientRestart,
+                        innactivity,
+                    ),
+                ],
             };
         }
         const components: MessageActionRow[] = [];
@@ -245,7 +255,9 @@ export class MusicActions {
             };
         }
         return {
-            embeds: [new QueueEmbed(this.client, queue, clientRestart)],
+            embeds: [
+                new QueueEmbed(this.client, queue, clientRestart, innactivity),
+            ],
             components: components,
         };
     }
