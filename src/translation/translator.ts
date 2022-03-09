@@ -1,4 +1,5 @@
-import { Language, LanguageKeyPath, LANGUAGES, LanguageString } from '.';
+import { Languages } from '.';
+import { Language, LanguageKeyPath, LanguageString } from '../../';
 
 export class Translator {
     private defaultLanguage: LanguageString;
@@ -8,7 +9,7 @@ export class Translator {
     constructor(defaultLanguage: LanguageString) {
         this.defaultLanguage = defaultLanguage;
         this.guildLanguages = {};
-        this.languages = LANGUAGES;
+        this.languages = Languages;
     }
 
     public setGuidLanguage(lang: LanguageString, guildId: string): void {

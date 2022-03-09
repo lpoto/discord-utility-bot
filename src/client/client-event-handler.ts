@@ -15,7 +15,7 @@ import {
 import moment from 'moment';
 import { Queue } from '../entities';
 import { Notification } from '../entities/notification';
-import { LanguageKeyPath } from '../translation';
+import { LanguageKeyPath } from '../../';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';

@@ -4,7 +4,7 @@ import {
     MessageButton,
     PermissionResolvable,
 } from 'discord.js';
-import { LanguageString } from './translation';
+import { Languages } from './translation';
 import { ButtonInteraction, CommandInteraction } from 'discord.js';
 import { MusicClient } from './client';
 import * as Commands from './commands';
@@ -46,3 +46,12 @@ export class Command {
 
     public execute(interaction?: ButtonInteraction): Promise<void>;
 }
+
+export type LanguageString = keyof typeof Languages;
+export type Language = typeof Languages[LanguageString];
+
+type Path<T> = PathTree<T>[keyof PathTree<T>];
+type PathTree<T> = {
+    [P in keyof T]-?: T[P] extends object ? [P] | [P, ...Path<T[P]>] : [P];
+};
+export type LanguageKeyPath = Path<Language>;

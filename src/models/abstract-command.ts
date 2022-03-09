@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { LanguageKeyPath } from '../translation';
+import { LanguageKeyPath } from '../../';
 
 export abstract class AbstractCommand {
     private commandId: string;

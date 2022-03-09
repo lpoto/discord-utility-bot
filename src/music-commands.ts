@@ -83,12 +83,10 @@ export class MusicCommands {
         }
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
-        const rowLenSequence: number[] = [4, 5, 3, 3];
         let lenIdx = 0;
         let idx = 0;
         for (let i = 0; i < buttons.length; i++) {
-            const len: number =
-                idx >= rowLenSequence.length ? 3 : rowLenSequence[idx];
+            const len: number = idx % 2 === 0 ? 4 : 5;
             if (buttons.length > len && i === lenIdx + len) {
                 lenIdx += len;
                 rows.push(new MessageActionRow());

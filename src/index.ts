@@ -3,7 +3,6 @@ import { createConnection } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
 import { Notification } from './entities/notification';
-import { LanguageString } from './translation';
 
 createConnection({
     type: 'postgres',
@@ -21,7 +20,7 @@ createConnection({
             Intents.FLAGS.GUILD_MESSAGES,
             Intents.FLAGS.GUILD_VOICE_STATES,
         ],
-        defaultLanguage: LanguageString.EN,
+        defaultLanguage: 'en',
         clientVoicePermissions: [
             Permissions.FLAGS.SPEAK,
             Permissions.FLAGS.CONNECT,

@@ -14,4 +14,6 @@ export { Remove } from './remove';
 export { Shuffle } from './shuffle';
 export { Clear } from './clear';
 export { Expand } from './expand';
+export { Translate } from './translate';
+export { Bugs } from './bugs';
 export { Help } from './help';

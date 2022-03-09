@@ -2,9 +2,9 @@ import { REST } from '@discordjs/rest';
 import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { Routes } from 'discord-api-types/v9';
 import { Client } from 'discord.js';
-import { MusicClientOptions } from '../../';
+import { LanguageKeyPath, MusicClientOptions } from '../../';
 import { MusicActions } from '../music-actions';
-import { Translator, LanguageKeyPath } from '../translation';
+import { Translator } from '../translation';
 import { ClientEventHandler } from './client-event-handler';
 import { PermissionChecker } from './permission-checker';
 

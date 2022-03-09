@@ -36,7 +36,7 @@
         },
         "commands": {
             "play": {
-                "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.\nNOTE: There can only be around 200 songs in the queue.",
+                "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.\n\u3000NOTE: There can only be around 200 songs in the queue.",
                 "maxSongs": "There can only be around 200 songs in the queue!"
             },
             "join": {
@@ -45,7 +45,7 @@
             },
             "loop": {
                 "label": "Loop Song",
-                "description": "`Loop song`: Loops the currently played song."
+                "description": "`Loop Song`: Loops the currently played song."
             },
             "loopQueue": {
                 "label": "Loop\u2000Queue",
@@ -89,8 +89,8 @@
                 }
             },
             "forward": {
-                "label": "Forward",
-                "description": "`Forward`: Sends a selected song to the start of the queue.",
+                "label": "Push Forward",
+                "description": "`Push Forward`: Sends a selected song to the start of the queue.",
                 "dropdown": {
                     "placeholder": "Select the song you want to push to the front."
                 }
@@ -100,14 +100,22 @@
                 "description": "`Shuffle`: Shuffles all the songs in the queue."
             },
             "expand": {
-                "label": "Expand",
-                "description": "`Expand`: Shows full names of the songs in the queue."
+                "label": "Expand Songs",
+                "description": "`Expand Song Names`: Shows complete names of the songs in the queue."
             },
             "clear": {
                 "label": "Clear",
                 "description": "`Clear`: Removes all the songs from the queue.",
                 "confirm": "Click on `Clear` again if you are sure, you want to remove all the songs from the queue.",
                 "reply": "These are the songs you have removed from the queue, you can paste the whole file or just it's content back in to the queue."
+            },
+            "translate": {
+                "label": "Translate",
+                "description": "`Translate`: Currently available languages: "
+            },
+            "bugs": {
+                "label": "Bug?",
+                "description": "`Bug?`: Not yet implemented. :)"
             },
             "help": {
                 "label": "Help"
