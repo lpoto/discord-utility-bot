@@ -18,7 +18,7 @@ export class Expand extends AbstractCommand {
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'expand', 'label']))
-            .setDisabled(queue.songs.length < 2)
+            .setDisabled(queue.size < 2)
             .setStyle(
                 queue.options.includes('expanded')
                     ? MessageButtonStyles.SUCCESS

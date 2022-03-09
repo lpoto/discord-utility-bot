@@ -8,6 +8,8 @@ import {
     Message,
     MessageAttachment,
     MessageButton,
+    MessageSelectMenu,
+    SelectMenuInteraction,
     TextChannel,
     ThreadChannel,
     VoiceState,
@@ -24,11 +26,15 @@ export class ClientEventHandler {
     private client: MusicClient;
     private slashCommandQueue: CommandInteraction[];
     private buttonClickQueue: { [messageId: string]: ButtonInteraction[] };
+    private menuSelectQueue: { [messageId: string]: SelectMenuInteraction[] };
+    private threadMessageQueue: { [threadId: string]: Message[] };
 
     constructor(client: MusicClient) {
         this.client = client;
         this.slashCommandQueue = [];
         this.buttonClickQueue = {};
+        this.menuSelectQueue = {};
+        this.threadMessageQueue = {};
     }
 
     get permissionChecker() {
@@ -79,7 +85,12 @@ export class ClientEventHandler {
 
         this.client.on('messageCreate', (message) => {
             if (message.channel instanceof ThreadChannel) {
-                this.handleThreadMessage(message);
+                if (!(message.channel.id in this.threadMessageQueue))
+                    this.threadMessageQueue[message.channel.id] = [];
+                this.threadMessageQueue[message.channel.id].push(message);
+                if (this.threadMessageQueue[message.channel.id].length === 1)
+                    this.handleThreadMessage(message);
+                return;
             }
         });
 
@@ -183,7 +194,7 @@ export class ClientEventHandler {
         console.log(`Voice channel update: ${prevId} -> ${afterId}`);
     }
 
-    private handleThreadMessage(message: Message): void {
+    private async handleThreadMessage(message: Message): Promise<void> {
         if (
             message.guildId &&
             message.member instanceof GuildMember &&
@@ -195,7 +206,7 @@ export class ClientEventHandler {
             this.permissionChecker.checkMemberRoles(message.member) &&
             this.permissionChecker.validateMemberVoiceFromThread(message)
         ) {
-            Queue.findOne({
+            await Queue.findOne({
                 guildId: message.guildId,
                 clientId: this.client.user.id,
             }).then(async (queue) => {
@@ -253,7 +264,7 @@ export class ClientEventHandler {
                         queue,
                         n,
                     );
-                    if (exit === 200) {
+                    if (exit === 1000) {
                         await this.actions.updateQueueMessage({
                             queue: queue,
                         });
@@ -314,18 +325,34 @@ export class ClientEventHandler {
                         await this.actions.updateQueueMessage({
                             queue: queue,
                             embedOnly:
-                                queue.songs.length <= 3 ||
-                                queue.songs.length % 10 === 0,
+                                queue.size <= 3 ||
+                                queue.size % 10 === 0 ||
+                                (queue.options.includes('editing') &&
+                                    (queue.options.includes(
+                                        'removeSelected',
+                                    ) ||
+                                        queue.options.includes(
+                                            'forwardSelected',
+                                        ))),
                         });
                 }
             });
+            this.threadMessageQueue[message.channel.id].shift();
+            if (this.threadMessageQueue[message.channel.id].length === 0)
+                delete this.threadMessageQueue[message.channel.id];
+            else
+                this.handleThreadMessage(
+                    this.threadMessageQueue[message.channel.id][0],
+                );
         }
     }
 
     private handleInteraction(interaction: Interaction): void {
         if (
             !interaction.guildId ||
-            (!interaction.isButton() && !interaction.isCommand()) ||
+            (!interaction.isButton() &&
+                !interaction.isCommand() &&
+                !interaction.isSelectMenu()) ||
             interaction.deferred ||
             interaction.replied ||
             interaction.applicationId !== this.client.user?.id
@@ -385,6 +412,21 @@ export class ClientEventHandler {
                     )
                         this.handleButtonClick(interaction);
                     return;
+                } else if (
+                    interaction.isSelectMenu() &&
+                    interaction.component instanceof MessageSelectMenu
+                ) {
+                    if (!(interaction.message.id in this.menuSelectQueue))
+                        this.menuSelectQueue[interaction.message.id] = [];
+                    this.menuSelectQueue[interaction.message.id].push(
+                        interaction,
+                    );
+                    if (
+                        this.menuSelectQueue[interaction.message.id].length ===
+                        1
+                    )
+                        this.handleMenuSelect(interaction);
+                    return;
                 }
             }
             if (
@@ -423,6 +465,34 @@ export class ClientEventHandler {
         this.buttonClickQueue[interaction.message.id].shift();
         if (this.buttonClickQueue[interaction.message.id].length === 0)
             delete this.buttonClickQueue[interaction.message.id];
+        else
+            this.handleButtonClick(
+                this.buttonClickQueue[interaction.message.id][0],
+            );
+    }
+
+    private handleMenuSelect(interaction: SelectMenuInteraction): void {
+        if (
+            interaction.component !== undefined &&
+            interaction.message &&
+            interaction.guildId !== undefined &&
+            this.client.user &&
+            interaction.guildId !== null &&
+            interaction.component.placeholder !== null &&
+            interaction.component.placeholder !== undefined &&
+            interaction.customId.includes('||')
+        ) {
+            Queue.findOne({
+                guildId: interaction.guildId,
+                clientId: this.client.user.id,
+            }).then((queue) => {
+                if (!queue) return;
+                this.actions.executeMenuSelectFromInteraction(interaction);
+            });
+        }
+        this.menuSelectQueue[interaction.message.id].shift();
+        if (this.menuSelectQueue[interaction.message.id].length === 0)
+            delete this.menuSelectQueue[interaction.message.id];
         else
             this.handleButtonClick(
                 this.buttonClickQueue[interaction.message.id][0],
@@ -525,7 +595,7 @@ export class ClientEventHandler {
                 const q: Queue = Queue.create({
                     clientId: this.client.user.id,
                     offset: 0,
-                    songs: [],
+                    curPageSongs: [],
                     options: [],
                     color: Math.floor(Math.random() * 16777215),
                 });

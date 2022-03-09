@@ -25,7 +25,7 @@ export class Clear extends AbstractCommand {
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
-            .setDisabled(queue.songs.length < 2)
+            .setDisabled(queue.size < 2)
             .setStyle(
                 queue.options.includes('clearRequest')
                     ? MessageButtonStyles.PRIMARY
@@ -48,10 +48,10 @@ export class Clear extends AbstractCommand {
 
         if (interaction.component.style === 'PRIMARY') {
             queue.offset = 0;
-            if (queue.songs.length > 0) {
+            if (queue.size > 0) {
                 const attachment = new MessageAttachment(
                     Buffer.from(
-                        queue.songs
+                        queue.curPageSongs
                             .map(
                                 (s) =>
                                     `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
@@ -73,7 +73,8 @@ export class Clear extends AbstractCommand {
             }
 
             queue.options = queue.options.filter((o) => o !== 'clearRequest');
-            queue.songs = queue.songs.length === 0 ? [] : [queue.songs[0]];
+            queue.curPageSongs =
+                queue.size === 0 ? [] : [queue.curPageSongs[0]];
             await queue.save();
 
             this.client.musicActions.updateQueueMessage({

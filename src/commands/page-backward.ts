@@ -41,6 +41,7 @@ export class PageBackward extends AbstractCommand {
             this.client.musicActions.updateQueueMessage({
                 interaction: interaction,
                 queue: q,
+                reload: true,
             });
         });
     }

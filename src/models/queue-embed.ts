@@ -1,6 +1,6 @@
 import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
+import { Queue, Song } from '../entities';
 import { QueueEmbedOptions } from '../../';
 
 export class QueueEmbed extends MessageEmbed {
@@ -37,28 +37,24 @@ export class QueueEmbed extends MessageEmbed {
 
         const spacer = '\n> \u3000\u2000\u2000';
 
-        if (this.queue.songs.length < 1) return;
+        if (!this.queue.headSong) return;
 
-        const songs: string[] | undefined = this.queue.songs
-            .slice(1)
-            .slice(
-                this.queue.offset,
-                this.queue.offset + QueueEmbed.songsPerPage(),
-            )
-            .map((song, index) => {
-                return `***${
-                    index + this.queue.offset + 1
-                }.***\u3000*${song.toStringShortened(
-                    this.queue.options.includes('expanded'),
-                )}*`;
-            });
-        let headSong = `*${this.queue.songs[0].toString(
+        const queueSongs: Song[] = this.queue.curPageSongs;
+
+        const songs: string[] | undefined = queueSongs.map((song, index) => {
+            return `***${
+                index + this.queue.offset + 1
+            }.***\u3000*${song.toStringShortened(
+                this.queue.options.includes('expanded'),
+            )}*`;
+        });
+        let headSong = `*${this.queue.headSong.toString(
             undefined,
             36,
             spacer,
         )}*`;
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
-        const duration: string = options.queue.songs[0].durationString;
+        const duration: string = this.queue.headSong.durationString;
         headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
         if (addEmpty) headSong += '\n> ㅤ';
 
@@ -71,7 +67,7 @@ export class QueueEmbed extends MessageEmbed {
             '\u2000' + headSong,
             false,
         );
-        const queueSize: number = options.queue.songs.length;
+        const queueSize: number = options.queue.size;
         if (queueSize > 1) {
             let sngs: string = songs.join('\n');
             sngs += `\n> \n> ${'\u3000'.repeat(5)}${this.client.translate(

@@ -35,7 +35,7 @@ export class Loop extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'loop', 'label']))
-            .setDisabled(queue.songs.length < 1)
+            .setDisabled(queue.size < 1)
             .setStyle(
                 queue.options.includes('loop')
                     ? MessageButtonStyles.SUCCESS

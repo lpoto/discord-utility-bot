@@ -38,16 +38,45 @@ export class Queue extends BaseEntity {
     @OneToMany(() => Song, (song) => song.queue, {
         cascade: ['insert', 'update', 'remove'],
         orphanedRowAction: 'delete',
-        eager: true,
+        lazy: true,
     })
-    songs: Song[];
+    allSongs: Promise<Song[]>;
+
+    headSong: Song | undefined;
+
+    curPageSongs: Song[] = [];
+
+    size = 0;
 
     @AfterLoad()
-    sortSongs(): void {
-        if (this.songs) this.songs.sort((s1, s2) => s1.position - s2.position);
-        if (this.offset && this.songs)
-            while (this.offset >= this.songs.length - 1)
-                this.offset -= QueueEmbed.songsPerPage();
-        if (this.offset < 0) this.offset = 0;
+    async afterQueueLoad(): Promise<void> {
+        this.size = await Song.count({ where: { queue: this } });
+        await this.reloadCurPageSongs();
+        this.headSong = await Song.findOne();
+    }
+
+    async maxPosition(): Promise<number> {
+        return Song.createQueryBuilder('song')
+            .orderBy('song.position', 'DESC')
+            .getOne()
+            .then((r) => {
+                if (r) return r.position;
+                return -1;
+            });
+    }
+
+    async reloadCurPageSongs(): Promise<void> {
+        this.curPageSongs = await Song.createQueryBuilder('song')
+            .where(
+                'song.queue.guildId = :gId AND song.queue.clientId = :cId',
+                {
+                    gId: this.guildId,
+                    cId: this.clientId,
+                },
+            )
+            .orderBy('song.position', 'ASC')
+            .limit(QueueEmbed.songsPerPage())
+            .offset(this.offset + 1)
+            .getMany();
     }
 }

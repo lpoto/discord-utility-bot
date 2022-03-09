@@ -2,6 +2,8 @@ import {
     ButtonInteraction,
     MessageActionRow,
     MessageButton,
+    MessageSelectMenu,
+    SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from './client';
 import { Queue } from './entities';
@@ -49,6 +51,7 @@ export class MusicCommands {
                 const button: MessageButton | null = command.button2(queue);
                 if (!button) continue;
                 if (
+                    interaction.component &&
                     button.label &&
                     interaction.component.label === button.label
                 )
@@ -63,10 +66,50 @@ export class MusicCommands {
     }
 
     /**
+     * Execute a command that matches the menu select's custom id
+     */
+    public async executeMenuSelectFromInteraction(
+        interaction: SelectMenuInteraction,
+    ): Promise<void> {
+        if (!interaction.guildId || !this.client.user) return;
+        const queue: Queue | undefined = await Queue.findOne({
+            guildId: interaction.guildId,
+            clientId: this.client.user.id,
+        });
+        if (!queue) return;
+        for (const val in Commands) {
+            try {
+                const command: Command | null = this.getCommand(
+                    val,
+                    interaction.guildId,
+                );
+                if (!command) continue;
+                const dropdown: MessageSelectMenu | null =
+                    command.selectMenu(queue);
+                if (!dropdown) continue;
+                if (
+                    interaction.component &&
+                    dropdown.placeholder &&
+                    interaction.customId.split('||')[0].trim() === val
+                )
+                    return command
+                        .executeFromSelectMenu(interaction)
+                        .catch((e) => {
+                            console.error('Error when executing command');
+                            this.client.handleError(e);
+                        });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    /**
      * Build MessageActionRow from all of the commands' buttons
      */
     public getCommandsActionRow(queue: Queue): MessageActionRow[] {
         const buttons: MessageButton[] = [];
+        let dropdown: MessageSelectMenu | null = null;
         for (const val in Commands) {
             try {
                 const command: Command | null = this.getCommand(
@@ -75,6 +118,9 @@ export class MusicCommands {
                 );
                 const button: MessageButton | null | undefined =
                     command?.button(queue);
+                const dpdwn: MessageSelectMenu | null | undefined =
+                    command?.selectMenu(queue);
+                if (dpdwn) dropdown = dpdwn;
                 if (!command || !button) continue;
                 buttons.push(button);
             } catch (e) {
@@ -86,6 +132,7 @@ export class MusicCommands {
         let lenIdx = 0;
         let idx = 0;
         for (let i = 0; i < buttons.length; i++) {
+            if (rows.length > 5) break;
             const len: number = idx % 2 === 0 ? 4 : 5;
             if (buttons.length > len && i === lenIdx + len) {
                 lenIdx += len;
@@ -93,6 +140,9 @@ export class MusicCommands {
                 idx += 1;
             }
             rows[idx].addComponents(buttons[i]);
+        }
+        if (dropdown && rows.length < 5) {
+            rows.push(new MessageActionRow().addComponents(dropdown));
         }
         if (rows[0].components.length === 0) return [];
         return rows;

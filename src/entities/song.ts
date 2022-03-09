@@ -3,6 +3,7 @@ import {
     BaseEntity,
     Column,
     Entity,
+    Index,
     ManyToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -11,7 +12,9 @@ import ytpl from 'ytpl';
 import * as yt from 'youtube-search-without-api-key';
 import { Queue } from './queue';
 
-@Entity('song')
+@Entity('song', {
+    orderBy: { position: 'ASC' },
+})
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     readonly id: string;
@@ -28,10 +31,11 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     durationString: string;
 
+    @Index()
     @Column({ nullable: false })
     position: number;
 
-    @ManyToOne(() => Queue, (queue) => queue.songs, {
+    @ManyToOne(() => Queue, (queue) => queue.curPageSongs, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',

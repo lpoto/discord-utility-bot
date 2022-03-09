@@ -44,10 +44,10 @@ export class Stop extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         if (interaction.component.style === 'PRIMARY') {
-            if (queue.songs.length > 0) {
+            if (queue.size > 0) {
                 const attachment = new MessageAttachment(
                     Buffer.from(
-                        queue.songs
+                        queue.curPageSongs
                             .map(
                                 (s) =>
                                     `{ name: \`${s.name}\`, url: \`${s.url}\` }`,

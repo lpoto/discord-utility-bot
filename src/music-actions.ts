@@ -8,6 +8,7 @@ import {
     Message,
     MessageActionRow,
     NonThreadGuildBasedChannel,
+    SelectMenuInteraction,
     StartThreadOptions,
     ThreadChannel,
 } from 'discord.js';
@@ -41,16 +42,28 @@ export class MusicActions {
                 this.client.handleError(e, 'executing with interaction'),
             );
     }
+    /**
+     * Execute a command that matches the dropdown menu's custom id start
+     */
+    public executeMenuSelectFromInteraction(
+        interaction: SelectMenuInteraction,
+    ) {
+        this.commands
+            .executeMenuSelectFromInteraction(interaction)
+            .catch((e) =>
+                this.client.handleError(
+                    e,
+                    'executing menu select with interaction',
+                ),
+            );
+    }
 
     /**
      * Search the songName on youtube and push the found songs to the queue.
      */
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
-        if (queue.songs.length >= 200) return 200;
-        const position: number =
-            queue.songs.length > 0
-                ? queue.songs[queue.songs.length - 1].position + 1
-                : 0;
+        if (queue.size >= 1000) return 1000;
+        const position: number = (await queue.maxPosition()) + 1;
         try {
             const songs: Song[] | null = await Song.findOnYoutube(
                 songName,
@@ -61,7 +74,7 @@ export class MusicActions {
                 s.queue = queue;
                 await s.save();
                 await queue.reload();
-                if (queue.songs.length >= 200) return 200;
+                if (queue.size >= 1000) return 1000;
             }
             return 0;
         } catch (error) {
@@ -74,7 +87,11 @@ export class MusicActions {
      * Try to join the voice channel of the interaction member.
      */
     public async joinVoice(
-        interaction: CommandInteraction | ButtonInteraction | null = null,
+        interaction:
+            | CommandInteraction
+            | ButtonInteraction
+            | SelectMenuInteraction
+            | null = null,
         message: Message | null = null,
     ): Promise<boolean> {
         try {
@@ -209,11 +226,15 @@ export class MusicActions {
         if (options.reload) await queue.reload();
         const updateOptions: InteractionReplyOptions =
             this.getQueueOptions(options);
-        const interaction: ButtonInteraction | CommandInteraction | undefined =
-            options.interaction;
+        const interaction:
+            | ButtonInteraction
+            | CommandInteraction
+            | SelectMenuInteraction
+            | undefined = options.interaction;
         if (
             interaction &&
-            interaction instanceof ButtonInteraction &&
+            (interaction instanceof ButtonInteraction ||
+                interaction instanceof SelectMenuInteraction) &&
             !interaction.deferred &&
             !interaction.replied
         ) {

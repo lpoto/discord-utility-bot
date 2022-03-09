@@ -2,7 +2,9 @@ import { Queue } from './entities/queue';
 import {
     ClientOptions,
     MessageButton,
+    MessageSelectMenu,
     PermissionResolvable,
+    SelectMenuInteraction,
 } from 'discord.js';
 import { Languages } from './translation';
 import { ButtonInteraction, CommandInteraction } from 'discord.js';
@@ -14,7 +16,10 @@ export interface UpdateQueueOptions {
     reload?: boolean;
     embedOnly?: boolean;
     componentsOnly?: boolean;
-    interaction?: ButtonInteraction | CommandInteraction;
+    interaction?:
+        | ButtonInteraction
+        | CommandInteraction
+        | SelectMenuInteraction;
     clientRestart?: boolean;
     innactivity?: boolean;
 }
@@ -44,7 +49,12 @@ export class Command {
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
 
+    public selectMenu(queue: Queue): MessageSelectMenu | null;
+
     public execute(interaction?: ButtonInteraction): Promise<void>;
+    public executeFromSelectMenu(
+        interaction: SelectMenuInteraction,
+    ): Promise<void>;
 }
 
 export type LanguageString = keyof typeof Languages;

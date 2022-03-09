@@ -18,7 +18,7 @@ export class Pause extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'pause', 'label']))
-            .setDisabled(queue.songs.length === 0)
+            .setDisabled(queue.size === 0)
             .setStyle(
                 this.audioPlayer?.state.status === AudioPlayerStatus.Paused
                     ? MessageButtonStyles.SUCCESS

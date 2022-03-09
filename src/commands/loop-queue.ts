@@ -42,7 +42,7 @@ export class LoopQueue extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'loopQueue', 'label']),
             )
-            .setDisabled(queue.songs.length < 1)
+            .setDisabled(queue.size < 1)
             .setStyle(
                 queue.options.includes('loopQueue')
                     ? MessageButtonStyles.SUCCESS

@@ -41,21 +41,18 @@ export class Play extends AbstractCommand {
          */
         if (error || (!replay && !queue.options.includes('loop'))) {
             try {
-                const song: Song | undefined = queue.songs.shift();
-                if (song) {
-                    if (!error && queue.options.includes('loopQueue')) {
-                        let max: number =
-                            Math.max.apply(
-                                null,
-                                queue.songs.map((s) => s.position),
-                            ) + 1;
-                        if (max < 0) max = 0;
-                        song.position = max;
-                        await song.save();
-                    } else {
-                        await song.remove();
-                    }
+                const headSong: Song | undefined = queue.headSong;
+                if (
+                    headSong &&
+                    !error &&
+                    queue.options.includes('loopQueue')
+                ) {
+                    headSong.position = (await queue.maxPosition()) + 1;
+                    await headSong.save();
+                } else if (headSong) {
+                    await headSong.remove();
                 }
+                await queue.reload();
             } catch (e) {
                 console.error('Error when playing next song: ', e);
             } finally {
@@ -86,7 +83,7 @@ export class Play extends AbstractCommand {
             guildId: this.guildId,
         });
 
-        if (!queue || queue.songs.length < 1) return;
+        if (!queue || !queue.headSong) return;
 
         // play music when at least one (non bot) listener (unmuted)
         // music is auto started when first user joins or unmutes
@@ -107,7 +104,7 @@ export class Play extends AbstractCommand {
             return;
         }
 
-        const song: Song = queue.songs[0];
+        const song: Song = queue.headSong;
 
         /* Remove listeners from old audioPlayer (if exists) and create
          * a new one. Return if audioPlayer is already playing or paused */
@@ -145,9 +142,11 @@ export class Play extends AbstractCommand {
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
                         this.getQueue().then((q) => {
-                            if (!q || q.songs.length === 0) return;
-                            const url: string = q.songs[0].url;
-                            q.songs = q.songs.filter((s) => s.url !== url);
+                            if (!q || q.curPageSongs.length === 0) return;
+                            const url: string = q.curPageSongs[0].url;
+                            q.curPageSongs = q.curPageSongs.filter(
+                                (s) => s.url !== url,
+                            );
                             q.save().then(() => {
                                 this.next(interaction);
                             });

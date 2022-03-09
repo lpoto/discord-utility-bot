@@ -41,7 +41,6 @@ export class Notification extends BaseEntity {
         let dif: number = moment(this.expires).diff(moment.now());
         if (dif < 0) dif = 0;
         const timeout: NodeJS.Timeout = setTimeout(() => {
-            console.log('hehe');
             const currentDate: Date = new Date();
             Notification.createQueryBuilder('notification')
                 .delete()

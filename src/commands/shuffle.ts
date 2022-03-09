@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
+import { Queue, Song } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Shuffle extends AbstractCommand {
@@ -20,7 +20,7 @@ export class Shuffle extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'shuffle', 'label']),
             )
-            .setDisabled(queue.songs.length < 3)
+            .setDisabled(queue.size < 3)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -29,7 +29,7 @@ export class Shuffle extends AbstractCommand {
         if (!interaction || !interaction.user) return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.songs.length < 3) {
+        if (queue.size < 3) {
             if (!interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
@@ -37,30 +37,19 @@ export class Shuffle extends AbstractCommand {
             return;
         }
 
-        const arr: number[] = Array.from(Array(queue.songs.length).keys());
-        arr.shift();
-        let minPos: number = Math.min.apply(
-            null,
-            queue.songs.map((s) => s.position),
-        );
-        for await (const song of queue.songs) {
-            if (song.position === minPos) {
-                song.position = 0;
-                minPos = 0;
-            } else {
-                const randomIndex: number = Math.floor(
-                    Math.random() * arr.length,
-                );
-                song.position = arr[randomIndex];
-                arr.splice(randomIndex, 1);
-            }
-            await song.save();
-        }
+        const x: Song[] = await queue.allSongs;
+        const max: number = x.length - 1;
+        const min = 1;
+        (await queue.allSongs).map(async (s) => {
+            if (queue && s.id === queue.headSong?.id) s.position = 0;
+            else
+                s.position = Math.floor(Math.random() * (max - min + 1) + min);
+            await s.save();
+        });
 
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
-            embedOnly: true,
             reload: true,
         });
     }

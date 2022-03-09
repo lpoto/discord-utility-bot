@@ -63,18 +63,6 @@ npm run start
 npm run dev
 ```
 
-## Adding new commands
-
-To add a new command, create a class extending `src/models/AbstractCommand` in `src/commands/`
-and reexport it in `src/commands/index.ts`.
-
-- If the button method returns a button, the button will be automatically added to the queue message.
-    - The command's execute method will be called when that button is clicked.
-
-- Similarly for description
-
-**NOTE** See other commands classes as a guide.
-
 ## Adding new languages for translation
 
 To add a new language, create a new `json` file in `src/translation/languages` with same keys as `src/translation/languages/en.json`, but translated values

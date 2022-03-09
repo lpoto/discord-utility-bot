@@ -5,6 +5,7 @@ import {
     Message,
     PermissionResolvable,
     Role,
+    SelectMenuInteraction,
     TextBasedChannel,
     TextChannel,
     ThreadChannel,
@@ -70,7 +71,10 @@ export class PermissionChecker {
     }
 
     public validateMemberVoice(
-        interaction: CommandInteraction | ButtonInteraction,
+        interaction:
+            | CommandInteraction
+            | ButtonInteraction
+            | SelectMenuInteraction,
     ): boolean {
         if (
             !interaction.guild ||
@@ -90,7 +94,10 @@ export class PermissionChecker {
 
     private validateMember(
         member: GuildMember,
-        interaction?: CommandInteraction | ButtonInteraction,
+        interaction?:
+            | CommandInteraction
+            | ButtonInteraction
+            | SelectMenuInteraction,
     ): boolean {
         if (!this.client.user || !member.guild.id) return false;
         const notification: Notification = Notification.create({

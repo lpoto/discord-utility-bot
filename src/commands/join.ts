@@ -46,7 +46,7 @@ export class Join extends AbstractCommand {
             audioPlayer?.stop();
         } catch (e) {}
         this.client.setAudioPlayer(queue.guildId, null);
-        if (queue.songs.length > 0) {
+        if (queue.size > 0) {
             if (interaction && !interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()

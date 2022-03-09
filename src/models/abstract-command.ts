@@ -1,23 +1,34 @@
 import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { randomUUID } from 'crypto';
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    MessageButton,
+    MessageSelectMenu,
+    SelectMenuInteraction,
+} from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { LanguageKeyPath } from '../../';
 
 export abstract class AbstractCommand {
     private commandId: string;
+    private commandId2: string;
     protected client: MusicClient;
     protected guildId: string;
 
     constructor(client: MusicClient, guildId: string) {
         this.client = client;
         this.guildId = guildId;
-        this.commandId = this.name + randomUUID();
+        this.commandId = this.name + '||' + randomUUID();
+        this.commandId2 = this.name + '||' + randomUUID();
     }
 
     get id(): string {
         return this.commandId;
+    }
+
+    get id2(): string {
+        return this.commandId2;
     }
 
     get name(): string {
@@ -49,6 +60,11 @@ export abstract class AbstractCommand {
         return null;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public selectMenu(queue: Queue): MessageSelectMenu | null {
+        return null;
+    }
+
     public button2(queue: Queue): MessageButton | null {
         return this.button(queue);
     }
@@ -58,6 +74,14 @@ export abstract class AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
+        console.log(interaction);
+        console.log(this.client.user?.id);
+        console.log(this.guildId);
+    }
+
+    public async executeFromSelectMenu(
+        interaction: SelectMenuInteraction,
+    ): Promise<void> {
         console.log(interaction);
         console.log(this.client.user?.id);
         console.log(this.guildId);

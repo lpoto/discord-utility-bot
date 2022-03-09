@@ -25,8 +25,7 @@ export class PageForward extends AbstractCommand {
                 this.translate(['music', 'commands', 'pageForward', 'label']),
             )
             .setDisabled(
-                queue.offset + QueueEmbed.songsPerPage() >=
-                    queue.songs.length - 1,
+                queue.offset + QueueEmbed.songsPerPage() >= queue.size - 1,
             )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
@@ -39,10 +38,11 @@ export class PageForward extends AbstractCommand {
         if (!queue) return;
 
         queue.offset += QueueEmbed.songsPerPage();
-        queue.save().then((q) => {
+        queue.save().then(async (q) => {
             this.client.musicActions.updateQueueMessage({
                 interaction: interaction,
                 queue: q,
+                reload: true,
             });
         });
     }

@@ -19,7 +19,7 @@ export class Skip extends AbstractCommand {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
             .setDisabled(
-                queue.songs.length === 0 ||
+                queue.size === 0 ||
                     this.audioPlayer?.state.status ===
                         AudioPlayerStatus.Paused,
             )
