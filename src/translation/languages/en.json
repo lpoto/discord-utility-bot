@@ -85,14 +85,14 @@
                 "label": "Remove",
                 "description": "`Remove`: Removes song selected in a dropdown from the queue.",
                 "dropdown": {
-                    "placeholder": "Select the song you want to remove."
+                    "placeholder": "Select the songs you want to remove."
                 }
             },
             "forward": {
                 "label": "Push Forward",
                 "description": "`Push Forward`: Sends a selected song to the start of the queue.",
                 "dropdown": {
-                    "placeholder": "Select the song you want to push to the front."
+                    "placeholder": "Select the songs you want to push to the front."
                 }
             },
             "shuffle": {

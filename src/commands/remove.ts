@@ -135,7 +135,7 @@ export class Remove extends AbstractCommand {
                                     'music',
                                     'commands',
                                     'remove',
-                                    'label',
+                                    'description',
                                 ]),
                                 components: !removeDd
                                     ? []

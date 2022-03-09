@@ -59,7 +59,7 @@ export class Forward extends AbstractCommand {
                     'music',
                     'commands',
                     'forward',
-                    'label',
+                    'description',
                 ]),
                 components: [
                     new MessageActionRow().addComponents(forwardDropdown),
