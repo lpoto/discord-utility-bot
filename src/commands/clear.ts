@@ -7,7 +7,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import moment from 'moment';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
+import { Queue, Song } from '../entities';
 import { Notification } from '../entities/notification';
 import { AbstractCommand } from '../models';
 
@@ -73,9 +73,11 @@ export class Clear extends AbstractCommand {
             }
 
             queue.options = queue.options.filter((o) => o !== 'clearRequest');
-            queue.curPageSongs =
-                queue.size === 0 ? [] : [queue.curPageSongs[0]];
-            await queue.save();
+            await Song.createQueryBuilder('song')
+                .where('song.id != :qid', { qid: queue.headSong?.id })
+                .delete()
+                .execute();
+            await queue.reload();
 
             this.client.musicActions.updateQueueMessage({
                 interaction: interaction,
