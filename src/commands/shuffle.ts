@@ -54,8 +54,8 @@ export class Shuffle extends AbstractCommand {
                 song.position = arr[randomIndex];
                 arr.splice(randomIndex, 1);
             }
+            await song.save();
         }
-        await queue.save();
 
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,

@@ -46,7 +46,7 @@ export class MusicActions {
      * Search the songName on youtube and push the found songs to the queue.
      */
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
-        if (queue.songs.length >= 100) return 100;
+        if (queue.songs.length >= 200) return 200;
         const position: number =
             queue.songs.length > 0
                 ? queue.songs[queue.songs.length - 1].position + 1
@@ -61,7 +61,7 @@ export class MusicActions {
                 s.queue = queue;
                 await s.save();
                 await queue.reload();
-                if (queue.songs.length >= 100) return 100;
+                if (queue.songs.length >= 200) return 200;
             }
             return 0;
         } catch (error) {
@@ -206,6 +206,7 @@ export class MusicActions {
         options: UpdateQueueOptions,
     ): Promise<boolean> {
         const queue: Queue = options.queue;
+        if (options.reload) await queue.reload();
         const updateOptions: InteractionReplyOptions =
             this.getQueueOptions(options);
         const interaction: ButtonInteraction | CommandInteraction | undefined =
@@ -216,7 +217,6 @@ export class MusicActions {
             !interaction.deferred &&
             !interaction.replied
         ) {
-            if (options.reload) await queue.reload();
             return interaction
                 .update(updateOptions)
                 .then(() => {
@@ -236,7 +236,6 @@ export class MusicActions {
             queue.threadId,
         );
         if (!thread) return false;
-        if (options.reload) await queue.reload();
         return thread
             .fetchStarterMessage()
             .then((message) => {
