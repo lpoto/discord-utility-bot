@@ -253,7 +253,7 @@ export class ClientEventHandler {
                         queue,
                         n,
                     );
-                    if (exit === 200) {
+                    if (exit === 100) {
                         await this.actions.updateQueueMessage({
                             queue: queue,
                         });
