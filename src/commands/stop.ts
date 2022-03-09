@@ -74,12 +74,11 @@ export class Stop extends AbstractCommand {
             await queue.save();
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
-                .updateQueueMessageWithInteraction(
-                    interaction,
-                    queue,
-                    false,
-                    true,
-                )
+                .updateQueueMessage({
+                    interaction: interaction,
+                    queue: queue,
+                    componentsOnly: true,
+                })
                 .then((result) => {
                     if (!result || !this.client.user) return;
                     const notification: Notification = Notification.create({
@@ -133,9 +132,10 @@ export class Stop extends AbstractCommand {
                                 );
                                 queue.save().then(() => {
                                     this.client.musicActions.updateQueueMessage(
-                                        queue,
-                                        false,
-                                        true,
+                                        {
+                                            queue: queue,
+                                            componentsOnly: true,
+                                        },
                                     );
                                 });
                             })

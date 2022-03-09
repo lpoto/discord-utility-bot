@@ -38,9 +38,9 @@ export class Expand extends AbstractCommand {
         }
 
         await queue.save();
-        this.client.musicActions.updateQueueMessageWithInteraction(
-            interaction,
-            queue,
-        );
+        this.client.musicActions.updateQueueMessage({
+            interaction: interaction,
+            queue: queue,
+        });
     }
 }

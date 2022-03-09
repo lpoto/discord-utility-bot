@@ -38,10 +38,10 @@ export class PageBackward extends AbstractCommand {
         queue.offset -= QueueEmbed.songsPerPage();
         if (queue.offset < 0) queue.offset = 0;
         queue.save().then((q) => {
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                q,
-            );
+            this.client.musicActions.updateQueueMessage({
+                interaction: interaction,
+                queue: q,
+            });
         });
     }
 }

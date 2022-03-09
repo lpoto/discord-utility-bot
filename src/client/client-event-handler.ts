@@ -19,7 +19,6 @@ import { LanguageKeyPath } from '../translation';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
-import { CommandName } from '../commands';
 
 export class ClientEventHandler {
     private client: MusicClient;
@@ -153,10 +152,7 @@ export class ClientEventHandler {
                         voiceStateAfter.channel?.id &&
                         !voiceStateAfter.deaf))
             ) {
-                this.client.musicActions.commands.execute(
-                    CommandName.PLAY,
-                    guildId,
-                );
+                this.client.musicActions.commands.execute('Play', guildId);
             }
             return;
         }
@@ -176,14 +172,10 @@ export class ClientEventHandler {
                 clientId: this.client.user.id,
             }).then((queue) => {
                 if (queue)
-                    this.actions.updateQueueMessage(
-                        queue,
-                        false,
-                        false,
-                        false,
-                        false,
-                        innactivityDc,
-                    );
+                    this.actions.updateQueueMessage({
+                        queue: queue,
+                        innactivity: innactivityDc,
+                    });
             });
         }
         const prevId: string | undefined = voiceStatePrev.channel?.id;
@@ -261,8 +253,10 @@ export class ClientEventHandler {
                         queue,
                         n,
                     );
-                    if (exit === 300) {
-                        await this.actions.updateQueueMessage(queue);
+                    if (exit === 1000) {
+                        await this.actions.updateQueueMessage({
+                            queue: queue,
+                        });
                         if (
                             !message.author ||
                             !message.guildId ||
@@ -314,17 +308,15 @@ export class ClientEventHandler {
                             audioPlayer.state.status !==
                                 AudioPlayerStatus.Paused)
                     ) {
-                        this.actions.commands.execute(
-                            CommandName.PLAY,
-                            queue.guildId,
-                        );
+                        this.actions.commands.execute('Play', queue.guildId);
                     }
                     if (i % 6 === 0 || i === songs.length - 1)
-                        await this.actions.updateQueueMessage(
-                            queue,
-                            queue.songs.length <= 3 ||
+                        await this.actions.updateQueueMessage({
+                            queue: queue,
+                            embedOnly:
+                                queue.songs.length <= 3 ||
                                 queue.songs.length % 10 === 0,
-                        );
+                        });
                 }
             });
         }
@@ -464,13 +456,10 @@ export class ClientEventHandler {
                                     return null;
                                 }
                                 if (update)
-                                    this.actions.updateQueueMessage(
-                                        queue,
-                                        false,
-                                        false,
-                                        false,
-                                        true,
-                                    );
+                                    this.actions.updateQueueMessage({
+                                        queue: queue,
+                                        clientRestart: true,
+                                    });
                                 return message;
                             })
                             .catch((e) => {

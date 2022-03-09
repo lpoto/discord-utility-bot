@@ -1,9 +1,8 @@
 import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { CommandName } from '.';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
+import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Skip extends AbstractCommand {
@@ -29,71 +28,22 @@ export class Skip extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        try {
-            if (
-                !interaction ||
-                !this.audioPlayer ||
-                this.audioPlayer.state.status === AudioPlayerStatus.Paused
-            )
-                return;
-            const queue: Queue | undefined = await this.getQueue();
-            if (!queue) return;
+        if (
+            !interaction ||
+            !this.audioPlayer ||
+            this.audioPlayer.state.status === AudioPlayerStatus.Paused
+        )
+            return;
+        const queue: Queue | undefined = await this.getQueue();
+        if (!queue) return;
 
-            this.audioPlayer.stop();
-            this.audioPlayer.removeAllListeners();
-            this.client.setAudioPlayer(queue.guildId, null);
-            if (!queue.options.includes('loop')) {
-                const song: Song | undefined = queue.songs.shift();
-                if (song) {
-                    if (queue.options.includes('loopQueue')) {
-                        let max: number =
-                            Math.max.apply(
-                                null,
-                                queue.songs.map((s) => s.position),
-                            ) + 1;
-                        if (max < 0) max = 0;
-                        song.position = max;
-                        await song.save();
-                    } else {
-                        await song.remove();
-                    }
-                    await queue.reload();
-                }
-            }
+        // emit skip debug message to audioPlayer
+        // (skip event handled in play command)
+        this.audioPlayer.emit('debug', 'skip');
 
-            queue.color = Math.floor(Math.random() * 16777215);
-            await queue.save();
-
-            if (queue.songs.length > 0) {
-                this.client.musicActions.commands.execute(
-                    CommandName.PLAY,
-                    this.guildId,
-                );
-                if (
-                    interaction &&
-                    !interaction.deferred &&
-                    !interaction.replied
-                )
-                    interaction
-                        .deferUpdate()
-                        .catch((e) => this.client.handleError(e, 'skip.ts'));
-            } else if (
-                interaction &&
-                !interaction.deferred &&
-                !interaction.replied
-            ) {
-                this.client.musicActions
-                    .updateQueueMessageWithInteraction(
-                        interaction,
-                        queue,
-                        false,
-                        false,
-                        true,
-                    )
-                    .catch((e) => this.client.handleError(e, 'skip.ts'));
-            }
-        } catch (e) {
-            console.error('Error when skipping: ', e);
-        }
+        if (interaction && !interaction.deferred && !interaction.replied)
+            interaction
+                .deferUpdate()
+                .catch((e) => this.client.handleError(e, 'skip.ts'));
     }
 }

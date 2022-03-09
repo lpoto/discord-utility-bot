@@ -3,10 +3,10 @@ import {
     MessageActionRow,
     MessageButton,
 } from 'discord.js';
-import { CommandName, getCommand } from './commands';
 import { MusicClient } from './client';
-import { AbstractCommand } from './models';
 import { Queue } from './entities';
+import * as Commands from './commands';
+import { CommandName, Command } from '../';
 
 export class MusicCommands {
     private client: MusicClient;
@@ -15,12 +15,11 @@ export class MusicCommands {
         this.client = client;
     }
 
+    /**
+     * Execute a command that matches the name
+     */
     public async execute(name: CommandName, guildId: string): Promise<void> {
-        const command: AbstractCommand | null = getCommand(
-            name,
-            guildId,
-            this.client,
-        );
+        const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
         command.execute().catch((e) => {
             console.error('Error when executing command');
@@ -28,6 +27,9 @@ export class MusicCommands {
         });
     }
 
+    /**
+     * Execute a command that matches the button's label
+     */
     public async executeFromInteraction(
         interaction: ButtonInteraction,
     ): Promise<void> {
@@ -37,41 +39,53 @@ export class MusicCommands {
             clientId: this.client.user.id,
         });
         if (!queue) return;
-        for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: AbstractCommand | null = getCommand(
-                i,
-                interaction.guildId,
-                this.client,
-            );
-            if (!command) continue;
-            const button: MessageButton | null = command.button2(queue);
-            if (!button) continue;
-            if (button.label && interaction.component.label === button.label)
-                return command.execute(interaction).catch((e) => {
-                    console.error('Error when executing command');
-                    this.client.handleError(e);
-                });
+        for (const val in Commands) {
+            try {
+                const command: Command | null = this.getCommand(
+                    val,
+                    interaction.guildId,
+                );
+                if (!command) continue;
+                const button: MessageButton | null = command.button2(queue);
+                if (!button) continue;
+                if (
+                    button.label &&
+                    interaction.component.label === button.label
+                )
+                    return command.execute(interaction).catch((e) => {
+                        console.error('Error when executing command');
+                        this.client.handleError(e);
+                    });
+            } catch (e) {
+                console.error(e);
+            }
         }
     }
 
+    /**
+     * Build MessageActionRow from all of the commands' buttons
+     */
     public getCommandsActionRow(queue: Queue): MessageActionRow[] {
         const buttons: MessageButton[] = [];
-        for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: AbstractCommand | null = getCommand(
-                i,
-                queue.guildId,
-                this.client,
-            );
-            const button: MessageButton | null | undefined =
-                command?.button(queue);
-            if (!command || !button) continue;
-            buttons.push(button);
+        for (const val in Commands) {
+            try {
+                const command: Command | null = this.getCommand(
+                    val,
+                    queue.guildId,
+                );
+                const button: MessageButton | null | undefined =
+                    command?.button(queue);
+                if (!command || !button) continue;
+                buttons.push(button);
+            } catch (e) {
+                console.error(e);
+            }
         }
         const rows: MessageActionRow[] = [];
         rows.push(new MessageActionRow());
         const rowLenSequence: number[] = [4, 5, 3, 3];
-        let idx = 0;
         let lenIdx = 0;
+        let idx = 0;
         for (let i = 0; i < buttons.length; i++) {
             const len: number =
                 idx >= rowLenSequence.length ? 3 : rowLenSequence[idx];
@@ -86,17 +100,25 @@ export class MusicCommands {
         return rows;
     }
 
+    /**
+     * Build an array from all of the commands' descriptions
+     */
     public getAllDescriptions(guildId: string): string[] {
         const descriptions: string[] = [];
-        for (let i = 0; i < Object.keys(CommandName).length; i++) {
-            const command: AbstractCommand | null = getCommand(
-                i,
-                guildId,
-                this.client,
-            );
-            if (!command || !command.description) continue;
-            descriptions.push(command.description);
+        for (const val in Commands) {
+            try {
+                const command: Command | null = this.getCommand(val, guildId);
+                if (!command || !command.description) continue;
+                descriptions.push(command.description);
+            } catch (e) {
+                console.error(e);
+            }
         }
         return descriptions;
+    }
+
+    private getCommand(val: string, guildId: string): Command | null {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (<any>Commands)[val](this.client, guildId);
     }
 }

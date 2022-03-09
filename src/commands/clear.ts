@@ -76,17 +76,17 @@ export class Clear extends AbstractCommand {
             queue.songs = queue.songs.length === 0 ? [] : [queue.songs[0]];
             await queue.save();
 
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                queue,
-            );
+            this.client.musicActions.updateQueueMessage({
+                interaction: interaction,
+                queue: queue,
+            });
         } else {
             if (!queue.options.includes('clearRequest'))
                 queue.options.push('clearRequest');
             await queue.save();
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
-                .updateQueueMessageWithInteraction(interaction, queue)
+                .updateQueueMessage({ interaction: interaction, queue: queue })
                 .then((result) => {
                     if (!result || !this.client.user) return;
                     const notification: Notification = Notification.create({
@@ -133,9 +133,10 @@ export class Clear extends AbstractCommand {
                                 );
                                 queue.save().then(() => {
                                     this.client.musicActions.updateQueueMessage(
-                                        queue,
-                                        false,
-                                        true,
+                                        {
+                                            queue: queue,
+                                            componentsOnly: true,
+                                        },
                                     );
                                 });
                             })

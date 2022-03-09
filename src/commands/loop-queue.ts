@@ -29,12 +29,11 @@ export class LoopQueue extends AbstractCommand {
             queue.options.push('loopQueue');
         }
         await queue.save();
-        this.client.musicActions.updateQueueMessageWithInteraction(
-            interaction,
-            queue,
-            false,
-            true,
-        );
+        this.client.musicActions.updateQueueMessage({
+            interaction: interaction,
+            queue: queue,
+            componentsOnly: true,
+        });
     }
 
     public button(queue: Queue): MessageButton | null {

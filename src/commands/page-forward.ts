@@ -40,10 +40,10 @@ export class PageForward extends AbstractCommand {
 
         queue.offset += QueueEmbed.songsPerPage();
         queue.save().then((q) => {
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                q,
-            );
+            this.client.musicActions.updateQueueMessage({
+                interaction: interaction,
+                queue: q,
+            });
         });
     }
 }

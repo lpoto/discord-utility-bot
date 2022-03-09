@@ -44,6 +44,7 @@ export abstract class AbstractCommand {
         });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public button(queue: Queue): MessageButton | null {
         return null;
     }

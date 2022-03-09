@@ -112,7 +112,11 @@ export class Forward extends AbstractCommand {
                     await queue.reload();
                     await this.forwardIndexes(queue, indexes);
                     this.client.musicActions
-                        .updateQueueMessage(queue, true, false, true)
+                        .updateQueueMessage({
+                            queue: queue,
+                            embedOnly: true,
+                            reload: true,
+                        })
                         .catch((e) =>
                             this.client.handleError(
                                 e,

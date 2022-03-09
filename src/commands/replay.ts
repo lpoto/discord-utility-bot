@@ -1,7 +1,6 @@
 import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { CommandName } from '.';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
@@ -38,13 +37,9 @@ export class Replay extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        this.audioPlayer.stop();
-        this.audioPlayer.removeAllListeners();
-        this.client.setAudioPlayer(queue.guildId, null);
-        this.client.musicActions.commands.execute(
-            CommandName.PLAY,
-            this.guildId,
-        );
+        // emit replay debug message to audioPlayer
+        // (replay event handled in play command)
+        this.audioPlayer.emit('debug', 'replay');
 
         if (interaction && !interaction.deferred && !interaction.replied)
             interaction

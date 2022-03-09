@@ -14,9 +14,10 @@
         "build": "tsc -p .",
         "start": "node dist/index.js",
         "lint": "eslint --ext .ts src",
-        "lint-fix": "eslint --ext .ts src --fix",
+        "lint:fix": "eslint --ext .ts src --fix",
         "format": "prettier -w ./src"
     },
+    "types": "./src/index.d.ts",
     "engines": {
         "npm": ">=7.0.0",
         "node": ">=17.0.0"

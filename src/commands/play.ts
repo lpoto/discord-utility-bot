@@ -66,22 +66,11 @@ export class Play extends AbstractCommand {
         queue.color = Math.floor(Math.random() * 16777215);
         await queue.save();
 
-        if (interaction)
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                queue,
-                false,
-                false,
-                true,
-            );
-        else
-            this.client.musicActions.updateQueueMessage(
-                queue,
-                true,
-                false,
-                true,
-            );
-
+        this.client.musicActions.updateQueueMessage({
+            queue: queue,
+            interaction: interaction,
+            reload: true,
+        });
         this.execute(interaction);
     }
 
@@ -114,18 +103,19 @@ export class Play extends AbstractCommand {
                 .size === 0
         ) {
             // update queue message even if no member listeners
-            this.client.musicActions.updateQueueMessage(queue);
+            this.client.musicActions.updateQueueMessage({ queue: queue });
             return;
         }
 
         const song: Song = queue.songs[0];
 
+        /* Remove listeners from old audioPlayer (if exists) and create
+         * a new one. Return if audioPlayer is already playing or paused */
         let audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
             queue.guildId,
         );
         if (!audioPlayer) audioPlayer = createAudioPlayer();
 
-        // only play a song if the audioPlayer is not already playing or paused
         if (
             audioPlayer.state.status === AudioPlayerStatus.Playing ||
             audioPlayer.state.status === AudioPlayerStatus.Paused
@@ -133,21 +123,25 @@ export class Play extends AbstractCommand {
             return;
 
         this.client.setAudioPlayer(queue.guildId, audioPlayer);
+
         connection.removeAllListeners();
         connection.subscribe(audioPlayer);
 
         song.getResource()
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
-                this.client.musicActions.updateQueueMessage(queue);
+                this.client.musicActions.updateQueueMessage({ queue: queue });
                 audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
+                        // when the songs stops playing
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
                         this.next(interaction);
                     })
                     .on('error', (e) => {
+                        /* on error remove all occurances of the song
+                         * that threw error from the queue */
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
                         this.getQueue().then((q) => {
@@ -158,7 +152,8 @@ export class Play extends AbstractCommand {
                                 this.next(interaction);
                             });
                         });
-                        console.log('Error when playing: ', e.message);
+                        console.log('Error when playing: ', e?.message);
+                        // try to play the song next in queue
                         this.next(interaction, false, true);
                     })
                     .on('unsubscribe', () => {
@@ -166,6 +161,8 @@ export class Play extends AbstractCommand {
                         console.log('Unsubscribed audio player');
                     })
                     .on('debug', (message) => {
+                        // replay and skip commands emit debug messages
+                        // ('skip' and 'replay')
                         if (message === 'replay' || message === 'skip') {
                             audioPlayer?.removeAllListeners();
                             audioPlayer?.stop();

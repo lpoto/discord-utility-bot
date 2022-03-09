@@ -16,7 +16,8 @@
                 "notConnected": "You are not in a  voice channel!",
                 "differentChannel": "We are not in the same channel!",
                 "memberDeafened": "You need to undeafen!"
-            }
+            },
+            "failedJoining": "Could not join your voice channel!"
         }
     },
     "music": {
@@ -35,8 +36,8 @@
         },
         "commands": {
             "play": {
-                "description": "Play a youtube song or playlist by typing it's name or url in the Music thread. NOTE: There can only be around 300 songs in the queue at once!",
-                "maxSongs": "There can only be around 300 songs in the queue!"
+                "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.",
+                "maxSongs": "There can only be around 1000 songs in the queue!"
             },
             "join": {
                 "label": "Join",

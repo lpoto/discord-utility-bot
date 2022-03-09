@@ -11,6 +11,7 @@ import {
     StartThreadOptions,
     ThreadChannel,
 } from 'discord.js';
+import { UpdateQueueOptions, QueueEmbedOptions } from '../';
 import { QueryFailedError } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
@@ -30,6 +31,9 @@ export class MusicActions {
         return this.musicCommands;
     }
 
+    /**
+     * Execute a command that matches the button's label.
+     */
     public executeFromInteraction(interaction: ButtonInteraction) {
         this.commands
             .executeFromInteraction(interaction)
@@ -38,8 +42,11 @@ export class MusicActions {
             );
     }
 
+    /**
+     * Search the songName on youtube and push the found songs to the queue.
+     */
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
-        if (queue.songs.length >= 300) return 300;
+        if (queue.songs.length >= 1000) return 1000;
         const position: number =
             queue.songs.length > 0
                 ? queue.songs[queue.songs.length - 1].position + 1
@@ -54,7 +61,7 @@ export class MusicActions {
                 s.queue = queue;
                 await s.save();
                 await queue.reload();
-                if (queue.songs.length >= 300) return 300;
+                if (queue.songs.length >= 1000) return 1000;
             }
             return 0;
         } catch (error) {
@@ -63,10 +70,12 @@ export class MusicActions {
         }
     }
 
+    /**
+     * Try to join the voice channel of the interaction member.
+     */
     public async joinVoice(
         interaction: CommandInteraction | ButtonInteraction | null = null,
         message: Message | null = null,
-        retry: number = 0,
     ): Promise<boolean> {
         try {
             let voiceChannelId: string;
@@ -100,8 +109,28 @@ export class MusicActions {
                     selfDeaf: true,
                 }).on('error', (error) => {
                     this.client.handleError(error, 'joining voice channel');
-                    if (retry < 5)
-                        this.joinVoice(interaction, message, retry + 1);
+                    if (interaction) {
+                        interaction
+                            .reply({
+                                content: this.client.translate(guild.id, [
+                                    'error',
+                                    'voice',
+                                    'failedJoining',
+                                ]),
+                                ephemeral: true,
+                            })
+                            .catch((e) => {
+                                this.client.handleError(e);
+                            });
+                    } else if (message) {
+                        message.reply({
+                            content: this.client.translate(guild.id, [
+                                'error',
+                                'voice',
+                                'failedJoining',
+                            ]),
+                        });
+                    }
                 }),
             );
         } catch (e) {
@@ -112,11 +141,17 @@ export class MusicActions {
         return true;
     }
 
+    /**
+     * Reply to an interaction with a default queue.
+     */
     public async replyWithQueue(
         queue: Queue,
         interaction: CommandInteraction,
     ): Promise<boolean> {
-        const options: InteractionReplyOptions = this.getQueueOptions(queue);
+        const options: InteractionReplyOptions = this.getQueueOptions({
+            queue: queue,
+            interaction: interaction,
+        });
         return interaction
             .reply({
                 fetchReply: true,
@@ -162,34 +197,36 @@ export class MusicActions {
             });
     }
 
-    public async updateQueueMessageWithInteraction(
-        interaction: ButtonInteraction,
-        queue: Queue,
-        embedOnly?: boolean,
-        componentsOnly?: boolean,
-        reload?: boolean,
-    ): Promise<boolean> {
-        if (interaction.deferred || interaction.replied) return false;
-        if (reload) await queue.reload();
-        return interaction
-            .update(this.getQueueOptions(queue, embedOnly, componentsOnly))
-            .then(() => {
-                return true;
-            })
-            .catch((error) => {
-                this.client.handleError(error);
-                return false;
-            });
-    }
-
+    /**
+     * Update queue message based on the fetched Queue entity.
+     * Update interaction if interaction given, else fetch message from
+     * Queue's messageId.
+     */
     public async updateQueueMessage(
-        queue: Queue,
-        embedOnly?: boolean,
-        componentsOnly?: boolean,
-        reload?: boolean,
-        clientRestart?: boolean,
-        innactivity?: boolean,
+        options: UpdateQueueOptions,
     ): Promise<boolean> {
+        const queue: Queue = options.queue;
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
+        const interaction: ButtonInteraction | CommandInteraction | undefined =
+            options.interaction;
+        if (
+            interaction &&
+            interaction instanceof ButtonInteraction &&
+            !interaction.deferred &&
+            !interaction.replied
+        ) {
+            if (options.reload) await queue.reload();
+            return interaction
+                .update(updateOptions)
+                .then(() => {
+                    return true;
+                })
+                .catch((error) => {
+                    this.client.handleError(error);
+                    return false;
+                });
+        }
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return false;
         const channel: NonThreadGuildBasedChannel | null =
@@ -199,24 +236,14 @@ export class MusicActions {
             queue.threadId,
         );
         if (!thread) return false;
-        if (reload) await queue.reload();
+        if (options.reload) await queue.reload();
         return thread
             .fetchStarterMessage()
             .then((message) => {
                 if (!message) return false;
-                return message
-                    .edit(
-                        this.getQueueOptions(
-                            queue,
-                            embedOnly,
-                            componentsOnly,
-                            clientRestart,
-                            innactivity,
-                        ),
-                    )
-                    .then(() => {
-                        return true;
-                    });
+                return message.edit(this.getQueueOptions(options)).then(() => {
+                    return true;
+                });
             })
             .catch((error) => {
                 this.client.handleError(error);
@@ -225,39 +252,28 @@ export class MusicActions {
     }
 
     private getQueueOptions(
-        queue: Queue,
-        embedOnly?: boolean,
-        componentsOnly?: boolean,
-        clientRestart?: boolean,
-        innactivity?: boolean,
+        options: UpdateQueueOptions,
     ): InteractionReplyOptions {
-        if (embedOnly) {
+        const embedOptions: QueueEmbedOptions = options as QueueEmbedOptions;
+        embedOptions.client = this.client;
+        if (options.embedOnly) {
             return {
-                embeds: [
-                    new QueueEmbed(
-                        this.client,
-                        queue,
-                        clientRestart,
-                        innactivity,
-                    ),
-                ],
+                embeds: [new QueueEmbed(embedOptions)],
             };
         }
         const components: MessageActionRow[] = [];
         let commandActionRow: MessageActionRow[] = [];
         commandActionRow = commandActionRow.concat(
-            this.musicCommands.getCommandsActionRow(queue),
+            this.musicCommands.getCommandsActionRow(options.queue),
         );
         for (const row of commandActionRow) components.push(row);
-        if (componentsOnly) {
+        if (options.componentsOnly) {
             return {
                 components: components,
             };
         }
         return {
-            embeds: [
-                new QueueEmbed(this.client, queue, clientRestart, innactivity),
-            ],
+            embeds: [new QueueEmbed(embedOptions)],
             components: components,
         };
     }

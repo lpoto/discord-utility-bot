@@ -1,41 +1,39 @@
 import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueEmbedOptions } from '../../';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
     private client: MusicClient;
 
-    constructor(
-        client: MusicClient,
-        queue: Queue,
-        clientRestart?: boolean,
-        innactivity?: boolean,
-    ) {
+    constructor(options: QueueEmbedOptions) {
         super({
-            title: client.translate(queue.guildId, [
+            title: options.client.translate(options.queue.guildId, [
                 'music',
                 'queue',
                 'title',
             ]),
             footer: {
-                text: client.translate(queue.guildId, [
+                text: options.client.translate(options.queue.guildId, [
                     'music',
                     'queue',
                     'footer',
                 ]),
             },
-            description: !clientRestart
-                ? !innactivity
+            description: !options.clientRestart
+                ? !options.innactivity
                     ? ''
-                    : client.translate(queue.guildId, [
+                    : options.client.translate(options.queue.guildId, [
                           'innactivityDisconnect',
                       ])
-                : client.translate(queue.guildId, ['clientRestarted']),
-            color: queue.color,
+                : options.client.translate(options.queue.guildId, [
+                      'clientRestarted',
+                  ]),
+            color: options.queue.color,
         });
-        this.queue = queue;
-        this.client = client;
+        this.queue = options.queue;
+        this.client = options.client;
 
         const spacer = '\n> \u3000\u2000\u2000';
 
@@ -60,7 +58,7 @@ export class QueueEmbed extends MessageEmbed {
             spacer,
         )}*`;
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
-        const duration: string = queue.songs[0].durationString;
+        const duration: string = options.queue.songs[0].durationString;
         headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
         if (addEmpty) headSong += '\n> ㅤ';
 
@@ -73,7 +71,7 @@ export class QueueEmbed extends MessageEmbed {
             '\u2000' + headSong,
             false,
         );
-        const queueSize: number = queue.songs.length;
+        const queueSize: number = options.queue.songs.length;
         if (queueSize > 1) {
             let sngs: string = songs.join('\n');
             sngs += `\n> \n> ${'\u3000'.repeat(5)}${this.client.translate(

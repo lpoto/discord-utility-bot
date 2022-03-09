@@ -37,11 +37,10 @@ export class EditQueue extends AbstractCommand {
         }
 
         await queue.save();
-        this.client.musicActions.updateQueueMessageWithInteraction(
-            interaction,
-            queue,
-            false,
-            true,
-        );
+        this.client.musicActions.updateQueueMessage({
+            interaction: interaction,
+            queue: queue,
+            componentsOnly: true,
+        });
     }
 }

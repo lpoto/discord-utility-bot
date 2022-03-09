@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
+import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Shuffle extends AbstractCommand {
@@ -57,12 +57,11 @@ export class Shuffle extends AbstractCommand {
         }
         await queue.save();
 
-        this.client.musicActions.updateQueueMessageWithInteraction(
-            interaction,
-            queue,
-            true,
-            false,
-            true,
-        );
+        this.client.musicActions.updateQueueMessage({
+            interaction: interaction,
+            queue: queue,
+            embedOnly: true,
+            reload: true,
+        });
     }
 }

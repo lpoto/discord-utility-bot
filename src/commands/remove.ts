@@ -113,7 +113,7 @@ export class Remove extends AbstractCommand {
                         await queue.reload();
                         await this.removeIndexes(queue, indexes);
                         this.client.musicActions
-                            .updateQueueMessage(queue, false, false, true)
+                            .updateQueueMessage({ queue: queue, reload: true })
                             .catch((e) =>
                                 this.client.handleError(
                                     e,

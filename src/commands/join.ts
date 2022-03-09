@@ -1,7 +1,6 @@
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import { CommandName } from '.';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
@@ -15,6 +14,7 @@ export class Join extends AbstractCommand {
         return this.translate(['music', 'commands', 'join', 'description']);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public button(queue: Queue): MessageButton | null {
         if (this.connection) return null;
         return new MessageButton()
@@ -24,6 +24,7 @@ export class Join extends AbstractCommand {
             .setCustomId(this.id);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public button2(queue: Queue): MessageButton | null {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'join', 'label']))
@@ -53,21 +54,17 @@ export class Join extends AbstractCommand {
                         this.client.handleError(e, 'join.ts -> execute'),
                     );
 
-            this.client.musicActions.commands.execute(
-                CommandName.PLAY,
-                this.guildId,
-            );
+            this.client.musicActions.commands.execute('Play', this.guildId);
         } else if (
             interaction &&
             !interaction.deferred &&
             !interaction.replied
         ) {
-            this.client.musicActions.updateQueueMessageWithInteraction(
-                interaction,
-                queue,
-                false,
-                true,
-            );
+            this.client.musicActions.updateQueueMessage({
+                interaction: interaction,
+                queue: queue,
+                componentsOnly: true,
+            });
         }
     }
 }

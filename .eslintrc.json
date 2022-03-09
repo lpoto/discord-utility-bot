@@ -46,6 +46,8 @@
 
         "@typescript-eslint/quotes": ["warn", "single"],
         "@typescript-eslint/semi": ["warn", "always"],
+        "@typescript-eslint/no-unused-expressions": "warn",
+        "@typescript-eslint/no-unused-vars": "warn",
 
         "eqeqeq": ["warn", "smart"],
         "semi": "warn",
@@ -75,8 +77,6 @@
         "@typescript-eslint/naming-convention": "off",
         "@typescript-eslint/no-empty-function": "off",
         "@typescript-eslint/member-ordering": "off",
-        "@typescript-eslint/no-unused-expressions": "off",
-        "@typescript-eslint/no-unused-vars": "off",
 
         "quotes": "off",
         "brace-style": "off",
