@@ -46,7 +46,7 @@ export class MusicActions {
      * Search the songName on youtube and push the found songs to the queue.
      */
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
-        if (queue.songs.length >= 1000) return 1000;
+        if (queue.songs.length >= 200) return 200;
         const position: number =
             queue.songs.length > 0
                 ? queue.songs[queue.songs.length - 1].position + 1
@@ -61,7 +61,7 @@ export class MusicActions {
                 s.queue = queue;
                 await s.save();
                 await queue.reload();
-                if (queue.songs.length >= 1000) return 1000;
+                if (queue.songs.length >= 200) return 200;
             }
             return 0;
         } catch (error) {
