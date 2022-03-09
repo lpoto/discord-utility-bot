@@ -85,11 +85,13 @@ export class ClientEventHandler {
 
         this.client.on('messageCreate', (message) => {
             if (message.channel instanceof ThreadChannel) {
+                const start: boolean =
+                    !this.threadMessageQueue[message.channel.id] ||
+                    this.threadMessageQueue[message.channel.id].length === 0;
                 if (!(message.channel.id in this.threadMessageQueue))
                     this.threadMessageQueue[message.channel.id] = [];
                 this.threadMessageQueue[message.channel.id].push(message);
-                if (this.threadMessageQueue[message.channel.id].length === 1)
-                    this.handleThreadMessage(message);
+                if (start) this.handleThreadMessage(message);
                 return;
             }
         });
@@ -198,6 +200,9 @@ export class ClientEventHandler {
         if (
             message.guildId &&
             message.member instanceof GuildMember &&
+            message.guild &&
+            message.guild.me &&
+            message.member.id !== message.guild.me.id &&
             message.channel instanceof ThreadChannel &&
             message.channel.name ===
                 this.translate(message.guildId, ['music', 'thread', 'name']) &&
@@ -209,142 +214,148 @@ export class ClientEventHandler {
             await Queue.findOne({
                 guildId: message.guildId,
                 clientId: this.client.user.id,
-            }).then(async (queue) => {
-                if (!queue) return;
+            })
+                .then(async (queue) => {
+                    if (!queue) return;
 
-                if (
-                    (message.guildId &&
-                        !this.client.getVoiceConnection(message.guildId)) ||
-                    !message.guild?.me?.voice.channel
-                )
-                    this.actions.joinVoice(null, message);
-
-                // get songs from message content and from all text file attachments
-                // multiple songs may be added, each in its own line
-
-                let songs: string[] = [];
-                if (message.content) songs = message.content.split('\n');
-
-                if (message.attachments.size > 0) {
-                    for (let i = 0; i < message.attachments.size; i++) {
-                        const file: MessageAttachment | undefined =
-                            message.attachments.at(i);
-                        if (!file) continue;
-                        const re = await fetch(file.url);
-                        if (!re.ok) continue;
-                        const text: string = await re.text();
-                        if (text.length === 0) continue;
-
-                        songs = songs.concat(text.split('\n'));
-                    }
-                }
-
-                const audioPlayer: AudioPlayer | null =
-                    this.client.getAudioPlayer(queue.guildId);
-
-                for (let i = 0; i < songs.length; i++) {
-                    /* filter songs, if both name and url provided, extract url
-                     * else it will be determined when fetchign songs from youtube
-                     * */
-                    const s: string = songs[i];
-                    let n: string = s.trim();
-                    if (n[0] === '{' && n.includes('url:')) {
-                        n = s.substring(1, n.length - 1);
-                        n = n.split('url:')[1].split(',')[0].trim();
-                    }
                     if (
-                        (n[0] === '"' && n[n.length - 1] === '"') ||
-                        // eslint-disable-next-line
-                        (n[0] === "'" && n[n.length - 1] === "'") ||
-                        (n[0] === '`' && n[n.length - 1] === '`')
+                        (message.guildId &&
+                            !this.client.getVoiceConnection(
+                                message.guildId,
+                            )) ||
+                        !message.guild?.me?.voice.channel
                     )
-                        n = n.substring(1, n.length - 1);
-                    await queue.reload();
-                    const exit: number = await this.actions.songToQueue(
-                        queue,
-                        n,
-                    );
-                    if (exit === 1000) {
-                        await this.actions.updateQueueMessage({
-                            queue: queue,
-                        });
+                        this.actions.joinVoice(null, message);
+
+                    // get songs from message content and from all text file attachments
+                    // multiple songs may be added, each in its own line
+
+                    let songs: string[] = [];
+                    if (message.content) songs = message.content.split('\n');
+
+                    if (message.attachments.size > 0) {
+                        for (let i = 0; i < message.attachments.size; i++) {
+                            const file: MessageAttachment | undefined =
+                                message.attachments.at(i);
+                            if (!file) continue;
+                            const re = await fetch(file.url);
+                            if (!re.ok) continue;
+                            const text: string = await re.text();
+                            if (text.length === 0) continue;
+
+                            songs = songs.concat(text.split('\n'));
+                        }
+                    }
+
+                    const audioPlayer: AudioPlayer | null =
+                        this.client.getAudioPlayer(queue.guildId);
+
+                    for (let i = 0; i < songs.length; i++) {
+                        /* filter songs, if both name and url provided, extract url
+                         * else it will be determined when fetchign songs from youtube
+                         * */
+                        const s: string = songs[i];
+                        let n: string = s.trim();
+                        if (n[0] === '{' && n.includes('url:')) {
+                            n = s.substring(1, n.length - 1);
+                            n = n.split('url:')[1].split(',')[0].trim();
+                        }
                         if (
-                            !message.author ||
-                            !message.guildId ||
-                            !this.client.user
+                            (n[0] === '"' && n[n.length - 1] === '"') ||
+                            // eslint-disable-next-line
+                            (n[0] === "'" && n[n.length - 1] === "'") ||
+                            (n[0] === '`' && n[n.length - 1] === '`')
                         )
-                            break;
-                        const notification: Notification = Notification.create(
-                            {
-                                userId: message.author.id,
-                                clientId: this.client.user.id,
-                                guildId: message.guildId,
-                                expires: moment(moment.now())
-                                    .add(24, 'h')
-                                    .toDate(),
-                                name: 'maxSongs',
-                            },
+                            n = n.substring(1, n.length - 1);
+                        await queue.reload();
+                        const exit: number = await this.actions.songToQueue(
+                            queue,
+                            n,
                         );
-                        Notification.findOne({
-                            userId: notification.userId,
-                            clientId: notification.clientId,
-                            guildId: notification.guildId,
-                            name: notification.name,
-                        }).then((m) => {
-                            if (m) return;
-                            notification.save().then(() => {
-                                message
-                                    .reply({
-                                        content: this.translate(
-                                            message.guildId,
-                                            [
-                                                'music',
-                                                'commands',
-                                                'play',
-                                                'maxSongs',
-                                            ],
-                                        ),
-                                    })
-                                    .catch((e) => {
-                                        this.client.handleError(e);
-                                    });
+                        if (exit === 1000) {
+                            await this.actions.updateQueueMessage({
+                                queue: queue,
                             });
-                        });
-                        break;
+                            if (
+                                !message.author ||
+                                !message.guildId ||
+                                !this.client.user
+                            )
+                                break;
+                            const notification: Notification =
+                                Notification.create({
+                                    userId: message.author.id,
+                                    clientId: this.client.user.id,
+                                    guildId: message.guildId,
+                                    expires: moment(moment.now())
+                                        .add(24, 'h')
+                                        .toDate(),
+                                    name: 'maxSongs',
+                                });
+                            Notification.findOne({
+                                userId: notification.userId,
+                                clientId: notification.clientId,
+                                guildId: notification.guildId,
+                                name: notification.name,
+                            }).then((m) => {
+                                if (m) return;
+                                notification.save().then(() => {
+                                    message
+                                        .reply({
+                                            content: this.translate(
+                                                message.guildId,
+                                                [
+                                                    'music',
+                                                    'commands',
+                                                    'play',
+                                                    'maxSongs',
+                                                ],
+                                            ),
+                                        })
+                                        .catch((e) => {
+                                            this.client.handleError(e);
+                                        });
+                                });
+                            });
+                            break;
+                        }
+                        if (
+                            !audioPlayer ||
+                            (audioPlayer.state.status !==
+                                AudioPlayerStatus.Playing &&
+                                audioPlayer.state.status !==
+                                    AudioPlayerStatus.Paused)
+                        ) {
+                            this.actions.commands.execute(
+                                'Play',
+                                queue.guildId,
+                            );
+                        }
+                        if (i % 6 === 0 || i === songs.length - 1)
+                            await this.actions.updateQueueMessage({
+                                queue: queue,
+                                embedOnly:
+                                    queue.size <= 3 ||
+                                    queue.size % 10 === 0 ||
+                                    (queue.options.includes('editing') &&
+                                        (queue.options.includes(
+                                            'removeSelected',
+                                        ) ||
+                                            queue.options.includes(
+                                                'forwardSelected',
+                                            ))),
+                            });
                     }
-                    if (
-                        !audioPlayer ||
-                        (audioPlayer.state.status !==
-                            AudioPlayerStatus.Playing &&
-                            audioPlayer.state.status !==
-                                AudioPlayerStatus.Paused)
-                    ) {
-                        this.actions.commands.execute('Play', queue.guildId);
-                    }
-                    if (i % 6 === 0 || i === songs.length - 1)
-                        await this.actions.updateQueueMessage({
-                            queue: queue,
-                            embedOnly:
-                                queue.size <= 3 ||
-                                queue.size % 10 === 0 ||
-                                (queue.options.includes('editing') &&
-                                    (queue.options.includes(
-                                        'removeSelected',
-                                    ) ||
-                                        queue.options.includes(
-                                            'forwardSelected',
-                                        ))),
-                        });
-                }
-            });
-            this.threadMessageQueue[message.channel.id].shift();
-            if (this.threadMessageQueue[message.channel.id].length === 0)
-                delete this.threadMessageQueue[message.channel.id];
-            else
-                this.handleThreadMessage(
-                    this.threadMessageQueue[message.channel.id][0],
-                );
+                })
+                .catch((e) => this.client.handleError(e));
         }
+        this.threadMessageQueue[message.channel.id].shift();
+        if (this.threadMessageQueue[message.channel.id].length === 0)
+            delete this.threadMessageQueue[message.channel.id];
+        else
+            this.handleThreadMessage(
+                this.threadMessageQueue[message.channel.id][0],
+            );
     }
 
     private handleInteraction(interaction: Interaction): void {
