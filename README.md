@@ -29,7 +29,8 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
     - clear,
     - remove,
     - forward,
-    - help.
+    - help,
+    - ...
 
 - User may only use music commands if they are undeafened in a voice channel and bot is either
 in the same channel or not connected to any.
@@ -48,6 +49,13 @@ music commands.
 - Connect
 - Speak
 - Use Voice Activity
+
+## Additional Planned Features
+
+- Allow administrator to personalize commands for different roles
+- Playlists
+- Translating the queue message
+- Reporting bugs
 
 ## Development
 

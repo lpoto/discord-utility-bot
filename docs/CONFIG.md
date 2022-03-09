@@ -74,3 +74,8 @@ and reexport it in `src/commands/index.ts`.
 - Similarly for description
 
 **NOTE** See other commands classes as a guide.
+
+## Adding new languages for translation
+
+To add a new language, create a new `json` file in `src/translation/languages` with same keys as `src/translation/languages/en.json`, but translated values
+and export it in `src/translation/languages/index.ts`.

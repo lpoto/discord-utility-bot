@@ -1,4 +1,2 @@
-import en from './en.json';
-
-export const Languages = { en };
+export * as Languages from './languages';
 export { Translator } from './translator';
