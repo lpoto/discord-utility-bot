@@ -40,17 +40,21 @@ export class Shuffle extends AbstractCommand {
         const x: Song[] = await queue.allSongs;
         const max: number = x.length - 1;
         const min = 1;
-        (await queue.allSongs).map(async (s) => {
-            if (queue && s.id === queue.headSong?.id) s.position = 0;
-            else
-                s.position = Math.floor(Math.random() * (max - min + 1) + min);
-            await s.save();
-        });
+        queue.allSongs.then((songs) => {
+            songs.map(async (s) => {
+                if (queue && s.id === queue.headSong?.id) s.position = 0;
+                else
+                    s.position = Math.floor(
+                        Math.random() * (max - min + 1) + min,
+                    );
+                await s.save();
+            });
 
-        this.client.musicActions.updateQueueMessage({
-            interaction: interaction,
-            queue: queue,
-            reload: true,
+            this.client.musicActions.updateQueueMessage({
+                interaction: interaction,
+                queue: queue,
+                reload: true,
+            });
         });
     }
 }
