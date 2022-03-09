@@ -52,7 +52,16 @@ export class Queue extends BaseEntity {
     async afterQueueLoad(): Promise<void> {
         this.size = await Song.count({ where: { queue: this } });
         await this.reloadCurPageSongs();
-        this.headSong = await Song.findOne();
+        this.headSong = await Song.createQueryBuilder('song')
+            .where(
+                'song.queue.guildId = :gId AND song.queue.clientId = :cId',
+                {
+                    gId: this.guildId,
+                    cId: this.clientId,
+                },
+            )
+            .orderBy('song.position', 'ASC')
+            .getOne();
     }
 
     async maxPosition(): Promise<number> {
