@@ -80,7 +80,7 @@ export class Remove extends AbstractCommand {
             queue.options = queue.options.filter((o) => o !== this.option);
         } else {
             queue.options = queue.options.filter(
-                (o) => o !== 'forwardSelected',
+                (o) => !['forwardSelected', 'translateSelected'].includes(o),
             );
             queue.options.push(this.option);
         }

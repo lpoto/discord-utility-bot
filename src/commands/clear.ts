@@ -72,7 +72,15 @@ export class Clear extends AbstractCommand {
                 });
             }
 
-            queue.options = queue.options.filter((o) => o !== 'clearRequest');
+            queue.options = queue.options.filter(
+                (o) =>
+                    ![
+                        'clearRequest',
+                        'removeSelected',
+                        'forwardSelected',
+                        'translateSelected'
+                    ].includes(o),
+            );
             await Song.createQueryBuilder('song')
                 .where('song.id != :qid', { qid: queue.headSong?.id })
                 .delete()

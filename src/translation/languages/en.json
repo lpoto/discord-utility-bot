@@ -111,7 +111,10 @@
             },
             "translate": {
                 "label": "Translate",
-                "description": "`Translate`: Currently available languages: "
+                "description": "`Translate`: Currently available languages: ",
+                "dropdown": {
+                    "placeholder": "Select the language to translate the queue to."
+                }
             },
             "bugs": {
                 "label": "Bug?",
