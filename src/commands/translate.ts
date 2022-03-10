@@ -6,6 +6,7 @@ import {
     SelectMenuInteraction,
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { LanguageString } from '../../';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
@@ -35,7 +36,7 @@ export class Translate extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'translate', 'label']),
             )
-            .setDisabled(Object.keys(Languages).length < 2)
+            .setDisabled(Object.keys(Languages).length < 1)
             .setStyle(
                 queue.options.includes(this.option)
                     ? MessageButtonStyles.SUCCESS
@@ -49,7 +50,7 @@ export class Translate extends AbstractCommand {
             !this.connection ||
             !queue.options.includes(this.option) ||
             !queue.options.includes('editing') ||
-            Object.keys(Languages).length < 2
+            Object.keys(Languages).length < 1
         )
             return null;
         const dropdownOptions: MessageSelectOptionData[] = Object.keys(
@@ -68,7 +69,7 @@ export class Translate extends AbstractCommand {
             options: dropdownOptions,
             disabled: false,
             customId: this.id2,
-            maxValues: dropdownOptions.length,
+            maxValues: 1,
         });
     }
 
@@ -102,12 +103,19 @@ export class Translate extends AbstractCommand {
         interaction: SelectMenuInteraction,
     ): Promise<void> {
         const queue: Queue | undefined = await this.getQueue();
-        if (!queue || queue.size < 3 || interaction.values.length === 0)
+        if (!queue || interaction.values.length !== 1 || !interaction.guildId)
             return;
-        /*this.client.musicActions.updateQueueMessage({
+        try {
+            const lang: string = interaction.values[0];
+            this.client.updateGuildLanguage(
+                lang as LanguageString,
+                interaction.guildId,
+            );
+        } catch (e) {}
+        this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
             reload: true,
-        });*/
+        });
     }
 }

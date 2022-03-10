@@ -2,7 +2,7 @@ import { REST } from '@discordjs/rest';
 import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { Routes } from 'discord-api-types/v9';
 import { Client } from 'discord.js';
-import { LanguageKeyPath, MusicClientOptions } from '../../';
+import { LanguageKeyPath, LanguageString, MusicClientOptions } from '../../';
 import { MusicActions } from '../music-actions';
 import { Translator } from '../translation';
 import { ClientEventHandler } from './client-event-handler';
@@ -15,6 +15,7 @@ export class MusicClient extends Client {
     private voiceConnections: { [guildId: string]: VoiceConnection };
     private audioPlayers: { [guildId: string]: AudioPlayer };
     private musicactions: MusicActions;
+    private clientReady: boolean;
 
     constructor(options: MusicClientOptions) {
         super(options);
@@ -23,11 +24,18 @@ export class MusicClient extends Client {
         this.translator = new Translator(options.defaultLanguage);
         this.eventsHandler = new ClientEventHandler(this);
         this.musicactions = new MusicActions(this);
+        this.clientReady = false;
         this.permissionChecker = new PermissionChecker(
             options.clientVoicePermissions,
             options.clientTextPermissions,
             options.requiredMemberRoles,
             this,
+        );
+    }
+
+    get ready(): boolean {
+        return (
+            this.clientReady && this.user !== undefined && this.user !== null
         );
     }
 
@@ -75,13 +83,17 @@ export class MusicClient extends Client {
         return this.translator.translate(guildId, keys);
     }
 
+    public updateGuildLanguage(lang: LanguageString, guildId: string): void {
+        this.translator.setGuidLanguage(lang, guildId);
+    }
+
     public handleError(error: Error, location?: string): void {
         return this.eventsHandler.handleError(error, location);
     }
 
     public slashCommand(guildId: string): { [key: string]: string } {
         return {
-            name: this.translate(guildId, ['slashCommand', 'name']),
+            name: this.translate(null, ['slashCommand', 'name']),
             description: this.translate(guildId, [
                 'slashCommand',
                 'description',
@@ -89,33 +101,35 @@ export class MusicClient extends Client {
         };
     }
 
-    public setup(token: string): void {
+    public async setup(token: string): Promise<void> {
         if (!this.user) return;
 
         console.log('------------------------------------');
         console.log(`  Logged in as user ${this.user.tag}`);
         console.log('------------------------------------');
 
-        this.registerSlashCommands(token);
+        await this.translator.setup();
+        await this.registerSlashCommands(token);
         this.user.setActivity(
             '/' + this.translate(null, ['slashCommand', 'name']),
             {
                 type: 'PLAYING',
             },
         );
+        this.clientReady = true;
         console.log('------------------------------------');
         console.log('  Client ready!');
         console.log('------------------------------------');
     }
 
     /** Register the slash command in all of the servers that the client is member of.*/
-    public registerSlashCommands(token: string): void {
+    public async registerSlashCommands(token: string): Promise<void> {
         if (!this.user) return;
         console.log('Refreshing application (/) commands.');
 
-        for (const guild of this.guilds.cache) {
+        for await (const guild of this.guilds.cache) {
             try {
-                this.registerSlashCommand(guild[1].id, token);
+                await this.registerSlashCommand(guild[1].id, token);
                 console.log(
                     `Successfully registered slash commands for guild "${guild[1].name}".`,
                 );

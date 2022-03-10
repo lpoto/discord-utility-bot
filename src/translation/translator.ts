@@ -1,5 +1,6 @@
 import { Languages } from '.';
 import { Language, LanguageKeyPath, LanguageString } from '../../';
+import { GuildLanguage } from '../entities/guild-language';
 
 export class Translator {
     private defaultLanguage: LanguageString;
@@ -14,6 +15,18 @@ export class Translator {
 
     public setGuidLanguage(lang: LanguageString, guildId: string): void {
         this.guildLanguages[guildId] = lang;
+        GuildLanguage.findOne({ where: { guildId: guildId } }).then((l) => {
+            if (l) {
+                l.language = lang;
+                l.save();
+            } else {
+                const l2: GuildLanguage = GuildLanguage.create({
+                    guildId: guildId,
+                    language: lang,
+                });
+                l2.save();
+            }
+        });
     }
 
     public translate(guildId: string | null, keys: LanguageKeyPath): string {
@@ -26,6 +39,19 @@ export class Translator {
             console.error('Error during translation: ', error);
             return ' / ';
         }
+    }
+
+    public async setup(): Promise<void> {
+        return GuildLanguage.find().then((languages) => {
+            if (!languages) return;
+            for (const l of languages) {
+                if (!(l.language in this.languages)) {
+                    l.language = this.defaultLanguage;
+                    l.save();
+                }
+                this.guildLanguages[l.guildId] = l.language;
+            }
+        });
     }
 
     private getLanguage(guildId: string | null): Language {

@@ -63,6 +63,7 @@ export class ClientEventHandler {
         this.client.on(
             'voiceStateUpdate',
             (voiceStatePrev, voiceStateAfter) => {
+                if (!this.client.ready) return;
                 this.handleVoiceStateUpdate(voiceStatePrev, voiceStateAfter);
             },
         );
@@ -80,10 +81,12 @@ export class ClientEventHandler {
         });
 
         this.client.on('interactionCreate', (interaction) => {
+            if (!this.client.ready) return;
             this.handleInteraction(interaction);
         });
 
         this.client.on('messageCreate', (message) => {
+            if (!this.client.ready) return;
             if (message.channel instanceof ThreadChannel) {
                 const start: boolean =
                     !this.threadMessageQueue[message.channel.id] ||

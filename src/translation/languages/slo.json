@@ -1,0 +1,132 @@
+{
+    "slashCommand": {
+        "name": "music",
+        "description": "Opens a new music thread!"
+    },
+    "error": {
+        "activeThread": "Sporočilo z glasbo že obstaja!",
+        "missingRole": "Manjka ti 'role': ",
+        "voice": {
+            "invalid": "Ne morem se pridružiti temu 'channelu'!",
+            "client": {
+                "cannotJoin": "Ne morem se pridružiti temu 'channelu'!",
+                "noPermissions": "Nimam ustreznih dovoljenj da bi se pridružil 'channelu'!"
+            },
+            "user": {
+                "notConnected": "Nisi v 'voice channelu'!",
+                "differentChannel": "Nisva v istem 'channelu'!",
+                "memberDeafened": "Nimaš vklopljenega zvoka!"
+            },
+            "failedJoining": "Ni se mi uspelo povezati v tvoj 'voice channel'!"
+        }
+    },
+    "music": {
+        "queue": {
+            "title": "Glasba",
+            "footer": "Send the Name / Url of a Youtube Song / Playlist in the Thread!",
+            "footer": "Napišite ime ali pa povezavo do skladbe ali playliste na Youtubu!",
+            "songNumber": "Število pesmi",
+            "curPlaying": "Trenutno",
+            "duration": "Dolžina pesmi",
+            "next": "Sledi"
+        },
+        "thread": {
+            "name": "Music thread!",
+            "archivedName": "Včasih je bil 'Thread' za dodajanje skladb...",
+            "reason": "Dodajanje skladb."
+        },
+        "commands": {
+            "play": {
+                "description": "Predvajaj skadbo (ali playlisto) z youtuba tako, da napišeš njeno ime ali link.",
+                "maxSongs": "Na enkrat je v vrsti lahko največ 1000 skladb!"
+            },
+            "join": {
+                "label": "Pridruži se!",
+                "description": "`Pridruži se!`: Pridruži se vašemu 'voice channelu'."
+            },
+            "loop": {
+                "label": "Ponavljaj",
+                "description": "`Ponavljaj`: Ponavlja trenutno skladbo."
+            },
+            "loopQueue": {
+                "label": "Ponavljaj\u2000Vse",
+                "description": "`Ponavljaj Vse`: Ponavlja vse skladbe."
+            },
+            "pageForward": {
+                "label": ">",
+                "description": "`>`: Pokaže naslednjo stran skladb."
+            },
+            "pageBackward": {
+                "label": "<",
+                "description": "`<`: Pokaže prejšnjo stran skladb."
+            },
+            "skip": {
+                "label": ">>",
+                "description": "`>>`: Preskoči trenutno pesem."
+            },
+            "pause": {
+                "label": "ll",
+                "description": "`ll`: Ustavi skadbo, ki se trenutno predvaja."
+            },
+            "stop": {
+                "label": "◼",
+                "description": "`◼`: Ustavi skladbo, izbriše sporočilo in zapusti 'channel'.",
+                "confirm": "Pritisnite `◼` ponovno, če ste prepričani, da želite ustaviti glasbo.",
+                "reply": "Te pesmi ste odstranili iz vrste. Lahko jih prekopirate nazaj v 'Thread'."
+            },
+            "replay": {
+                "label": "↺",
+                "description": "`↺`: Predvaja trenutno pesem od začetka."
+            },
+            "edit": {
+                "label": "▼",
+                "description": "`▼`: Prikaže dodatne gumbe za urejanje glasbenega sporočila."
+            },
+            "remove": {
+                "label": "Odstrani",
+                "description": "`Odstrani`: Odstrani izbrane pesmi iz vrste.",
+                "dropdown": {
+                    "placeholder": "Izberite pesmi, ki jih želite odstraniti."
+                }
+            },
+            "forward": {
+                "label": "Prioriteta",
+                "description": "`Prioeriteta`: Pošlje izbrane pesmi na začetek vrste.",
+                "dropdown": {
+                    "placeholder": "Izberite pesmi, ki jih želite poslati na začetek."
+                }
+            },
+            "shuffle": {
+                "label": "Premešaj",
+                "description": "`Premešaj`: Premeša vse pesmi v vrsti."
+            },
+            "expand": {
+                "label": "Razširi Pesmi",
+                "description": "`Razširi Pesmi`: Pokaže celotna imena pesmi v vrsti."
+            },
+            "clear": {
+                "label": "Počisti",
+                "description": "`Počisti`: Odstrani vse pesmi iz vrste",
+                "confirm": "Pritisni `Počisti` ponovno, če ste prepričani, da želite odstraniti vse pesmi iz vrste.",
+                "reply": "Te pesmi ste odstranili iz vrste. Lahko jih prekopirate nazaj v 'Thread'."
+            },
+            "translate": {
+                "label": "Jezik",
+                "description": "`Jezik`: Trenutno dostopni jeziki: ",
+                "dropdown": {
+                    "placeholder": "Izberite jezik, ki ga želite uporabljati."
+                }
+            },
+            "bugs": {
+                "label": "Napaka?",
+                "description": "`Napaka?`: Trenutno še ne deluje. :)"
+            },
+            "help": {
+                "label": "Pomoč"
+            }
+        }
+    },
+    "clientRestarted": "Bot je bil ponovno zagnan zaradi novih sprememb.",
+    "innactivityDisconnect": "Bot je zapustil 'channel' zaradi neaktivnosti,\nali pa ga je nekdo odstranil.",
+    "help": "Opa, ni pomoči..."
+}

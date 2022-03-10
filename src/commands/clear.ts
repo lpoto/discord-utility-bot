@@ -48,6 +48,7 @@ export class Clear extends AbstractCommand {
 
         if (interaction.component.style === 'PRIMARY') {
             queue.offset = 0;
+            await queue.save();
             if (queue.size > 0) {
                 const attachment = new MessageAttachment(
                     Buffer.from(
@@ -78,18 +79,19 @@ export class Clear extends AbstractCommand {
                         'clearRequest',
                         'removeSelected',
                         'forwardSelected',
-                        'translateSelected'
+                        'translateSelected',
                     ].includes(o),
             );
+            await queue.save();
             await Song.createQueryBuilder('song')
                 .where('song.id != :qid', { qid: queue.headSong?.id })
                 .delete()
                 .execute();
-            await queue.reload();
 
             this.client.musicActions.updateQueueMessage({
                 interaction: interaction,
                 queue: queue,
+                reload: true,
             });
         } else {
             if (!queue.options.includes('clearRequest'))

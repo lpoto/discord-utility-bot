@@ -2,6 +2,7 @@ import { Intents, Permissions } from 'discord.js';
 import { createConnection } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
+import { GuildLanguage } from './entities/guild-language';
 import { Notification } from './entities/notification';
 
 createConnection({
@@ -12,7 +13,7 @@ createConnection({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     synchronize: true,
-    entities: [Queue, Song, Notification],
+    entities: [Queue, Song, Notification, GuildLanguage],
 }).then(() => {
     const client: MusicClient = new MusicClient({
         intents: [
@@ -20,7 +21,7 @@ createConnection({
             Intents.FLAGS.GUILD_MESSAGES,
             Intents.FLAGS.GUILD_VOICE_STATES,
         ],
-        defaultLanguage: 'en',
+        defaultLanguage: 'slo',
         clientVoicePermissions: [
             Permissions.FLAGS.SPEAK,
             Permissions.FLAGS.CONNECT,

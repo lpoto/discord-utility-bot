@@ -32,7 +32,7 @@
         "thread": {
             "name": "Music thread!",
             "archivedName": "Used to be a music thread...",
-            "reason": "Addings songs to the queue."
+            "reason": "Adding songs to the queue."
         },
         "commands": {
             "play": {
