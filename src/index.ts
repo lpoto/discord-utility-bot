@@ -21,7 +21,7 @@ createConnection({
             Intents.FLAGS.GUILD_MESSAGES,
             Intents.FLAGS.GUILD_VOICE_STATES,
         ],
-        defaultLanguage: 'slo',
+        defaultLanguage: 'en',
         clientVoicePermissions: [
             Permissions.FLAGS.SPEAK,
             Permissions.FLAGS.CONNECT,
