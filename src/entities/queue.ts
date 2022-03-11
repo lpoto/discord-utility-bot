@@ -88,7 +88,10 @@ export class Queue extends BaseEntity {
     public async removeOptions(
         options: QueueOption.Options[],
     ): Promise<Queue> {
-        this.options = this.options.filter((o) => !options.includes(o.name));
+        if (this.options)
+            this.options = this.options.filter(
+                (o) => !options.includes(o.name),
+            );
         return this.save();
     }
 
