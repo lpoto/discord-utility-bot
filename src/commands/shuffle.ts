@@ -1,5 +1,6 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { Not } from 'typeorm';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
 import { AbstractCommand } from '../models';
@@ -29,7 +30,7 @@ export class Shuffle extends AbstractCommand {
         if (!interaction || !interaction.user) return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.size < 3) {
+        if (queue.size < 3 || !queue.headSong) {
             if (!interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
@@ -37,24 +38,27 @@ export class Shuffle extends AbstractCommand {
             return;
         }
 
-        const x: Song[] = await queue.allSongs;
-        const max: number = x.length - 1;
-        const min = 1;
-        queue.allSongs.then((songs) => {
-            songs.map(async (s) => {
-                if (queue && s.id === queue.headSong?.id) s.position = 0;
-                else
-                    s.position = Math.floor(
-                        Math.random() * (max - min + 1) + min,
-                    );
-                await s.save();
-            });
+        // set headSong's position to 0
+        queue.headSong.position = 0;
+        await queue.headSong.save();
 
-            this.client.musicActions.updateQueueMessage({
-                interaction: interaction,
-                queue: queue,
-                reload: true,
+        // set other songs positions random between 1 and songCount
+        const max: number = queue.size + 1;
+        const min = 1;
+
+        Song.createQueryBuilder('song')
+            .update()
+            .where({ id: Not(queue.headSong.id), queue: queue })
+            .set({
+                position: () => `floor(random() * ${max} + ${min})`,
+            })
+            .execute()
+            .then(() => {
+                this.client.musicActions.updateQueueMessage({
+                    interaction: interaction,
+                    queue: queue,
+                    reload: true,
+                });
             });
-        });
     }
 }

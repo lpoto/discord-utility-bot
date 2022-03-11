@@ -50,23 +50,22 @@ export class Queue extends BaseEntity {
 
     @AfterLoad()
     async afterQueueLoad(): Promise<void> {
+        // count all songs referencing this queue
         this.size = await Song.count({ where: { queue: this } });
+        // Load only as many songs that fit a single embed page (based on offset)
         await this.reloadCurPageSongs();
+        // Set a headSong (song with smallest position)
         this.headSong = await Song.createQueryBuilder('song')
-            .where(
-                'song.queue.guildId = :gId AND song.queue.clientId = :cId',
-                {
-                    gId: this.guildId,
-                    cId: this.clientId,
-                },
-            )
-            .orderBy('song.position', 'ASC')
+            .where({
+                queue: this,
+            })
+            .orderBy({ position: 'ASC' })
             .getOne();
     }
 
     async maxPosition(): Promise<number> {
         return Song.createQueryBuilder('song')
-            .orderBy('song.position', 'DESC')
+            .orderBy({ position: 'DESC' })
             .getOne()
             .then((r) => {
                 if (r) return r.position;
@@ -76,14 +75,8 @@ export class Queue extends BaseEntity {
 
     async reloadCurPageSongs(): Promise<void> {
         this.curPageSongs = await Song.createQueryBuilder('song')
-            .where(
-                'song.queue.guildId = :gId AND song.queue.clientId = :cId',
-                {
-                    gId: this.guildId,
-                    cId: this.clientId,
-                },
-            )
-            .orderBy('song.position', 'ASC')
+            .where({ queue: this })
+            .orderBy({ position: 'ASC' })
             .limit(QueueEmbed.songsPerPage())
             .offset(this.offset + 1)
             .getMany();
