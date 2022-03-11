@@ -8,6 +8,7 @@ import {
     PrimaryColumn,
 } from 'typeorm';
 import { QueueEmbed } from '../models';
+import { Languages } from '../translation';
 import { QueueOption } from './option';
 import { Song } from './song';
 
@@ -64,6 +65,7 @@ export class Queue extends BaseEntity {
             .orderBy({ position: 'ASC' })
             .getOne();
         await this.checkOffset();
+        await this.checkOptions();
     }
 
     public hasOption(o: QueueOption.Options): boolean {
@@ -114,5 +116,23 @@ export class Queue extends BaseEntity {
         while (this.offset >= this.size)
             this.offset -= QueueEmbed.songsPerPage();
         await this.save();
+    }
+
+    private async checkOptions(): Promise<void> {
+        if (this.size < 2) {
+            await this.removeOptions([
+                QueueOption.Options.FORWARD_SELECTED,
+                QueueOption.Options.REMOVE_SELECTED,
+            ]);
+        } else if (this.size < 3) {
+            await this.removeOptions([QueueOption.Options.REMOVE_SELECTED]);
+        }
+        if (Object.keys(Languages).length < 2) {
+            await this.removeOptions([QueueOption.Options.TRANSLATE_SELECTED]);
+        }
+        await this.removeOptions([
+            QueueOption.Options.CLEAR_SELECTED,
+            QueueOption.Options.STOP_SELECTED,
+        ]);
     }
 }
