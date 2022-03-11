@@ -13,7 +13,7 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import moment from 'moment';
-import { Notification } from '../entities/notification';
+import { Notification } from '../entities';
 import { MusicClient } from './client';
 
 export class PermissionChecker {

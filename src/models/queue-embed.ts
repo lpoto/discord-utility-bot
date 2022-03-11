@@ -1,8 +1,7 @@
 import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
+import { Queue, Song, QueueOption } from '../entities';
 import { QueueEmbedOptions } from '../../';
-import { QueueOption } from '../entities/option';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;

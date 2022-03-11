@@ -11,8 +11,7 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
-import { QueueOption } from '../entities/option';
+import { Queue, Song, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Play extends AbstractCommand {

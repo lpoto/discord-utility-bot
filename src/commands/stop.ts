@@ -7,9 +7,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import moment from 'moment';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
-import { Notification } from '../entities/notification';
-import { QueueOption } from '../entities/option';
+import { Queue, Notification, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Stop extends AbstractCommand {

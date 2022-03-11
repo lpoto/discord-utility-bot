@@ -15,13 +15,11 @@ import {
     VoiceState,
 } from 'discord.js';
 import moment from 'moment';
-import { Queue } from '../entities';
-import { Notification } from '../entities/notification';
+import { Queue, Notification, QueueOption } from '../entities';
 import { LanguageKeyPath } from '../../';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
-import { QueueOption } from '../entities/option';
 
 export class ClientEventHandler {
     private client: MusicClient;

@@ -8,8 +8,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { LanguageString } from '../../';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
-import { QueueOption } from '../entities/option';
+import { Queue, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
 import { Languages } from '../translation';
 

@@ -2,8 +2,7 @@ import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
-import { QueueOption } from '../entities/option';
+import { Queue, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Bugs extends AbstractCommand {

@@ -1,10 +1,13 @@
 import { Intents, Permissions } from 'discord.js';
 import { createConnection } from 'typeorm';
 import { MusicClient } from './client';
-import { Queue, Song } from './entities';
-import { GuildLanguage } from './entities/guild-language';
-import { Notification } from './entities/notification';
-import { QueueOption } from './entities/option';
+import {
+    Queue,
+    Song,
+    GuildLanguage,
+    Notification,
+    QueueOption,
+} from './entities';
 
 createConnection({
     type: 'postgres',

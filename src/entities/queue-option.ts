@@ -1,7 +1,7 @@
 import { BaseEntity, Entity, ManyToMany, PrimaryColumn } from 'typeorm';
 import { Queue } from '.';
 
-@Entity('option')
+@Entity('queue_option')
 export class QueueOption extends BaseEntity {
     @PrimaryColumn()
     public name: QueueOption.Options;

@@ -8,9 +8,7 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import moment from 'moment';
 import { Not } from 'typeorm';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
-import { Notification } from '../entities/notification';
-import { QueueOption } from '../entities/option';
+import { Queue, Song, QueueOption, Notification } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Clear extends AbstractCommand {

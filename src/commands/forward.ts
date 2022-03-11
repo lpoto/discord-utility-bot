@@ -7,8 +7,7 @@ import {
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue, Song } from '../entities';
-import { QueueOption } from '../entities/option';
+import { Queue, Song, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Forward extends AbstractCommand {

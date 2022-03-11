@@ -3,7 +3,7 @@ import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { Routes } from 'discord-api-types/v9';
 import { Client } from 'discord.js';
 import { LanguageKeyPath, LanguageString, MusicClientOptions } from '../../';
-import { QueueOption } from '../entities/option';
+import { QueueOption } from '../entities';
 import { MusicActions } from '../music-actions';
 import { Translator } from '../translation';
 import { ClientEventHandler } from './client-event-handler';

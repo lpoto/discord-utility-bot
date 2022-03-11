@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { QueueEmbed } from '../models';
 import { Languages } from '../translation';
-import { QueueOption } from './option';
+import { QueueOption } from './queue-option';
 import { Song } from './song';
 
 @Entity('queue')

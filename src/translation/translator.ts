@@ -1,6 +1,6 @@
 import { Languages } from '.';
 import { Language, LanguageKeyPath, LanguageString } from '../../';
-import { GuildLanguage } from '../entities/guild-language';
+import { GuildLanguage } from '../entities';
 
 export class Translator {
     private defaultLanguage: LanguageString;

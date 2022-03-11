@@ -1,4 +1,4 @@
-import { Queue } from './entities/queue';
+import { Queue } from './entities';
 import {
     ClientOptions,
     MessageButton,
