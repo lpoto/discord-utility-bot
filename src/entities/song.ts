@@ -12,9 +12,7 @@ import ytpl from 'ytpl';
 import * as yt from 'youtube-search-without-api-key';
 import { Queue } from './queue';
 
-@Entity('song', {
-    orderBy: { position: 'ASC' },
-})
+@Entity('song')
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     readonly id: string;

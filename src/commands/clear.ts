@@ -159,9 +159,7 @@ export class Clear extends AbstractCommand {
                                     );
                                 });
                             })
-                            .catch(() => {
-                                return;
-                            });
+                            .catch(() => {});
                     }, 5000);
                     x.unref();
                 });

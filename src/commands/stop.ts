@@ -142,13 +142,7 @@ export class Stop extends AbstractCommand {
                                     );
                                 });
                             })
-                            .catch((e) => {
-                                this.client.handleError(
-                                    e,
-                                    'stop.ts -> timeout',
-                                );
-                                return;
-                            });
+                            .catch(() => {});
                     }, 5000);
                     x.unref();
                 });
