@@ -42,9 +42,9 @@ export class Command {
     protected client: MusicClient;
     protected guildId: string;
 
-    constructor(client: MusicClient, guildId: string);
+    public constructor(client: MusicClient, guildId: string);
 
-    get description(): string | null;
+    public get description(): string | null;
 
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;

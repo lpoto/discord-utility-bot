@@ -16,35 +16,35 @@ export abstract class AbstractCommand {
     protected client: MusicClient;
     protected guildId: string;
 
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         this.client = client;
         this.guildId = guildId;
         this.commandId = this.name + '||' + randomUUID();
         this.commandId2 = this.name + '||' + randomUUID();
     }
 
-    get id(): string {
+    public get id(): string {
         return this.commandId;
     }
 
-    get id2(): string {
+    public get id2(): string {
         return this.commandId2;
     }
 
-    get name(): string {
+    public get name(): string {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (<any>this).constructor.name;
     }
 
-    get audioPlayer(): AudioPlayer | null {
+    public get audioPlayer(): AudioPlayer | null {
         return this.client.getAudioPlayer(this.guildId);
     }
 
-    get connection(): VoiceConnection | null {
+    public get connection(): VoiceConnection | null {
         return this.client.getVoiceConnection(this.guildId);
     }
 
-    get description(): string | null {
+    public get description(): string | null {
         return null;
     }
     public async getQueue(): Promise<Queue | undefined> {

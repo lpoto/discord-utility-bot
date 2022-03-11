@@ -9,18 +9,16 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { LanguageString } from '../../';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 import { Languages } from '../translation';
 
 export class Translate extends AbstractCommand {
-    private option: string;
-
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
-        this.option = 'translateSelected';
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate([
             'music',
             'commands',
@@ -30,7 +28,7 @@ export class Translate extends AbstractCommand {
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.options.includes('editing'))
+        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;
         return new MessageButton()
             .setLabel(
@@ -38,7 +36,7 @@ export class Translate extends AbstractCommand {
             )
             .setDisabled(Object.keys(Languages).length < 1)
             .setStyle(
-                queue.options.includes(this.option)
+                queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED)
                     ? MessageButtonStyles.SUCCESS
                     : MessageButtonStyles.SECONDARY,
             )
@@ -48,8 +46,8 @@ export class Translate extends AbstractCommand {
     public selectMenu(queue: Queue): MessageSelectMenu | null {
         if (
             !this.connection ||
-            !queue.options.includes(this.option) ||
-            !queue.options.includes('editing') ||
+            !queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED) ||
+            !queue.hasOption(QueueOption.Options.EDITING) ||
             Object.keys(Languages).length < 1
         )
             return null;
@@ -81,17 +79,21 @@ export class Translate extends AbstractCommand {
             interaction.replied
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.options.includes(this.option)) {
-            queue.options = queue.options.filter((o) => o !== this.option);
+        if (queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED)) {
+            queue = await queue.removeOptions([
+                QueueOption.Options.TRANSLATE_SELECTED,
+            ]);
         } else {
-            queue.options = queue.options.filter(
-                (o) => !['removeSelected', 'forwardSelected'].includes(o),
+            queue = await queue.removeOptions([
+                QueueOption.Options.REMOVE_SELECTED,
+                QueueOption.Options.FORWARD_SELECTED,
+            ]);
+            queue = await queue.addOption(
+                QueueOption.Options.TRANSLATE_SELECTED,
             );
-            queue.options.push(this.option);
         }
-        await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

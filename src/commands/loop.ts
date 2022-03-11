@@ -2,28 +2,30 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Loop extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'loop', 'description']);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user) return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.options.includes('loop')) {
-            queue.options = queue.options.filter((o) => o !== 'loop');
+        if (queue.hasOption(QueueOption.Options.LOOP)) {
+            queue = await queue.removeOptions([QueueOption.Options.LOOP]);
         } else {
-            queue.options = queue.options.filter((o) => o !== 'loopQueue');
-            queue.options.push('loop');
+            queue = await queue.removeOptions([
+                QueueOption.Options.LOOP_QUEUE,
+            ]);
+            queue = await queue.addOption(QueueOption.Options.LOOP);
         }
-        await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
@@ -37,7 +39,7 @@ export class Loop extends AbstractCommand {
             .setLabel(this.translate(['music', 'commands', 'loop', 'label']))
             .setDisabled(queue.size < 1)
             .setStyle(
-                queue.options.includes('loop')
+                queue.hasOption(QueueOption.Options.LOOP)
                     ? MessageButtonStyles.SUCCESS
                     : MessageButtonStyles.SECONDARY,
             )

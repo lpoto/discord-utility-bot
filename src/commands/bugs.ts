@@ -3,19 +3,20 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Bugs extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'bugs', 'description']);
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.options.includes('editing'))
+        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'bugs', 'label']))

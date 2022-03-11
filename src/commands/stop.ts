@@ -9,14 +9,15 @@ import moment from 'moment';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { Notification } from '../entities/notification';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Stop extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'stop', 'description']);
     }
 
@@ -25,7 +26,7 @@ export class Stop extends AbstractCommand {
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'stop', 'label']))
             .setStyle(
-                queue.options.includes('stopRequest')
+                queue.hasOption(QueueOption.Options.STOP_SELECTED)
                     ? MessageButtonStyles.PRIMARY
                     : MessageButtonStyles.SECONDARY,
             )
@@ -41,7 +42,7 @@ export class Stop extends AbstractCommand {
             interaction.replied
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         if (interaction.component.style === 'PRIMARY') {
             if (queue.size > 0) {
@@ -72,9 +73,10 @@ export class Stop extends AbstractCommand {
             }
             this.client.destroyMusic(this.guildId);
         } else {
-            if (!queue.options.includes('stopRequest'))
-                queue.options.push('stopRequest');
-            await queue.save();
+            if (!queue.hasOption(QueueOption.Options.STOP_SELECTED))
+                queue = await queue.addOption(
+                    QueueOption.Options.STOP_SELECTED,
+                );
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
                 .updateQueueMessage({
@@ -127,13 +129,16 @@ export class Stop extends AbstractCommand {
                     });
 
                     const x: NodeJS.Timeout = setTimeout(async () => {
+                        if (!queue) return;
                         queue
                             .reload()
-                            .then(() => {
-                                queue.options = queue.options.filter(
-                                    (o) => o !== 'stopRequest',
-                                );
+                            .then(async () => {
+                                if (!queue) return;
+                                queue = await queue.removeOptions([
+                                    QueueOption.Options.STOP_SELECTED,
+                                ]);
                                 queue.save().then(() => {
+                                    if (!queue) return;
                                     this.client.musicActions.updateQueueMessage(
                                         {
                                             queue: queue,

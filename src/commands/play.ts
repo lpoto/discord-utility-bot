@@ -12,14 +12,15 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Play extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string | null {
+    public get description(): string | null {
         return this.translate(['music', 'commands', 'play', 'description']);
     }
 
@@ -39,13 +40,13 @@ export class Play extends AbstractCommand {
          * Determine if a song needs to be removed from the queue,
          * pushed to the back of the queue or nothing at all.
          */
-        if (error || (!replay && !queue.options.includes('loop'))) {
+        if (error || (!replay && !queue.hasOption(QueueOption.Options.LOOP))) {
             try {
                 const headSong: Song | undefined = queue.headSong;
                 if (
                     headSong &&
                     !error &&
-                    queue.options.includes('loopQueue')
+                    queue.hasOption(QueueOption.Options.LOOP_QUEUE)
                 ) {
                     headSong.position = (await queue.maxPosition()) + 1;
                     await headSong.save();

@@ -21,6 +21,7 @@ import { LanguageKeyPath } from '../../';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
+import { QueueOption } from '../entities/option';
 
 export class ClientEventHandler {
     private client: MusicClient;
@@ -30,7 +31,7 @@ export class ClientEventHandler {
     private threadMessageQueue: { [threadId: string]: Message[] };
     private playing: { [guildId: string]: boolean };
 
-    constructor(client: MusicClient) {
+    public constructor(client: MusicClient) {
         this.client = client;
         this.slashCommandQueue = [];
         this.buttonClickQueue = {};
@@ -39,11 +40,11 @@ export class ClientEventHandler {
         this.playing = {};
     }
 
-    get permissionChecker() {
+    public get permissionChecker() {
         return this.client.permsChecker;
     }
 
-    get actions() {
+    public get actions() {
         return this.client.musicActions;
     }
 
@@ -345,12 +346,16 @@ export class ClientEventHandler {
                                 embedOnly:
                                     queue.size <= 3 ||
                                     queue.size % 10 === 0 ||
-                                    (queue.options.includes('editing') &&
-                                        (queue.options.includes(
-                                            'removeSelected',
+                                    (queue.hasOption(
+                                        QueueOption.Options.EDITING,
+                                    ) &&
+                                        (queue.hasOption(
+                                            QueueOption.Options
+                                                .REMOVE_SELECTED,
                                         ) ||
-                                            queue.options.includes(
-                                                'forwardSelected',
+                                            queue.hasOption(
+                                                QueueOption.Options
+                                                    .FORWARD_SELECTED,
                                             ))),
                             });
                     }

@@ -4,8 +4,8 @@ import { LanguageString } from '../../';
 @Entity('guild_language')
 export class GuildLanguage extends BaseEntity {
     @PrimaryColumn()
-    guildId: string;
+    public guildId: string;
 
     @Column({ nullable: false })
-    language: LanguageString;
+    public language: LanguageString;
 }

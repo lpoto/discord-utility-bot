@@ -15,23 +15,23 @@ import { Queue } from './queue';
 @Entity('song')
 export class Song extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
-    readonly id: string;
+    public readonly id: string;
 
     @Column({ nullable: false })
-    url: string;
+    public url: string;
 
     @Column({ nullable: false })
-    name: string;
+    public name: string;
 
     @Column({ nullable: false })
-    durationSeconds: number;
+    public durationSeconds: number;
 
     @Column({ nullable: false })
-    durationString: string;
+    public durationString: string;
 
     @Index()
     @Column({ nullable: false })
-    position: number;
+    public position: number;
 
     @ManyToOne(() => Queue, (queue) => queue.curPageSongs, {
         onDelete: 'CASCADE',
@@ -39,7 +39,7 @@ export class Song extends BaseEntity {
         orphanedRowAction: 'delete',
         nullable: false,
     })
-    queue: Queue;
+    public queue: Queue;
 
     public toStringShortened(expanded?: boolean): string {
         const name: string = this.name.replace(/\|/g, '│');

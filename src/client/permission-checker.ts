@@ -22,7 +22,7 @@ export class PermissionChecker {
     private roleNames: string[];
     private client: MusicClient;
 
-    constructor(
+    public constructor(
         voicePermissions: PermissionResolvable[],
         textPermissions: PermissionResolvable[],
         roleNames: string[],
@@ -34,7 +34,7 @@ export class PermissionChecker {
         this.client = client;
     }
 
-    get roles(): string[] {
+    public get roles(): string[] {
         return this.roleNames;
     }
 

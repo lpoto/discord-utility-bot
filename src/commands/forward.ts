@@ -8,22 +8,20 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Forward extends AbstractCommand {
-    private option: string;
-
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
-        this.option = 'forwardSelected';
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'forward', 'description']);
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.options.includes('editing'))
+        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;
         return new MessageButton()
             .setLabel(
@@ -31,7 +29,7 @@ export class Forward extends AbstractCommand {
             )
             .setDisabled(queue.size < 3)
             .setStyle(
-                queue.options.includes(this.option)
+                queue.hasOption(QueueOption.Options.FORWARD_SELECTED)
                     ? MessageButtonStyles.SUCCESS
                     : MessageButtonStyles.SECONDARY,
             )
@@ -41,8 +39,8 @@ export class Forward extends AbstractCommand {
     public selectMenu(queue: Queue): MessageSelectMenu | null {
         if (
             !this.connection ||
-            !queue.options.includes(this.option) ||
-            !queue.options.includes('editing') ||
+            !queue.hasOption(QueueOption.Options.FORWARD_SELECTED) ||
+            !queue.hasOption(QueueOption.Options.EDITING) ||
             queue.size < 3
         )
             return null;
@@ -76,17 +74,21 @@ export class Forward extends AbstractCommand {
             interaction.replied
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.options.includes(this.option)) {
-            queue.options = queue.options.filter((o) => o !== this.option);
+        if (queue.hasOption(QueueOption.Options.FORWARD_SELECTED)) {
+            queue = await queue.removeOptions([
+                QueueOption.Options.FORWARD_SELECTED,
+            ]);
         } else {
-            queue.options = queue.options.filter(
-                (o) => !['removeSelected', 'translateSelected'].includes(o),
+            queue = await queue.removeOptions([
+                QueueOption.Options.FORWARD_SELECTED,
+                QueueOption.Options.TRANSLATE_SELECTED,
+            ]);
+            queue = await queue.addOption(
+                QueueOption.Options.FORWARD_SELECTED,
             );
-            queue.options.push(this.option);
         }
-        await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

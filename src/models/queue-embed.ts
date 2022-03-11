@@ -2,12 +2,13 @@ import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
 import { QueueEmbedOptions } from '../../';
+import { QueueOption } from '../entities/option';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
     private client: MusicClient;
 
-    constructor(options: QueueEmbedOptions) {
+    public constructor(options: QueueEmbedOptions) {
         super({
             title: options.client.translate(options.queue.guildId, [
                 'music',
@@ -45,7 +46,7 @@ export class QueueEmbed extends MessageEmbed {
             return `***${
                 index + this.queue.offset + 1
             }.***\u3000*${song.toStringShortened(
-                this.queue.options.includes('expanded'),
+                this.queue.hasOption(QueueOption.Options.EXPANDED),
             )}*`;
         });
         let headSong = `*${this.queue.headSong.toString(
@@ -89,7 +90,7 @@ export class QueueEmbed extends MessageEmbed {
         }
     }
 
-    get songsOffset() {
+    public get songsOffset() {
         return this.queue.offset;
     }
 

@@ -2,10 +2,11 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Help extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
@@ -32,7 +33,7 @@ export class Help extends AbstractCommand {
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!queue.options.includes('editing')) return null;
+        if (!queue.hasOption(QueueOption.Options.EDITING)) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'help', 'label']))
             .setDisabled(false)

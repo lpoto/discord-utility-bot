@@ -7,7 +7,7 @@ export class Translator {
     private languages: { [key in LanguageString]: Language };
     private guildLanguages: { [key: string]: LanguageString };
 
-    constructor(defaultLanguage: LanguageString) {
+    public constructor(defaultLanguage: LanguageString) {
         this.defaultLanguage = defaultLanguage;
         this.guildLanguages = {};
         this.languages = Languages;

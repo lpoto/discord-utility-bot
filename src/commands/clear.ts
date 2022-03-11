@@ -10,25 +10,26 @@ import { Not } from 'typeorm';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
 import { Notification } from '../entities/notification';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class Clear extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'clear', 'description']);
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.options.includes('editing'))
+        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))
             .setDisabled(queue.size < 2)
             .setStyle(
-                queue.options.includes('clearRequest')
+                queue.hasOption(QueueOption.Options.CLEAR_SELECTED)
                     ? MessageButtonStyles.PRIMARY
                     : MessageButtonStyles.SECONDARY,
             )
@@ -44,12 +45,12 @@ export class Clear extends AbstractCommand {
             !interaction.user
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
         if (interaction.component.style === 'PRIMARY') {
             queue.offset = 0;
-            await queue.save();
+            queue = await queue.save();
             if (queue.size > 0) {
                 queue.allSongs.then((songs) => {
                     if (!songs) return;
@@ -77,16 +78,12 @@ export class Clear extends AbstractCommand {
                 });
             }
 
-            queue.options = queue.options.filter(
-                (o) =>
-                    ![
-                        'clearRequest',
-                        'removeSelected',
-                        'forwardSelected',
-                        'translateSelected',
-                    ].includes(o),
-            );
-            await queue.save();
+            queue = await queue.removeOptions([
+                QueueOption.Options.CLEAR_SELECTED,
+                QueueOption.Options.REMOVE_SELECTED,
+                QueueOption.Options.FORWARD_SELECTED,
+                QueueOption.Options.TRANSLATE_SELECTED,
+            ]);
 
             // remove all songs but the head song
             await Song.createQueryBuilder('song')
@@ -100,9 +97,10 @@ export class Clear extends AbstractCommand {
                 reload: true,
             });
         } else {
-            if (!queue.options.includes('clearRequest'))
-                queue.options.push('clearRequest');
-            await queue.save();
+            if (!queue.hasOption(QueueOption.Options.CLEAR_SELECTED))
+                queue = await queue.addOption(
+                    QueueOption.Options.CLEAR_SELECTED,
+                );
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
                 .updateQueueMessage({ interaction: interaction, queue: queue })
@@ -143,20 +141,23 @@ export class Clear extends AbstractCommand {
                     });
 
                     const x: NodeJS.Timeout = setTimeout(() => {
+                        if (!queue) return;
                         queue
                             .reload()
-                            .then(() => {
-                                if (!queue.options.includes('editing')) return;
-                                queue.options = queue.options.filter(
-                                    (o) => o !== 'clearRequest',
-                                );
-                                queue.save().then(() => {
-                                    this.client.musicActions.updateQueueMessage(
-                                        {
-                                            queue: queue,
-                                            componentsOnly: true,
-                                        },
-                                    );
+                            .then(async () => {
+                                if (!queue) return;
+                                if (
+                                    !queue.hasOption(
+                                        QueueOption.Options.EDITING,
+                                    )
+                                )
+                                    return;
+                                queue = await queue.removeOptions([
+                                    QueueOption.Options.CLEAR_SELECTED,
+                                ]);
+                                this.client.musicActions.updateQueueMessage({
+                                    queue: queue,
+                                    componentsOnly: true,
                                 });
                             })
                             .catch(() => {});

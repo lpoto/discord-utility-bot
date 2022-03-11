@@ -3,53 +3,55 @@ import {
     BaseEntity,
     Column,
     Entity,
+    ManyToMany,
     OneToMany,
     PrimaryColumn,
 } from 'typeorm';
 import { QueueEmbed } from '../models';
+import { QueueOption } from './option';
 import { Song } from './song';
 
 @Entity('queue')
 export class Queue extends BaseEntity {
     @PrimaryColumn()
-    clientId: string;
+    public clientId: string;
 
     @PrimaryColumn()
-    guildId: string;
+    public guildId: string;
 
     @Column({ nullable: false })
-    channelId: string;
+    public channelId: string;
 
     @Column({ nullable: false })
-    messageId: string;
+    public messageId: string;
 
     @Column({ nullable: false })
-    threadId: string;
+    public threadId: string;
 
     @Column({ nullable: false })
-    offset: number;
+    public offset: number;
 
     @Column({ nullable: false })
-    color: number;
+    public color: number;
 
-    @Column('text', { array: true })
-    options: string[];
+    @ManyToMany(() => QueueOption, (queueOption) => queueOption.queue)
+    public options: QueueOption[];
 
     @OneToMany(() => Song, (song) => song.queue, {
         cascade: ['insert', 'update', 'remove'],
         orphanedRowAction: 'delete',
         lazy: true,
     })
-    allSongs: Promise<Song[]>;
+    public allSongs: Promise<Song[]>;
 
-    headSong: Song | undefined;
+    public headSong: Song | undefined;
 
-    curPageSongs: Song[] = [];
+    public curPageSongs: Song[] = [];
 
-    size = 0;
+    public size = 0;
 
     @AfterLoad()
-    async afterQueueLoad(): Promise<void> {
+    public async afterQueueLoad(): Promise<void> {
         // count all songs referencing this queue
         this.size = await Song.count({ where: { queue: this } });
         // Load only as many songs that fit a single embed page (based on offset)
@@ -61,9 +63,34 @@ export class Queue extends BaseEntity {
             })
             .orderBy({ position: 'ASC' })
             .getOne();
+        await this.checkOffset();
     }
 
-    async maxPosition(): Promise<number> {
+    public hasOption(o: QueueOption.Options): boolean {
+        return this.options.find((o2) => o2.name === o) !== undefined;
+    }
+
+    public async addOption(o: QueueOption.Options): Promise<Queue> {
+        return QueueOption.findOne(o).then((opt) => {
+            if (!opt) return this;
+            if (
+                this.options.find((opt2) => opt2.name === opt.name) !==
+                undefined
+            )
+                return this;
+            this.options.push(opt);
+            return this.save();
+        });
+    }
+
+    public async removeOptions(
+        options: QueueOption.Options[],
+    ): Promise<Queue> {
+        this.options = this.options.filter((o) => !options.includes(o.name));
+        return this.save();
+    }
+
+    public async maxPosition(): Promise<number> {
         return Song.createQueryBuilder('song')
             .orderBy({ position: 'DESC' })
             .getOne()
@@ -73,12 +100,19 @@ export class Queue extends BaseEntity {
             });
     }
 
-    async reloadCurPageSongs(): Promise<void> {
+    private async reloadCurPageSongs(): Promise<void> {
         this.curPageSongs = await Song.createQueryBuilder('song')
             .where({ queue: this })
             .orderBy({ position: 'ASC' })
             .limit(QueueEmbed.songsPerPage())
             .offset(this.offset + 1)
             .getMany();
+    }
+
+    private async checkOffset(): Promise<void> {
+        if (this.offset === 0) return;
+        while (this.offset >= this.size)
+            this.offset -= QueueEmbed.songsPerPage();
+        await this.save();
     }
 }

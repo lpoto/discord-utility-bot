@@ -5,11 +5,11 @@ import { Queue } from '../entities';
 import { AbstractCommand, QueueEmbed } from '../models';
 
 export class PageForward extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate([
             'music',
             'commands',

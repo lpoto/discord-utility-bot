@@ -13,7 +13,7 @@ import { CommandName, Command } from '../';
 export class MusicCommands {
     private client: MusicClient;
 
-    constructor(client: MusicClient) {
+    public constructor(client: MusicClient) {
         this.client = client;
     }
 

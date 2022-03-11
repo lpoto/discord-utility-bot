@@ -6,11 +6,11 @@ import { Queue } from '../entities';
 import { AbstractCommand } from '../models';
 
 export class Pause extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate(['music', 'commands', 'pause', 'description']);
     }
 

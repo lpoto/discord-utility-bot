@@ -4,6 +4,7 @@ import { MusicClient } from './client';
 import { Queue, Song } from './entities';
 import { GuildLanguage } from './entities/guild-language';
 import { Notification } from './entities/notification';
+import { QueueOption } from './entities/option';
 
 createConnection({
     type: 'postgres',
@@ -13,7 +14,7 @@ createConnection({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     synchronize: true,
-    entities: [Queue, Song, Notification, GuildLanguage],
+    entities: [Queue, Song, QueueOption, Notification, GuildLanguage],
 }).then(() => {
     const client: MusicClient = new MusicClient({
         intents: [

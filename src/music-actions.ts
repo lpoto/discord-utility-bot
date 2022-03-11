@@ -23,12 +23,12 @@ export class MusicActions {
     private client: MusicClient;
     private musicCommands: MusicCommands;
 
-    constructor(client: MusicClient) {
+    public constructor(client: MusicClient) {
         this.client = client;
         this.musicCommands = new MusicCommands(client);
     }
 
-    get commands(): MusicCommands {
+    public get commands(): MusicCommands {
         return this.musicCommands;
     }
 

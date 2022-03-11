@@ -3,6 +3,7 @@ import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
 import { Routes } from 'discord-api-types/v9';
 import { Client } from 'discord.js';
 import { LanguageKeyPath, LanguageString, MusicClientOptions } from '../../';
+import { QueueOption } from '../entities/option';
 import { MusicActions } from '../music-actions';
 import { Translator } from '../translation';
 import { ClientEventHandler } from './client-event-handler';
@@ -17,7 +18,7 @@ export class MusicClient extends Client {
     private musicactions: MusicActions;
     private clientReady: boolean;
 
-    constructor(options: MusicClientOptions) {
+    public constructor(options: MusicClientOptions) {
         super(options);
         this.voiceConnections = {};
         this.audioPlayers = {};
@@ -33,17 +34,17 @@ export class MusicClient extends Client {
         );
     }
 
-    get ready(): boolean {
+    public get ready(): boolean {
         return (
             this.clientReady && this.user !== undefined && this.user !== null
         );
     }
 
-    get permsChecker(): PermissionChecker {
+    public get permsChecker(): PermissionChecker {
         return this.permissionChecker;
     }
 
-    get musicActions(): MusicActions {
+    public get musicActions(): MusicActions {
         return this.musicactions;
     }
 
@@ -109,6 +110,7 @@ export class MusicClient extends Client {
         console.log('------------------------------------');
 
         await this.translator.setup();
+        await QueueOption.seed();
         await this.registerSlashCommands(token);
         this.user.setActivity(
             '/' + this.translate(null, ['slashCommand', 'name']),

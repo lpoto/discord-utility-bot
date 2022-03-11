@@ -2,14 +2,15 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { QueueOption } from '../entities/option';
 import { AbstractCommand } from '../models';
 
 export class LoopQueue extends AbstractCommand {
-    constructor(client: MusicClient, guildId: string) {
+    public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
 
-    get description(): string {
+    public get description(): string {
         return this.translate([
             'music',
             'commands',
@@ -20,15 +21,16 @@ export class LoopQueue extends AbstractCommand {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user) return;
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (queue.options.includes('loopQueue')) {
-            queue.options = queue.options.filter((o) => o !== 'loopQueue');
+        if (queue.hasOption(QueueOption.Options.LOOP_QUEUE)) {
+            queue = await queue.removeOptions([
+                QueueOption.Options.LOOP_QUEUE,
+            ]);
         } else {
-            queue.options = queue.options.filter((o) => o !== 'loop');
-            queue.options.push('loopQueue');
+            queue = await queue.removeOptions([QueueOption.Options.LOOP]);
+            queue = await queue.addOption(QueueOption.Options.LOOP_QUEUE);
         }
-        await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
@@ -44,7 +46,7 @@ export class LoopQueue extends AbstractCommand {
             )
             .setDisabled(queue.size < 1)
             .setStyle(
-                queue.options.includes('loopQueue')
+                queue.hasOption(QueueOption.Options.LOOP_QUEUE)
                     ? MessageButtonStyles.SUCCESS
                     : MessageButtonStyles.SECONDARY,
             )
