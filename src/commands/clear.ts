@@ -99,6 +99,8 @@ export class Clear extends AbstractCommand {
                 queue = await queue.addOption(
                     QueueOption.Options.CLEAR_SELECTED,
                 );
+            await queue.save();
+
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
                 .updateQueueMessage({ interaction: interaction, queue: queue })

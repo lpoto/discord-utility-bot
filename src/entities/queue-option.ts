@@ -1,4 +1,10 @@
-import { BaseEntity, Entity, ManyToMany, PrimaryColumn } from 'typeorm';
+import {
+    BaseEntity,
+    Entity,
+    JoinTable,
+    ManyToMany,
+    PrimaryColumn,
+} from 'typeorm';
 import { Queue } from '.';
 
 @Entity('queue_option')
@@ -6,8 +12,11 @@ export class QueueOption extends BaseEntity {
     @PrimaryColumn()
     public name: QueueOption.Options;
 
-    @ManyToMany(() => Queue, (queue) => queue.options)
-    public queue: Queue;
+    @ManyToMany(() => Queue, (queue) => queue.options, {
+        lazy: true,
+    })
+    @JoinTable()
+    public queue: Promise<Queue>;
 
     public static async seed(): Promise<void> {
         for await (const o of Object.values(QueueOption.Options))

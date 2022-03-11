@@ -40,6 +40,7 @@ export class Forward extends AbstractCommand {
             !this.connection ||
             !queue.hasOption(QueueOption.Options.FORWARD_SELECTED) ||
             !queue.hasOption(QueueOption.Options.EDITING) ||
+            queue.curPageSongs.length < 1 ||
             queue.size < 3
         )
             return null;
@@ -75,6 +76,7 @@ export class Forward extends AbstractCommand {
             return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+
         if (queue.hasOption(QueueOption.Options.FORWARD_SELECTED)) {
             queue = await queue.removeOptions([
                 QueueOption.Options.FORWARD_SELECTED,
@@ -88,6 +90,8 @@ export class Forward extends AbstractCommand {
                 QueueOption.Options.FORWARD_SELECTED,
             );
         }
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

@@ -75,6 +75,8 @@ export class Stop extends AbstractCommand {
                 queue = await queue.addOption(
                     QueueOption.Options.STOP_SELECTED,
                 );
+            await queue.save();
+
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.musicActions
                 .updateQueueMessage({

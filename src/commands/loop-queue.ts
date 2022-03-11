@@ -22,6 +22,7 @@ export class LoopQueue extends AbstractCommand {
         if (!interaction || !interaction.user) return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+
         if (queue.hasOption(QueueOption.Options.LOOP_QUEUE)) {
             queue = await queue.removeOptions([
                 QueueOption.Options.LOOP_QUEUE,
@@ -30,6 +31,8 @@ export class LoopQueue extends AbstractCommand {
             queue = await queue.removeOptions([QueueOption.Options.LOOP]);
             queue = await queue.addOption(QueueOption.Options.LOOP_QUEUE);
         }
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

@@ -8,7 +8,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand, QueueEmbed } from '../models';
 
 export class Remove extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -38,6 +38,7 @@ export class Remove extends AbstractCommand {
             !this.connection ||
             !queue.hasOption(QueueOption.Options.REMOVE_SELECTED) ||
             !queue.hasOption(QueueOption.Options.EDITING) ||
+            queue.curPageSongs.length < 1 ||
             queue.size < 3
         )
             return null;
@@ -73,6 +74,7 @@ export class Remove extends AbstractCommand {
             return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+
         if (queue.hasOption(QueueOption.Options.REMOVE_SELECTED)) {
             queue = await queue.removeOptions([
                 QueueOption.Options.REMOVE_SELECTED,
@@ -84,6 +86,8 @@ export class Remove extends AbstractCommand {
             ]);
             queue = await queue.addOption(QueueOption.Options.REMOVE_SELECTED);
         }
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
@@ -101,10 +105,15 @@ export class Remove extends AbstractCommand {
             const s: Song = queue.curPageSongs[Number(i)];
             await s.remove();
         }
+        await queue.reload();
+        const offset: number = queue.offset;
+        while (queue.curPageSongs.length === 0 && queue.offset > 0) {
+            queue.offset -= QueueEmbed.songsPerPage();
+        }
+        if (queue.offset !== offset) await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,
-            reload: true,
         });
     }
 }

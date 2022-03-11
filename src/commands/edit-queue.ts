@@ -35,6 +35,8 @@ export class EditQueue extends AbstractCommand {
             queue = await queue.removeOptions([QueueOption.Options.EDITING]);
         else queue = await queue.addOption(QueueOption.Options.EDITING);
 
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

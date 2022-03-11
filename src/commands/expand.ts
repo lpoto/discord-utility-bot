@@ -36,6 +36,8 @@ export class Expand extends AbstractCommand {
             queue = await queue.removeOptions([QueueOption.Options.EXPANDED]);
         else queue = await queue.addOption(QueueOption.Options.EXPANDED);
 
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

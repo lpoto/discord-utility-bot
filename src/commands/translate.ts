@@ -80,6 +80,7 @@ export class Translate extends AbstractCommand {
             return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+
         if (queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED)) {
             queue = await queue.removeOptions([
                 QueueOption.Options.TRANSLATE_SELECTED,
@@ -93,6 +94,8 @@ export class Translate extends AbstractCommand {
                 QueueOption.Options.TRANSLATE_SELECTED,
             );
         }
+        await queue.save();
+
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

@@ -3,6 +3,7 @@ import {
     BaseEntity,
     Column,
     Entity,
+    JoinTable,
     ManyToMany,
     OneToMany,
     PrimaryColumn,
@@ -35,7 +36,10 @@ export class Queue extends BaseEntity {
     @Column({ nullable: false })
     public color: number;
 
-    @ManyToMany(() => QueueOption, (queueOption) => queueOption.queue)
+    @ManyToMany(() => QueueOption, (queueOption) => queueOption.queue, {
+        eager: true,
+    })
+    @JoinTable()
     public options: QueueOption[];
 
     @OneToMany(() => Song, (song) => song.queue, {
@@ -55,6 +59,9 @@ export class Queue extends BaseEntity {
     public async afterQueueLoad(): Promise<void> {
         // count all songs referencing this queue
         this.size = await Song.count({ where: { queue: this } });
+
+        await this.checkOffset();
+        await this.checkOptions();
         // Load only as many songs that fit a single embed page (based on offset)
         await this.reloadCurPageSongs();
         // Set a headSong (song with smallest position)
@@ -64,11 +71,10 @@ export class Queue extends BaseEntity {
             })
             .orderBy({ position: 'ASC' })
             .getOne();
-        await this.checkOffset();
-        await this.checkOptions();
     }
 
     public hasOption(o: QueueOption.Options): boolean {
+        if (!this.options) return false;
         return this.options.find((o2) => o2.name === o) !== undefined;
     }
 
@@ -81,7 +87,7 @@ export class Queue extends BaseEntity {
             )
                 return this;
             this.options.push(opt);
-            return this.save();
+            return this;
         });
     }
 
@@ -92,7 +98,7 @@ export class Queue extends BaseEntity {
             this.options = this.options.filter(
                 (o) => !options.includes(o.name),
             );
-        return this.save();
+        return this;
     }
 
     public async maxPosition(): Promise<number> {
@@ -116,9 +122,8 @@ export class Queue extends BaseEntity {
 
     private async checkOffset(): Promise<void> {
         if (this.offset === 0) return;
-        while (this.offset >= this.size)
+        while (this.offset + 1 >= this.size)
             this.offset -= QueueEmbed.songsPerPage();
-        await this.save();
     }
 
     private async checkOptions(): Promise<void> {
