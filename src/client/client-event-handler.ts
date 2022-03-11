@@ -28,6 +28,7 @@ export class ClientEventHandler {
     private buttonClickQueue: { [messageId: string]: ButtonInteraction[] };
     private menuSelectQueue: { [messageId: string]: SelectMenuInteraction[] };
     private threadMessageQueue: { [threadId: string]: Message[] };
+    private playing: { [guildId: string]: boolean };
 
     constructor(client: MusicClient) {
         this.client = client;
@@ -35,6 +36,7 @@ export class ClientEventHandler {
         this.buttonClickQueue = {};
         this.menuSelectQueue = {};
         this.threadMessageQueue = {};
+        this.playing = {};
     }
 
     get permissionChecker() {
@@ -250,9 +252,6 @@ export class ClientEventHandler {
                         }
                     }
 
-                    const audioPlayer: AudioPlayer | null =
-                        this.client.getAudioPlayer(queue.guildId);
-
                     for (let i = 0; i < songs.length; i++) {
                         /* filter songs, if both name and url provided, extract url
                          * else it will be determined when fetchign songs from youtube
@@ -322,18 +321,24 @@ export class ClientEventHandler {
                             });
                             break;
                         }
+                        const audioPlayer: AudioPlayer | null =
+                            this.client.getAudioPlayer(queue.guildId);
+
                         if (
-                            !audioPlayer ||
-                            (audioPlayer.state.status !==
-                                AudioPlayerStatus.Playing &&
-                                audioPlayer.state.status !==
-                                    AudioPlayerStatus.Paused)
+                            !this.playing[queue.guildId] &&
+                            (!audioPlayer ||
+                                (audioPlayer.state.status !==
+                                    AudioPlayerStatus.Playing &&
+                                    audioPlayer.state.status !==
+                                        AudioPlayerStatus.Paused))
                         ) {
+                            this.playing[queue.guildId] = true;
                             this.actions.commands.execute(
                                 'Play',
                                 queue.guildId,
                             );
                         }
+
                         if (i % 6 === 0 || i === songs.length - 1)
                             await this.actions.updateQueueMessage({
                                 queue: queue,
@@ -353,9 +358,11 @@ export class ClientEventHandler {
                 .catch((e) => this.client.handleError(e));
         }
         this.threadMessageQueue[message.channel.id].shift();
-        if (this.threadMessageQueue[message.channel.id].length === 0)
+        if (this.threadMessageQueue[message.channel.id].length === 0) {
             delete this.threadMessageQueue[message.channel.id];
-        else
+            if (message.guildId && message.guildId in this.playing)
+                delete this.playing[message.guildId];
+        } else
             this.handleThreadMessage(
                 this.threadMessageQueue[message.channel.id][0],
             );

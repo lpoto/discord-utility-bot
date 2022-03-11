@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import moment from 'moment';
+import { Not } from 'typeorm';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
 import { Notification } from '../entities/notification';
@@ -50,26 +51,29 @@ export class Clear extends AbstractCommand {
             queue.offset = 0;
             await queue.save();
             if (queue.size > 0) {
-                const attachment = new MessageAttachment(
-                    Buffer.from(
-                        queue.curPageSongs
-                            .map(
-                                (s) =>
-                                    `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
-                            )
-                            .join('\n'),
-                        'utf-8',
-                    ),
-                    'removed-songs.txt',
-                );
-                interaction.user.send({
-                    content: this.translate([
-                        'music',
-                        'commands',
-                        'clear',
-                        'reply',
-                    ]),
-                    files: [attachment],
+                queue.allSongs.then((songs) => {
+                    if (!songs) return;
+                    const attachment = new MessageAttachment(
+                        Buffer.from(
+                            songs
+                                .map(
+                                    (s) =>
+                                        `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
+                                )
+                                .join('\n'),
+                            'utf-8',
+                        ),
+                        'removed-songs.txt',
+                    );
+                    interaction.user.send({
+                        content: this.translate([
+                            'music',
+                            'commands',
+                            'clear',
+                            'reply',
+                        ]),
+                        files: [attachment],
+                    });
                 });
             }
 
@@ -83,8 +87,10 @@ export class Clear extends AbstractCommand {
                     ].includes(o),
             );
             await queue.save();
+
+            // remove all songs but the head song
             await Song.createQueryBuilder('song')
-                .where('song.id != :qid', { qid: queue.headSong?.id })
+                .where({ id: Not(queue.headSong?.id) })
                 .delete()
                 .execute();
 

@@ -45,26 +45,29 @@ export class Stop extends AbstractCommand {
         if (!queue) return;
         if (interaction.component.style === 'PRIMARY') {
             if (queue.size > 0) {
-                const attachment = new MessageAttachment(
-                    Buffer.from(
-                        queue.curPageSongs
-                            .map(
-                                (s) =>
-                                    `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
-                            )
-                            .join('\n'),
-                        'utf-8',
-                    ),
-                    'removed-songs.txt',
-                );
-                interaction.user.send({
-                    content: this.translate([
-                        'music',
-                        'commands',
-                        'stop',
-                        'reply',
-                    ]),
-                    files: [attachment],
+                queue.allSongs.then((songs) => {
+                    if (!songs) return;
+                    const attachment = new MessageAttachment(
+                        Buffer.from(
+                            songs
+                                .map(
+                                    (s) =>
+                                        `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
+                                )
+                                .join('\n'),
+                            'utf-8',
+                        ),
+                        'removed-songs.txt',
+                    );
+                    interaction.user.send({
+                        content: this.translate([
+                            'music',
+                            'commands',
+                            'stop',
+                            'reply',
+                        ]),
+                        files: [attachment],
+                    });
                 });
             }
             this.client.destroyMusic(this.guildId);
