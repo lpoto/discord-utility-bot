@@ -5,6 +5,7 @@ import {
     Entity,
     JoinTable,
     ManyToMany,
+    Not,
     OneToMany,
     PrimaryColumn,
 } from 'typeorm';
@@ -62,8 +63,7 @@ export class Queue extends BaseEntity {
 
         await this.checkOffset();
         await this.checkOptions();
-        // Load only as many songs that fit a single embed page (based on offset)
-        await this.reloadCurPageSongs();
+
         // Set a headSong (song with smallest position)
         this.headSong = await Song.createQueryBuilder('song')
             .where({
@@ -71,6 +71,14 @@ export class Queue extends BaseEntity {
             })
             .orderBy({ position: 'ASC' })
             .getOne();
+
+        // Load only as many songs that fit a single embed page (based on offset)
+        this.curPageSongs = await Song.createQueryBuilder('song')
+            .where({ queue: this, id: Not(this.headSong?.id) })
+            .orderBy({ position: 'ASC' })
+            .limit(QueueEmbed.songsPerPage())
+            .offset(this.offset)
+            .getMany();
     }
 
     public hasOption(o: QueueOption.Options): boolean {
@@ -111,19 +119,11 @@ export class Queue extends BaseEntity {
             });
     }
 
-    private async reloadCurPageSongs(): Promise<void> {
-        this.curPageSongs = await Song.createQueryBuilder('song')
-            .where({ queue: this })
-            .orderBy({ position: 'ASC' })
-            .limit(QueueEmbed.songsPerPage())
-            .offset(this.offset + 1)
-            .getMany();
-    }
-
     private async checkOffset(): Promise<void> {
         if (this.offset === 0) return;
         while (this.offset + 1 >= this.size)
             this.offset -= QueueEmbed.songsPerPage();
+        if (this.offset < 0) this.offset = 0;
     }
 
     private async checkOptions(): Promise<void> {
