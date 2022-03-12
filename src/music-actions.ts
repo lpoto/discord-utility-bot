@@ -63,12 +63,8 @@ export class MusicActions {
      */
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
         if (queue.size >= 1000) return 1000;
-        const position: number = (await queue.maxPosition()) + 1;
         try {
-            const songs: Song[] | null = await Song.findOnYoutube(
-                songName,
-                position,
-            );
+            const songs: Song[] | null = await Song.findOnYoutube(songName);
             if (!songs || songs.length < 1) return 1;
             for await (const s of songs) {
                 s.queue = queue;

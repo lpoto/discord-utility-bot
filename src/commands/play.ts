@@ -40,24 +40,21 @@ export class Play extends AbstractCommand {
          * pushed to the back of the queue or nothing at all.
          */
         if (error || (!replay && !queue.hasOption(QueueOption.Options.LOOP))) {
-            try {
-                const headSong: Song | undefined = queue.headSong;
-                if (
-                    headSong &&
-                    !error &&
-                    queue.hasOption(QueueOption.Options.LOOP_QUEUE)
-                ) {
-                    headSong.position = (await queue.maxPosition()) + 1;
-                    await headSong.save();
-                } else if (headSong) {
-                    await headSong.remove();
-                }
-                await queue.reload();
-            } catch (e) {
-                console.error('Error when playing next song: ', e);
-            } finally {
-                await queue.reload();
-            }
+            const headSong: Song | undefined = queue.headSong;
+            if (
+                !error &&
+                headSong &&
+                queue.hasOption(QueueOption.Options.LOOP_QUEUE)
+            )
+                await Song.create({
+                    url: headSong.url,
+                    name: headSong.name,
+                    durationString: headSong.durationString,
+                    durationSeconds: headSong.durationSeconds,
+                    queue: queue,
+                }).save();
+            if (headSong) await headSong.remove();
+            await queue.reload();
         }
 
         queue.color = Math.floor(Math.random() * 16777215);

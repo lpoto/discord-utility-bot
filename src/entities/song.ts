@@ -1,6 +1,7 @@
 import { AudioResource, createAudioResource } from '@discordjs/voice';
 import {
     BaseEntity,
+    BeforeInsert,
     Column,
     Entity,
     Index,
@@ -17,6 +18,10 @@ export class Song extends BaseEntity {
     @PrimaryGeneratedColumn('uuid')
     public readonly id: string;
 
+    @Index()
+    @Column({ nullable: false })
+    public position: number;
+
     @Column({ nullable: false })
     public url: string;
 
@@ -29,10 +34,6 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     public durationString: string;
 
-    @Index()
-    @Column({ nullable: false })
-    public position: number;
-
     @ManyToOne(() => Queue, (queue) => queue.curPageSongs, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
@@ -40,6 +41,21 @@ export class Song extends BaseEntity {
         nullable: false,
     })
     public queue: Queue;
+
+    @BeforeInsert()
+    public async generatePosition(): Promise<void> {
+        // auto increment position for current queue
+        const position: number = await Song.createQueryBuilder('song')
+            .select('MAX(song.position)', 'max')
+            .where({ queue: this.queue })
+            .getRawOne()
+            .then((r) => {
+                if (r && r.max !== undefined && r.max !== null)
+                    return r.max + 1;
+                return 0;
+            });
+        this.position = position;
+    }
 
     public toStringShortened(expanded?: boolean): string {
         const name: string = this.name.replace(/\|/g, '│');
@@ -141,11 +157,9 @@ export class Song extends BaseEntity {
 
     public static async findOnYoutube(
         nameOrUrl: string,
-        position: number,
     ): Promise<Song[] | null> {
-        if (Song.isYoutubeUrl(nameOrUrl))
-            return Song.findByUrl(nameOrUrl, position);
-        return Song.findBySearch(nameOrUrl, position);
+        if (Song.isYoutubeUrl(nameOrUrl)) return Song.findByUrl(nameOrUrl);
+        return Song.findBySearch(nameOrUrl);
     }
 
     public async getResource(): Promise<AudioResource | null> {
@@ -158,19 +172,15 @@ export class Song extends BaseEntity {
         );
     }
 
-    private static async findByUrl(
-        url: string,
-        position: number,
-    ): Promise<Song[] | null> {
+    private static async findByUrl(url: string): Promise<Song[] | null> {
         if (!url) return null;
         return ytpl(url)
             .then((playlist) => {
                 if (playlist && playlist.items && playlist.items.length > 0) {
-                    return playlist.items.map((p, index) => {
+                    return playlist.items.map((p) => {
                         return Song.create({
                             name: p.title,
                             url: p.url,
-                            position: position + index,
                             durationSeconds: Number(p.durationSec),
                             durationString: this.secondsToTimeString(
                                 Number(p.durationSec),
@@ -188,7 +198,6 @@ export class Song extends BaseEntity {
                             this.create({
                                 name: result.videoDetails.title,
                                 url: result.videoDetails.video_url,
-                                position: position,
                                 durationSeconds: Number(
                                     result.videoDetails.lengthSeconds,
                                 ),
@@ -205,10 +214,7 @@ export class Song extends BaseEntity {
             });
     }
 
-    private static async findBySearch(
-        query: string,
-        position: number,
-    ): Promise<Song[] | null> {
+    private static async findBySearch(query: string): Promise<Song[] | null> {
         if (!query) return null;
         return yt
             .search(query)
@@ -218,7 +224,6 @@ export class Song extends BaseEntity {
                     this.create({
                         name: results[0].snippet.title,
                         url: results[0].url,
-                        position: position,
                         durationString: results[0].duration_raw,
                         durationSeconds: Song.durationStringToSeconds(
                             results[0].duration_raw,
@@ -265,5 +270,15 @@ export class Song extends BaseEntity {
         return hours > 0
             ? `${hours}:${minutesString}:${secondsString}`
             : `${minutesString}:${secondsString}`;
+    }
+
+    public static async minPosition(): Promise<number> {
+        return Song.createQueryBuilder('song')
+            .select('MIN(song.position)', 'min')
+            .getRawOne()
+            .then((p) => {
+                if (p && p.min !== undefined && p.min !== null) return p.min;
+                return 0;
+            });
     }
 }

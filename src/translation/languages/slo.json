@@ -126,7 +126,7 @@
             }
         }
     },
-    "clientRestarted": "Bot je bil ponovno zagnan zaradi novih sprememb.",
-    "innactivityDisconnect": "Bot je zapustil 'channel' zaradi neaktivnosti,\nali pa ga je nekdo odstranil.",
+    "clientRestarted": "> ㅤBot je bil ponovno zagnan zaradi novih sprememb.",
+    "innactivityDisconnect": "> ㅤBot je zapustil 'channel' zaradi neaktivnosti,\n> ㅤali pa ga je nekdo odstranil.",
     "help": "Opa, ni pomoči..."
 }

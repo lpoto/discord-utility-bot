@@ -106,22 +106,16 @@ export class Forward extends AbstractCommand {
         if (!queue || queue.size < 3 || interaction.values.length === 0)
             return;
 
-        let minIdx: number =
-            (queue.headSong ? queue.headSong.position : 0) -
-            interaction.values.length +
-            1;
-
-        if (queue.headSong)
-            queue.headSong.position -= interaction.values.length;
-        await queue.headSong?.save();
+        let idx: number = (await Song.minPosition()) - 1;
 
         for await (const i of interaction.values) {
             const s: Song = queue.curPageSongs[Number(i)];
-            s.position = minIdx;
-            minIdx++;
+            s.position = idx;
+            idx--;
             await s.save();
         }
-        if (queue.headSong) queue.headSong.position--;
+
+        if (queue.headSong) queue.headSong.position = idx;
         await queue.headSong?.save();
 
         this.client.musicActions.updateQueueMessage({

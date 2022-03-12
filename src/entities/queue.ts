@@ -65,12 +65,13 @@ export class Queue extends BaseEntity {
         await this.checkOptions();
 
         // Set a headSong (song with smallest position)
-        this.headSong = await Song.createQueryBuilder('song')
-            .where({
+        const minPosition: number = await Song.minPosition();
+        this.headSong = await Song.findOne({
+            where: {
                 queue: this,
-            })
-            .orderBy({ position: 'ASC' })
-            .getOne();
+                position: minPosition,
+            },
+        });
 
         // Load only as many songs that fit a single embed page (based on offset)
         this.curPageSongs = await Song.createQueryBuilder('song')
@@ -107,16 +108,6 @@ export class Queue extends BaseEntity {
                 (o) => !options.includes(o.name),
             );
         return this;
-    }
-
-    public async maxPosition(): Promise<number> {
-        return Song.createQueryBuilder('song')
-            .orderBy({ position: 'DESC' })
-            .getOne()
-            .then((r) => {
-                if (r) return r.position;
-                return -1;
-            });
     }
 
     private async checkOffset(): Promise<void> {
