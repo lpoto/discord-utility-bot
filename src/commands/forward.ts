@@ -90,7 +90,7 @@ export class Forward extends AbstractCommand {
                 QueueOption.Options.FORWARD_SELECTED,
             );
         }
-        await queue.save();
+        queue = await queue.save();
 
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,

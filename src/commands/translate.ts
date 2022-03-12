@@ -94,7 +94,7 @@ export class Translate extends AbstractCommand {
                 QueueOption.Options.TRANSLATE_SELECTED,
             );
         }
-        await queue.save();
+        queue = await queue.save();
 
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,

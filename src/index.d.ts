@@ -65,3 +65,9 @@ type PathTree<T> = {
     [P in keyof T]-?: T[P] extends object ? [P] | [P, ...Path<T[P]>] : [P];
 };
 export type LanguageKeyPath = Path<Language>;
+
+export interface EventHandlerQueueOptions {
+    name: string;
+    id: string;
+    callback?: () => Promise<void>;
+}

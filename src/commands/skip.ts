@@ -34,8 +34,6 @@ export class Skip extends AbstractCommand {
             this.audioPlayer.state.status === AudioPlayerStatus.Paused
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
-        if (!queue) return;
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)

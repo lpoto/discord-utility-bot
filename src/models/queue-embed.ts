@@ -44,11 +44,13 @@ export class QueueEmbed extends MessageEmbed {
         const songs: string[] | undefined = queueSongs.map((song, index) => {
             return `***${
                 index + this.queue.offset + 1
-            }.***\u3000*${song.toStringShortened(
+            }.***\u3000*${this.toStringShortened(
+                song,
                 this.queue.hasOption(QueueOption.Options.EXPANDED),
             )}*`;
         });
-        let headSong = `*${this.queue.headSong.toString(
+        let headSong = `*${this.toString(
+            this.queue.headSong,
             undefined,
             36,
             spacer,
@@ -93,7 +95,110 @@ export class QueueEmbed extends MessageEmbed {
         return this.queue.offset;
     }
 
-    public static songsPerPage(): number {
-        return 10;
+    private toStringShortened(song: Song, expanded?: boolean): string {
+        const name: string = song.name.replace(/\|/g, '│');
+        if (!expanded && name.length > 43) {
+            let count = 0;
+            const chars: string[] = this.bigChars();
+            const chars2: string[] = this.smallChars();
+            chars.map((c) => {
+                count +=
+                    name.split(c).length -
+                    (count > 25 ? 2 : count > 10 ? 1 : 0);
+            });
+            chars2.map((c) => {
+                count -= name.split(c).length - 1;
+            });
+            const x: number = 48 - Math.round(count / 2);
+            return name.substring(0, x).trim() + '...';
+        }
+        if (
+            expanded &&
+            song.durationString &&
+            song.durationString.trim().length > 0
+        )
+            return this.toString(song, `,\u3000**${song.durationString}**`);
+        return this.toString(song);
+    }
+
+    private toString(
+        song: Song,
+        add?: string,
+        lineLength: number = 43,
+        spacer?: string,
+    ): string {
+        let name: string = song.name.replace(/\|/g, '│');
+        const addLength: number = add ? add.length : 0;
+        const split: string = spacer ? spacer : '\n\u2000';
+        if (name.length + addLength > 100)
+            name = name.substring(0, 100 - addLength);
+        if (add) name += add;
+        const re = new RegExp(
+            `(?![^\n]{1,${lineLength}}$)([^\n]{1,${lineLength}})\\s`,
+            'g',
+        );
+        name = name.replace(re, `$1${split}`);
+        const nameList: string[] = name.split(split);
+        if (nameList.length > 1) {
+            const dif: number = Math.round(
+                (lineLength - nameList[nameList.length - 1].length) / 3,
+            );
+            if (dif > 0) {
+                nameList[nameList.length - 1] =
+                    '\u2000'.repeat(dif) + nameList[nameList.length - 1];
+            }
+        }
+        return nameList.join(split);
+    }
+
+    private bigChars(): string[] {
+        return [
+            'A',
+            'B',
+            'C',
+            'D',
+            'E',
+            'F',
+            'G',
+            'H',
+            'K',
+            'L',
+            'M',
+            'N',
+            'O',
+            'P',
+            'R',
+            'S',
+            'T',
+            'U',
+            'V',
+            'Z',
+            'Y',
+            'X',
+            'W',
+            ' ',
+        ];
+    }
+
+    private smallChars(): string[] {
+        return [
+            'I',
+            'l',
+            'i',
+            '.',
+            ',',
+            '-',
+            'f',
+            'j',
+            'k',
+            '1',
+            '|',
+            '(',
+            ')',
+            '!',
+            '?',
+            'r',
+            't',
+        ];
     }
 }

@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand, SongFinder } from '../models';
 
 export class Play extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -29,7 +29,7 @@ export class Play extends AbstractCommand {
         error?: boolean,
     ): Promise<void> {
         if (!this.client.user) return;
-        const queue: Queue | undefined = await Queue.findOne({
+        let queue: Queue | undefined = await Queue.findOne({
             clientId: this.client.user.id,
             guildId: this.guildId,
         });
@@ -53,18 +53,20 @@ export class Play extends AbstractCommand {
                     durationSeconds: headSong.durationSeconds,
                     queue: queue,
                 }).save();
-            if (headSong) await headSong.remove();
-            await queue.reload();
+            if (headSong) {
+                await headSong.remove();
+                await queue.reload();
+            }
         }
 
         queue.color = Math.floor(Math.random() * 16777215);
-        await queue.save();
+        queue = await queue.save();
 
         this.client.musicActions.updateQueueMessage({
             queue: queue,
             interaction: interaction,
-            reload: true,
         });
+
         this.execute(interaction);
     }
 
@@ -121,7 +123,7 @@ export class Play extends AbstractCommand {
         connection.removeAllListeners();
         connection.subscribe(audioPlayer);
 
-        song.getResource()
+        SongFinder.getResource(song)
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
                 this.client.musicActions.updateQueueMessage({ queue: queue });

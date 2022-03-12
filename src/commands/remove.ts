@@ -8,7 +8,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand, QueueEmbed } from '../models';
+import { AbstractCommand } from '../models';
 
 export class Remove extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -98,19 +98,21 @@ export class Remove extends AbstractCommand {
     public async executeFromSelectMenu(
         interaction: SelectMenuInteraction,
     ): Promise<void> {
-        const queue: Queue | undefined = await this.getQueue();
+        let queue: Queue | undefined = await this.getQueue();
         if (!queue || queue.size < 2 || interaction.values.length === 0)
             return;
+
         for await (const i of interaction.values) {
             const s: Song = queue.curPageSongs[Number(i)];
             await s.remove();
         }
         await queue.reload();
+
         const offset: number = queue.offset;
         while (queue.curPageSongs.length === 0 && queue.offset > 0) {
-            queue.offset -= QueueEmbed.songsPerPage();
+            queue.offset -= Queue.songsPerPage;
         }
-        if (queue.offset !== offset) await queue.save();
+        if (queue.offset !== offset) queue = await queue.save();
         this.client.musicActions.updateQueueMessage({
             interaction: interaction,
             queue: queue,

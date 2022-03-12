@@ -2,7 +2,7 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { AbstractCommand, QueueEmbed } from '../models';
+import { AbstractCommand } from '../models';
 
 export class PageBackward extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -35,7 +35,7 @@ export class PageBackward extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        queue.offset -= QueueEmbed.songsPerPage();
+        queue.offset -= Queue.songsPerPage;
         if (queue.offset < 0) queue.offset = 0;
         queue.save().then((q) => {
             this.client.musicActions.updateQueueMessage({

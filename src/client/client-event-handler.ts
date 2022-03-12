@@ -20,21 +20,16 @@ import { LanguageKeyPath } from '../../';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
 import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
+import { EventHandlerQueue } from '../models';
 
 export class ClientEventHandler {
     private client: MusicClient;
-    private slashCommandQueue: CommandInteraction[];
-    private buttonClickQueue: { [messageId: string]: ButtonInteraction[] };
-    private menuSelectQueue: { [messageId: string]: SelectMenuInteraction[] };
-    private threadMessageQueue: { [threadId: string]: Message[] };
+    private eventsQueue: EventHandlerQueue;
     private playing: { [guildId: string]: boolean };
 
     public constructor(client: MusicClient) {
+        this.eventsQueue = new EventHandlerQueue();
         this.client = client;
-        this.slashCommandQueue = [];
-        this.buttonClickQueue = {};
-        this.menuSelectQueue = {};
-        this.threadMessageQueue = {};
         this.playing = {};
     }
 
@@ -89,14 +84,11 @@ export class ClientEventHandler {
         this.client.on('messageCreate', (message) => {
             if (!this.client.ready) return;
             if (message.channel instanceof ThreadChannel) {
-                const start: boolean =
-                    !this.threadMessageQueue[message.channel.id] ||
-                    this.threadMessageQueue[message.channel.id].length === 0;
-                if (!(message.channel.id in this.threadMessageQueue))
-                    this.threadMessageQueue[message.channel.id] = [];
-                this.threadMessageQueue[message.channel.id].push(message);
-                if (start) this.handleThreadMessage(message);
-                return;
+                this.eventsQueue.addToQueue({
+                    name: 'threadMessage',
+                    id: message.channel.id,
+                    callback: () => this.handleThreadMessage(message),
+                });
             }
         });
 
@@ -360,15 +352,6 @@ export class ClientEventHandler {
                 })
                 .catch((e) => this.client.handleError(e));
         }
-        this.threadMessageQueue[message.channel.id].shift();
-        if (this.threadMessageQueue[message.channel.id].length === 0) {
-            delete this.threadMessageQueue[message.channel.id];
-            if (message.guildId && message.guildId in this.playing)
-                delete this.playing[message.guildId];
-        } else
-            this.handleThreadMessage(
-                this.threadMessageQueue[message.channel.id][0],
-            );
     }
 
     private handleInteraction(interaction: Interaction): void {
@@ -420,41 +403,31 @@ export class ClientEventHandler {
                     !interaction.guild?.me?.voice.channel
                 )
                     this.actions.joinVoice(interaction);
-
                 if (
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton
                 ) {
-                    if (!(interaction.message.id in this.buttonClickQueue))
-                        this.buttonClickQueue[interaction.message.id] = [];
-                    this.buttonClickQueue[interaction.message.id].push(
-                        interaction,
-                    );
-                    if (
-                        this.buttonClickQueue[interaction.message.id]
-                            .length === 1
-                    )
-                        this.handleButtonClick(interaction);
+                    this.eventsQueue.addToQueue({
+                        name: 'buttonClick',
+                        id: interaction.message.id,
+                        callback: () => this.handleButtonClick(interaction),
+                    });
                     return;
                 } else if (
                     interaction.isSelectMenu() &&
                     interaction.component instanceof MessageSelectMenu
                 ) {
-                    if (!(interaction.message.id in this.menuSelectQueue))
-                        this.menuSelectQueue[interaction.message.id] = [];
-                    this.menuSelectQueue[interaction.message.id].push(
-                        interaction,
-                    );
-                    if (
-                        this.menuSelectQueue[interaction.message.id].length ===
-                        1
-                    )
-                        this.handleMenuSelect(interaction);
+                    this.eventsQueue.addToQueue({
+                        name: 'selectMenu',
+                        id: interaction.message.id,
+                        callback: () => this.handleMenuSelect(interaction),
+                    });
                     return;
                 }
             }
             if (
                 !interaction.isCommand() ||
+                !interaction.guildId ||
                 interaction.commandName !==
                     this.translate(interaction.guildId, [
                         'slashCommand',
@@ -463,17 +436,21 @@ export class ClientEventHandler {
             )
                 return;
 
-            this.slashCommandQueue.push(interaction);
-            if (this.slashCommandQueue.length === 1)
-                this.handleSlashCommand(interaction);
+            this.eventsQueue.addToQueue({
+                name: 'slashCommand',
+                id: interaction.guildId,
+                callback: () => this.handleSlashCommand(interaction),
+            });
         });
     }
 
-    private handleButtonClick(interaction: ButtonInteraction): void {
+    private async handleButtonClick(
+        interaction: ButtonInteraction,
+    ): Promise<void> {
         if (
+            this.client.user &&
             interaction.component !== undefined &&
             interaction.guildId !== undefined &&
-            this.client.user &&
             interaction.guildId !== null &&
             interaction.component.label !== null &&
             interaction.component.label !== undefined
@@ -486,16 +463,11 @@ export class ClientEventHandler {
                 this.actions.executeFromInteraction(interaction);
             });
         }
-        this.buttonClickQueue[interaction.message.id].shift();
-        if (this.buttonClickQueue[interaction.message.id].length === 0)
-            delete this.buttonClickQueue[interaction.message.id];
-        else
-            this.handleButtonClick(
-                this.buttonClickQueue[interaction.message.id][0],
-            );
     }
 
-    private handleMenuSelect(interaction: SelectMenuInteraction): void {
+    private async handleMenuSelect(
+        interaction: SelectMenuInteraction,
+    ): Promise<void> {
         if (
             interaction.component !== undefined &&
             interaction.message &&
@@ -514,13 +486,6 @@ export class ClientEventHandler {
                 this.actions.executeMenuSelectFromInteraction(interaction);
             });
         }
-        this.menuSelectQueue[interaction.message.id].shift();
-        if (this.menuSelectQueue[interaction.message.id].length === 0)
-            delete this.menuSelectQueue[interaction.message.id];
-        else
-            this.handleButtonClick(
-                this.buttonClickQueue[interaction.message.id][0],
-            );
     }
 
     private async checkThreadAndMessage(
@@ -636,9 +601,6 @@ export class ClientEventHandler {
                 });
             }
         }
-        this.slashCommandQueue.shift();
-        if (this.slashCommandQueue.length > 0)
-            this.handleSlashCommand(this.slashCommandQueue[0]);
     }
 
     public destroyMusic(guildId: string, threadId?: string): void {

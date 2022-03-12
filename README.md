@@ -16,21 +16,9 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 
 - Bot requires at least one unmuted (non bot) listener.
     - If no unmuted members are in the channel, bot will eventually disconnect.
-    - You can reconnect it by clicking `Join`.
+    - Reconnect it by clicking `Join`.
 
-- Queue message offers commands by clicking on buttons:
-    - loop,
-    - loop queue,
-    - skip,
-    - pause,
-    - replay,
-    - stop,
-    - shuffle,
-    - clear,
-    - remove,
-    - forward,
-    - help,
-    - ...
+- Queue message offers a variety of commands by clicking on buttons. (ex. loop, skip, shuffle, ... )
 
 - User may only use music commands if they are undeafened in a voice channel and bot is either
 in the same channel or not connected to any.
@@ -53,9 +41,6 @@ music commands.
 ## Additional Planned Features
 
 - Allow administrator to personalize commands for different roles
-- Playlists
-- Translating the queue message
-- Reporting bugs
 
 ## Development
 

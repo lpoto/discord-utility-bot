@@ -9,13 +9,14 @@ import {
     OneToMany,
     PrimaryColumn,
 } from 'typeorm';
-import { QueueEmbed } from '../models';
 import { Languages } from '../translation';
 import { QueueOption } from './queue-option';
 import { Song } from './song';
 
 @Entity('queue')
 export class Queue extends BaseEntity {
+    public static readonly songsPerPage: number = 10;
+
     @PrimaryColumn()
     public clientId: string;
 
@@ -77,7 +78,7 @@ export class Queue extends BaseEntity {
         this.curPageSongs = await Song.createQueryBuilder('song')
             .where({ queue: this, id: Not(this.headSong?.id) })
             .orderBy({ position: 'ASC' })
-            .limit(QueueEmbed.songsPerPage())
+            .limit(Queue.songsPerPage)
             .offset(this.offset)
             .getMany();
     }
@@ -112,8 +113,7 @@ export class Queue extends BaseEntity {
 
     private async checkOffset(): Promise<void> {
         if (this.offset === 0) return;
-        while (this.offset + 1 >= this.size)
-            this.offset -= QueueEmbed.songsPerPage();
+        while (this.offset + 1 >= this.size) this.offset -= Queue.songsPerPage;
         if (this.offset < 0) this.offset = 0;
     }
 

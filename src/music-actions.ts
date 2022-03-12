@@ -16,7 +16,7 @@ import { UpdateQueueOptions, QueueEmbedOptions } from '../';
 import { QueryFailedError } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
-import { QueueEmbed } from './models';
+import { QueueEmbed, SongFinder } from './models';
 import { MusicCommands } from './music-commands';
 
 export class MusicActions {
@@ -64,7 +64,9 @@ export class MusicActions {
     public async songToQueue(queue: Queue, songName: string): Promise<number> {
         if (queue.size >= 1000) return 1000;
         try {
-            const songs: Song[] | null = await Song.findOnYoutube(songName);
+            const songs: Song[] | null = await new SongFinder(
+                songName,
+            ).getSongs();
             if (!songs || songs.length < 1) return 1;
             for await (const s of songs) {
                 s.queue = queue;

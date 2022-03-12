@@ -34,8 +34,6 @@ export class Replay extends AbstractCommand {
             this.audioPlayer.state.status === AudioPlayerStatus.Paused
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
-        if (!queue) return;
 
         // emit replay debug message to audioPlayer
         // (replay event handled in play command)
