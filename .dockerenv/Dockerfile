@@ -24,4 +24,6 @@ COPY --from=BUILD_IMAGE /app/package*.json ./
 COPY --from=BUILD_IMAGE /app/dist ./dist
 COPY --from=BUILD_IMAGE /app/node_modules ./node_modules
 
+RUN apk add --no-cache ffmpeg
+
 CMD npm run start
