@@ -111,7 +111,6 @@ export class MusicActions {
                     if (!(queue.guildId in this.songsToUpdate))
                         this.songsToUpdate[queue.guildId] = [];
                     for (const s2 of songs2) {
-                        s2.queue = queue;
                         this.songsToUpdate[queue.guildId].push(s2);
                     }
                     this.checkIfNeedsUpdate(queue.guildId, songs2.length);
@@ -122,6 +121,7 @@ export class MusicActions {
 
     private checkIfNeedsUpdate(guildId: string, add?: number): void {
         if (
+            !this.client.user ||
             !this.songsToUpdateCount[guildId] ||
             this.songsToUpdateCount[guildId].updated === undefined
         )
@@ -137,12 +137,11 @@ export class MusicActions {
             if (updateAndDelete) delete this.songsToUpdateCount[guildId];
             if (!(guildId in this.songsToUpdate))
                 this.songsToUpdate[guildId] = [];
-            Song.save(this.songsToUpdate[guildId]).then(() => {
-                if (
-                    guildId in this.songsToUpdate &&
-                    this.songsToUpdate[guildId].length === 0
-                )
-                    delete this.songsToUpdate[guildId];
+            Song.saveAll(
+                this.songsToUpdate[guildId],
+                guildId,
+                this.client.user.id,
+            ).then(() => {
                 if (!this.client.user) return;
                 Queue.findOne({
                     guildId: guildId,
@@ -163,6 +162,7 @@ export class MusicActions {
                     this.updateQueueMessage({ queue: queue });
                 });
             });
+            delete this.songsToUpdate[guildId];
         }
     }
 

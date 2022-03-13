@@ -45,14 +45,17 @@ export class Play extends AbstractCommand {
                 !error &&
                 headSong &&
                 queue.hasOption(QueueOption.Options.LOOP_QUEUE)
-            )
-                await Song.create({
+            ) {
+                const song: Song = Song.create({
                     url: headSong.url,
                     name: headSong.name,
                     durationString: headSong.durationString,
                     durationSeconds: headSong.durationSeconds,
                     queue: queue,
-                }).save();
+                });
+                await song.generatePosition();
+                await song.save();
+            }
             if (headSong) {
                 await headSong.remove();
                 await queue.reload();
