@@ -12,7 +12,6 @@ import {
     VoiceBasedChannel,
     VoiceChannel,
 } from 'discord.js';
-import moment from 'moment';
 import { Notification } from '../entities';
 import { MusicClient } from './client';
 
@@ -105,7 +104,7 @@ export class PermissionChecker {
             userId: member.id,
             guildId: member.guild.id,
             name: '?',
-            expires: moment(moment.now()).add(1, 'h').toDate(),
+            minutesToPersist: 10,
         });
 
         if (!member.voice.channel) {

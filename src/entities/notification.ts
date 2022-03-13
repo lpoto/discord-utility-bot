@@ -1,4 +1,3 @@
-import moment from 'moment';
 import {
     BaseEntity,
     BeforeInsert,
@@ -26,8 +25,8 @@ export class Notification extends BaseEntity {
     @Column({ nullable: false })
     public guildId: string;
 
-    @Column({ nullable: true })
-    public expires: Date;
+    @Column('decimal', { nullable: true })
+    public minutesToPersist: number;
 
     @Column({ nullable: true })
     public userId: string;
@@ -37,16 +36,18 @@ export class Notification extends BaseEntity {
 
     @BeforeInsert()
     public purgeAfterTimeout(): void {
-        if (this.expires === null || this.expires === undefined) return;
-        let dif: number = moment(this.expires).diff(moment.now());
-        if (dif < 0) dif = 0;
+        if (!this.minutesToPersist) return;
+        const t: number = this.minutesToPersist * 60 * 1000;
         const timeout: NodeJS.Timeout = setTimeout(() => {
             const currentDate: Date = new Date();
             Notification.createQueryBuilder('notification')
                 .delete()
-                .where('notification.expires <= :currentDate', { currentDate })
+                .where(
+                    `notification.created + interval '${this.minutesToPersist} minute' <= :currentDate`,
+                    { currentDate },
+                )
                 .execute();
-        }, dif);
+        }, t);
         timeout.unref();
     }
 }

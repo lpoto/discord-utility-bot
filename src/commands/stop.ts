@@ -5,7 +5,6 @@ import {
     MessageButton,
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
-import moment from 'moment';
 import { MusicClient } from '../client';
 import { Queue, Notification, QueueOption } from '../entities';
 import { AbstractCommand } from '../models';
@@ -90,7 +89,7 @@ export class Stop extends AbstractCommand {
                         userId: interaction.user.id,
                         clientId: this.client.user.id,
                         guildId: this.guildId,
-                        expires: moment(moment.now()).add(24, 'h').toDate(),
+                        minutesToPersist: 24 * 60,
                         name: 'clearStopRequest',
                     });
                     Notification.findOne({
