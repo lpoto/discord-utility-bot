@@ -41,16 +41,11 @@ export class Command {
     private commandId: string;
     protected client: MusicClient;
     protected guildId: string;
-
     public constructor(client: MusicClient, guildId: string);
-
     public get description(): string | null;
-
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
-
     public selectMenu(queue: Queue): MessageSelectMenu | null;
-
     public execute(interaction?: ButtonInteraction): Promise<void>;
     public executeFromSelectMenu(
         interaction: SelectMenuInteraction,

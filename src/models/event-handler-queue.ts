@@ -45,7 +45,11 @@ export class EventHandlerQueue {
 
             if (cb !== undefined) await cb();
 
-            if (this.queues[queueName][queueId].length === 0)
+            if (
+                queueName in this.queues &&
+                queueId in this.queues[queueName] &&
+                this.queues[queueName][queueId].length === 0
+            )
                 delete this.queues[queueName][queueId];
         }
         if (Object.keys(this.queues[queueName]).length === 0)

@@ -14,8 +14,7 @@ import {
     ThreadChannel,
     VoiceState,
 } from 'discord.js';
-import moment from 'moment';
-import { Queue, Notification, QueueOption } from '../entities';
+import { Queue } from '../entities';
 import { LanguageKeyPath } from '../../';
 import { MusicClient } from './client';
 import fetch from 'node-fetch';
@@ -25,12 +24,10 @@ import { EventHandlerQueue } from '../models';
 export class ClientEventHandler {
     private client: MusicClient;
     private eventsQueue: EventHandlerQueue;
-    private playing: { [guildId: string]: boolean };
 
     public constructor(client: MusicClient) {
         this.eventsQueue = new EventHandlerQueue();
         this.client = client;
-        this.playing = {};
     }
 
     public get permissionChecker() {
@@ -84,11 +81,7 @@ export class ClientEventHandler {
         this.client.on('messageCreate', (message) => {
             if (!this.client.ready) return;
             if (message.channel instanceof ThreadChannel) {
-                this.eventsQueue.addToQueue({
-                    name: 'threadMessage',
-                    id: message.channel.id,
-                    callback: () => this.handleThreadMessage(message),
-                });
+                this.handleThreadMessage(message);
             }
         });
 
@@ -192,7 +185,7 @@ export class ClientEventHandler {
         console.log(`Voice channel update: ${prevId} -> ${afterId}`);
     }
 
-    private async handleThreadMessage(message: Message): Promise<void> {
+    private handleThreadMessage(message: Message): void {
         if (
             message.guildId &&
             message.member instanceof GuildMember &&
@@ -207,7 +200,7 @@ export class ClientEventHandler {
             this.permissionChecker.checkMemberRoles(message.member) &&
             this.permissionChecker.validateMemberVoiceFromThread(message)
         ) {
-            await Queue.findOne({
+            Queue.findOne({
                 guildId: message.guildId,
                 clientId: this.client.user.id,
             })
@@ -242,113 +235,7 @@ export class ClientEventHandler {
                             songs = songs.concat(text.split('\n'));
                         }
                     }
-
-                    for (let i = 0; i < songs.length; i++) {
-                        /* filter songs, if both name and url provided, extract url
-                         * else it will be determined when fetchign songs from youtube
-                         * */
-                        const s: string = songs[i];
-                        let n: string = s.trim();
-                        if (n[0] === '{' && n.includes('url:')) {
-                            n = s.substring(1, n.length - 1);
-                            n = n.split('url:')[1].split(',')[0].trim();
-                        }
-                        if (
-                            (n[0] === '"' && n[n.length - 1] === '"') ||
-                            // eslint-disable-next-line
-                            (n[0] === "'" && n[n.length - 1] === "'") ||
-                            (n[0] === '`' && n[n.length - 1] === '`')
-                        )
-                            n = n.substring(1, n.length - 1);
-                        await queue.reload();
-                        const exit: number = await this.actions.songToQueue(
-                            queue,
-                            n,
-                        );
-                        if (exit === 1000) {
-                            await this.actions.updateQueueMessage({
-                                queue: queue,
-                            });
-                            if (
-                                !message.author ||
-                                !message.guildId ||
-                                !this.client.user
-                            )
-                                break;
-                            const notification: Notification =
-                                Notification.create({
-                                    userId: message.author.id,
-                                    clientId: this.client.user.id,
-                                    guildId: message.guildId,
-                                    expires: moment(moment.now())
-                                        .add(24, 'h')
-                                        .toDate(),
-                                    name: 'maxSongs',
-                                });
-                            Notification.findOne({
-                                userId: notification.userId,
-                                clientId: notification.clientId,
-                                guildId: notification.guildId,
-                                name: notification.name,
-                            }).then((m) => {
-                                if (m) return;
-                                notification.save().then(() => {
-                                    message
-                                        .reply({
-                                            content: this.translate(
-                                                message.guildId,
-                                                [
-                                                    'music',
-                                                    'commands',
-                                                    'play',
-                                                    'maxSongs',
-                                                ],
-                                            ),
-                                        })
-                                        .catch((e) => {
-                                            this.client.handleError(e);
-                                        });
-                                });
-                            });
-                            break;
-                        }
-                        const audioPlayer: AudioPlayer | null =
-                            this.client.getAudioPlayer(queue.guildId);
-
-                        if (
-                            !this.playing[queue.guildId] &&
-                            (!audioPlayer ||
-                                (audioPlayer.state.status !==
-                                    AudioPlayerStatus.Playing &&
-                                    audioPlayer.state.status !==
-                                        AudioPlayerStatus.Paused))
-                        ) {
-                            this.playing[queue.guildId] = true;
-                            this.actions.commands.execute(
-                                'Play',
-                                queue.guildId,
-                            );
-                        }
-
-                        if (i % 6 === 0 || i === songs.length - 1)
-                            await this.actions.updateQueueMessage({
-                                queue: queue,
-                                embedOnly:
-                                    queue.size <= 3 ||
-                                    queue.size % 10 === 0 ||
-                                    (queue.hasOption(
-                                        QueueOption.Options.EDITING,
-                                    ) &&
-                                        (queue.hasOption(
-                                            QueueOption.Options
-                                                .REMOVE_SELECTED,
-                                        ) ||
-                                            queue.hasOption(
-                                                QueueOption.Options
-                                                    .FORWARD_SELECTED,
-                                            ))),
-                            });
-                    }
+                    this.actions.songsToQueue(queue, songs);
                 })
                 .catch((e) => this.client.handleError(e));
         }
@@ -407,21 +294,13 @@ export class ClientEventHandler {
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton
                 ) {
-                    this.eventsQueue.addToQueue({
-                        name: 'buttonClick',
-                        id: interaction.message.id,
-                        callback: () => this.handleButtonClick(interaction),
-                    });
+                    this.handleButtonClick(interaction);
                     return;
                 } else if (
                     interaction.isSelectMenu() &&
                     interaction.component instanceof MessageSelectMenu
                 ) {
-                    this.eventsQueue.addToQueue({
-                        name: 'selectMenu',
-                        id: interaction.message.id,
-                        callback: () => this.handleMenuSelect(interaction),
-                    });
+                    this.handleMenuSelect(interaction);
                     return;
                 }
             }
@@ -444,9 +323,7 @@ export class ClientEventHandler {
         });
     }
 
-    private async handleButtonClick(
-        interaction: ButtonInteraction,
-    ): Promise<void> {
+    private handleButtonClick(interaction: ButtonInteraction): void {
         if (
             this.client.user &&
             interaction.component !== undefined &&
@@ -465,9 +342,7 @@ export class ClientEventHandler {
         }
     }
 
-    private async handleMenuSelect(
-        interaction: SelectMenuInteraction,
-    ): Promise<void> {
+    private handleMenuSelect(interaction: SelectMenuInteraction): void {
         if (
             interaction.component !== undefined &&
             interaction.message &&
@@ -554,52 +429,55 @@ export class ClientEventHandler {
         ) {
             console.log('Handle slash command:', interaction.id);
 
-            const queue = await Queue.findOne({
+            await Queue.findOne({
                 guildId: interaction.guildId,
                 clientId: this.client.user.id,
+            }).then(async (queue) => {
+                let message: Message | null = null;
+                if (queue) message = await this.checkThreadAndMessage(queue);
+
+                if (queue && message) {
+                    interaction.reply({
+                        content:
+                            this.translate(interaction.guildId, [
+                                'error',
+                                'activeThread',
+                            ]) +
+                            '\n' +
+                            message.url,
+                        ephemeral: true,
+                        fetchReply: true,
+                    });
+                } else if (
+                    this.client.user &&
+                    this.permissionChecker.validateMemberVoice(interaction)
+                ) {
+                    console.log(
+                        `Initializing queue message in guild ${interaction.guildId}`,
+                    );
+
+                    const q: Queue = Queue.create({
+                        clientId: this.client.user.id,
+                        offset: 0,
+                        curPageSongs: [],
+                        options: [],
+                        color: Math.floor(Math.random() * 16777215),
+                    });
+
+                    this.actions
+                        .replyWithQueue(q, interaction)
+                        .then((result) => {
+                            if (
+                                result &&
+                                q.messageId &&
+                                q.threadId &&
+                                q.channelId &&
+                                q.guildId
+                            )
+                                Queue.save(q);
+                        });
+                }
             });
-            let message: Message | null = null;
-            if (queue) message = await this.checkThreadAndMessage(queue);
-
-            if (queue && message) {
-                interaction.reply({
-                    content:
-                        this.translate(interaction.guildId, [
-                            'error',
-                            'activeThread',
-                        ]) +
-                        '\n' +
-                        message.url,
-                    ephemeral: true,
-                    fetchReply: true,
-                });
-            } else if (
-                this.client.user &&
-                this.permissionChecker.validateMemberVoice(interaction)
-            ) {
-                console.log(
-                    `Initializing queue message in guild ${interaction.guildId}`,
-                );
-
-                const q: Queue = Queue.create({
-                    clientId: this.client.user.id,
-                    offset: 0,
-                    curPageSongs: [],
-                    options: [],
-                    color: Math.floor(Math.random() * 16777215),
-                });
-
-                this.actions.replyWithQueue(q, interaction).then((result) => {
-                    if (
-                        result &&
-                        q.messageId &&
-                        q.threadId &&
-                        q.channelId &&
-                        q.guildId
-                    )
-                        Queue.save(q);
-                });
-            }
         }
     }
 

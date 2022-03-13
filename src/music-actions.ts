@@ -1,4 +1,8 @@
-import { joinVoiceChannel } from '@discordjs/voice';
+import {
+    AudioPlayer,
+    AudioPlayerStatus,
+    joinVoiceChannel,
+} from '@discordjs/voice';
 import {
     ButtonInteraction,
     CommandInteraction,
@@ -13,7 +17,6 @@ import {
     ThreadChannel,
 } from 'discord.js';
 import { UpdateQueueOptions, QueueEmbedOptions } from '../';
-import { QueryFailedError } from 'typeorm';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
 import { QueueEmbed, SongFinder } from './models';
@@ -22,10 +25,18 @@ import { MusicCommands } from './music-commands';
 export class MusicActions {
     private client: MusicClient;
     private musicCommands: MusicCommands;
+    private songsToUpdateCount: {
+        [guildId: string]: { [key in 'toUpdate' | 'updated']: number };
+    };
+    private songsToUpdate: {
+        [guildId: string]: Song[];
+    };
 
     public constructor(client: MusicClient) {
         this.client = client;
         this.musicCommands = new MusicCommands(client);
+        this.songsToUpdateCount = {};
+        this.songsToUpdate = {};
     }
 
     public get commands(): MusicCommands {
@@ -59,25 +70,99 @@ export class MusicActions {
     }
 
     /**
-     * Search the songName on youtube and push the found songs to the queue.
+     * Search the songs on youtube and push them to the queue.
      */
-    public async songToQueue(queue: Queue, songName: string): Promise<number> {
-        if (queue.size >= 1000) return 1000;
-        try {
-            const songs: Song[] | null = await new SongFinder(
-                songName,
-            ).getSongs();
-            if (!songs || songs.length < 1) return 1;
-            for await (const s of songs) {
-                s.queue = queue;
-                await s.save();
-                await queue.reload();
-                if (queue.size >= 1000) return 1000;
+    public songsToQueue(queue: Queue, songs: string[]): void {
+        // limit songs
+        if (queue.size >= 20000 || queue.size + songs.length > 25000) return;
+
+        if (
+            !(queue.guildId in this.songsToUpdateCount) ||
+            this.songsToUpdateCount[queue.guildId].toUpdate === undefined ||
+            this.songsToUpdateCount[queue.guildId].updated === undefined
+        ) {
+            this.songsToUpdateCount[queue.guildId] = {
+                toUpdate: 0,
+                updated: 0,
+            };
+        }
+
+        this.songsToUpdateCount[queue.guildId].toUpdate += songs.length;
+
+        for (let i = 0; i < songs.length; i++) {
+            /* filter songs, if both name and url provided, extract url
+             * else it will be determined when fetchign songs from youtube
+             * */
+            const s: string = songs[i];
+            let n: string = s.trim();
+            if (n[0] === '{' && n.includes('url:')) {
+                n = s.substring(1, n.length - 1);
+                n = n.split('url:')[1].split(',')[0].trim();
             }
-            return 0;
-        } catch (error) {
-            if (!(error instanceof QueryFailedError)) console.error(error);
-            return 1;
+            if (
+                (n[0] === '"' && n[n.length - 1] === '"') ||
+                // eslint-disable-next-line
+                (n[0] === "'" && n[n.length - 1] === "'") ||
+                (n[0] === '`' && n[n.length - 1] === '`')
+            )
+                n = n.substring(1, n.length - 1);
+            new SongFinder(n).getSongs().then((songs2) => {
+                if (songs2 && songs2.length > 0) {
+                    if (!(queue.guildId in this.songsToUpdate))
+                        this.songsToUpdate[queue.guildId] = [];
+                    for (const s2 of songs2) {
+                        s2.queue = queue;
+                        this.songsToUpdate[queue.guildId].push(s2);
+                    }
+                    this.checkIfNeedsUpdate(queue.guildId, songs2.length);
+                }
+            });
+        }
+    }
+
+    private checkIfNeedsUpdate(guildId: string, add?: number): void {
+        if (
+            !this.songsToUpdateCount[guildId] ||
+            this.songsToUpdateCount[guildId].updated === undefined
+        )
+            return;
+        if (add) this.songsToUpdateCount[guildId].updated += add;
+        const updateAndDelete: boolean =
+            this.songsToUpdateCount[guildId].updated ===
+            this.songsToUpdateCount[guildId].toUpdate;
+        const onlyUpdate: boolean = updateAndDelete
+            ? false
+            : (this.songsToUpdateCount[guildId].updated + 1) % 100 === 0;
+        if (updateAndDelete || onlyUpdate) {
+            if (updateAndDelete) delete this.songsToUpdateCount[guildId];
+            if (!(guildId in this.songsToUpdate))
+                this.songsToUpdate[guildId] = [];
+            Song.save(this.songsToUpdate[guildId]).then(() => {
+                if (
+                    guildId in this.songsToUpdate &&
+                    this.songsToUpdate[guildId].length === 0
+                )
+                    delete this.songsToUpdate[guildId];
+                if (!this.client.user) return;
+                Queue.findOne({
+                    guildId: guildId,
+                    clientId: this.client.user.id,
+                }).then((queue) => {
+                    if (!queue) return;
+                    const audioPlayer: AudioPlayer | null =
+                        this.client.getAudioPlayer(guildId);
+                    if (
+                        !audioPlayer ||
+                        (audioPlayer.state.status !==
+                            AudioPlayerStatus.Playing &&
+                            audioPlayer.state.status !==
+                                AudioPlayerStatus.Paused)
+                    ) {
+                        this.commands.execute('Play', guildId);
+                    }
+                    this.updateQueueMessage({ queue: queue });
+                });
+            });
         }
     }
 

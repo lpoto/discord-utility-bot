@@ -37,7 +37,7 @@
         "commands": {
             "play": {
                 "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.",
-                "maxSongs": "There can only be around 1000 songs in the queue!"
+                "maxSongs": "There can only be around 5000 songs in the queue!"
             },
             "join": {
                 "label": "Join",
