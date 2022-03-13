@@ -294,13 +294,21 @@ export class ClientEventHandler {
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton
                 ) {
-                    this.handleButtonClick(interaction);
+                    this.eventsQueue.addToQueue({
+                        name: 'buttonClick',
+                        id: interaction.message.id,
+                        callback: () => this.handleButtonClick(interaction),
+                    });
                     return;
                 } else if (
                     interaction.isSelectMenu() &&
                     interaction.component instanceof MessageSelectMenu
                 ) {
-                    this.handleMenuSelect(interaction);
+                    this.eventsQueue.addToQueue({
+                        name: 'menuSelect',
+                        id: interaction.message.id,
+                        callback: () => this.handleMenuSelect(interaction),
+                    });
                     return;
                 }
             }
@@ -323,7 +331,9 @@ export class ClientEventHandler {
         });
     }
 
-    private handleButtonClick(interaction: ButtonInteraction): void {
+    private async handleButtonClick(
+        interaction: ButtonInteraction,
+    ): Promise<void> {
         if (
             this.client.user &&
             interaction.component !== undefined &&
@@ -332,7 +342,7 @@ export class ClientEventHandler {
             interaction.component.label !== null &&
             interaction.component.label !== undefined
         ) {
-            Queue.findOne({
+            await Queue.findOne({
                 guildId: interaction.guildId,
                 clientId: this.client.user.id,
             }).then((queue) => {
@@ -342,7 +352,9 @@ export class ClientEventHandler {
         }
     }
 
-    private handleMenuSelect(interaction: SelectMenuInteraction): void {
+    private async handleMenuSelect(
+        interaction: SelectMenuInteraction,
+    ): Promise<void> {
         if (
             interaction.component !== undefined &&
             interaction.message &&
@@ -353,7 +365,7 @@ export class ClientEventHandler {
             interaction.component.placeholder !== undefined &&
             interaction.customId.includes('||')
         ) {
-            Queue.findOne({
+            await Queue.findOne({
                 guildId: interaction.guildId,
                 clientId: this.client.user.id,
             }).then((queue) => {

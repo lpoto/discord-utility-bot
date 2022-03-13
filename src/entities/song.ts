@@ -1,6 +1,5 @@
 import {
     BaseEntity,
-    BeforeInsert,
     Column,
     Entity,
     Index,
@@ -39,8 +38,8 @@ export class Song extends BaseEntity {
     public queue: Queue;
 
     public async generatePosition(): Promise<void> {
-        //auto increment position for current queue
-         const position: number = await Song.createQueryBuilder('song')
+        // auto increment position for current queue
+        const position: number = await Song.createQueryBuilder('song')
             .select('MAX(song.position)', 'max')
             .where({ queue: this.queue })
             .getRawOne()
