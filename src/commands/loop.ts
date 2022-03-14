@@ -26,7 +26,7 @@ export class Loop extends AbstractCommand {
             queue = await queue.addOption(QueueOption.Options.LOOP);
         }
         await queue.save();
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,

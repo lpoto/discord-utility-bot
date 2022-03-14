@@ -64,7 +64,7 @@ export class Shuffle extends AbstractCommand {
                 'FROM positions JOIN ids ' +
                 'ON positions.rn = ids.rn WHERE id = ref_id',
         ).then(() => {
-            this.client.musicActions.updateQueueMessage({
+            this.client.emit('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 reload: true,

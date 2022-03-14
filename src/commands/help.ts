@@ -1,8 +1,10 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
+import { Command } from '../../';
 import { MusicClient } from '../client';
 import { Queue, QueueOption } from '../entities';
 import { AbstractCommand } from '../utils';
+import * as Commands from '../commands';
 
 export class Help extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -12,8 +14,7 @@ export class Help extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || interaction.replied) return;
 
-        const descriptions: string[] =
-            this.client.musicActions.commands.getAllDescriptions(this.guildId);
+        const descriptions: string[] = this.getAllDescriptions(this.guildId);
         if (this.description?.length === 0) {
             interaction.reply({
                 content: this.translate(['help']),
@@ -38,5 +39,24 @@ export class Help extends AbstractCommand {
             .setDisabled(false)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
+    }
+
+    private getAllDescriptions(guildId: string): string[] {
+        const descriptions: string[] = [];
+        for (const val in Commands) {
+            try {
+                const command: Command | null = this.getCommand(val, guildId);
+                if (!command || !command.description) continue;
+                descriptions.push(command.description);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        return descriptions;
+    }
+
+    private getCommand(val: string, guildId: string): Command | null {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (<any>Commands)[val](this.client, guildId);
     }
 }

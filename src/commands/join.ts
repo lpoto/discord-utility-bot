@@ -52,13 +52,16 @@ export class Join extends AbstractCommand {
                     .deferUpdate()
                     .catch((e) => this.client.emit('error', e));
 
-            this.client.musicActions.commands.execute('Play', this.guildId);
+            this.client.emit('executeCommand', {
+                name: 'Play',
+                guildId: this.guildId,
+            });
         } else if (
             interaction &&
             !interaction.deferred &&
             !interaction.replied
         ) {
-            this.client.musicActions.updateQueueMessage({
+            this.client.emit('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 componentsOnly: true,

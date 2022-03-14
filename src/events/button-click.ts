@@ -29,7 +29,7 @@ export class OnButtonClick extends AbstractClientEvent {
             clientId: this.client.user.id,
         }).then((queue) => {
             if (!queue) return;
-            this.client.musicActions.executeFromInteraction(interaction);
+            this.client.emit('executeCommand', { interaction: interaction });
         });
     }
 }

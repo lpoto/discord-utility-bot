@@ -81,6 +81,10 @@ export type ClientEventArgument =
     | Error
     | PartialMessage
     | ThreadChannel
+    | UpdateQueueOptions
+    | DestroyMusicOptions
+    | NewSongOptions
+    | ExecuteCommandOptions
     | VoiceState;
 
 export class ClientEvent {
@@ -90,4 +94,20 @@ export class ClientEvent {
     public eventQueue: ClientEventQueue;
     public constructor(client: MusicClient);
     public callback(...args: ClientEventArgument[]): Promise<void>;
+}
+
+export interface DestroyMusicOptions {
+    guildId: string;
+    threadId?: string;
+}
+
+export interface NewSongOptions {
+    guildId: string;
+    songNames: string[];
+}
+
+export interface ExecuteCommandOptions {
+    interaction: ButtonInteraction | SelectMenuInteraction;
+    name: string;
+    guildId: string;
 }

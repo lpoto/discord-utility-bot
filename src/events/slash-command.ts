@@ -51,10 +51,7 @@ export class OnSlashCommand extends AbstractClientEvent {
             }).then(async (queue) => {
                 let message: Message | null = null;
                 if (queue)
-                    message =
-                        await this.client.utilityActions.checkThreadAndMessage(
-                            queue,
-                        );
+                    message = await this.client.checkThreadAndMessage(queue);
 
                 if (queue && message) {
                     interaction.reply({
@@ -84,18 +81,10 @@ export class OnSlashCommand extends AbstractClientEvent {
                         color: Math.floor(Math.random() * 16777215),
                     });
 
-                    this.client.musicActions
-                        .replyWithQueue(q, interaction)
-                        .then((result) => {
-                            if (
-                                result &&
-                                q.messageId &&
-                                q.threadId &&
-                                q.channelId &&
-                                q.guildId
-                            )
-                                Queue.save(q);
-                        });
+                    this.client.emit('queueMessageUpdate', {
+                        queue: q,
+                        interaction: interaction,
+                    });
                 }
             });
         }

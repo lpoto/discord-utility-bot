@@ -33,7 +33,7 @@ export class LoopQueue extends AbstractCommand {
         }
         await queue.save();
 
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,

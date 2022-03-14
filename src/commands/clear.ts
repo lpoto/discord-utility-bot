@@ -35,6 +35,7 @@ export class Clear extends AbstractCommand {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
+            !this.client.user ||
             !interaction ||
             interaction.deferred ||
             interaction.replied ||
@@ -88,7 +89,7 @@ export class Clear extends AbstractCommand {
                 .delete()
                 .execute();
 
-            this.client.musicActions.updateQueueMessage({
+            this.client.emit('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 reload: true,
@@ -101,65 +102,60 @@ export class Clear extends AbstractCommand {
             await queue.save();
 
             const webhook: InteractionWebhook = interaction.webhook;
-            this.client.musicActions
-                .updateQueueMessage({ interaction: interaction, queue: queue })
-                .then((result) => {
-                    if (!result || !this.client.user) return;
-                    const notification: Notification = Notification.create({
-                        userId: interaction.user.id,
-                        clientId: this.client.user.id,
-                        guildId: this.guildId,
-                        minutesToPersist: 24 * 60,
-                        name: 'clearStopRequest',
-                    });
-                    Notification.findOne({
-                        userId: notification.userId,
-                        clientId: notification.clientId,
-                        guildId: notification.guildId,
-                        name: notification.name,
-                    }).then((n) => {
-                        if (n) return;
-                        notification.save().then(() => {
-                            webhook
-                                .send({
-                                    content: this.translate([
-                                        'music',
-                                        'commands',
-                                        'clear',
-                                        'confirm',
-                                    ]),
-                                    ephemeral: true,
-                                })
-                                .catch((e) => {
-                                    this.client.emit('error', e);
-                                });
+            this.client.emit('queueMessageUpdate', {
+                interaction: interaction,
+                queue: queue,
+            });
+            const notification: Notification = Notification.create({
+                userId: interaction.user.id,
+                clientId: this.client.user.id,
+                guildId: this.guildId,
+                minutesToPersist: 24 * 60,
+                name: 'clearStopRequest',
+            });
+            Notification.findOne({
+                userId: notification.userId,
+                clientId: notification.clientId,
+                guildId: notification.guildId,
+                name: notification.name,
+            }).then((n) => {
+                if (n) return;
+                notification.save().then(() => {
+                    webhook
+                        .send({
+                            content: this.translate([
+                                'music',
+                                'commands',
+                                'clear',
+                                'confirm',
+                            ]),
+                            ephemeral: true,
+                        })
+                        .catch((e) => {
+                            this.client.emit('error', e);
                         });
-                    });
-
-                    const x: NodeJS.Timeout = setTimeout(() => {
-                        if (!queue) return;
-                        queue
-                            .reload()
-                            .then(async () => {
-                                if (!queue) return;
-                                if (
-                                    !queue.hasOption(
-                                        QueueOption.Options.EDITING,
-                                    )
-                                )
-                                    return;
-                                queue = await queue.removeOptions([
-                                    QueueOption.Options.CLEAR_SELECTED,
-                                ]);
-                                this.client.musicActions.updateQueueMessage({
-                                    queue: queue,
-                                    componentsOnly: true,
-                                });
-                            })
-                            .catch(() => {});
-                    }, 5000);
-                    x.unref();
                 });
+            });
+
+            const x: NodeJS.Timeout = setTimeout(() => {
+                if (!queue) return;
+                queue
+                    .reload()
+                    .then(async () => {
+                        if (!queue) return;
+                        if (!queue.hasOption(QueueOption.Options.EDITING))
+                            return;
+                        queue = await queue.removeOptions([
+                            QueueOption.Options.CLEAR_SELECTED,
+                        ]);
+                        this.client.emit('queueMessageUpdate', {
+                            queue: queue,
+                            componentsOnly: true,
+                        });
+                    })
+                    .catch(() => {});
+            }, 5000);
+            x.unref();
         }
     }
 }

@@ -36,7 +36,7 @@ export class Pause extends AbstractCommand {
         if (audioPlayer.state.status === AudioPlayerStatus.Paused)
             audioPlayer.unpause();
         else audioPlayer.pause();
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,

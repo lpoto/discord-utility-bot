@@ -30,9 +30,7 @@ export class OnMenuSelect extends AbstractClientEvent {
             clientId: this.client.user.id,
         }).then((queue) => {
             if (!queue) return;
-            this.client.musicActions.executeMenuSelectFromInteraction(
-                interaction,
-            );
+            this.client.emit('executeCommand', { interaction: interaction });
         });
     }
 }

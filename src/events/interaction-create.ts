@@ -31,7 +31,7 @@ export class OnInteractionCreate extends AbstractClientEvent {
         }).then((queue) => {
             if (
                 queue &&
-                this.client.utilityActions.checkThreadAndMessage(queue) &&
+                this.client.checkThreadAndMessage(queue) &&
                 interaction.member &&
                 interaction.member instanceof GuildMember
             ) {
@@ -62,7 +62,7 @@ export class OnInteractionCreate extends AbstractClientEvent {
                         )) ||
                     !interaction.guild?.me?.voice.channel
                 )
-                    this.client.musicActions.joinVoice(interaction);
+                    this.client.emit('joinVoiceRequest', interaction);
                 if (
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton

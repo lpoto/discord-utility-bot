@@ -12,6 +12,6 @@ export class OnMessageDelete extends AbstractClientEvent {
         message: Message<boolean> | PartialMessage,
     ): Promise<void> {
         if (message.guildId && message.author?.id === this.client.user?.id)
-            this.client.musicActions.destroyMusic(message.guildId);
+            this.client.emit('musicDestroy', { guildId: message.guildId });
     }
 }

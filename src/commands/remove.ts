@@ -88,7 +88,7 @@ export class Remove extends AbstractCommand {
         }
         await queue.save();
 
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,
@@ -113,7 +113,7 @@ export class Remove extends AbstractCommand {
             queue.offset -= Queue.songsPerPage;
         }
         if (queue.offset !== offset) queue = await queue.save();
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
         });

@@ -14,6 +14,7 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
         voiceStatePrev: VoiceState,
         voiceStateAfter: VoiceState,
     ): Promise<void> {
+        if (!this.client.user) return;
         if (
             voiceStatePrev.channel?.id === voiceStateAfter.channel?.id &&
             voiceStatePrev.deaf === voiceStateAfter.deaf
@@ -38,7 +39,10 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
                         voiceStateAfter.channel?.id &&
                         !voiceStateAfter.deaf))
             ) {
-                this.client.musicActions.commands.execute('Play', guildId);
+                this.client.emit('executeCommand', {
+                    name: 'Play',
+                    guildId: guildId,
+                });
             }
             return;
         }
@@ -58,7 +62,7 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
                 clientId: this.client.user.id,
             }).then((queue) => {
                 if (queue)
-                    this.client.musicActions.updateQueueMessage({
+                    this.client.emit('queueMessageUpdate', {
                         queue: queue,
                         innactivity: innactivityDc,
                     });

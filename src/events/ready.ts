@@ -12,11 +12,9 @@ export class OnReady extends AbstractClientEvent {
     public async callback(): Promise<void> {
         Queue.find().then((queues) => {
             for (const queue of queues)
-                this.client.utilityActions
-                    .checkThreadAndMessage(queue, true)
-                    .catch((e) => {
-                        this.client.emit('error', e);
-                    });
+                this.client.checkThreadAndMessage(queue, true).catch((e) => {
+                    this.client.emit('error', e);
+                });
         });
         await this.setup();
     }
@@ -30,7 +28,7 @@ export class OnReady extends AbstractClientEvent {
 
         await this.client.translator.setup();
         await QueueOption.seed();
-        await this.client.utilityActions.registerSlashCommands();
+        await this.client.registerSlashCommands();
         this.client.user.setActivity(
             '/' + this.client.translate(null, ['slashCommand', 'name']),
             {

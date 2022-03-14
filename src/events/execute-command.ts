@@ -1,26 +1,37 @@
 import {
     ButtonInteraction,
-    MessageActionRow,
     MessageButton,
     MessageSelectMenu,
     SelectMenuInteraction,
 } from 'discord.js';
-import { MusicClient } from './client';
+import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { AbstractClientEvent } from '../utils/abstract-client-event';
 import * as Commands from '../commands';
-import { CommandName, Command } from '../../';
+import { Command, ExecuteCommandOptions } from '../../';
 
-export class MusicCommands {
-    private client: MusicClient;
-
+export class OnExecuteCommand extends AbstractClientEvent {
     public constructor(client: MusicClient) {
-        this.client = client;
+        super(client);
+        this.name = 'executeCommand';
     }
 
-    /**
-     * Execute a command that matches the name
-     */
-    public async execute(name: CommandName, guildId: string): Promise<void> {
+    public async callback(options: ExecuteCommandOptions): Promise<void> {
+        if (options.name && options.guildId)
+            return this.execute(options.name, options.guildId);
+        if (
+            options.interaction &&
+            options.interaction instanceof SelectMenuInteraction
+        )
+            return this.executeMenuSelectFromInteraction(options.interaction);
+        if (
+            options.interaction &&
+            options.interaction instanceof ButtonInteraction
+        )
+            return this.executeFromInteraction(options.interaction);
+    }
+
+    private execute(name: string, guildId: string) {
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
         command.execute().catch((e) => {
@@ -29,10 +40,7 @@ export class MusicCommands {
         });
     }
 
-    /**
-     * Execute a command that matches the button's label
-     */
-    public async executeFromInteraction(
+    private async executeFromInteraction(
         interaction: ButtonInteraction,
     ): Promise<void> {
         if (!interaction.guildId || !this.client.user) return;
@@ -65,10 +73,7 @@ export class MusicCommands {
         }
     }
 
-    /**
-     * Execute a command that matches the menu select's custom id
-     */
-    public async executeMenuSelectFromInteraction(
+    private async executeMenuSelectFromInteraction(
         interaction: SelectMenuInteraction,
     ): Promise<void> {
         if (!interaction.guildId || !this.client.user) return;
@@ -102,67 +107,6 @@ export class MusicCommands {
                 console.error(e);
             }
         }
-    }
-
-    /**
-     * Build MessageActionRow from all of the commands' buttons
-     */
-    public getCommandsActionRow(queue: Queue): MessageActionRow[] {
-        const buttons: MessageButton[] = [];
-        let dropdown: MessageSelectMenu | null = null;
-        for (const val in Commands) {
-            try {
-                const command: Command | null = this.getCommand(
-                    val,
-                    queue.guildId,
-                );
-                const button: MessageButton | null | undefined =
-                    command?.button(queue);
-                const dpdwn: MessageSelectMenu | null | undefined =
-                    command?.selectMenu(queue);
-                if (dpdwn) dropdown = dpdwn;
-                if (!command || !button) continue;
-                buttons.push(button);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        const rows: MessageActionRow[] = [];
-        rows.push(new MessageActionRow());
-        let lenIdx = 0;
-        let idx = 0;
-        for (let i = 0; i < buttons.length; i++) {
-            if (rows.length > 5) break;
-            const len: number = idx % 2 === 0 ? 4 : 5;
-            if (buttons.length > len && i === lenIdx + len) {
-                lenIdx += len;
-                rows.push(new MessageActionRow());
-                idx += 1;
-            }
-            rows[idx].addComponents(buttons[i]);
-        }
-        if (dropdown && rows.length < 5) {
-            rows.push(new MessageActionRow().addComponents(dropdown));
-        }
-        if (rows[0].components.length === 0) return [];
-        return rows;
-    }
-
-    /**
-     * Build an array from all of the commands' descriptions
-     */
-    public getAllDescriptions(guildId: string): string[] {
-        const descriptions: string[] = [];
-        for (const val in Commands) {
-            try {
-                const command: Command | null = this.getCommand(val, guildId);
-                if (!command || !command.description) continue;
-                descriptions.push(command.description);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-        return descriptions;
     }
 
     private getCommand(val: string, guildId: string): Command | null {

@@ -32,6 +32,7 @@ export class Stop extends AbstractCommand {
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
+            !this.client.user ||
             !interaction ||
             !interaction.component ||
             !interaction.user ||
@@ -68,7 +69,7 @@ export class Stop extends AbstractCommand {
                     });
                 });
             }
-            this.client.musicActions.destroyMusic(this.guildId);
+            this.client.emit('musicDestroy', { guildId: this.guildId });
         } else {
             if (!queue.hasOption(QueueOption.Options.STOP_SELECTED))
                 queue = await queue.addOption(
@@ -77,71 +78,63 @@ export class Stop extends AbstractCommand {
             await queue.save();
 
             const webhook: InteractionWebhook = interaction.webhook;
-            this.client.musicActions
-                .updateQueueMessage({
-                    interaction: interaction,
-                    queue: queue,
-                    componentsOnly: true,
-                })
-                .then((result) => {
-                    if (!result || !this.client.user) return;
-                    const notification: Notification = Notification.create({
-                        userId: interaction.user.id,
-                        clientId: this.client.user.id,
-                        guildId: this.guildId,
-                        minutesToPersist: 24 * 60,
-                        name: 'clearStopRequest',
-                    });
-                    Notification.findOne({
-                        userId: notification.userId,
-                        clientId: notification.clientId,
-                        guildId: notification.guildId,
-                        name: notification.name,
-                    }).then((n) => {
-                        if (n) return;
-                        notification
-                            .save()
-                            .then(() => {
-                                webhook
-                                    .send({
-                                        content: this.translate([
-                                            'music',
-                                            'commands',
-                                            'stop',
-                                            'confirm',
-                                        ]),
-                                        ephemeral: true,
-                                    })
-                                    .catch((e) =>
-                                        this.client.emit('error', e),
-                                    );
+            this.client.emit('queueMessageUpdate', {
+                interaction: interaction,
+                queue: queue,
+                componentsOnly: true,
+            });
+            const notification: Notification = Notification.create({
+                userId: interaction.user.id,
+                clientId: this.client.user.id,
+                guildId: this.guildId,
+                minutesToPersist: 24 * 60,
+                name: 'clearStopRequest',
+            });
+            Notification.findOne({
+                userId: notification.userId,
+                clientId: notification.clientId,
+                guildId: notification.guildId,
+                name: notification.name,
+            }).then((n) => {
+                if (n) return;
+                notification
+                    .save()
+                    .then(() => {
+                        webhook
+                            .send({
+                                content: this.translate([
+                                    'music',
+                                    'commands',
+                                    'stop',
+                                    'confirm',
+                                ]),
+                                ephemeral: true,
                             })
                             .catch((e) => this.client.emit('error', e));
-                    });
+                    })
+                    .catch((e) => this.client.emit('error', e));
+            });
 
-                    const x: NodeJS.Timeout = setTimeout(async () => {
+            const x: NodeJS.Timeout = setTimeout(async () => {
+                if (!queue) return;
+                queue
+                    .reload()
+                    .then(async () => {
                         if (!queue) return;
-                        queue
-                            .reload()
-                            .then(async () => {
-                                if (!queue) return;
-                                queue = await queue.removeOptions([
-                                    QueueOption.Options.STOP_SELECTED,
-                                ]);
-                                queue.save().then(() => {
-                                    if (!queue) return;
-                                    this.client.musicActions.updateQueueMessage(
-                                        {
-                                            queue: queue,
-                                            componentsOnly: true,
-                                        },
-                                    );
-                                });
-                            })
-                            .catch(() => {});
-                    }, 5000);
-                    x.unref();
-                });
+                        queue = await queue.removeOptions([
+                            QueueOption.Options.STOP_SELECTED,
+                        ]);
+                        queue.save().then(() => {
+                            if (!queue) return;
+                            this.client.emit('queueMessageUpdate', {
+                                queue: queue,
+                                componentsOnly: true,
+                            });
+                        });
+                    })
+                    .catch(() => {});
+            }, 5000);
+            x.unref();
         }
     }
 }

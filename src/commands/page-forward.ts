@@ -37,7 +37,7 @@ export class PageForward extends AbstractCommand {
 
         queue.offset += Queue.songsPerPage;
         queue.save().then(async (q) => {
-            this.client.musicActions.updateQueueMessage({
+            this.client.emit('queueMessageUpdate', {
                 interaction: interaction,
                 queue: q,
                 reload: true,

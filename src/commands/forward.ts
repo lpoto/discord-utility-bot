@@ -92,7 +92,7 @@ export class Forward extends AbstractCommand {
         }
         queue = await queue.save();
 
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,
@@ -118,7 +118,7 @@ export class Forward extends AbstractCommand {
         if (queue.headSong) queue.headSong.position = idx;
         await queue.headSong?.save();
 
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             reload: true,

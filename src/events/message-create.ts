@@ -49,7 +49,7 @@ export class OnMessageCreate extends AbstractClientEvent {
                             )) ||
                         !message.guild?.me?.voice.channel
                     )
-                        this.client.musicActions.joinVoice(null, message);
+                        this.client.emit('joinVoiceRequest', message);
 
                     // get songs from message content and from all text file attachments
                     // multiple songs may be added, each in its own line
@@ -70,7 +70,10 @@ export class OnMessageCreate extends AbstractClientEvent {
                             songs = songs.concat(text.split('\n'));
                         }
                     }
-                    this.client.musicActions.songsToQueue(queue, songs);
+                    this.client.emit('newSong', {
+                        guildId: queue.guildId,
+                        songNames: songs,
+                    });
                 })
                 .catch((e) => this.client.emit('error', e));
         }

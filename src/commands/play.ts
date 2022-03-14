@@ -65,7 +65,7 @@ export class Play extends AbstractCommand {
         queue.color = Math.floor(Math.random() * 16777215);
         queue = await queue.save();
 
-        this.client.musicActions.updateQueueMessage({
+        this.client.emit('queueMessageUpdate', {
             queue: queue,
             interaction: interaction,
         });
@@ -104,7 +104,7 @@ export class Play extends AbstractCommand {
                 .size === 0
         ) {
             // update queue message even if no member listeners
-            this.client.musicActions.updateQueueMessage({ queue: queue });
+            this.client.emit('queueMessageUpdate', { queue: queue });
             return;
         }
 
@@ -131,7 +131,7 @@ export class Play extends AbstractCommand {
         SongFinder.getResource(song)
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
-                this.client.musicActions.updateQueueMessage({ queue: queue });
+                this.client.emit('queueMessageUpdate', { queue: queue });
                 audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
