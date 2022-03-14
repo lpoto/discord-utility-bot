@@ -6,12 +6,12 @@ import {
     LanguageKeyPath,
     LanguageString,
     MusicClientOptions,
-} from '../';
-import { MusicActions } from './music-actions';
-import { Translator } from './translation';
-import { PermissionChecker } from './utils';
-import { UtilityActions } from './utility-actions';
-import * as Events from './events';
+} from '../../';
+import { MusicActions } from './client-music-actions';
+import { UtilityActions } from './client-utility-actions';
+import { Translator } from '../translation';
+import { PermissionChecker } from '../utils';
+import * as Events from '../events';
 
 export class MusicClient extends Client {
     private clientToken: string;

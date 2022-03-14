@@ -17,11 +17,11 @@ import {
     TextChannel,
     ThreadChannel,
 } from 'discord.js';
-import { UpdateQueueOptions, QueueEmbedOptions } from '../';
-import { MusicClient } from './client';
-import { Queue, Song } from './entities';
-import { QueueEmbed, SongFinder } from './utils';
-import { MusicCommands } from './music-commands';
+import { UpdateQueueOptions, QueueEmbedOptions } from '../../';
+import { MusicClient } from '../client';
+import { Queue, Song } from '../entities';
+import { QueueEmbed, SongFinder } from '../utils';
+import { MusicCommands } from './client-music-commands';
 
 export class MusicActions {
     private client: MusicClient;

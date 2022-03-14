@@ -2,7 +2,7 @@ import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import { Message, TextChannel, ThreadChannel } from 'discord.js';
 import { MusicClient } from './client';
-import { Queue } from './entities';
+import { Queue } from '../entities';
 
 export class UtilityActions {
     private client: MusicClient;

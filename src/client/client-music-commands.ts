@@ -6,9 +6,9 @@ import {
     SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from './client';
-import { Queue } from './entities';
-import * as Commands from './commands';
-import { CommandName, Command } from '../';
+import { Queue } from '../entities';
+import * as Commands from '../commands';
+import { CommandName, Command } from '../../';
 
 export class MusicCommands {
     private client: MusicClient;
