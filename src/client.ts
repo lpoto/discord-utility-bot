@@ -3,6 +3,7 @@ import { Client, Message, TextChannel } from 'discord.js';
 import {
     ClientEvent,
     ClientEventArgument,
+    Event,
     LanguageKeyPath,
     LanguageString,
     MusicClientOptions,
@@ -45,6 +46,10 @@ export class MusicClient extends Client {
 
     public set ready(value: boolean) {
         this.clientReady = value;
+    }
+
+    public emitEvent(...args: Event): void {
+        this.emit(args[0] as string, args[1]);
     }
 
     public get permsChecker(): PermissionChecker {
@@ -95,25 +100,6 @@ export class MusicClient extends Client {
         this.translator.setGuidLanguage(lang, guildId);
     }
 
-    /** Subscribe to required client events for the music client and login */
-    public async run(): Promise<void> {
-        for (const Event of Object.values(Events)) {
-            const e: ClientEvent = new Event(this);
-            if (e.once) {
-            }
-
-            const callEvent = (
-                n: string,
-                f: (...args2: ClientEventArgument[]) => Promise<void>,
-            ) => (e.once ? this.once(n, f) : this.on(n, f));
-
-            callEvent(e.name, async (...args) => {
-                e.callback(...args);
-            });
-        }
-
-        this.login(this.clientToken);
-    }
     /** Register the slash command in all of the servers that the client is member of.*/
     public async registerSlashCommands(): Promise<void> {
         if (!this.user) return;
@@ -161,38 +147,44 @@ export class MusicClient extends Client {
                             .fetch(queue.messageId)
                             .then((message) => {
                                 if (!message && thread) {
-                                    this.emit('musicThreadArchive', thread);
+                                    this.emitEvent(
+                                        'musicThreadArchive',
+                                        thread,
+                                    );
                                     return null;
                                 }
                                 if (!thread && message) {
                                     message
                                         .delete()
                                         .catch((error) =>
-                                            this.emit('error', error),
+                                            this.emitEvent('error', error),
                                         );
                                     return null;
                                 }
                                 if (update)
-                                    this.emit('queueMessageUpdate', {
+                                    this.emitEvent('queueMessageUpdate', {
                                         queue: queue,
                                         clientRestart: true,
                                     });
                                 return message;
                             })
                             .catch((e) => {
-                                this.emit('error', e);
+                                this.emitEvent('error', e);
                                 if (thread)
-                                    this.emit('musicThreadArchive', thread);
+                                    this.emitEvent(
+                                        'musicThreadArchive',
+                                        thread,
+                                    );
                                 return null;
                             });
                     })
                     .catch((error) => {
-                        this.emit('error', error);
+                        this.emitEvent('error', error);
                         return null;
                     });
             })
             .catch((e) => {
-                this.emit('error', e);
+                this.emitEvent('error', e);
                 return null;
             });
     }
@@ -205,5 +197,24 @@ export class MusicClient extends Client {
                 'description',
             ]),
         };
+    }
+    /** Subscribe to required client events for the music client and login */
+    public async run(): Promise<void> {
+        for (const E of Object.values(Events)) {
+            const e: ClientEvent = new E(this);
+            if (e.once) {
+            }
+
+            const callEvent = (
+                n: string,
+                f: (...args2: ClientEventArgument[]) => Promise<void>,
+            ) => (e.once ? this.once(n, f) : this.on(n, f));
+
+            callEvent(E.eventName, async (...args) => {
+                e.callback(...args);
+            });
+        }
+
+        this.login(this.clientToken);
     }
 }

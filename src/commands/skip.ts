@@ -42,6 +42,6 @@ export class Skip extends AbstractCommand {
         if (interaction && !interaction.deferred && !interaction.replied)
             interaction
                 .deferUpdate()
-                .catch((e) => this.client.emit('error', e));
+                .catch((e) => this.client.emitEvent('error', e));
     }
 }

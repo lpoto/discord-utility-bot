@@ -50,9 +50,9 @@ export class Join extends AbstractCommand {
             if (interaction && !interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
-                    .catch((e) => this.client.emit('error', e));
+                    .catch((e) => this.client.emitEvent('error', e));
 
-            this.client.emit('executeCommand', {
+            this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: this.guildId,
             });
@@ -61,7 +61,7 @@ export class Join extends AbstractCommand {
             !interaction.deferred &&
             !interaction.replied
         ) {
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 componentsOnly: true,

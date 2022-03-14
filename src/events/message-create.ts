@@ -11,7 +11,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnMessageCreate extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'messageCreate';
     }
 
     public async callback(message: Message): Promise<void> {
@@ -49,7 +48,7 @@ export class OnMessageCreate extends AbstractClientEvent {
                             )) ||
                         !message.guild?.me?.voice.channel
                     )
-                        this.client.emit('joinVoiceRequest', message);
+                        this.client.emitEvent('joinVoiceRequest', message);
 
                     // get songs from message content and from all text file attachments
                     // multiple songs may be added, each in its own line
@@ -70,12 +69,19 @@ export class OnMessageCreate extends AbstractClientEvent {
                             songs = songs.concat(text.split('\n'));
                         }
                     }
-                    this.client.emit('newSong', {
+                    this.client.emitEvent('newSong', {
                         guildId: queue.guildId,
                         songNames: songs,
                     });
                 })
-                .catch((e) => this.client.emit('error', e));
+                .catch((e) => this.client.emitEvent('error', e));
         }
     }
+}
+
+export namespace OnMessageCreate {
+    export type Type = [
+        'messageCreate',
+        ...Parameters<OnMessageCreate['callback']>
+    ];
 }

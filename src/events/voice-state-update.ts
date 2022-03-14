@@ -7,7 +7,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnVoiceStateUpdate extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'voiceStateUpdate';
     }
 
     public async callback(
@@ -39,7 +38,7 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
                         voiceStateAfter.channel?.id &&
                         !voiceStateAfter.deaf))
             ) {
-                this.client.emit('executeCommand', {
+                this.client.emitEvent('executeCommand', {
                     name: 'Play',
                     guildId: guildId,
                 });
@@ -62,7 +61,7 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
                 clientId: this.client.user.id,
             }).then((queue) => {
                 if (queue)
-                    this.client.emit('queueMessageUpdate', {
+                    this.client.emitEvent('queueMessageUpdate', {
                         queue: queue,
                         innactivity: innactivityDc,
                     });
@@ -72,4 +71,11 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
         const afterId: string | undefined = voiceStateAfter.channel?.id;
         console.log(`Voice channel update: ${prevId} -> ${afterId}`);
     }
+}
+
+export namespace OnVoiceStateUpdate {
+    export type Type = [
+        'voiceStateUpdate',
+        ...Parameters<OnVoiceStateUpdate['callback']>
+    ];
 }

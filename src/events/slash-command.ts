@@ -11,7 +11,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnSlashCommand extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'slashCommand';
     }
 
     public async callback(interaction: CommandInteraction): Promise<void> {
@@ -81,7 +80,7 @@ export class OnSlashCommand extends AbstractClientEvent {
                         color: Math.floor(Math.random() * 16777215),
                     });
 
-                    this.client.emit('queueMessageUpdate', {
+                    this.client.emitEvent('queueMessageUpdate', {
                         queue: q,
                         interaction: interaction,
                     });
@@ -89,4 +88,11 @@ export class OnSlashCommand extends AbstractClientEvent {
             });
         }
     }
+}
+
+export namespace OnSlashCommand {
+    export type Type = [
+        'slashCommand',
+        ...Parameters<OnSlashCommand['callback']>
+    ];
 }

@@ -6,7 +6,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnMenuSelect extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'menuSelect';
     }
 
     public async callback(interaction: SelectMenuInteraction): Promise<void> {
@@ -30,7 +29,13 @@ export class OnMenuSelect extends AbstractClientEvent {
             clientId: this.client.user.id,
         }).then((queue) => {
             if (!queue) return;
-            this.client.emit('executeCommand', { interaction: interaction });
+            this.client.emitEvent('executeCommand', {
+                interaction: interaction,
+            });
         });
     }
+}
+
+export namespace OnMenuSelect {
+    export type Type = ['menuSelect', ...Parameters<OnMenuSelect['callback']>];
 }

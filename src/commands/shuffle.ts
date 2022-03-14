@@ -34,7 +34,7 @@ export class Shuffle extends AbstractCommand {
             if (!interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
-                    .catch((e) => this.client.emit('error', e));
+                    .catch((e) => this.client.emitEvent('error', e));
             return;
         }
 
@@ -64,7 +64,7 @@ export class Shuffle extends AbstractCommand {
                 'FROM positions JOIN ids ' +
                 'ON positions.rn = ids.rn WHERE id = ref_id',
         ).then(() => {
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 reload: true,

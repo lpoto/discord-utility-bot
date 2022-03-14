@@ -13,7 +13,6 @@ import { Command, ExecuteCommandOptions } from '../../';
 export class OnExecuteCommand extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'executeCommand';
     }
 
     public async callback(options: ExecuteCommandOptions): Promise<void> {
@@ -36,7 +35,7 @@ export class OnExecuteCommand extends AbstractClientEvent {
         if (!command) return;
         command.execute().catch((e) => {
             console.error('Error when executing command');
-            this.client.emit('error', e);
+            this.client.emitEvent('error', e);
         });
     }
 
@@ -65,7 +64,7 @@ export class OnExecuteCommand extends AbstractClientEvent {
                 )
                     return command.execute(interaction).catch((e) => {
                         console.error('Error when executing command');
-                        this.client.emit('error', e);
+                        this.client.emitEvent('error', e);
                     });
             } catch (e) {
                 console.error(e);
@@ -101,7 +100,7 @@ export class OnExecuteCommand extends AbstractClientEvent {
                         .executeFromSelectMenu(interaction)
                         .catch((e) => {
                             console.error('Error when executing command');
-                            this.client.emit('error', e);
+                            this.client.emitEvent('error', e);
                         });
             } catch (e) {
                 console.error(e);
@@ -113,4 +112,11 @@ export class OnExecuteCommand extends AbstractClientEvent {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new (<any>Commands)[val](this.client, guildId);
     }
+}
+
+export namespace OnExecuteCommand {
+    export type Type = [
+        'executeCommand',
+        ...Parameters<OnExecuteCommand['callback']>
+    ];
 }

@@ -15,7 +15,6 @@ export class OnNewSong extends AbstractClientEvent {
 
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'newSong';
         this.songsToUpdate = {};
         this.songsToUpdateCount = {};
     }
@@ -112,15 +111,21 @@ export class OnNewSong extends AbstractClientEvent {
                             audioPlayer.state.status !==
                                 AudioPlayerStatus.Paused)
                     ) {
-                        this.client.emit('executeCommand', {
+                        this.client.emitEvent('executeCommand', {
                             name: 'Play',
                             guildId: guildId,
                         });
                     }
-                    this.client.emit('queueMessageUpdate', { queue: queue });
+                    this.client.emitEvent('queueMessageUpdate', {
+                        queue: queue,
+                    });
                 });
             });
             delete this.songsToUpdate[guildId];
         }
     }
+}
+
+export namespace OnNewSong {
+    export type Type = ['newSong', ...Parameters<OnNewSong['callback']>];
 }

@@ -6,7 +6,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnButtonClick extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'buttonClick';
     }
 
     public async callback(interaction: ButtonInteraction): Promise<void> {
@@ -29,7 +28,16 @@ export class OnButtonClick extends AbstractClientEvent {
             clientId: this.client.user.id,
         }).then((queue) => {
             if (!queue) return;
-            this.client.emit('executeCommand', { interaction: interaction });
+            this.client.emitEvent('executeCommand', {
+                interaction: interaction,
+            });
         });
     }
+}
+
+export namespace OnButtonClick {
+    export type Type = [
+        'buttonClick',
+        ...Parameters<OnButtonClick['callback']>
+    ];
 }

@@ -5,7 +5,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnError extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'error';
         process.on('uncaughtException', (error: Error) => {
             this.callback(error);
         });
@@ -40,4 +39,8 @@ export class OnError extends AbstractClientEvent {
         }
         console.error('Error: ', error);
     }
+}
+
+export namespace OnError {
+    export type Type = ['error', ...Parameters<OnError['callback']>];
 }

@@ -38,7 +38,7 @@ export class PageBackward extends AbstractCommand {
         queue.offset -= Queue.songsPerPage;
         if (queue.offset < 0) queue.offset = 0;
         queue.save().then((q) => {
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: q,
                 reload: true,

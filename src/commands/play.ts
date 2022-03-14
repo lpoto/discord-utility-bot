@@ -65,7 +65,7 @@ export class Play extends AbstractCommand {
         queue.color = Math.floor(Math.random() * 16777215);
         queue = await queue.save();
 
-        this.client.emit('queueMessageUpdate', {
+        this.client.emitEvent('queueMessageUpdate', {
             queue: queue,
             interaction: interaction,
         });
@@ -92,7 +92,7 @@ export class Play extends AbstractCommand {
         const guild: Guild | void = await this.client.guilds
             .fetch(queue.guildId)
             .catch((e) => {
-                this.client.emit('error', e);
+                this.client.emitEvent('error', e);
             });
         if (!guild || !this.connection?.joinConfig.channelId) return;
         const channel: NonThreadGuildBasedChannel | null =
@@ -104,7 +104,7 @@ export class Play extends AbstractCommand {
                 .size === 0
         ) {
             // update queue message even if no member listeners
-            this.client.emit('queueMessageUpdate', { queue: queue });
+            this.client.emitEvent('queueMessageUpdate', { queue: queue });
             return;
         }
 
@@ -131,7 +131,7 @@ export class Play extends AbstractCommand {
         SongFinder.getResource(song)
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
-                this.client.emit('queueMessageUpdate', { queue: queue });
+                this.client.emitEvent('queueMessageUpdate', { queue: queue });
                 audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
@@ -175,7 +175,7 @@ export class Play extends AbstractCommand {
                     });
             })
             .catch((e) => {
-                this.client.emit('error', e);
+                this.client.emitEvent('error', e);
                 this.client.setAudioPlayer(queue.guildId, null);
                 return;
             });

@@ -14,7 +14,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnJoinVoiceRequest extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'joinVoiceRequest';
     }
 
     public async callback(
@@ -53,7 +52,7 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
                 selfMute: false,
                 selfDeaf: true,
             }).on('error', (error) => {
-                this.client.emit('error', error);
+                this.client.emitEvent('error', error);
                 if (resource instanceof Interaction) {
                     resource
                         .reply({
@@ -65,7 +64,7 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
                             ephemeral: true,
                         })
                         .catch((e) => {
-                            this.client.emit('error', e);
+                            this.client.emitEvent('error', e);
                         });
                 } else {
                     resource
@@ -77,10 +76,17 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
                             ]),
                         })
                         .catch((e) => {
-                            this.client.emit('error', e);
+                            this.client.emitEvent('error', e);
                         });
                 }
             }),
         );
     }
+}
+
+export namespace OnJoinVoiceRequest {
+    export type Type = [
+        'joinVoiceRequest',
+        ...Parameters<OnJoinVoiceRequest['callback']>
+    ];
 }

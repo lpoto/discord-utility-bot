@@ -5,7 +5,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnMusicThreadArchive extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'musicThreadArchive';
     }
 
     public async callback(thread: ThreadChannel): Promise<void> {
@@ -35,11 +34,11 @@ export class OnMusicThreadArchive extends AbstractClientEvent {
                             .fetchStarterMessage()
                             .then((message) => {
                                 message.delete().catch((e) => {
-                                    this.client.emit('error', e);
+                                    this.client.emitEvent('error', e);
                                 });
                             })
                             .catch((e) => {
-                                this.client.emit('error', e);
+                                this.client.emitEvent('error', e);
                             });
                     })
                     .catch(() => {
@@ -52,7 +51,7 @@ export class OnMusicThreadArchive extends AbstractClientEvent {
                                 console.log(`Deleted thread: ${thread.id}`);
                             })
                             .catch((error) => {
-                                this.client.emit('error', error);
+                                this.client.emitEvent('error', error);
                             });
                     })
                     .catch(() => {
@@ -60,4 +59,11 @@ export class OnMusicThreadArchive extends AbstractClientEvent {
                     });
             });
     }
+}
+
+export namespace OnMusicThreadArchive {
+    export type Type = [
+        'musicThreadArchive',
+        ...Parameters<OnMusicThreadArchive['callback']>
+    ];
 }

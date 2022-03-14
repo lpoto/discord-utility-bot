@@ -16,6 +16,7 @@ import { ButtonInteraction, CommandInteraction } from 'discord.js';
 import { MusicClient } from './client';
 import * as Commands from './commands';
 import { ClientEventQueue } from './utils/client-event-queue';
+import * as Events from './events';
 
 export interface UpdateQueueOptions {
     queue: Queue;
@@ -88,13 +89,31 @@ export type ClientEventArgument =
     | VoiceState;
 
 export class ClientEvent {
-    public name: string;
     public once?: boolean;
     public client: MusicClient;
     public eventQueue: ClientEventQueue;
     public constructor(client: MusicClient);
     public callback(...args: ClientEventArgument[]): Promise<void>;
+    public static get eventName(): string;
 }
+
+export type Event =
+    | Events.OnReady.Type
+    | Events.OnError.Type
+    | Events.OnNewSong.Type
+    | Events.OnMenuSelect.Type
+    | Events.OnButtonClick.Type
+    | Events.OnMusicDestroy.Type
+    | Events.OnThreadDelete.Type
+    | Events.OnMessageDelete.Type
+    | Events.OnMessageCreate.Type
+    | Events.OnExecuteCommand.Type
+    | Events.OnJoinVoiceRequest.Type
+    | Events.OnInteractionCreate.Type
+    | Events.OnVoiceStateUpdate.Type
+    | Events.OnQueueMessageUpdate.Type
+    | Events.OnMusicThreadArchive.Type
+    | Events.OnSlashCommand.Type;
 
 export interface DestroyMusicOptions {
     guildId: string;
@@ -107,7 +126,7 @@ export interface NewSongOptions {
 }
 
 export interface ExecuteCommandOptions {
-    interaction: ButtonInteraction | SelectMenuInteraction;
-    name: string;
-    guildId: string;
+    interaction?: ButtonInteraction | SelectMenuInteraction;
+    name?: string;
+    guildId?: string;
 }

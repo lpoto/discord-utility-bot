@@ -38,7 +38,7 @@ export class Expand extends AbstractCommand {
 
         await queue.save();
 
-        this.client.emit('queueMessageUpdate', {
+        this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
         });

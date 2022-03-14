@@ -22,7 +22,6 @@ import * as Commands from '../commands';
 export class OnQueueMessageUpdate extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'queueMessageUpdate';
     }
 
     public async callback(options: UpdateQueueOptions): Promise<void> {
@@ -43,7 +42,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             !interaction.replied
         ) {
             return interaction.update(updateOptions).catch((error) => {
-                this.client.emit('error', error);
+                this.client.emitEvent('error', error);
             });
         }
         if (interaction && interaction instanceof CommandInteraction) {
@@ -58,12 +57,8 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     message
                         .startThread(this.getThreadOptions())
                         .then(async (t) => {
-                            if (
-                                thread &&
-                                message.guildId &&
-                                message.channelId
-                            ) {
-                                this.client.emit(
+                            if (t && message.guildId && message.channelId) {
+                                this.client.emitEvent(
                                     'joinVoiceRequest',
                                     interaction,
                                 );
@@ -75,7 +70,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                                 return;
                             }
                             message.delete().catch((error) => {
-                                this.client.emit('error', error);
+                                this.client.emitEvent('error', error);
                             });
                         });
                 });
@@ -96,7 +91,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 message.edit(this.getQueueOptions(options));
             })
             .catch((error) => {
-                this.client.emit('error', error);
+                this.client.emitEvent('error', error);
             });
     }
 
@@ -179,4 +174,11 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             reason: this.client.translate(null, ['music', 'thread', 'reason']),
         };
     }
+}
+
+export namespace OnQueueMessageUpdate {
+    export type Type = [
+        'queueMessageUpdate',
+        ...Parameters<OnQueueMessageUpdate['callback']>
+    ];
 }

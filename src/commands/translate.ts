@@ -96,7 +96,7 @@ export class Translate extends AbstractCommand {
         }
         queue = await queue.save();
 
-        this.client.emit('queueMessageUpdate', {
+        this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             componentsOnly: true,
@@ -116,7 +116,7 @@ export class Translate extends AbstractCommand {
                 interaction.guildId,
             );
         } catch (e) {}
-        this.client.emit('queueMessageUpdate', {
+        this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
             reload: true,

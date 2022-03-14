@@ -69,7 +69,7 @@ export class Stop extends AbstractCommand {
                     });
                 });
             }
-            this.client.emit('musicDestroy', { guildId: this.guildId });
+            this.client.emitEvent('musicDestroy', { guildId: this.guildId });
         } else {
             if (!queue.hasOption(QueueOption.Options.STOP_SELECTED))
                 queue = await queue.addOption(
@@ -78,7 +78,7 @@ export class Stop extends AbstractCommand {
             await queue.save();
 
             const webhook: InteractionWebhook = interaction.webhook;
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 componentsOnly: true,
@@ -110,9 +110,9 @@ export class Stop extends AbstractCommand {
                                 ]),
                                 ephemeral: true,
                             })
-                            .catch((e) => this.client.emit('error', e));
+                            .catch((e) => this.client.emitEvent('error', e));
                     })
-                    .catch((e) => this.client.emit('error', e));
+                    .catch((e) => this.client.emitEvent('error', e));
             });
 
             const x: NodeJS.Timeout = setTimeout(async () => {
@@ -126,7 +126,7 @@ export class Stop extends AbstractCommand {
                         ]);
                         queue.save().then(() => {
                             if (!queue) return;
-                            this.client.emit('queueMessageUpdate', {
+                            this.client.emitEvent('queueMessageUpdate', {
                                 queue: queue,
                                 componentsOnly: true,
                             });

@@ -11,7 +11,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnInteractionCreate extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'interactionCreate';
     }
 
     public async callback(interaction: Interaction): Promise<void> {
@@ -62,24 +61,31 @@ export class OnInteractionCreate extends AbstractClientEvent {
                         )) ||
                     !interaction.guild?.me?.voice.channel
                 )
-                    this.client.emit('joinVoiceRequest', interaction);
+                    this.client.emitEvent('joinVoiceRequest', interaction);
                 if (
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton
                 ) {
-                    this.client.emit('buttonClick', interaction);
+                    this.client.emitEvent('buttonClick', interaction);
                     return;
                 } else if (
                     interaction.isSelectMenu() &&
                     interaction.component instanceof MessageSelectMenu
                 ) {
-                    this.client.emit('menuSelect', interaction);
+                    this.client.emitEvent('menuSelect', interaction);
                     return;
                 }
             }
             if (!interaction.isCommand()) return;
 
-            this.client.emit('slashCommand', interaction);
+            this.client.emitEvent('slashCommand', interaction);
         });
     }
+}
+
+export namespace OnInteractionCreate {
+    export type Type = [
+        'interactionCreate',
+        ...Parameters<OnInteractionCreate['callback']>
+    ];
 }

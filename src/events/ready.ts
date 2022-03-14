@@ -5,7 +5,6 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 export class OnReady extends AbstractClientEvent {
     public constructor(client: MusicClient) {
         super(client);
-        this.name = 'ready';
         this.once = true;
     }
 
@@ -13,7 +12,7 @@ export class OnReady extends AbstractClientEvent {
         Queue.find().then((queues) => {
             for (const queue of queues)
                 this.client.checkThreadAndMessage(queue, true).catch((e) => {
-                    this.client.emit('error', e);
+                    this.client.emitEvent('error', e);
                 });
         });
         await this.setup();
@@ -40,4 +39,8 @@ export class OnReady extends AbstractClientEvent {
         console.log('  Client ready!');
         console.log('------------------------------------');
     }
+}
+
+export namespace OnReady {
+    export type Type = ['ready', ...Parameters<OnReady['callback']>];
 }

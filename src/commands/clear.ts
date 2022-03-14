@@ -89,7 +89,7 @@ export class Clear extends AbstractCommand {
                 .delete()
                 .execute();
 
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
                 reload: true,
@@ -102,7 +102,7 @@ export class Clear extends AbstractCommand {
             await queue.save();
 
             const webhook: InteractionWebhook = interaction.webhook;
-            this.client.emit('queueMessageUpdate', {
+            this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
             });
@@ -132,7 +132,7 @@ export class Clear extends AbstractCommand {
                             ephemeral: true,
                         })
                         .catch((e) => {
-                            this.client.emit('error', e);
+                            this.client.emitEvent('error', e);
                         });
                 });
             });
@@ -148,7 +148,7 @@ export class Clear extends AbstractCommand {
                         queue = await queue.removeOptions([
                             QueueOption.Options.CLEAR_SELECTED,
                         ]);
-                        this.client.emit('queueMessageUpdate', {
+                        this.client.emitEvent('queueMessageUpdate', {
                             queue: queue,
                             componentsOnly: true,
                         });
