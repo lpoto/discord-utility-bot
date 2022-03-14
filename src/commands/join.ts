@@ -3,7 +3,7 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Join extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -50,9 +50,7 @@ export class Join extends AbstractCommand {
             if (interaction && !interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
-                    .catch((e) =>
-                        this.client.handleError(e, 'join.ts -> execute'),
-                    );
+                    .catch((e) => this.client.emit('error', e));
 
             this.client.musicActions.commands.execute('Play', this.guildId);
         } else if (

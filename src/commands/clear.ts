@@ -8,7 +8,7 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Not } from 'typeorm';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption, Notification } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Clear extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -131,10 +131,7 @@ export class Clear extends AbstractCommand {
                                     ephemeral: true,
                                 })
                                 .catch((e) => {
-                                    this.client.handleError(
-                                        e,
-                                        'clear.ts -> execute',
-                                    );
+                                    this.client.emit('error', e);
                                 });
                         });
                     });

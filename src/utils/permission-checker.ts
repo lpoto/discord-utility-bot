@@ -13,7 +13,7 @@ import {
     VoiceChannel,
 } from 'discord.js';
 import { Notification } from '../entities';
-import { MusicClient } from './client';
+import { MusicClient } from '../client';
 
 export class PermissionChecker {
     private voicePermissions: PermissionResolvable[];

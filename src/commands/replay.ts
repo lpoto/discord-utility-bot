@@ -3,7 +3,7 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Replay extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -42,8 +42,6 @@ export class Replay extends AbstractCommand {
         if (interaction && !interaction.deferred && !interaction.replied)
             interaction
                 .deferUpdate()
-                .catch((e) =>
-                    this.client.handleError(e, 'replay.ts -> execute'),
-                );
+                .catch((e) => this.client.emit('error', e));
     }
 }

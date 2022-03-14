@@ -1,15 +1,21 @@
 import { Queue } from './entities';
 import {
     ClientOptions,
+    Interaction,
+    Message,
     MessageButton,
     MessageSelectMenu,
+    PartialMessage,
     PermissionResolvable,
     SelectMenuInteraction,
+    ThreadChannel,
+    VoiceState,
 } from 'discord.js';
 import { Languages } from './translation';
 import { ButtonInteraction, CommandInteraction } from 'discord.js';
 import { MusicClient } from './client';
 import * as Commands from './commands';
+import { ClientEventQueue } from './utils/client-event-queue';
 
 export interface UpdateQueueOptions {
     queue: Queue;
@@ -29,6 +35,7 @@ export interface QueueEmbedOptions extends UpdateQueueOptions {
 }
 
 export interface MusicClientOptions extends ClientOptions {
+    token: string;
     defaultLanguage: LanguageString;
     requiredMemberRoles: string[];
     clientVoicePermissions: PermissionResolvable[];
@@ -65,4 +72,22 @@ export interface EventHandlerQueueOptions {
     name: string;
     id: string;
     callback?: () => Promise<void>;
+}
+
+export type ClientEventArgument =
+    | string
+    | Interaction
+    | Message
+    | Error
+    | PartialMessage
+    | ThreadChannel
+    | VoiceState;
+
+export class ClientEvent {
+    public name: string;
+    public once?: boolean;
+    public client: MusicClient;
+    public eventQueue: ClientEventQueue;
+    public constructor(client: MusicClient);
+    public callback(...args: ClientEventArgument[]): Promise<void>;
 }

@@ -3,7 +3,7 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Not, SelectQueryBuilder } from 'typeorm';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Shuffle extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -34,7 +34,7 @@ export class Shuffle extends AbstractCommand {
             if (!interaction.deferred && !interaction.replied)
                 interaction
                     .deferUpdate()
-                    .catch((e) => this.client.handleError(e));
+                    .catch((e) => this.client.emit('error', e));
             return;
         }
 

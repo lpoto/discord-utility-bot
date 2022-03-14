@@ -14,12 +14,13 @@ import {
     NonThreadGuildBasedChannel,
     SelectMenuInteraction,
     StartThreadOptions,
+    TextChannel,
     ThreadChannel,
 } from 'discord.js';
 import { UpdateQueueOptions, QueueEmbedOptions } from '../';
 import { MusicClient } from './client';
 import { Queue, Song } from './entities';
-import { QueueEmbed, SongFinder } from './models';
+import { QueueEmbed, SongFinder } from './utils';
 import { MusicCommands } from './music-commands';
 
 export class MusicActions {
@@ -49,9 +50,7 @@ export class MusicActions {
     public executeFromInteraction(interaction: ButtonInteraction) {
         this.commands
             .executeFromInteraction(interaction)
-            .catch((e) =>
-                this.client.handleError(e, 'executing with interaction'),
-            );
+            .catch((e) => this.client.emit('error', e));
     }
     /**
      * Execute a command that matches the dropdown menu's custom id start
@@ -61,12 +60,7 @@ export class MusicActions {
     ) {
         this.commands
             .executeMenuSelectFromInteraction(interaction)
-            .catch((e) =>
-                this.client.handleError(
-                    e,
-                    'executing menu select with interaction',
-                ),
-            );
+            .catch((e) => this.client.emit('error', e));
     }
 
     /**
@@ -208,7 +202,7 @@ export class MusicActions {
                     selfMute: false,
                     selfDeaf: true,
                 }).on('error', (error) => {
-                    this.client.handleError(error, 'joining voice channel');
+                    this.client.emit('error', error);
                     if (interaction) {
                         interaction
                             .reply({
@@ -220,7 +214,7 @@ export class MusicActions {
                                 ephemeral: true,
                             })
                             .catch((e) => {
-                                this.client.handleError(e);
+                                this.client.emit('error', e);
                             });
                     } else if (message) {
                         message.reply({
@@ -234,8 +228,7 @@ export class MusicActions {
                 }),
             );
         } catch (e) {
-            if (e instanceof Error)
-                this.client.handleError(e, 'actions - joinVoice');
+            if (e instanceof Error) this.client.emit('error', e);
             else console.error('Error when joining voice: ', e);
         }
         return true;
@@ -261,7 +254,7 @@ export class MusicActions {
             .then((message) => {
                 if (!(message instanceof Message)) return false;
                 return message
-                    .startThread(this.getThreadOptions(message.guildId))
+                    .startThread(this.getThreadOptions())
                     .then(async (thread) => {
                         if (thread && message.guildId && message.channelId) {
                             return this.joinVoice(interaction)
@@ -283,16 +276,13 @@ export class MusicActions {
                                 });
                         }
                         message.delete().catch((error) => {
-                            this.client.handleError(
-                                error,
-                                'deleting message when replying with queue',
-                            );
+                            this.client.emit('error', error);
                         });
                         return false;
                     });
             })
             .catch((error) => {
-                this.client.handleError(error, 'replying with queue');
+                this.client.emit('error', error);
                 return false;
             });
     }
@@ -327,7 +317,7 @@ export class MusicActions {
                     return true;
                 })
                 .catch((error) => {
-                    this.client.handleError(error);
+                    this.client.emit('error', error);
                     return false;
                 });
         }
@@ -349,9 +339,52 @@ export class MusicActions {
                 });
             })
             .catch((error) => {
-                this.client.handleError(error);
+                this.client.emit('error', error);
                 return false;
             });
+    }
+
+    public destroyMusic(guildId: string, threadId?: string): void {
+        if (!this.client.user) return;
+        Queue.findOne({
+            guildId: guildId,
+            clientId: this.client.user.id,
+        }).then((result) => {
+            if (!result) return;
+            if (threadId && result.threadId !== threadId) return;
+            this.client.channels
+                .fetch(result.channelId)
+                .then((channel) => {
+                    if (!channel || !(channel instanceof TextChannel)) return;
+                    channel.threads
+                        .fetch(result.threadId)
+                        .then((thread) => {
+                            if (thread)
+                                this.client.utilityActions.archiveMusicThread(
+                                    thread,
+                                );
+                        })
+                        .catch((e) => {
+                            this.client.emit('error', e);
+                            channel.messages
+                                .fetch(result.messageId)
+                                .then((msg) => {
+                                    if (!msg || !msg.deletable) return;
+                                    msg.delete().catch((e2) => {
+                                        this.client.emit('error', e2);
+                                    });
+                                })
+                                .catch((e2) => {
+                                    this.client.emit('error', e2);
+                                });
+                        });
+                })
+                .catch((error) => {
+                    this.client.emit('error', error);
+                });
+            Queue.remove(result);
+            this.client.destroyVoiceConnection(guildId);
+        });
     }
 
     private getQueueOptions(
@@ -381,14 +414,10 @@ export class MusicActions {
         };
     }
 
-    private getThreadOptions(guildId: string | null): StartThreadOptions {
+    private getThreadOptions(): StartThreadOptions {
         return {
-            name: this.client.translate(guildId, ['music', 'thread', 'name']),
-            reason: this.client.translate(guildId, [
-                'music',
-                'thread',
-                'reason',
-            ]),
+            name: this.client.translate(null, ['music', 'thread', 'name']),
+            reason: this.client.translate(null, ['music', 'thread', 'reason']),
         };
     }
 }

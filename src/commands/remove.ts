@@ -8,7 +8,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Remove extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {

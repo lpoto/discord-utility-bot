@@ -1,0 +1,35 @@
+import { ButtonInteraction } from 'discord.js';
+import { MusicClient } from '../client';
+import { Queue } from '../entities';
+import { AbstractClientEvent } from '../utils/abstract-client-event';
+
+export class OnButtonClick extends AbstractClientEvent {
+    public constructor(client: MusicClient) {
+        super(client);
+        this.name = 'buttonClick';
+    }
+
+    public async callback(interaction: ButtonInteraction): Promise<void> {
+        if (
+            this.client.ready &&
+            interaction.component !== undefined &&
+            interaction.component.label !== null &&
+            interaction.component.label !== undefined
+        ) {
+            this.eventQueue.addToQueue(interaction.message.id, () =>
+                this.execute(interaction),
+            );
+        }
+    }
+
+    private async execute(interaction: ButtonInteraction): Promise<void> {
+        if (!interaction.guildId || !this.client.user) return;
+        await Queue.findOne({
+            guildId: interaction.guildId,
+            clientId: this.client.user.id,
+        }).then((queue) => {
+            if (!queue) return;
+            this.client.musicActions.executeFromInteraction(interaction);
+        });
+    }
+}

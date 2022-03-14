@@ -9,7 +9,7 @@ import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { LanguageString } from '../../';
 import { MusicClient } from '../client';
 import { Queue, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 import { Languages } from '../translation';
 
 export class Translate extends AbstractCommand {

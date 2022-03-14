@@ -7,7 +7,7 @@ import {
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Notification, QueueOption } from '../entities';
-import { AbstractCommand } from '../models';
+import { AbstractCommand } from '../utils';
 
 export class Stop extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -68,7 +68,7 @@ export class Stop extends AbstractCommand {
                     });
                 });
             }
-            this.client.destroyMusic(this.guildId);
+            this.client.musicActions.destroyMusic(this.guildId);
         } else {
             if (!queue.hasOption(QueueOption.Options.STOP_SELECTED))
                 queue = await queue.addOption(
@@ -113,18 +113,10 @@ export class Stop extends AbstractCommand {
                                         ephemeral: true,
                                     })
                                     .catch((e) =>
-                                        this.client.handleError(
-                                            e,
-                                            'stop.ts -> webhook send',
-                                        ),
+                                        this.client.emit('error', e),
                                     );
                             })
-                            .catch((e) =>
-                                this.client.handleError(
-                                    e,
-                                    'stop.ts -> notification save',
-                                ),
-                            );
+                            .catch((e) => this.client.emit('error', e));
                     });
 
                     const x: NodeJS.Timeout = setTimeout(async () => {

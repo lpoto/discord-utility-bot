@@ -25,7 +25,7 @@ export class MusicCommands {
         if (!command) return;
         command.execute().catch((e) => {
             console.error('Error when executing command');
-            this.client.handleError(e);
+            this.client.emit('error', e);
         });
     }
 
@@ -57,7 +57,7 @@ export class MusicCommands {
                 )
                     return command.execute(interaction).catch((e) => {
                         console.error('Error when executing command');
-                        this.client.handleError(e);
+                        this.client.emit('error', e);
                     });
             } catch (e) {
                 console.error(e);
@@ -96,7 +96,7 @@ export class MusicCommands {
                         .executeFromSelectMenu(interaction)
                         .catch((e) => {
                             console.error('Error when executing command');
-                            this.client.handleError(e);
+                            this.client.emit('error', e);
                         });
             } catch (e) {
                 console.error(e);

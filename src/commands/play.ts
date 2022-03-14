@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand, SongFinder } from '../models';
+import { AbstractCommand, SongFinder } from '../utils';
 
 export class Play extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -91,7 +91,9 @@ export class Play extends AbstractCommand {
         // music is auto started when first user joins or unmutes
         const guild: Guild | void = await this.client.guilds
             .fetch(queue.guildId)
-            .catch((e) => this.client.handleError(e));
+            .catch((e) => {
+                this.client.emit('error', e);
+            });
         if (!guild || !this.connection?.joinConfig.channelId) return;
         const channel: NonThreadGuildBasedChannel | null =
             await guild.channels.fetch(this.connection?.joinConfig.channelId);
@@ -173,7 +175,7 @@ export class Play extends AbstractCommand {
                     });
             })
             .catch((e) => {
-                this.client.handleError(e, 'play.ts -> creating audio player');
+                this.client.emit('error', e);
                 this.client.setAudioPlayer(queue.guildId, null);
                 return;
             });

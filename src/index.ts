@@ -19,7 +19,12 @@ createConnection({
     synchronize: true,
     entities: [Queue, Song, QueueOption, Notification, GuildLanguage],
 }).then(() => {
-    const client: MusicClient = new MusicClient({
+    if (!process.env.DISCORD_TOKEN) {
+        console.log('Missing `DISCORD_TOKEN` env variable');
+        return;
+    }
+    new MusicClient({
+        token: process.env.DISCORD_TOKEN,
         intents: [
             Intents.FLAGS.GUILDS,
             Intents.FLAGS.GUILD_MESSAGES,
@@ -37,9 +42,5 @@ createConnection({
             Permissions.FLAGS.CREATE_PUBLIC_THREADS,
         ],
         requiredMemberRoles: ['DJ'],
-    });
-
-    if (process.env.DISCORD_TOKEN)
-        MusicClient.run(client, process.env.DISCORD_TOKEN);
-    else console.log('Missing `DISCORD_TOKEN` env variable');
+    }).run();
 });
