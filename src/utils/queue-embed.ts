@@ -54,6 +54,7 @@ export class QueueEmbed extends MessageEmbed {
             undefined,
             36,
             spacer,
+            true,
         )}*`;
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
         const duration: string = this.queue.headSong.durationString;
@@ -126,6 +127,7 @@ export class QueueEmbed extends MessageEmbed {
         add?: string,
         lineLength: number = 43,
         spacer?: string,
+        alignLastLine?: boolean,
     ): string {
         let name: string = song.name.replace(/\|/g, '│');
         const addLength: number = add ? add.length : 0;
@@ -140,12 +142,13 @@ export class QueueEmbed extends MessageEmbed {
         name = name.replace(re, `$1${split}`);
         const nameList: string[] = name.split(split);
         if (nameList.length > 1) {
-            const dif: number = Math.round(
-                (lineLength - nameList[nameList.length - 1].length) / 3,
-            );
-            if (dif > 0) {
-                nameList[nameList.length - 1] =
-                    '\u2000'.repeat(dif) + nameList[nameList.length - 1];
+            for (let i = 1; i < nameList.length; i++) {
+                const dif: number = alignLastLine
+                    ? Math.round((lineLength - nameList[i].length) / 3)
+                    : 3;
+                if (dif > 0) {
+                    nameList[i] = '\u2000'.repeat(dif) + nameList[i];
+                }
             }
         }
         return nameList.join(split);
