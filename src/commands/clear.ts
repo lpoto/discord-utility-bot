@@ -93,6 +93,7 @@ export class Clear extends AbstractCommand {
                 interaction: interaction,
                 queue: queue,
                 reload: true,
+                timeout: 500,
             });
         } else {
             if (!queue.hasOption(QueueOption.Options.CLEAR_SELECTED))

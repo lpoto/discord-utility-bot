@@ -20,32 +20,76 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 import * as Commands from '../commands';
 
 export class OnQueueMessageUpdate extends AbstractClientEvent {
+    private isUpdating: { [guildId: string]: UpdateQueueOptions };
+    private toDefer: {
+        [guildId: string]: (ButtonInteraction | SelectMenuInteraction)[];
+    };
+
     public constructor(client: MusicClient) {
         super(client);
+        this.isUpdating = {};
+        this.toDefer = {};
+    }
+    public async callback(options: UpdateQueueOptions): Promise<void> {
+        const guildId: string = options.queue.guildId;
+
+        if (
+            options.interaction &&
+            !(options.interaction instanceof CommandInteraction) &&
+            !options.interaction.deferred &&
+            !options.interaction.replied
+        ) {
+            if (!(guildId in this.toDefer)) this.toDefer[guildId] = [];
+            this.toDefer[guildId].push(options.interaction);
+        }
+        if (guildId in this.isUpdating) {
+            if (!options.embedOnly) this.isUpdating[guildId].embedOnly = false;
+            if (!options.componentsOnly)
+                this.isUpdating[guildId].componentsOnly = false;
+            return;
+        }
+        this.isUpdating[guildId] = options;
+
+        const timeout: NodeJS.Timeout = setTimeout(
+            async () => {
+                await this.update(guildId)
+                    .then(() => {
+                        if (guildId in this.toDefer) {
+                            for (const i of this.toDefer[guildId])
+                                if (!i.deferred && !i.replied) {
+                                    i.deferUpdate().catch((e) => {
+                                        this.client.emit('error', e);
+                                    });
+                                }
+                            delete this.toDefer[guildId];
+                        }
+                        if (guildId in this.isUpdating)
+                            delete this.isUpdating[guildId];
+                    })
+                    .catch((e) => {
+                        this.client.emit('error', e);
+                        if (guildId in this.isUpdating)
+                            delete this.isUpdating[guildId];
+                    });
+            },
+            options.timeout ? options.timeout : 0,
+        );
+        timeout.unref();
     }
 
-    public async callback(options: UpdateQueueOptions): Promise<void> {
+    private async update(guildId: string): Promise<void> {
+        if (!this.isUpdating || !(guildId in this.isUpdating)) return;
+        const options: UpdateQueueOptions = this.isUpdating[guildId];
         const queue: Queue = options.queue;
         if (options.reload) await queue.reload();
         const updateOptions: InteractionReplyOptions =
             this.getQueueOptions(options);
-        const interaction:
-            | ButtonInteraction
-            | CommandInteraction
-            | SelectMenuInteraction
-            | undefined = options.interaction;
+
         if (
-            interaction &&
-            (interaction instanceof ButtonInteraction ||
-                interaction instanceof SelectMenuInteraction) &&
-            !interaction.deferred &&
-            !interaction.replied
+            options.interaction &&
+            options.interaction instanceof CommandInteraction
         ) {
-            return interaction.update(updateOptions).catch((error) => {
-                this.client.emitEvent('error', error);
-            });
-        }
-        if (interaction && interaction instanceof CommandInteraction) {
+            const interaction: CommandInteraction = options.interaction;
             return interaction
                 .reply({
                     fetchReply: true,
@@ -84,11 +128,13 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             queue.threadId,
         );
         if (!thread) return;
-        return thread
+        return await thread
             .fetchStarterMessage()
-            .then((message) => {
+            .then(async (message) => {
                 if (!message) return;
-                message.edit(this.getQueueOptions(options));
+                await options.queue.reload();
+                const qOptions = this.getQueueOptions(options);
+                message.edit(qOptions);
             })
             .catch((error) => {
                 this.client.emitEvent('error', error);

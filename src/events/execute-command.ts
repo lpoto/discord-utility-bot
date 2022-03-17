@@ -17,7 +17,11 @@ export class OnExecuteCommand extends AbstractClientEvent {
 
     public async callback(options: ExecuteCommandOptions): Promise<void> {
         if (options.name && options.guildId)
-            return this.execute(options.name, options.guildId);
+            return this.execute(
+                options.name,
+                options.guildId,
+                options.additionalInfo,
+            );
         if (
             options.interaction &&
             options.interaction instanceof SelectMenuInteraction
@@ -30,10 +34,10 @@ export class OnExecuteCommand extends AbstractClientEvent {
             return this.executeFromInteraction(options.interaction);
     }
 
-    private execute(name: string, guildId: string) {
+    private execute(name: string, guildId: string, additionalInfo?: string[]) {
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
-        command.execute().catch((e) => {
+        command.execute(undefined, additionalInfo).catch((e) => {
             console.error('Error when executing command');
             this.client.emitEvent('error', e);
         });

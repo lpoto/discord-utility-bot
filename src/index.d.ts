@@ -29,6 +29,7 @@ export interface UpdateQueueOptions {
         | SelectMenuInteraction;
     clientRestart?: boolean;
     innactivity?: boolean;
+    timeout?: number;
 }
 
 export interface QueueEmbedOptions extends UpdateQueueOptions {
@@ -54,7 +55,10 @@ export class Command {
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;
-    public execute(interaction?: ButtonInteraction): Promise<void>;
+    public execute(
+        interaction?: ButtonInteraction,
+        additionalInfo?: string[],
+    ): Promise<void>;
     public executeFromSelectMenu(
         interaction: SelectMenuInteraction,
     ): Promise<void>;
@@ -129,4 +133,5 @@ export interface ExecuteCommandOptions {
     interaction?: ButtonInteraction | SelectMenuInteraction;
     name?: string;
     guildId?: string;
+    additionalInfo?: string[];
 }

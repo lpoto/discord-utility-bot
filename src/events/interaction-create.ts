@@ -1,3 +1,4 @@
+import { VoiceConnection } from '@discordjs/voice';
 import {
     GuildMember,
     Interaction,
@@ -51,10 +52,17 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     return;
                 }
 
-                if (!this.client.permsChecker.validateMemberVoice(interaction))
+                if (
+                    !interaction.guildId ||
+                    !this.client.permsChecker.validateMemberVoice(interaction)
+                )
                     return;
 
+                const c: VoiceConnection | null =
+                    this.client.getVoiceConnection(interaction.guildId);
+
                 if (
+                    !c ||
                     (interaction.guildId &&
                         !this.client.getVoiceConnection(
                             interaction.guildId,
@@ -62,6 +70,7 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     !interaction.guild?.me?.voice.channel
                 )
                     this.client.emitEvent('joinVoiceRequest', interaction);
+
                 if (
                     interaction.isButton() &&
                     interaction.component instanceof MessageButton
@@ -76,6 +85,7 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     return;
                 }
             }
+
             if (!interaction.isCommand()) return;
 
             this.client.emitEvent('slashCommand', interaction);

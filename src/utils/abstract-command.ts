@@ -73,10 +73,14 @@ export abstract class AbstractCommand {
         return this.client.translate(this.guildId, keys);
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
+    public async execute(
+        interaction?: ButtonInteraction,
+        additionalInfo?: string[],
+    ): Promise<void> {
         console.log(interaction);
         console.log(this.client.user?.id);
         console.log(this.guildId);
+        console.log(additionalInfo);
     }
 
     public async executeFromSelectMenu(
