@@ -43,9 +43,8 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             this.toDefer[guildId].push(options.interaction);
         }
         if (guildId in this.isUpdating) {
-            if (!options.embedOnly) this.isUpdating[guildId].embedOnly = false;
-            if (!options.componentsOnly)
-                this.isUpdating[guildId].componentsOnly = false;
+            this.isUpdating[guildId].embedOnly = false;
+            this.isUpdating[guildId].componentsOnly = false;
             return;
         }
         this.isUpdating[guildId] = options;

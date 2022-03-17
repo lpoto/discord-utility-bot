@@ -9,11 +9,17 @@ export class OnReady extends AbstractClientEvent {
     }
 
     public async callback(): Promise<void> {
-        Queue.find().then((queues) => {
-            for (const queue of queues)
+        Queue.find().then(async (queues) => {
+            for (let queue of queues) {
+                await queue.removeOptions([
+                    QueueOption.Options.STOP_SELECTED,
+                    QueueOption.Options.CLEAR_SELECTED,
+                ]);
+                queue = await queue.save();
                 this.client.checkThreadAndMessage(queue, true).catch((e) => {
                     this.client.emitEvent('error', e);
                 });
+            }
         });
         await this.setup();
     }

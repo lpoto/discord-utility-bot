@@ -46,7 +46,7 @@ export class Clear extends AbstractCommand {
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        if (interaction.component.style === 'PRIMARY') {
+        if (queue.hasOption(QueueOption.Options.CLEAR_SELECTED)) {
             queue.offset = 0;
             queue = await queue.save();
             if (queue.size > 0) {
@@ -83,6 +83,8 @@ export class Clear extends AbstractCommand {
                 QueueOption.Options.TRANSLATE_SELECTED,
             ]);
 
+            queue = await queue.save();
+
             // remove all songs but the head song
             await Song.createQueryBuilder('song')
                 .where({ id: Not(queue.headSong?.id) })
@@ -92,20 +94,16 @@ export class Clear extends AbstractCommand {
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
-                reload: true,
-                timeout: 500,
             });
         } else {
-            if (!queue.hasOption(QueueOption.Options.CLEAR_SELECTED))
-                queue = await queue.addOption(
-                    QueueOption.Options.CLEAR_SELECTED,
-                );
-            await queue.save();
+            queue = await queue.addOption(QueueOption.Options.CLEAR_SELECTED);
+            queue = await queue.save();
 
             const webhook: InteractionWebhook = interaction.webhook;
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
+                componentsOnly: true,
             });
             const notification: Notification = Notification.create({
                 userId: interaction.user.id,
@@ -144,14 +142,14 @@ export class Clear extends AbstractCommand {
                     .reload()
                     .then(async () => {
                         if (!queue) return;
-                        if (!queue.hasOption(QueueOption.Options.EDITING))
-                            return;
                         queue = await queue.removeOptions([
                             QueueOption.Options.CLEAR_SELECTED,
                         ]);
+                        queue = await queue.save();
                         this.client.emitEvent('queueMessageUpdate', {
                             queue: queue,
                             componentsOnly: true,
+                            timeout: 500,
                         });
                     })
                     .catch(() => {});

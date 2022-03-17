@@ -129,9 +129,5 @@ export class Queue extends BaseEntity {
         if (Object.keys(Languages).length < 2) {
             await this.removeOptions([QueueOption.Options.TRANSLATE_SELECTED]);
         }
-        await this.removeOptions([
-            QueueOption.Options.CLEAR_SELECTED,
-            QueueOption.Options.STOP_SELECTED,
-        ]);
     }
 }

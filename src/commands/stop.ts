@@ -42,7 +42,7 @@ export class Stop extends AbstractCommand {
             return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        if (interaction.component.style === 'PRIMARY') {
+        if (queue.hasOption(QueueOption.Options.STOP_SELECTED)) {
             if (queue.size > 0) {
                 queue.allSongs.then((songs) => {
                     if (!songs) return;
@@ -124,12 +124,11 @@ export class Stop extends AbstractCommand {
                         queue = await queue.removeOptions([
                             QueueOption.Options.STOP_SELECTED,
                         ]);
-                        queue.save().then(() => {
-                            if (!queue) return;
-                            this.client.emitEvent('queueMessageUpdate', {
-                                queue: queue,
-                                componentsOnly: true,
-                            });
+                        queue = await queue.save();
+                        if (!queue) return;
+                        this.client.emitEvent('queueMessageUpdate', {
+                            queue: queue,
+                            componentsOnly: true,
                         });
                     })
                     .catch(() => {});
