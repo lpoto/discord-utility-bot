@@ -149,7 +149,6 @@ export class Clear extends AbstractCommand {
                         this.client.emitEvent('queueMessageUpdate', {
                             queue: queue,
                             componentsOnly: true,
-                            timeout: 500,
                         });
                     })
                     .catch(() => {});

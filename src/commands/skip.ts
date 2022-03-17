@@ -6,8 +6,11 @@ import { Queue } from '../entities';
 import { AbstractCommand } from '../utils';
 
 export class Skip extends AbstractCommand {
+    private toDefer: { [guildId: string]: ButtonInteraction[] };
+
     public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
+        this.toDefer = {};
     }
 
     public get description(): string {
@@ -30,17 +33,54 @@ export class Skip extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
+            !interaction.guildId ||
             !this.audioPlayer ||
             this.audioPlayer.state.status === AudioPlayerStatus.Paused
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
-        if (!queue) return;
-        this.client.emitEvent('queueMessageUpdate', {
-            queue: queue,
-            interaction: interaction,
-            timeout: 500,
-        });
+        const guildId: string = interaction.guildId;
+        if (guildId in this.toDefer) {
+            this.toDefer[guildId].push(interaction);
+            return;
+        } else {
+            this.toDefer[guildId] = [interaction];
+        }
+        const timeout: NodeJS.Timeout = setTimeout(async () => {
+            this.executeWithTimeout(interaction)
+                .then(() => {
+                    if (!(guildId in this.toDefer)) return;
+                    for (const i of this.toDefer[guildId])
+                        i.deferUpdate().catch((e) => {
+                            this.client.emit('error', e);
+                        });
+                    delete this.toDefer[guildId];
+                })
+                .catch((e) => {
+                    this.client.emit('error', e);
+                    if (!(guildId in this.toDefer)) return;
+                    delete this.toDefer[guildId];
+                });
+        }, 750);
+        timeout.unref();
+    }
+
+    public async executeWithTimeout(
+        interaction: ButtonInteraction,
+    ): Promise<void> {
+        let queue: Queue | undefined = await this.getQueue();
+        if (!queue || !queue.headSong) return;
+        const id: string = queue.headSong.id;
+
+        queue = await this.getQueue();
+        if (
+            !queue ||
+            !queue.headSong ||
+            queue.headSong.id !== id ||
+            !interaction ||
+            !this.audioPlayer ||
+            this.audioPlayer.state.status === AudioPlayerStatus.Paused
+        )
+            return;
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)

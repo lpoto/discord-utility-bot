@@ -68,7 +68,6 @@ export class Shuffle extends AbstractCommand {
                 interaction: interaction,
                 queue: queue,
                 reload: true,
-                timeout: 500,
             });
         });
     }

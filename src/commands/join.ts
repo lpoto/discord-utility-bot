@@ -55,7 +55,6 @@ export class Join extends AbstractCommand {
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: this.guildId,
-                additionalInfo: ['updateComponents'],
             });
         } else if (
             interaction &&

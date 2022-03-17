@@ -41,7 +41,6 @@ export class Expand extends AbstractCommand {
         this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
-            timeout: 500,
         });
     }
 }

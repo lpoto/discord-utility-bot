@@ -20,75 +20,51 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 import * as Commands from '../commands';
 
 export class OnQueueMessageUpdate extends AbstractClientEvent {
-    private isUpdating: { [guildId: string]: UpdateQueueOptions };
-    private toDefer: {
-        [guildId: string]: (ButtonInteraction | SelectMenuInteraction)[];
-    };
-
     public constructor(client: MusicClient) {
         super(client);
-        this.isUpdating = {};
-        this.toDefer = {};
     }
+
     public async callback(options: UpdateQueueOptions): Promise<void> {
-        const guildId: string = options.queue.guildId;
-
-        if (
-            options.interaction &&
-            !(options.interaction instanceof CommandInteraction) &&
-            !options.interaction.deferred &&
-            !options.interaction.replied
-        ) {
-            if (!(guildId in this.toDefer)) this.toDefer[guildId] = [];
-            this.toDefer[guildId].push(options.interaction);
-        }
-        if (guildId in this.isUpdating) {
-            this.isUpdating[guildId].embedOnly = false;
-            this.isUpdating[guildId].componentsOnly = false;
-            return;
-        }
-        this.isUpdating[guildId] = options;
-
-        const timeout: NodeJS.Timeout = setTimeout(
-            async () => {
-                await this.update(guildId)
-                    .then(() => {
-                        if (guildId in this.toDefer) {
-                            for (const i of this.toDefer[guildId])
-                                if (!i.deferred && !i.replied) {
-                                    i.deferUpdate().catch((e) => {
-                                        this.client.emit('error', e);
-                                    });
-                                }
-                            delete this.toDefer[guildId];
-                        }
-                        if (guildId in this.isUpdating)
-                            delete this.isUpdating[guildId];
-                    })
-                    .catch((e) => {
-                        this.client.emit('error', e);
-                        if (guildId in this.isUpdating)
-                            delete this.isUpdating[guildId];
-                    });
-            },
-            options.timeout ? options.timeout : 150,
-        );
-        timeout.unref();
+        await this.update(options)
+            .then(() => {
+                if (
+                    options.interaction &&
+                    (options.interaction instanceof ButtonInteraction ||
+                        options.interaction instanceof SelectMenuInteraction)
+                )
+                    options.interaction.deferUpdate();
+            })
+            .catch((e) => {
+                this.client.emit('error', e);
+            });
     }
 
-    private async update(guildId: string): Promise<void> {
-        if (!this.isUpdating || !(guildId in this.isUpdating)) return;
-        const options: UpdateQueueOptions = this.isUpdating[guildId];
+    private async update(options: UpdateQueueOptions): Promise<void> {
         const queue: Queue = options.queue;
         if (options.reload) await queue.reload();
-        const updateOptions: InteractionReplyOptions =
-            this.getQueueOptions(options);
+        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
+            options,
+        );
+
+        const interaction:
+            | ButtonInteraction
+            | CommandInteraction
+            | SelectMenuInteraction
+            | undefined = options.interaction;
 
         if (
-            options.interaction &&
-            options.interaction instanceof CommandInteraction
+            interaction &&
+            (interaction instanceof ButtonInteraction ||
+                interaction instanceof SelectMenuInteraction) &&
+            !interaction.deferred &&
+            !interaction.replied
         ) {
-            const interaction: CommandInteraction = options.interaction;
+            return interaction.update(updateOptions).catch((error) => {
+                this.client.emit('error', error);
+            });
+        }
+
+        if (interaction && interaction instanceof CommandInteraction) {
             return interaction
                 .reply({
                     fetchReply: true,
@@ -120,8 +96,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         }
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return;
-        const channel: NonThreadGuildBasedChannel | null =
-            await guild.channels.fetch(queue.channelId);
+        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
+            queue.channelId,
+        );
         if (!channel || !channel.isText()) return;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,
@@ -176,10 +153,14 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     val,
                     queue.guildId,
                 );
-                const button: MessageButton | null | undefined =
-                    command?.button(queue);
-                const dpdwn: MessageSelectMenu | null | undefined =
-                    command?.selectMenu(queue);
+                const button:
+                    | MessageButton
+                    | null
+                    | undefined = command?.button(queue);
+                const dpdwn:
+                    | MessageSelectMenu
+                    | null
+                    | undefined = command?.selectMenu(queue);
                 if (dpdwn) dropdown = dpdwn;
                 if (!command || !button) continue;
                 buttons.push(button);

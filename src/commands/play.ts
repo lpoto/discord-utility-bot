@@ -65,20 +65,21 @@ export class Play extends AbstractCommand {
         queue.color = Math.floor(Math.random() * 16777215);
         queue = await queue.save();
 
-        this.client.emitEvent('queueMessageUpdate', {
-            queue: queue,
-            interaction: interaction,
-            timeout: 700,
-            embedOnly: true,
+        this.execute(interaction).catch((e) => {
+            this.client.emit('error', e);
+            if (!queue) return;
+            queue.reload().then(() => {
+                if (queue)
+                    this.client.emitEvent('queueMessageUpdate', {
+                        queue: queue,
+                        interaction: interaction,
+                        embedOnly: true,
+                    });
+            });
         });
-
-        this.execute(interaction);
     }
 
-    public async execute(
-        interaction?: ButtonInteraction,
-        additionalInfo?: string[],
-    ): Promise<void> {
+    public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!this.client.user) return;
 
         const connection: VoiceConnection | null =
@@ -111,7 +112,6 @@ export class Play extends AbstractCommand {
             // update queue message even if no member listeners
             this.client.emitEvent('queueMessageUpdate', {
                 queue: queue,
-                timeout: 500,
             });
             return;
         }
@@ -141,10 +141,6 @@ export class Play extends AbstractCommand {
                 if (!resource || !audioPlayer) return;
                 this.client.emitEvent('queueMessageUpdate', {
                     queue: queue,
-                    timeout: 500,
-                    embedOnly:
-                        !additionalInfo ||
-                        !additionalInfo.includes('updateComponents'),
                 });
                 audioPlayer.play(resource);
                 audioPlayer

@@ -39,7 +39,6 @@ export class Replay extends AbstractCommand {
         this.client.emitEvent('queueMessageUpdate', {
             queue: queue,
             interaction: interaction,
-            timeout: 500,
         });
 
         // emit replay debug message to audioPlayer
