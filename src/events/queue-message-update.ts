@@ -71,7 +71,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                             delete this.isUpdating[guildId];
                     });
             },
-            options.timeout ? options.timeout : 0,
+            options.timeout ? options.timeout : 150,
         );
         timeout.unref();
     }

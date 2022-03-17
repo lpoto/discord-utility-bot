@@ -83,7 +83,7 @@ export class Forward extends AbstractCommand {
             ]);
         } else {
             queue = await queue.removeOptions([
-                QueueOption.Options.FORWARD_SELECTED,
+                QueueOption.Options.REMOVE_SELECTED,
                 QueueOption.Options.TRANSLATE_SELECTED,
             ]);
             queue = await queue.addOption(
