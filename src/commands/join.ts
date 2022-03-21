@@ -65,7 +65,6 @@ export class Join extends AbstractCommand {
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
-                componentsOnly: true,
                 doNotSetUpdated: true,
                 timeout: 300,
             });

@@ -40,7 +40,6 @@ export class EditQueue extends AbstractCommand {
         this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
-            componentsOnly: true,
         });
     }
 }

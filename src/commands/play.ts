@@ -74,7 +74,6 @@ export class Play extends AbstractCommand {
                     this.client.emitEvent('queueMessageUpdate', {
                         queue: queue,
                         interaction: interaction,
-                        embedOnly: true,
                         timeout: 300,
                     });
             });
@@ -146,6 +145,7 @@ export class Play extends AbstractCommand {
                 const timer: SongTimer = new SongTimer(
                     this.client,
                     this.guildId,
+                    song.durationSeconds,
                     interaction?.message instanceof Message
                         ? interaction.message
                         : undefined,

@@ -8,26 +8,39 @@ export class SongTimer {
     private timer: NodeJS.Timer;
     private isAlive: boolean;
     private client: MusicClient;
+    private maxTime: number;
+    private curTime: number;
     private guildId: string;
     private canUpdate: boolean;
 
     public constructor(
         client: MusicClient,
         guildId: string,
+        maxTime: number,
         message?: Message,
     ) {
         this.message = message;
         this.client = client;
         this.guildId = guildId;
         this.canUpdate = true;
+        this.maxTime = maxTime;
+        this.curTime = 0;
     }
 
     public start(): void {
         if (!this.guildId) return;
         this.isAlive = true;
+        this.curTime = 0;
+        const t = 5;
         this.timer = setInterval(async () => {
             try {
-                if (!this.isAlive || !this.client.user) return this.stop();
+                this.curTime += t;
+                if (
+                    this.curTime >= this.maxTime + t ||
+                    !this.isAlive ||
+                    !this.client.user
+                )
+                    return this.stop();
 
                 if (!this.canUpdate) return;
 
@@ -52,21 +65,26 @@ export class SongTimer {
 
                 this.client.emitEvent('queueMessageUpdate', {
                     queue: queue,
-                    embedOnly: true,
                     message: this.message,
                     checkIfUpdated: true,
                     doNotSetUpdated: true,
-                    callback: async () => {
+                    timeout: 500,
+                    onUpdate: async () => {
                         setTimeout(() => {
                             this.canUpdate = true;
-                        }, 1000);
+                        }, (t - 1.5) * 1000);
+                    },
+                    onError: async () => {
+                        setTimeout(() => {
+                            this.canUpdate = true;
+                        }, (t - 1.5) * 1000);
                     },
                 });
             } catch (e) {
                 if (e instanceof Error) this.client.emitEvent('error', e);
                 return this.stop();
             }
-        }, 5000);
+        }, t * 1000);
     }
 
     public stop(): void {

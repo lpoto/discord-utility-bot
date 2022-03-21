@@ -56,7 +56,7 @@ export class MusicClient extends Client {
             : false;
     }
 
-    public setAlreadyUpdated(guildId: string, value: boolean) {
+    public setAlreadyUpdated(guildId: string, value: boolean): void {
         if (!value) {
             if (guildId in this.shouldNotBeUpdated)
                 delete this.shouldNotBeUpdated[guildId];

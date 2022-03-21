@@ -103,7 +103,6 @@ export class Clear extends AbstractCommand {
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
-                componentsOnly: true,
             });
             const notification: Notification = Notification.create({
                 userId: interaction.user.id,
@@ -148,7 +147,6 @@ export class Clear extends AbstractCommand {
                         queue = await queue.save();
                         this.client.emitEvent('queueMessageUpdate', {
                             queue: queue,
-                            componentsOnly: true,
                         });
                     })
                     .catch(() => {});

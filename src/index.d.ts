@@ -21,8 +21,6 @@ import * as Events from './events';
 export interface UpdateQueueOptions {
     queue: Queue;
     reload?: boolean;
-    embedOnly?: boolean;
-    componentsOnly?: boolean;
     interaction?:
         | ButtonInteraction
         | CommandInteraction
@@ -33,7 +31,8 @@ export interface UpdateQueueOptions {
     timeout?: number;
     checkIfUpdated?: boolean;
     doNotSetUpdated?: boolean;
-    callback?: () => Promise<void>;
+    onUpdate?: () => Promise<void>;
+    onError?: () => Promise<void>;
 }
 
 export interface QueueEmbedOptions extends UpdateQueueOptions {

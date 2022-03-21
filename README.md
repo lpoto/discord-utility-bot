@@ -38,6 +38,10 @@ music commands.
 - Speak
 - Use Voice Activity
 
+##
+
+![queue message](assets/message.png)
+
 ## Additional Planned Features
 
 - Allow administrator to personalize commands for different roles

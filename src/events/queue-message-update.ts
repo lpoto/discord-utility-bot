@@ -11,6 +11,7 @@ import {
     SelectMenuInteraction,
     StartThreadOptions,
     ThreadChannel,
+    Webhook,
 } from 'discord.js';
 import { Command, QueueEmbedOptions, UpdateQueueOptions } from '../../';
 import { MusicClient } from '../client';
@@ -26,6 +27,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     private callbacks: {
         [guildId: string]: (() => Promise<void>)[];
     };
+    private errorCallbacks: {
+        [guildId: string]: (() => Promise<void>)[];
+    };
     private updatingOptions: { [guildId: string]: UpdateQueueOptions };
 
     public constructor(client: MusicClient) {
@@ -33,6 +37,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         this.toDefer = {};
         this.updatingOptions = {};
         this.callbacks = {};
+        this.errorCallbacks = {};
     }
 
     public async callback(options: UpdateQueueOptions): Promise<void> {
@@ -46,7 +51,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
 
         if (options.checkIfUpdated && this.client.alreadyUpdated(guildId)) {
             this.client.setAlreadyUpdated(guildId, false);
-            if (options.callback) options.callback();
+            if (options.onError) options.onError();
             return;
         }
 
@@ -54,16 +59,18 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             this.client.setAlreadyUpdated(guildId, false);
         }
 
-        if (options.callback) {
+        if (options.onUpdate) {
             if (!(guildId in this.callbacks)) this.callbacks[guildId] = [];
-            this.callbacks[guildId].push(options.callback);
+            this.callbacks[guildId].push(options.onUpdate);
+        }
+
+        if (options.onError) {
+            if (!(guildId in this.errorCallbacks))
+                this.errorCallbacks[guildId] = [];
+            this.errorCallbacks[guildId].push(options.onError);
         }
 
         if (guildId in this.updatingOptions) {
-            if (!options.embedOnly)
-                this.updatingOptions[guildId].embedOnly = false;
-            if (!options.componentsOnly)
-                this.updatingOptions[guildId].componentsOnly = false;
             if (options.message && !this.updatingOptions[guildId].message)
                 this.updatingOptions[guildId].message = options.message;
             if (options.interaction)
@@ -83,19 +90,8 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 if (!this.updatingOptions[guildId]) return;
                 await this.update(this.updatingOptions[guildId])
                     .then(() => {
-                        if (
-                            !this.updatingOptions[guildId].doNotSetUpdated &&
-                            !this.updatingOptions[guildId].componentsOnly
-                        )
+                        if (!this.updatingOptions[guildId].doNotSetUpdated)
                             this.client.setAlreadyUpdated(guildId, true);
-
-                        if (guildId in this.callbacks)
-                            for (const c of this.callbacks[guildId]) {
-                                c().catch((e) => {
-                                    this.client.emitEvent('error', e);
-                                });
-                            delete this.callbacks[guildId];
-                        }
 
                         if (guildId in this.toDefer) {
                             for (const i of this.toDefer[guildId])
@@ -108,12 +104,14 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                             delete this.updatingOptions[guildId];
                     })
                     .catch((e) => {
+                        this.handleErrorCallbacks(guildId);
+
                         if (guildId in this.updatingOptions)
                             delete this.updatingOptions[guildId];
                         if (guildId in this.callbacks) {
                             for (const c of this.callbacks[guildId])
-                                c().catch((e) => {
-                                    this.client.emitEvent('error', e);
+                                c().catch((e2) => {
+                                    this.client.emitEvent('error', e2);
                                 });
                             delete this.callbacks[guildId];
                         }
@@ -127,10 +125,10 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
 
     private async update(options: UpdateQueueOptions): Promise<void> {
         const queue: Queue = options.queue;
+
         if (options.reload) await queue.reload();
-        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
-            options,
-        );
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
 
         const interaction:
             | ButtonInteraction
@@ -145,22 +143,33 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             !interaction.deferred &&
             !interaction.replied
         ) {
-            return interaction.update(updateOptions).catch((error) => {
-                this.client.emit('error', error);
-            });
+            return interaction
+                .update(updateOptions)
+                .then(() => {
+                    this.handleCallbacks(queue.guildId);
+                })
+                .catch((error) => {
+                    this.handleErrorCallbacks(queue.guildId);
+                    this.client.emit('error', error);
+                });
         }
         if (options.message) {
-            options.message.edit(updateOptions).catch((e) => {
-                this.client.emit('error', e);
-            });
+            options.message
+                .edit(updateOptions)
+                .then(() => {
+                    this.handleCallbacks(queue.guildId);
+                })
+                .catch((e) => {
+                    this.client.emit('error', e);
+                    this.handleErrorCallbacks(queue.guildId);
+                });
             return;
         }
 
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return;
-        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
-            queue.channelId,
-        );
+        const channel: NonThreadGuildBasedChannel | null =
+            await guild.channels.fetch(queue.channelId);
         if (!channel || !channel.isText()) return;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,
@@ -172,10 +181,19 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 if (!message) return;
                 await options.queue.reload();
                 const qOptions = this.getQueueOptions(options);
-                message.edit(qOptions);
+                message
+                    .edit(qOptions)
+                    .then(() => {
+                        this.handleCallbacks(queue.guildId);
+                    })
+                    .catch((e) => {
+                        this.client.emit('error', e);
+                        this.handleErrorCallbacks(queue.guildId);
+                    });
             })
             .catch((error) => {
                 this.client.emitEvent('error', error);
+                this.handleCallbacks(queue.guildId);
             });
     }
 
@@ -184,22 +202,12 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     ): InteractionReplyOptions {
         const embedOptions: QueueEmbedOptions = options as QueueEmbedOptions;
         embedOptions.client = this.client;
-        if (options.embedOnly) {
-            return {
-                embeds: [new QueueEmbed(embedOptions)],
-            };
-        }
         const components: MessageActionRow[] = [];
         let commandActionRow: MessageActionRow[] = [];
         commandActionRow = commandActionRow.concat(
             this.getCommandsActionRow(options.queue),
         );
         for (const row of commandActionRow) components.push(row);
-        if (options.componentsOnly) {
-            return {
-                components: components,
-            };
-        }
         return {
             embeds: [new QueueEmbed(embedOptions)],
             components: components,
@@ -215,14 +223,10 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     val,
                     queue.guildId,
                 );
-                const button:
-                    | MessageButton
-                    | null
-                    | undefined = command?.button(queue);
-                const dpdwn:
-                    | MessageSelectMenu
-                    | null
-                    | undefined = command?.selectMenu(queue);
+                const button: MessageButton | null | undefined =
+                    command?.button(queue);
+                const dpdwn: MessageSelectMenu | null | undefined =
+                    command?.selectMenu(queue);
                 if (dpdwn) dropdown = dpdwn;
                 if (!command || !button) continue;
                 buttons.push(button);
@@ -270,37 +274,54 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         )
             return;
         const interaction: CommandInteraction = options.interaction;
-        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
-            options,
-        );
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
         return interaction
             .reply({
                 fetchReply: true,
                 embeds: updateOptions.embeds,
                 components: updateOptions.components,
             })
-            .then((message) => {
-                if (!(message instanceof Message)) return;
-                message
-                    .startThread(this.getThreadOptions())
-                    .then(async (t) => {
-                        if (t && message.guildId && message.channelId) {
-                            this.client.emitEvent(
-                                'joinVoiceRequest',
-                                interaction,
-                            );
-                            options.queue.messageId = message.id;
-                            options.queue.threadId = t.id;
-                            options.queue.channelId = message.channelId;
-                            options.queue.guildId = message.guildId;
-                            options.queue.save();
-                            return;
-                        }
-                        message.delete().catch((error) => {
-                            this.client.emitEvent('error', error);
-                        });
-                    });
+            .then(async (message) => {
+                if (!(message instanceof Message) || !message.guildId) return;
+
+                const t: ThreadChannel = await message.startThread(
+                    this.getThreadOptions(),
+                );
+
+                if (t && message.guildId && message.channelId) {
+                    this.client.emitEvent('joinVoiceRequest', interaction);
+                    options.queue.messageId = message.id;
+                    options.queue.threadId = t.id;
+                    options.queue.channelId = message.channelId;
+                    options.queue.guildId = message.guildId;
+                    options.queue.save();
+                    return;
+                }
+                message.delete().catch((error) => {
+                    this.client.emitEvent('error', error);
+                });
             });
+    }
+
+    private handleCallbacks(guildId: string): void {
+        if (guildId in this.callbacks)
+            for (const c of this.callbacks[guildId]) {
+                c().catch((e) => {
+                    this.client.emitEvent('error', e);
+                });
+                delete this.callbacks[guildId];
+            }
+    }
+
+    private handleErrorCallbacks(guildId: string): void {
+        if (guildId in this.errorCallbacks)
+            for (const c of this.errorCallbacks[guildId]) {
+                c().catch((e) => {
+                    this.client.emitEvent('error', e);
+                });
+                delete this.errorCallbacks[guildId];
+            }
     }
 }
 
