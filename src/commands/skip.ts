@@ -43,52 +43,33 @@ export class Skip extends AbstractCommand {
             this.toDefer[guildId].push(interaction);
             return;
         } else {
-            this.toDefer[guildId] = [interaction];
+            this.toDefer[guildId] = [];
         }
-        const timeout: NodeJS.Timeout = setTimeout(async () => {
-            this.executeWithTimeout(interaction)
-                .then(() => {
-                    if (!(guildId in this.toDefer)) return;
-                    for (const i of this.toDefer[guildId])
-                        i.deferUpdate().catch((e) => {
-                            this.client.emit('error', e);
-                        });
-                    delete this.toDefer[guildId];
-                })
-                .catch((e) => {
-                    this.client.emit('error', e);
-                    if (!(guildId in this.toDefer)) return;
-                    delete this.toDefer[guildId];
-                });
-        }, 500);
-        timeout.unref();
-    }
-
-    public async executeWithTimeout(
-        interaction: ButtonInteraction,
-    ): Promise<void> {
-        let queue: Queue | undefined = await this.getQueue();
+        const queue: Queue | undefined = await this.getQueue();
         if (!queue || !queue.headSong) return;
-        const id: string = queue.headSong.id;
-
-        queue = await this.getQueue();
-        if (
-            !queue ||
-            !queue.headSong ||
-            queue.headSong.id !== id ||
-            !interaction ||
-            !this.audioPlayer ||
-            this.audioPlayer.state.status === AudioPlayerStatus.Paused
-        )
-            return;
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)
         this.client.emitEvent('queueMessageUpdate', {
             queue: queue,
             interaction: interaction,
-            timeout: 250,
+            timeout: 750,
+            onUpdate: () => this.deferInteractions(queue.guildId),
+            onError: () => this.deferInteractions(queue.guildId, true),
         });
         this.audioPlayer.emit('debug', 'skip');
+    }
+
+    private async deferInteractions(
+        guildId: string,
+        doNotDefer?: boolean,
+    ): Promise<void> {
+        if (!(guildId in this.toDefer)) return;
+        if (!doNotDefer)
+            for (const i of this.toDefer[guildId])
+                i.deferUpdate().catch((e) => {
+                    this.client.emit('error', e);
+                });
+        delete this.toDefer[guildId];
     }
 }

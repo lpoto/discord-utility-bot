@@ -57,10 +57,9 @@ export class Play extends AbstractCommand {
                 await song.generatePosition();
                 await song.save();
             }
-            if (headSong) {
-                await headSong.remove();
-                await queue.reload();
-            }
+            if (headSong) await headSong.remove();
+
+            await queue.reload();
         }
 
         queue.color = Math.floor(Math.random() * 16777215);
@@ -68,15 +67,12 @@ export class Play extends AbstractCommand {
 
         this.execute(interaction).catch((e) => {
             this.client.emit('error', e);
-            if (!queue) return;
-            queue.reload().then(() => {
-                if (queue)
-                    this.client.emitEvent('queueMessageUpdate', {
-                        queue: queue,
-                        interaction: interaction,
-                        timeout: 300,
-                    });
-            });
+            if (queue)
+                this.client.emitEvent('queueMessageUpdate', {
+                    queue: queue,
+                    interaction: interaction,
+                    timeout: 300,
+                });
         });
     }
 

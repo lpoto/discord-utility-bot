@@ -105,7 +105,7 @@ export class Forward extends AbstractCommand {
         if (!queue || queue.size < 3 || interaction.values.length === 0)
             return;
 
-        let idx: number = (await Song.minPosition()) - 1;
+        let idx: number = (await Song.minPosition(queue)) - 1;
 
         for await (const i of interaction.values) {
             const s: Song = queue.curPageSongs[Number(i)];
@@ -120,7 +120,6 @@ export class Forward extends AbstractCommand {
         this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
-            reload: true,
         });
     }
 }

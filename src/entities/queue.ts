@@ -45,7 +45,7 @@ export class Queue extends BaseEntity {
     public options: QueueOption[];
 
     @OneToMany(() => Song, (song) => song.queue, {
-        cascade: ['insert', 'update', 'remove'],
+        cascade: true,
         orphanedRowAction: 'delete',
         lazy: true,
     })
@@ -66,7 +66,7 @@ export class Queue extends BaseEntity {
         await this.checkOptions();
 
         // Set a headSong (song with smallest position)
-        const minPosition: number = await Song.minPosition();
+        const minPosition: number = await Song.minPosition(this);
         this.headSong = await Song.findOne({
             where: {
                 queue: this,

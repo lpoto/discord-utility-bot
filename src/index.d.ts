@@ -20,7 +20,6 @@ import * as Events from './events';
 
 export interface UpdateQueueOptions {
     queue: Queue;
-    reload?: boolean;
     interaction?:
         | ButtonInteraction
         | CommandInteraction

@@ -51,9 +51,10 @@ export class Song extends BaseEntity {
         this.position = position;
     }
 
-    public static async minPosition(): Promise<number> {
+    public static async minPosition(queue: Queue): Promise<number> {
         return Song.createQueryBuilder('song')
             .select('MIN(song.position)', 'min')
+            .where({ queue: queue })
             .getRawOne()
             .then((p) => {
                 if (p && p.min !== undefined && p.min !== null) return p.min;

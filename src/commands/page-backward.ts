@@ -48,7 +48,6 @@ export class PageBackward extends AbstractCommand {
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: q,
-                reload: true,
             });
         });
     }

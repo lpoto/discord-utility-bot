@@ -118,7 +118,6 @@ export class Translate extends AbstractCommand {
         this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,
             queue: queue,
-            reload: true,
         });
     }
 }

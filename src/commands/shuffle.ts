@@ -67,7 +67,6 @@ export class Shuffle extends AbstractCommand {
             this.client.emitEvent('queueMessageUpdate', {
                 interaction: interaction,
                 queue: queue,
-                reload: true,
                 timeout: 250,
             });
         });

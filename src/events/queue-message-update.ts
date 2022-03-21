@@ -11,7 +11,6 @@ import {
     SelectMenuInteraction,
     StartThreadOptions,
     ThreadChannel,
-    Webhook,
 } from 'discord.js';
 import { Command, QueueEmbedOptions, UpdateQueueOptions } from '../../';
 import { MusicClient } from '../client';
@@ -125,8 +124,8 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
 
     private async update(options: UpdateQueueOptions): Promise<void> {
         const queue: Queue = options.queue;
+        await queue.reload();
 
-        if (options.reload) await queue.reload();
         const updateOptions: InteractionReplyOptions =
             this.getQueueOptions(options);
 
