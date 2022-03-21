@@ -89,12 +89,11 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                         )
                             this.client.setAlreadyUpdated(guildId, true);
 
-                        if (guildId in this.callbacks) {
+                        if (guildId in this.callbacks)
                             for (const c of this.callbacks[guildId]) {
                                 c().catch((e) => {
                                     this.client.emitEvent('error', e);
                                 });
-                            }
                             delete this.callbacks[guildId];
                         }
 
@@ -111,6 +110,13 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     .catch((e) => {
                         if (guildId in this.updatingOptions)
                             delete this.updatingOptions[guildId];
+                        if (guildId in this.callbacks) {
+                            for (const c of this.callbacks[guildId])
+                                c().catch((e) => {
+                                    this.client.emitEvent('error', e);
+                                });
+                            delete this.callbacks[guildId];
+                        }
                         this.client.emit('error', e);
                     });
             },
@@ -122,8 +128,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     private async update(options: UpdateQueueOptions): Promise<void> {
         const queue: Queue = options.queue;
         if (options.reload) await queue.reload();
-        const updateOptions: InteractionReplyOptions =
-            this.getQueueOptions(options);
+        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
+            options,
+        );
 
         const interaction:
             | ButtonInteraction
@@ -151,8 +158,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
 
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return;
-        const channel: NonThreadGuildBasedChannel | null =
-            await guild.channels.fetch(queue.channelId);
+        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
+            queue.channelId,
+        );
         if (!channel || !channel.isText()) return;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,
@@ -207,10 +215,14 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     val,
                     queue.guildId,
                 );
-                const button: MessageButton | null | undefined =
-                    command?.button(queue);
-                const dpdwn: MessageSelectMenu | null | undefined =
-                    command?.selectMenu(queue);
+                const button:
+                    | MessageButton
+                    | null
+                    | undefined = command?.button(queue);
+                const dpdwn:
+                    | MessageSelectMenu
+                    | null
+                    | undefined = command?.selectMenu(queue);
                 if (dpdwn) dropdown = dpdwn;
                 if (!command || !button) continue;
                 buttons.push(button);
@@ -258,8 +270,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         )
             return;
         const interaction: CommandInteraction = options.interaction;
-        const updateOptions: InteractionReplyOptions =
-            this.getQueueOptions(options);
+        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
+            options,
+        );
         return interaction
             .reply({
                 fetchReply: true,
