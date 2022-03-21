@@ -46,10 +46,10 @@ export class QueueEmbed extends MessageEmbed {
         const songs: string[] | undefined = queueSongs.map((song, index) => {
             return `***${
                 index + this.queue.offset + 1
-            }.***\u3000*${this.toStringShortened(
+            }.***\u3000${this.toStringShortened(
                 song,
                 this.queue.hasOption(QueueOption.Options.EXPANDED),
-            )}*`;
+            )}`;
         });
         let headSong = `${this.toString(
             this.queue.headSong,
@@ -129,7 +129,14 @@ export class QueueEmbed extends MessageEmbed {
             song.durationString &&
             song.durationString.trim().length > 0
         )
-            return this.toString(song, `,\u3000**${song.durationString}**`);
+            return this.toString(
+                song,
+                `,\u3000**${song.durationString}**`,
+                43,
+                undefined,
+                false,
+                true,
+            );
         return this.toString(song);
     }
 
@@ -139,6 +146,7 @@ export class QueueEmbed extends MessageEmbed {
         lineLength: number = 43,
         spacer?: string,
         alignLines?: boolean,
+        expanded?: boolean,
     ): string {
         let name: string = song.name.replace(/\|/g, '│');
         const addLength: number = add ? add.length : 0;
@@ -152,11 +160,16 @@ export class QueueEmbed extends MessageEmbed {
         );
         name = name.replace(re, `$1${split}`);
         const nameList: string[] = name.split(split);
-        if (alignLines || (!alignLines && nameList.length > 1))
-            for (let i = 0; i < nameList.length; i++) {
-                const dif: number = alignLines
-                    ? Math.round((lineLength - nameList[i].length) / 3)
-                    : 3;
+        if (alignLines)
+            for (
+                let i = expanded || !alignLines ? 1 : 0;
+                i < nameList.length;
+                i++
+            ) {
+                const dif: number =
+                    !expanded && alignLines
+                        ? Math.round((lineLength - nameList[i].length) / 3)
+                        : 3;
                 if (dif > 0) nameList[i] = '\u2000'.repeat(dif) + nameList[i];
             }
         return nameList.join(split);
