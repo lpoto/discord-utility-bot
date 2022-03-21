@@ -27,8 +27,12 @@ export interface UpdateQueueOptions {
         | ButtonInteraction
         | CommandInteraction
         | SelectMenuInteraction;
+    message?: Message;
     clientRestart?: boolean;
     innactivity?: boolean;
+    timeout?: number;
+    checkIfUpdated?: boolean;
+    doNotSetUpdated?: boolean;
 }
 
 export interface QueueEmbedOptions extends UpdateQueueOptions {

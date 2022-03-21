@@ -55,6 +55,7 @@ export class Join extends AbstractCommand {
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: this.guildId,
+                interaction: interaction,
             });
         } else if (
             interaction &&
@@ -65,6 +66,8 @@ export class Join extends AbstractCommand {
                 interaction: interaction,
                 queue: queue,
                 componentsOnly: true,
+                doNotSetUpdated: true,
+                timeout: 300,
             });
         }
     }

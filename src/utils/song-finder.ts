@@ -42,7 +42,7 @@ export class SongFinder {
                             name: p.title,
                             url: p.url,
                             durationSeconds: Number(p.durationSec),
-                            durationString: this.secondsToTimeString(
+                            durationString: SongFinder.secondsToTimeString(
                                 Number(p.durationSec),
                             ),
                         });
@@ -61,7 +61,7 @@ export class SongFinder {
                                 durationSeconds: Number(
                                     result.videoDetails.lengthSeconds,
                                 ),
-                                durationString: this.secondsToTimeString(
+                                durationString: SongFinder.secondsToTimeString(
                                     Number(result.videoDetails.lengthSeconds),
                                 ),
                             }),
@@ -85,7 +85,7 @@ export class SongFinder {
                         name: results[0].snippet.title,
                         url: results[0].url,
                         durationString: results[0].duration_raw,
-                        durationSeconds: this.durationStringToSeconds(
+                        durationSeconds: SongFinder.durationStringToSeconds(
                             results[0].duration_raw,
                         ),
                     }),
@@ -106,7 +106,7 @@ export class SongFinder {
         return match !== null && match !== undefined;
     }
 
-    private durationStringToSeconds(duration: string): number {
+    private static durationStringToSeconds(duration: string): number {
         if (!duration) return 0;
         const hms: number[] = duration.split(':').map((t) => Number(t));
         if (hms.length === 3) return hms[0] * 3600 + hms[1] * 60 + hms[2];
@@ -115,7 +115,7 @@ export class SongFinder {
         return 0;
     }
 
-    private secondsToTimeString(seconds: number) {
+    public static secondsToTimeString(seconds: number) {
         const hours: number = Math.floor(seconds / 3600);
         const minutes: number = Math.floor((seconds % 3600) / 60);
         const newSeconds: number = (seconds % 3600) % 60;

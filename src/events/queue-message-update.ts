@@ -20,31 +20,87 @@ import { AbstractClientEvent } from '../utils/abstract-client-event';
 import * as Commands from '../commands';
 
 export class OnQueueMessageUpdate extends AbstractClientEvent {
+    private toDefer: {
+        [guildId: string]: (ButtonInteraction | SelectMenuInteraction)[];
+    };
+    private updatingOptions: { [guildId: string]: UpdateQueueOptions };
+
     public constructor(client: MusicClient) {
         super(client);
+        this.toDefer = {};
+        this.updatingOptions = {};
     }
 
     public async callback(options: UpdateQueueOptions): Promise<void> {
-        await this.update(options)
-            .then(() => {
-                if (
-                    options.interaction &&
-                    (options.interaction instanceof ButtonInteraction ||
-                        options.interaction instanceof SelectMenuInteraction)
-                )
-                    options.interaction.deferUpdate();
-            })
-            .catch((e) => {
-                this.client.emit('error', e);
-            });
+        if (
+            options.interaction &&
+            options.interaction instanceof CommandInteraction
+        )
+            return this.newQueueMessage(options);
+
+        const guildId: string = options.queue.guildId;
+
+        if (options.checkIfUpdated && this.client.alreadyUpdated(guildId)) {
+            this.client.setAlreadyUpdated(guildId, false);
+            return;
+        }
+        if (!options.checkIfUpdated && options.doNotSetUpdated) {
+            this.client.setAlreadyUpdated(guildId, false);
+        }
+
+        if (guildId in this.updatingOptions) {
+            if (!options.embedOnly)
+                this.updatingOptions[guildId].embedOnly = false;
+            if (!options.componentsOnly)
+                this.updatingOptions[guildId].componentsOnly = false;
+            if (options.message && !this.updatingOptions[guildId].message)
+                this.updatingOptions[guildId].message = options.message;
+            if (options.interaction)
+                if (!this.updatingOptions[guildId].interaction) {
+                    this.updatingOptions[guildId].interaction =
+                        options.interaction;
+                } else {
+                    if (!(guildId in this.toDefer)) this.toDefer[guildId] = [];
+                    this.toDefer[guildId].push(options.interaction);
+                }
+            return;
+        }
+        this.updatingOptions[guildId] = options;
+
+        const timeout: NodeJS.Timeout = setTimeout(
+            async () => {
+                if (!this.updatingOptions[guildId]) return;
+                await this.update(this.updatingOptions[guildId])
+                    .then(() => {
+                        if (!this.updatingOptions[guildId].doNotSetUpdated)
+                            this.client.setAlreadyUpdated(guildId, true);
+
+                        if (guildId in this.toDefer) {
+                            for (const i of this.toDefer[guildId])
+                                i.deferUpdate().catch((e) => {
+                                    this.client.emit('error', e);
+                                });
+                            delete this.toDefer[guildId];
+                        }
+                        if (guildId in this.updatingOptions)
+                            delete this.updatingOptions[guildId];
+                    })
+                    .catch((e) => {
+                        if (guildId in this.updatingOptions)
+                            delete this.updatingOptions[guildId];
+                        this.client.emit('error', e);
+                    });
+            },
+            options.timeout ? options.timeout : 150,
+        );
+        timeout.unref();
     }
 
     private async update(options: UpdateQueueOptions): Promise<void> {
         const queue: Queue = options.queue;
         if (options.reload) await queue.reload();
-        const updateOptions: InteractionReplyOptions = this.getQueueOptions(
-            options,
-        );
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
 
         const interaction:
             | ButtonInteraction
@@ -63,42 +119,17 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 this.client.emit('error', error);
             });
         }
-
-        if (interaction && interaction instanceof CommandInteraction) {
-            return interaction
-                .reply({
-                    fetchReply: true,
-                    embeds: updateOptions.embeds,
-                    components: updateOptions.components,
-                })
-                .then((message) => {
-                    if (!(message instanceof Message)) return;
-                    message
-                        .startThread(this.getThreadOptions())
-                        .then(async (t) => {
-                            if (t && message.guildId && message.channelId) {
-                                this.client.emitEvent(
-                                    'joinVoiceRequest',
-                                    interaction,
-                                );
-                                queue.messageId = message.id;
-                                queue.threadId = t.id;
-                                queue.channelId = message.channelId;
-                                queue.guildId = message.guildId;
-                                queue.save();
-                                return;
-                            }
-                            message.delete().catch((error) => {
-                                this.client.emitEvent('error', error);
-                            });
-                        });
-                });
+        if (options.message) {
+            options.message.edit(updateOptions).catch((e) => {
+                this.client.emit('error', e);
+            });
+            return;
         }
+
         const guild: Guild = await this.client.guilds.fetch(queue.guildId);
         if (!guild) return;
-        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
-            queue.channelId,
-        );
+        const channel: NonThreadGuildBasedChannel | null =
+            await guild.channels.fetch(queue.channelId);
         if (!channel || !channel.isText()) return;
         const thread: ThreadChannel | null = await channel.threads.fetch(
             queue.threadId,
@@ -153,14 +184,10 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     val,
                     queue.guildId,
                 );
-                const button:
-                    | MessageButton
-                    | null
-                    | undefined = command?.button(queue);
-                const dpdwn:
-                    | MessageSelectMenu
-                    | null
-                    | undefined = command?.selectMenu(queue);
+                const button: MessageButton | null | undefined =
+                    command?.button(queue);
+                const dpdwn: MessageSelectMenu | null | undefined =
+                    command?.selectMenu(queue);
                 if (dpdwn) dropdown = dpdwn;
                 if (!command || !button) continue;
                 buttons.push(button);
@@ -199,6 +226,45 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             name: this.client.translate(null, ['music', 'thread', 'name']),
             reason: this.client.translate(null, ['music', 'thread', 'reason']),
         };
+    }
+
+    private async newQueueMessage(options: UpdateQueueOptions) {
+        if (
+            !options.interaction ||
+            !(options.interaction instanceof CommandInteraction)
+        )
+            return;
+        const interaction: CommandInteraction = options.interaction;
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
+        return interaction
+            .reply({
+                fetchReply: true,
+                embeds: updateOptions.embeds,
+                components: updateOptions.components,
+            })
+            .then((message) => {
+                if (!(message instanceof Message)) return;
+                message
+                    .startThread(this.getThreadOptions())
+                    .then(async (t) => {
+                        if (t && message.guildId && message.channelId) {
+                            this.client.emitEvent(
+                                'joinVoiceRequest',
+                                interaction,
+                            );
+                            options.queue.messageId = message.id;
+                            options.queue.threadId = t.id;
+                            options.queue.channelId = message.channelId;
+                            options.queue.guildId = message.guildId;
+                            options.queue.save();
+                            return;
+                        }
+                        message.delete().catch((error) => {
+                            this.client.emitEvent('error', error);
+                        });
+                    });
+            });
     }
 }
 

@@ -7,12 +7,13 @@ import {
 import {
     ButtonInteraction,
     Guild,
+    Message,
     NonThreadGuildBasedChannel,
     VoiceChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
-import { AbstractCommand, SongFinder } from '../utils';
+import { AbstractCommand, SongFinder, SongTimer } from '../utils';
 
 export class Play extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -74,6 +75,7 @@ export class Play extends AbstractCommand {
                         queue: queue,
                         interaction: interaction,
                         embedOnly: true,
+                        timeout: 300,
                     });
             });
         });
@@ -112,6 +114,7 @@ export class Play extends AbstractCommand {
             // update queue message even if no member listeners
             this.client.emitEvent('queueMessageUpdate', {
                 queue: queue,
+                timeout: 300,
             });
             return;
         }
@@ -139,13 +142,27 @@ export class Play extends AbstractCommand {
         SongFinder.getResource(song)
             .then((resource) => {
                 if (!resource || !audioPlayer) return;
+
+                const timer: SongTimer = new SongTimer(
+                    this.client,
+                    this.guildId,
+                    interaction?.message instanceof Message
+                        ? interaction.message
+                        : undefined,
+                );
+
+                timer?.start();
+
                 this.client.emitEvent('queueMessageUpdate', {
                     queue: queue,
+                    timeout: 250,
+                    doNotSetUpdated: true,
                 });
                 audioPlayer.play(resource);
                 audioPlayer
                     .on(AudioPlayerStatus.Idle, () => {
                         // when the songs stops playing
+                        timer?.stop();
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
                         this.next(interaction);
@@ -153,6 +170,7 @@ export class Play extends AbstractCommand {
                     .on('error', (e) => {
                         /* on error remove all occurances of the song
                          * that threw error from the queue */
+                        timer?.stop();
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
                         this.getQueue().then((q) => {
@@ -170,6 +188,7 @@ export class Play extends AbstractCommand {
                         this.next(interaction, false, true);
                     })
                     .on('unsubscribe', () => {
+                        timer?.stop();
                         audioPlayer?.removeAllListeners();
                         console.log('Unsubscribed audio player');
                     })
@@ -177,6 +196,7 @@ export class Play extends AbstractCommand {
                         // replay and skip commands emit debug messages
                         // ('skip' and 'replay')
                         if (message === 'replay' || message === 'skip') {
+                            timer?.stop();
                             audioPlayer?.removeAllListeners();
                             audioPlayer?.stop();
                             this.client.setAudioPlayer(queue.guildId, null);

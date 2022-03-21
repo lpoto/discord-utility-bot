@@ -36,9 +36,11 @@ export class Replay extends AbstractCommand {
             return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+
         this.client.emitEvent('queueMessageUpdate', {
             queue: queue,
             interaction: interaction,
+            timeout: 250,
         });
 
         // emit replay debug message to audioPlayer

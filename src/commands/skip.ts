@@ -60,7 +60,7 @@ export class Skip extends AbstractCommand {
                     if (!(guildId in this.toDefer)) return;
                     delete this.toDefer[guildId];
                 });
-        }, 750);
+        }, 500);
         timeout.unref();
     }
 
@@ -84,6 +84,11 @@ export class Skip extends AbstractCommand {
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)
+        this.client.emitEvent('queueMessageUpdate', {
+            queue: queue,
+            interaction: interaction,
+            timeout: 250,
+        });
         this.audioPlayer.emit('debug', 'skip');
     }
 }

@@ -22,6 +22,7 @@ export class MusicClient extends Client {
     private voiceConnections: { [guildId: string]: VoiceConnection };
     private audioPlayers: { [guildId: string]: AudioPlayer };
     private clientReady: boolean;
+    private shouldNotBeUpdated: { [guildId: string]: boolean };
 
     public constructor(options: MusicClientOptions) {
         super(options);
@@ -30,6 +31,7 @@ export class MusicClient extends Client {
         this.voiceConnections = {};
         this.audioPlayers = {};
         this.translating = new Translator(options.defaultLanguage);
+        this.shouldNotBeUpdated = {};
         this.permissionChecker = new PermissionChecker(
             options.clientVoicePermissions,
             options.clientTextPermissions,
@@ -46,6 +48,21 @@ export class MusicClient extends Client {
 
     public set ready(value: boolean) {
         this.clientReady = value;
+    }
+
+    public alreadyUpdated(guildId: string): boolean {
+        return guildId in this.shouldNotBeUpdated
+            ? this.shouldNotBeUpdated[guildId]
+            : false;
+    }
+
+    public setAlreadyUpdated(guildId: string, value: boolean) {
+        if (!value) {
+            if (guildId in this.shouldNotBeUpdated)
+                delete this.shouldNotBeUpdated[guildId];
+            return;
+        }
+        this.shouldNotBeUpdated[guildId] = value;
     }
 
     public emitEvent(...args: Event): void {

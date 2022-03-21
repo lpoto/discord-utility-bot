@@ -2,6 +2,8 @@ import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
 import { QueueEmbedOptions } from '../../';
+import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
+import { SongFinder } from './song-finder';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
@@ -35,7 +37,7 @@ export class QueueEmbed extends MessageEmbed {
         this.queue = options.queue;
         this.client = options.client;
 
-        const spacer = '\n> \u3000\u2000\u2000';
+        const spacer = '\n> \u3000\u2000';
 
         if (!this.queue.headSong) return;
 
@@ -49,17 +51,24 @@ export class QueueEmbed extends MessageEmbed {
                 this.queue.hasOption(QueueOption.Options.EXPANDED),
             )}*`;
         });
-        let headSong = `*${this.toString(
+        let headSong = `${this.toString(
             this.queue.headSong,
             undefined,
             36,
             spacer,
             true,
-        )}*`;
+        )}`;
         const addEmpty: boolean = headSong.split('\n').length - 1 === 0;
-        const duration: string = this.queue.headSong.durationString;
-        headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
         if (addEmpty) headSong += '\n> ㅤ';
+        const duration: string = this.queue.headSong.durationString;
+        const loader: string = this.getSongLoader();
+        if (loader !== '') {
+            headSong = `${spacer}${spacer}${headSong}${spacer}`;
+            if (!addEmpty) headSong += spacer;
+            headSong += loader;
+        } else {
+            headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
+        }
 
         this.addField(
             this.client.translate(this.queue.guildId, [
@@ -73,6 +82,8 @@ export class QueueEmbed extends MessageEmbed {
         const queueSize: number = options.queue.size;
         if (queueSize > 1) {
             let sngs: string = songs.join('\n');
+            if (queueSize > 11 && songs.length < 10)
+                sngs += '\n> '.repeat(10 - songs.length);
             sngs += `\n> \n> ${'\u3000'.repeat(5)}${this.client.translate(
                 this.queue.guildId,
                 ['music', 'queue', 'songNumber'],
@@ -127,7 +138,7 @@ export class QueueEmbed extends MessageEmbed {
         add?: string,
         lineLength: number = 43,
         spacer?: string,
-        alignLastLine?: boolean,
+        alignLines?: boolean,
     ): string {
         let name: string = song.name.replace(/\|/g, '│');
         const addLength: number = add ? add.length : 0;
@@ -141,16 +152,13 @@ export class QueueEmbed extends MessageEmbed {
         );
         name = name.replace(re, `$1${split}`);
         const nameList: string[] = name.split(split);
-        if (nameList.length > 1) {
-            for (let i = 1; i < nameList.length; i++) {
-                const dif: number = alignLastLine
+        if (alignLines || (!alignLines && nameList.length > 1))
+            for (let i = 0; i < nameList.length; i++) {
+                const dif: number = alignLines
                     ? Math.round((lineLength - nameList[i].length) / 3)
                     : 3;
-                if (dif > 0) {
-                    nameList[i] = '\u2000'.repeat(dif) + nameList[i];
-                }
+                if (dif > 0) nameList[i] = '\u2000'.repeat(dif) + nameList[i];
             }
-        }
         return nameList.join(split);
     }
 
@@ -203,5 +211,33 @@ export class QueueEmbed extends MessageEmbed {
             'r',
             't',
         ];
+    }
+
+    private getSongLoader(): string {
+        const audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
+            this.queue.guildId,
+        );
+        if (
+            !this.queue.headSong ||
+            this.queue.headSong.durationSeconds < 10 ||
+            !audioPlayer ||
+            (audioPlayer.state.status !== AudioPlayerStatus.Playing &&
+                audioPlayer.state.status !== AudioPlayerStatus.Paused)
+        )
+            return '';
+        const t1: number = Math.round(
+            audioPlayer.state.playbackDuration / 1000,
+        );
+        const t2: number = this.queue.headSong?.durationSeconds;
+        let loader = `**${SongFinder.secondsToTimeString(t1)}**`;
+        loader += '\u3000';
+        const n = 10;
+        const x = Math.round((t1 * n) / t2);
+        if (x > 0) loader += '—'.repeat(x);
+        loader += '•';
+        if (n - x > 0) loader += '\u2000 ·'.repeat(n - x);
+        loader += '\u3000';
+        loader += `**${SongFinder.secondsToTimeString(t2)}**`;
+        return loader;
     }
 }
