@@ -9,6 +9,7 @@ export class SongTimer {
     private isAlive: boolean;
     private client: MusicClient;
     private guildId: string;
+    private canUpdate: boolean;
 
     public constructor(
         client: MusicClient,
@@ -18,6 +19,7 @@ export class SongTimer {
         this.message = message;
         this.client = client;
         this.guildId = guildId;
+        this.canUpdate = true;
     }
 
     public start(): void {
@@ -26,6 +28,10 @@ export class SongTimer {
         this.timer = setInterval(async () => {
             try {
                 if (!this.isAlive || !this.client.user) return this.stop();
+
+                if (!this.canUpdate) return;
+                this.canUpdate = false;
+
                 const queue: Queue | undefined = await Queue.findOne({
                     guildId: this.guildId,
                     clientId: this.client.user.id,
@@ -49,6 +55,9 @@ export class SongTimer {
                     message: this.message,
                     checkIfUpdated: true,
                     doNotSetUpdated: true,
+                    callback: async () => {
+                        this.canUpdate = true;
+                    },
                 });
             } catch (e) {
                 if (e instanceof Error) this.client.emitEvent('error', e);

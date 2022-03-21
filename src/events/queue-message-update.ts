@@ -23,12 +23,16 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     private toDefer: {
         [guildId: string]: (ButtonInteraction | SelectMenuInteraction)[];
     };
+    private callbacks: {
+        [guildId: string]: (() => Promise<void>)[];
+    };
     private updatingOptions: { [guildId: string]: UpdateQueueOptions };
 
     public constructor(client: MusicClient) {
         super(client);
         this.toDefer = {};
         this.updatingOptions = {};
+        this.callbacks = {};
     }
 
     public async callback(options: UpdateQueueOptions): Promise<void> {
@@ -42,10 +46,17 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
 
         if (options.checkIfUpdated && this.client.alreadyUpdated(guildId)) {
             this.client.setAlreadyUpdated(guildId, false);
+            if (options.callback) options.callback();
             return;
         }
+
         if (!options.checkIfUpdated && options.doNotSetUpdated) {
             this.client.setAlreadyUpdated(guildId, false);
+        }
+
+        if (options.callback) {
+            if (!(guildId in this.callbacks)) this.callbacks[guildId] = [];
+            this.callbacks[guildId].push(options.callback);
         }
 
         if (guildId in this.updatingOptions) {
@@ -74,6 +85,15 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                     .then(() => {
                         if (!this.updatingOptions[guildId].doNotSetUpdated)
                             this.client.setAlreadyUpdated(guildId, true);
+
+                        if (guildId in this.callbacks) {
+                            for (const c of this.callbacks[guildId]) {
+                                c().catch((e) => {
+                                    this.client.emitEvent('error', e);
+                                });
+                            }
+                            delete this.callbacks[guildId];
+                        }
 
                         if (guildId in this.toDefer) {
                             for (const i of this.toDefer[guildId])

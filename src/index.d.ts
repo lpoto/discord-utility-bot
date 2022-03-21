@@ -33,6 +33,7 @@ export interface UpdateQueueOptions {
     timeout?: number;
     checkIfUpdated?: boolean;
     doNotSetUpdated?: boolean;
+    callback?: () => Promise<void>;
 }
 
 export interface QueueEmbedOptions extends UpdateQueueOptions {
