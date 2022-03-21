@@ -83,7 +83,10 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 if (!this.updatingOptions[guildId]) return;
                 await this.update(this.updatingOptions[guildId])
                     .then(() => {
-                        if (!this.updatingOptions[guildId].doNotSetUpdated)
+                        if (
+                            !this.updatingOptions[guildId].doNotSetUpdated &&
+                            !this.updatingOptions[guildId].componentsOnly
+                        )
                             this.client.setAlreadyUpdated(guildId, true);
 
                         if (guildId in this.callbacks) {

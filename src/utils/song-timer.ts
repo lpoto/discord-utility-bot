@@ -30,7 +30,6 @@ export class SongTimer {
                 if (!this.isAlive || !this.client.user) return this.stop();
 
                 if (!this.canUpdate) return;
-                this.canUpdate = false;
 
                 const queue: Queue | undefined = await Queue.findOne({
                     guildId: this.guildId,
@@ -49,6 +48,8 @@ export class SongTimer {
                 if (audioPlayer.state.status !== AudioPlayerStatus.Playing)
                     return;
 
+                this.canUpdate = false;
+
                 this.client.emitEvent('queueMessageUpdate', {
                     queue: queue,
                     embedOnly: true,
@@ -56,7 +57,9 @@ export class SongTimer {
                     checkIfUpdated: true,
                     doNotSetUpdated: true,
                     callback: async () => {
-                        this.canUpdate = true;
+                        setTimeout(() => {
+                            this.canUpdate = true;
+                        }, 1000);
                     },
                 });
             } catch (e) {
