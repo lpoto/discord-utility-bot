@@ -86,7 +86,7 @@ export class OnNewSong extends AbstractClientEvent {
             this.songsToUpdateCount[guildId].toUpdate;
         const onlyUpdate: boolean = updateAndDelete
             ? false
-            : (this.songsToUpdateCount[guildId].updated + 1) % 100 === 0;
+            : (this.songsToUpdateCount[guildId].updated + 1) % 50 === 0;
         if (updateAndDelete || onlyUpdate) {
             if (updateAndDelete) delete this.songsToUpdateCount[guildId];
             if (!(guildId in this.songsToUpdate))
@@ -102,8 +102,13 @@ export class OnNewSong extends AbstractClientEvent {
                     clientId: this.client.user.id,
                 }).then((queue) => {
                     if (!queue) return;
-                    const audioPlayer: AudioPlayer | null =
-                        this.client.getAudioPlayer(guildId);
+                    const audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
+                        guildId,
+                    );
+                    this.client.emitEvent('queueMessageUpdate', {
+                        queue: queue,
+                        timeout: 500,
+                    });
                     if (
                         !audioPlayer ||
                         (audioPlayer.state.status !==
@@ -116,9 +121,6 @@ export class OnNewSong extends AbstractClientEvent {
                             guildId: guildId,
                         });
                     }
-                    this.client.emitEvent('queueMessageUpdate', {
-                        queue: queue,
-                    });
                 });
             });
             delete this.songsToUpdate[guildId];

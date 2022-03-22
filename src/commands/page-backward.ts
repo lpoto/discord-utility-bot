@@ -9,6 +9,10 @@ export class PageBackward extends AbstractCommand {
         super(client, guildId);
     }
 
+    public get interactionTimeout(): number {
+        return 100;
+    }
+
     public get description(): string {
         return this.translate([
             'music',
@@ -45,7 +49,7 @@ export class PageBackward extends AbstractCommand {
             queue.offset = x * Queue.songsPerPage;
         }
         queue.save().then((q) => {
-            this.client.emitEvent('queueMessageUpdate', {
+            this.updateQueue({
                 interaction: interaction,
                 queue: q,
             });

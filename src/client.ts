@@ -9,7 +9,7 @@ import {
     MusicClientOptions,
 } from '../';
 import { Translator } from './translation';
-import { PermissionChecker } from './utils';
+import { ActiveCommandsOptions, PermissionChecker } from './utils';
 import * as Events from './events';
 import { Queue } from './entities';
 import { Routes } from 'discord-api-types/v9';
@@ -23,6 +23,7 @@ export class MusicClient extends Client {
     private audioPlayers: { [guildId: string]: AudioPlayer };
     private clientReady: boolean;
     private shouldNotBeUpdated: { [guildId: string]: boolean };
+    private activeOptions: ActiveCommandsOptions;
 
     public constructor(options: MusicClientOptions) {
         super(options);
@@ -32,6 +33,7 @@ export class MusicClient extends Client {
         this.audioPlayers = {};
         this.translating = new Translator(options.defaultLanguage);
         this.shouldNotBeUpdated = {};
+        this.activeOptions = new ActiveCommandsOptions(this);
         this.permissionChecker = new PermissionChecker(
             options.clientVoicePermissions,
             options.clientTextPermissions,
@@ -48,6 +50,10 @@ export class MusicClient extends Client {
 
     public set ready(value: boolean) {
         this.clientReady = value;
+    }
+
+    public get activeCommandsOptions(): ActiveCommandsOptions {
+        return this.activeOptions;
     }
 
     public alreadyUpdated(guildId: string): boolean {

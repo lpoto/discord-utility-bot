@@ -6,11 +6,12 @@ import { Queue } from '../entities';
 import { AbstractCommand } from '../utils';
 
 export class Skip extends AbstractCommand {
-    private toDefer: { [guildId: string]: ButtonInteraction[] };
-
     public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
-        this.toDefer = {};
+    }
+
+    public get interactionTimeout(): number {
+        return 600;
     }
 
     public get description(): string {
@@ -38,38 +39,16 @@ export class Skip extends AbstractCommand {
             this.audioPlayer.state.status === AudioPlayerStatus.Paused
         )
             return;
-        const guildId: string = interaction.guildId;
-        if (guildId in this.toDefer) {
-            this.toDefer[guildId].push(interaction);
-            return;
-        } else {
-            this.toDefer[guildId] = [];
-        }
         const queue: Queue | undefined = await this.getQueue();
         if (!queue || !queue.headSong) return;
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             queue: queue,
             interaction: interaction,
-            timeout: 750,
-            onUpdate: () => this.deferInteractions(queue.guildId),
-            onError: () => this.deferInteractions(queue.guildId, true),
+            timeout: 200,
         });
         this.audioPlayer.emit('debug', 'skip');
-    }
-
-    private async deferInteractions(
-        guildId: string,
-        doNotDefer?: boolean,
-    ): Promise<void> {
-        if (!(guildId in this.toDefer)) return;
-        if (!doNotDefer)
-            for (const i of this.toDefer[guildId])
-                i.deferUpdate().catch((e) => {
-                    this.client.emit('error', e);
-                });
-        delete this.toDefer[guildId];
     }
 }

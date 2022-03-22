@@ -15,6 +15,10 @@ export class Clear extends AbstractCommand {
         super(client, guildId);
     }
 
+    public get interactionTimeout(): number {
+        return 300;
+    }
+
     public get description(): string {
         return this.translate(['music', 'commands', 'clear', 'description']);
     }
@@ -43,115 +47,130 @@ export class Clear extends AbstractCommand {
             !interaction.user
         )
             return;
-        let queue: Queue | undefined = await this.getQueue();
+        const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
         if (queue.hasOption(QueueOption.Options.CLEAR_SELECTED)) {
-            queue.offset = 0;
-            queue = await queue.save();
-            if (queue.size > 0) {
-                queue.allSongs.then((songs) => {
-                    if (!songs) return;
-                    const attachment = new MessageAttachment(
-                        Buffer.from(
-                            songs
-                                .map(
-                                    (s) =>
-                                        `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
-                                )
-                                .join('\n'),
-                            'utf-8',
-                        ),
-                        'removed-songs.txt',
-                    );
-                    interaction.user.send({
+            return this.clearSelectedClick(queue, interaction);
+        }
+
+        this.notClearSelectedClick(queue, interaction);
+    }
+
+    private async notClearSelectedClick(
+        queue: Queue,
+        interaction: ButtonInteraction,
+    ): Promise<void> {
+        if (!this.client.user) return;
+        queue = await queue.addOption(QueueOption.Options.CLEAR_SELECTED);
+        queue = await queue.save();
+
+        const webhook: InteractionWebhook = interaction.webhook;
+        this.updateQueue({
+            queue: queue,
+            interaction: interaction,
+        });
+        const notification: Notification = Notification.create({
+            userId: interaction.user.id,
+            clientId: this.client.user.id,
+            guildId: this.guildId,
+            minutesToPersist: 24 * 60,
+            name: 'clearStopRequest',
+        });
+        Notification.findOne({
+            userId: notification.userId,
+            clientId: notification.clientId,
+            guildId: notification.guildId,
+            name: notification.name,
+        }).then((n) => {
+            if (n) return;
+            notification.save().then(() => {
+                webhook
+                    .send({
                         content: this.translate([
                             'music',
                             'commands',
                             'clear',
-                            'reply',
+                            'confirm',
                         ]),
-                        files: [attachment],
-                    });
-                });
-            }
-
-            queue = await queue.removeOptions([
-                QueueOption.Options.CLEAR_SELECTED,
-                QueueOption.Options.REMOVE_SELECTED,
-                QueueOption.Options.FORWARD_SELECTED,
-                QueueOption.Options.TRANSLATE_SELECTED,
-            ]);
-
-            queue = await queue.save();
-
-            // remove all songs but the head song
-            await Song.createQueryBuilder('song')
-                .where({ id: Not(queue.headSong?.id) })
-                .delete()
-                .execute();
-
-            this.client.emitEvent('queueMessageUpdate', {
-                interaction: interaction,
-                queue: queue,
-            });
-        } else {
-            queue = await queue.addOption(QueueOption.Options.CLEAR_SELECTED);
-            queue = await queue.save();
-
-            const webhook: InteractionWebhook = interaction.webhook;
-            this.client.emitEvent('queueMessageUpdate', {
-                interaction: interaction,
-                queue: queue,
-            });
-            const notification: Notification = Notification.create({
-                userId: interaction.user.id,
-                clientId: this.client.user.id,
-                guildId: this.guildId,
-                minutesToPersist: 24 * 60,
-                name: 'clearStopRequest',
-            });
-            Notification.findOne({
-                userId: notification.userId,
-                clientId: notification.clientId,
-                guildId: notification.guildId,
-                name: notification.name,
-            }).then((n) => {
-                if (n) return;
-                notification.save().then(() => {
-                    webhook
-                        .send({
-                            content: this.translate([
-                                'music',
-                                'commands',
-                                'clear',
-                                'confirm',
-                            ]),
-                            ephemeral: true,
-                        })
-                        .catch((e) => {
-                            this.client.emitEvent('error', e);
-                        });
-                });
-            });
-
-            const x: NodeJS.Timeout = setTimeout(() => {
-                if (!queue) return;
-                queue
-                    .reload()
-                    .then(async () => {
-                        if (!queue) return;
-                        queue = await queue.removeOptions([
-                            QueueOption.Options.CLEAR_SELECTED,
-                        ]);
-                        queue = await queue.save();
-                        this.client.emitEvent('queueMessageUpdate', {
-                            queue: queue,
-                        });
+                        ephemeral: true,
                     })
-                    .catch(() => {});
-            }, 5000);
-            x.unref();
+                    .catch((e) => {
+                        this.client.emitEvent('error', e);
+                    });
+            });
+        });
+
+        const x: NodeJS.Timeout = setTimeout(() => {
+            if (!queue) return;
+            queue
+                .reload()
+                .then(async () => {
+                    if (!queue) return;
+                    queue = await queue.removeOptions([
+                        QueueOption.Options.CLEAR_SELECTED,
+                    ]);
+                    queue = await queue.save();
+                    this.client.emitEvent('queueMessageUpdate', {
+                        queue: queue,
+                    });
+                })
+                .catch(() => {});
+        }, 5000);
+        x.unref();
+    }
+
+    private async clearSelectedClick(
+        queue: Queue,
+        interaction: ButtonInteraction,
+    ): Promise<void> {
+        queue.offset = 0;
+        queue = await queue.save();
+        if (queue.size > 0) {
+            queue.allSongs.then((songs) => {
+                if (!songs) return;
+                const attachment = new MessageAttachment(
+                    Buffer.from(
+                        songs
+                            .map(
+                                (s) =>
+                                    `{ name: \`${s.name}\`, url: \`${s.url}\` }`,
+                            )
+                            .join('\n'),
+                        'utf-8',
+                    ),
+                    'removed-songs.txt',
+                );
+                interaction.user.send({
+                    content: this.translate([
+                        'music',
+                        'commands',
+                        'clear',
+                        'reply',
+                    ]),
+                    files: [attachment],
+                });
+            });
         }
+
+        queue = await queue.removeOptions([
+            QueueOption.Options.CLEAR_SELECTED,
+            QueueOption.Options.REMOVE_SELECTED,
+            QueueOption.Options.FORWARD_SELECTED,
+            QueueOption.Options.TRANSLATE_SELECTED,
+        ]);
+
+        queue = await queue.save();
+
+        // remove all songs but the head song
+        await Song.createQueryBuilder('song')
+            .where({ id: Not(queue.headSong?.id) })
+            .delete()
+            .execute();
+
+        this.client.emitEvent('queueMessageUpdate', {
+            interaction: interaction,
+            queue: queue,
+        });
     }
 }

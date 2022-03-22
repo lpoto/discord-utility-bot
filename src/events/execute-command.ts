@@ -8,7 +8,8 @@ import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractClientEvent } from '../utils/abstract-client-event';
 import * as Commands from '../commands';
-import { Command, ExecuteCommandOptions } from '../../';
+import { Command, CommandName, ExecuteCommandOptions } from '../../';
+import { ActiveCommandsOptions } from '../utils';
 
 export class OnExecuteCommand extends AbstractClientEvent {
     public constructor(client: MusicClient) {
@@ -30,7 +31,7 @@ export class OnExecuteCommand extends AbstractClientEvent {
             return this.executeFromInteraction(options.interaction);
     }
 
-    private execute(name: string, guildId: string) {
+    private execute(name: CommandName, guildId: string) {
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
         command.execute().catch((e) => {
@@ -48,6 +49,8 @@ export class OnExecuteCommand extends AbstractClientEvent {
             clientId: this.client.user.id,
         });
         if (!queue) return;
+        const guildId: string = queue.guildId;
+
         for (const val in Commands) {
             try {
                 const command: Command | null = this.getCommand(
@@ -61,11 +64,43 @@ export class OnExecuteCommand extends AbstractClientEvent {
                     interaction.component &&
                     button.label &&
                     interaction.component.label === button.label
-                )
-                    return command.execute(interaction).catch((e) => {
-                        console.error('Error when executing command');
-                        this.client.emitEvent('error', e);
-                    });
+                ) {
+                    const name: CommandName = command.name as CommandName;
+                    if (
+                        this.client.activeCommandsOptions.hasDeferOption(
+                            name,
+                            guildId,
+                        )
+                    ) {
+                        this.client.activeCommandsOptions.addToDeferOption(
+                            name,
+                            guildId,
+                            interaction,
+                        );
+                        return;
+                    }
+                    this.client.activeCommandsOptions.addToDeferOption(
+                        name,
+                        guildId,
+                    );
+
+                    const timeout: NodeJS.Timeout = setTimeout(async () => {
+                        return command
+                            .execute(interaction)
+                            .catch((e) => {
+                                console.error('Error when executing command');
+                                this.client.emitEvent('error', e);
+                            })
+                            .catch((e) => {
+                                this.client.emitEvent('error', e);
+                                const options: ActiveCommandsOptions = this
+                                    .client.activeCommandsOptions;
+                                options.deferInteractions(name, guildId, true);
+                            });
+                    }, command.interactionTimeout);
+                    timeout.unref();
+                    return;
+                }
             } catch (e) {
                 console.error(e);
             }
@@ -88,8 +123,9 @@ export class OnExecuteCommand extends AbstractClientEvent {
                     interaction.guildId,
                 );
                 if (!command) continue;
-                const dropdown: MessageSelectMenu | null =
-                    command.selectMenu(queue);
+                const dropdown: MessageSelectMenu | null = command.selectMenu(
+                    queue,
+                );
                 if (!dropdown) continue;
                 if (
                     interaction.component &&

@@ -14,6 +14,10 @@ export class Join extends AbstractCommand {
         return this.translate(['music', 'commands', 'join', 'description']);
     }
 
+    public get interactionTimeout(): number {
+        return 50;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public button(queue: Queue): MessageButton | null {
         if (this.connection) return null;
@@ -62,11 +66,11 @@ export class Join extends AbstractCommand {
             !interaction.deferred &&
             !interaction.replied
         ) {
-            this.client.emitEvent('queueMessageUpdate', {
+            this.updateQueue({
                 interaction: interaction,
                 queue: queue,
-                doNotSetUpdated: true,
                 timeout: 300,
+                doNotSetUpdated: true,
             });
         }
     }

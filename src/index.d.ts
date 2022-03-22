@@ -54,10 +54,13 @@ export class Command {
     protected guildId: string;
     public constructor(client: MusicClient, guildId: string);
     public get description(): string | null;
+    public get name(): string;
+    public get interactionTimeout(): number;
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;
     public execute(interaction?: ButtonInteraction): Promise<void>;
+    public updateQueue(options: UpdateQueueOptions): void;
     public executeFromSelectMenu(
         interaction: SelectMenuInteraction,
     ): Promise<void>;
@@ -130,6 +133,6 @@ export interface NewSongOptions {
 
 export interface ExecuteCommandOptions {
     interaction?: ButtonInteraction | SelectMenuInteraction;
-    name?: string;
+    name?: CommandName;
     guildId?: string;
 }

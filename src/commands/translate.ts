@@ -96,7 +96,7 @@ export class Translate extends AbstractCommand {
         }
         queue = await queue.save();
 
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             interaction: interaction,
             queue: queue,
         });

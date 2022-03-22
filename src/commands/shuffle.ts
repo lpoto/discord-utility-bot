@@ -27,9 +27,18 @@ export class Shuffle extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || !interaction.user) return;
+        if (!interaction) return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
+        this.shuffle(queue, interaction);
+    }
+
+    private async shuffle(
+        queue: Queue,
+        interaction: ButtonInteraction,
+    ): Promise<void> {
+        await queue.reload();
+
         if (queue.size < 3 || !queue.headSong) {
             if (!interaction.deferred && !interaction.replied)
                 interaction
@@ -64,10 +73,9 @@ export class Shuffle extends AbstractCommand {
                 'FROM positions JOIN ids ' +
                 'ON positions.rn = ids.rn WHERE id = ref_id',
         ).then(() => {
-            this.client.emitEvent('queueMessageUpdate', {
-                interaction: interaction,
+            this.updateQueue({
                 queue: queue,
-                timeout: 250,
+                interaction: interaction,
             });
         });
     }

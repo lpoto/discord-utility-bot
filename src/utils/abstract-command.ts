@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { LanguageKeyPath } from '../../';
+import { CommandName, LanguageKeyPath, UpdateQueueOptions } from '../../';
 
 export abstract class AbstractCommand {
     private commandId: string;
@@ -25,6 +25,10 @@ export abstract class AbstractCommand {
 
     public get id(): string {
         return this.commandId;
+    }
+
+    public get interactionTimeout(): number {
+        return 250;
     }
 
     public get id2(): string {
@@ -85,5 +89,25 @@ export abstract class AbstractCommand {
         console.log(interaction);
         console.log(this.client.user?.id);
         console.log(this.guildId);
+    }
+
+    public async deferInteractions(doNotDefer?: boolean): Promise<void> {
+        try {
+            return this.client.activeCommandsOptions.deferInteractions(
+                this.name as CommandName,
+                this.guildId,
+                doNotDefer,
+            );
+        } catch (e) {
+            return;
+        }
+    }
+
+    protected updateQueue(options: UpdateQueueOptions): void {
+        if (options.onUpdate === undefined)
+            options.onUpdate = () => this.deferInteractions();
+        if (options.onError === undefined)
+            options.onError = () => this.deferInteractions(true);
+        this.client.emitEvent('queueMessageUpdate', options);
     }
 }

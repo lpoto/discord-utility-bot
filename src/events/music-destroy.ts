@@ -11,6 +11,7 @@ export class OnMusicDestroy extends AbstractClientEvent {
 
     public async callback(options: DestroyMusicOptions): Promise<void> {
         if (!this.client.user) return;
+        this.client.activeCommandsOptions.clearOptions(options.guildId);
         Queue.findOne({
             guildId: options.guildId,
             clientId: this.client.user.id,

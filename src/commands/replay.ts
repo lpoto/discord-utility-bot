@@ -10,6 +10,10 @@ export class Replay extends AbstractCommand {
         super(client, guildId);
     }
 
+    public get interactionTimeout(): number {
+        return 500;
+    }
+
     public get description(): string {
         return this.translate(['music', 'commands', 'replay', 'description']);
     }
@@ -37,7 +41,7 @@ export class Replay extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             queue: queue,
             interaction: interaction,
             timeout: 250,

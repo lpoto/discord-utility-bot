@@ -9,6 +9,10 @@ export class PageForward extends AbstractCommand {
         super(client, guildId);
     }
 
+    public get interactionTimeout(): number {
+        return 100;
+    }
+
     public get description(): string {
         return this.translate([
             'music',
@@ -39,9 +43,9 @@ export class PageForward extends AbstractCommand {
         if (queue.offset >= queue.size - 1) queue.offset = 0;
 
         queue.save().then(async (q) => {
-            this.client.emitEvent('queueMessageUpdate', {
-                interaction: interaction,
+            this.updateQueue({
                 queue: q,
+                interaction: interaction,
             });
         });
     }

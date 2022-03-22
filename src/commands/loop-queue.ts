@@ -33,7 +33,7 @@ export class LoopQueue extends AbstractCommand {
         }
         await queue.save();
 
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             interaction: interaction,
             queue: queue,
         });
