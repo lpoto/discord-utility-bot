@@ -102,9 +102,8 @@ export class OnNewSong extends AbstractClientEvent {
                     clientId: this.client.user.id,
                 }).then((queue) => {
                     if (!queue) return;
-                    const audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
-                        guildId,
-                    );
+                    const audioPlayer: AudioPlayer | null =
+                        this.client.getAudioPlayer(guildId);
                     this.client.emitEvent('queueMessageUpdate', {
                         queue: queue,
                         timeout: 500,

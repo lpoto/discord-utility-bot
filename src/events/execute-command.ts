@@ -93,8 +93,8 @@ export class OnExecuteCommand extends AbstractClientEvent {
                             })
                             .catch((e) => {
                                 this.client.emitEvent('error', e);
-                                const options: ActiveCommandsOptions = this
-                                    .client.activeCommandsOptions;
+                                const options: ActiveCommandsOptions =
+                                    this.client.activeCommandsOptions;
                                 options.deferInteractions(name, guildId, true);
                             });
                     }, command.interactionTimeout);
@@ -123,9 +123,8 @@ export class OnExecuteCommand extends AbstractClientEvent {
                     interaction.guildId,
                 );
                 if (!command) continue;
-                const dropdown: MessageSelectMenu | null = command.selectMenu(
-                    queue,
-                );
+                const dropdown: MessageSelectMenu | null =
+                    command.selectMenu(queue);
                 if (!dropdown) continue;
                 if (
                     interaction.component &&

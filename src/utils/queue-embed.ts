@@ -242,15 +242,20 @@ export class QueueEmbed extends MessageEmbed {
             audioPlayer.state.playbackDuration / 1000,
         );
         const t2: number = this.queue.headSong?.durationSeconds;
-        let loader = `**${SongFinder.secondsToTimeString(t1)}**`;
-        loader += '\u3000';
-        const n = 10;
-        const x = Math.round((t1 * n) / t2);
-        if (x > 0) loader += '—'.repeat(x);
+        const s1: string = SongFinder.secondsToTimeString(t1);
+        const s2: string = SongFinder.secondsToTimeString(t2);
+        const n: number =
+            s1.length + s2.length <= 8
+                ? 14
+                : 14 - Math.floor((s1.length + s2.length - 8) / 2);
+        let loader = `**${s1}**\u3000`;
+        const x: number = Math.round((t1 * n) / t2);
+        const y: number = Math.floor((n - x) / 2);
+        if (x > 0) loader += '━'.repeat(x);
         loader += '•';
-        if (n - x > 0) loader += '\u2000 ·'.repeat(n - x);
-        loader += '\u3000';
-        loader += `**${SongFinder.secondsToTimeString(t2)}**`;
+        if (y > 0) loader += '\u2000·\u2000'.repeat(y);
+        if ((n - x) / 2 > y) loader += ' ·';
+        loader += `\u3000**${s2}**`;
         return loader;
     }
 }
