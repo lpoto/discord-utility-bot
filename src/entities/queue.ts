@@ -62,8 +62,8 @@ export class Queue extends BaseEntity {
         // count all songs referencing this queue
         this.size = await Song.count({ where: { queue: this } });
 
-        await this.checkOffset();
-        await this.checkOptions();
+        this.checkOffset();
+        this.checkOptions();
 
         // Set a headSong (song with smallest position)
         const minPosition: number = await Song.minPosition(this);
@@ -101,9 +101,7 @@ export class Queue extends BaseEntity {
         });
     }
 
-    public async removeOptions(
-        options: QueueOption.Options[],
-    ): Promise<Queue> {
+    public removeOptions(options: QueueOption.Options[]): Queue {
         if (this.options)
             this.options = this.options.filter(
                 (o) => !options.includes(o.name),
@@ -111,7 +109,7 @@ export class Queue extends BaseEntity {
         return this;
     }
 
-    private async checkOffset(): Promise<void> {
+    private checkOffset(): void {
         if (this.offset === 0) return;
         while (this.offset + 1 >= this.size) this.offset -= Queue.songsPerPage;
         if (this.offset < 0) this.offset = 0;
@@ -119,15 +117,15 @@ export class Queue extends BaseEntity {
 
     private async checkOptions(): Promise<void> {
         if (this.size < 2) {
-            await this.removeOptions([
+            this.removeOptions([
                 QueueOption.Options.FORWARD_SELECTED,
                 QueueOption.Options.REMOVE_SELECTED,
             ]);
         } else if (this.size < 3) {
-            await this.removeOptions([QueueOption.Options.REMOVE_SELECTED]);
+            this.removeOptions([QueueOption.Options.REMOVE_SELECTED]);
         }
         if (Object.keys(Languages).length < 2) {
-            await this.removeOptions([QueueOption.Options.TRANSLATE_SELECTED]);
+            this.removeOptions([QueueOption.Options.TRANSLATE_SELECTED]);
         }
     }
 }

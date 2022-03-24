@@ -244,10 +244,7 @@ export class QueueEmbed extends MessageEmbed {
         const t2: number = this.queue.headSong?.durationSeconds;
         const s1: string = SongFinder.secondsToTimeString(t1);
         const s2: string = SongFinder.secondsToTimeString(t2);
-        const n: number =
-            s1.length + s2.length <= 8
-                ? 14
-                : 14 - Math.floor((s1.length + s2.length - 8) / 2);
+        const n = 17;
         let loader = `**${s1}**\u3000`;
         const x: number = Math.round((t1 * n) / t2);
         const y: number = Math.floor((n - x) / 2);

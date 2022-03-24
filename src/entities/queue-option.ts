@@ -19,13 +19,15 @@ export class QueueOption extends BaseEntity {
     public queue: Promise<Queue>;
 
     public static async seed(): Promise<void> {
-        for await (const o of Object.values(QueueOption.Options))
-            await QueueOption.findOne(o).then(async (option) => {
-                if (option) return;
-                await QueueOption.create({
-                    name: o,
-                }).save();
-            });
+        for await (const o of Object.values(QueueOption.Options)) {
+            const option: QueueOption | undefined = await QueueOption.findOne(
+                o,
+            );
+            if (option) return;
+            await QueueOption.create({
+                name: o,
+            }).save();
+        }
     }
 }
 

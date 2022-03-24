@@ -7,6 +7,7 @@ import {
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractClientEvent } from '../utils/abstract-client-event';
+import fetch from 'node-fetch';
 
 export class OnMessageCreate extends AbstractClientEvent {
     public constructor(client: MusicClient) {

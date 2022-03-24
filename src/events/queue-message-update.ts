@@ -123,8 +123,7 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     }
 
     private async update(options: UpdateQueueOptions): Promise<void> {
-        const queue: Queue = options.queue;
-        await queue.reload();
+        await options.queue.reload();
 
         const updateOptions: InteractionReplyOptions =
             this.getQueueOptions(options);
@@ -145,10 +144,10 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             return interaction
                 .update(updateOptions)
                 .then(() => {
-                    this.handleCallbacks(queue.guildId);
+                    this.handleCallbacks(options.queue.guildId);
                 })
                 .catch((error) => {
-                    this.handleErrorCallbacks(queue.guildId);
+                    this.handleErrorCallbacks(options.queue.guildId);
                     this.client.emit('error', error);
                 });
         }
@@ -156,22 +155,24 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
             options.message
                 .edit(updateOptions)
                 .then(() => {
-                    this.handleCallbacks(queue.guildId);
+                    this.handleCallbacks(options.queue.guildId);
                 })
                 .catch((e) => {
                     this.client.emit('error', e);
-                    this.handleErrorCallbacks(queue.guildId);
+                    this.handleErrorCallbacks(options.queue.guildId);
                 });
             return;
         }
 
-        const guild: Guild = await this.client.guilds.fetch(queue.guildId);
+        const guild: Guild = await this.client.guilds.fetch(
+            options.queue.guildId,
+        );
         if (!guild) return;
         const channel: NonThreadGuildBasedChannel | null =
-            await guild.channels.fetch(queue.channelId);
+            await guild.channels.fetch(options.queue.channelId);
         if (!channel || !channel.isText()) return;
         const thread: ThreadChannel | null = await channel.threads.fetch(
-            queue.threadId,
+            options.queue.threadId,
         );
         if (!thread) return;
         return await thread
@@ -183,16 +184,16 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
                 message
                     .edit(qOptions)
                     .then(() => {
-                        this.handleCallbacks(queue.guildId);
+                        this.handleCallbacks(options.queue.guildId);
                     })
                     .catch((e) => {
                         this.client.emit('error', e);
-                        this.handleErrorCallbacks(queue.guildId);
+                        this.handleErrorCallbacks(options.queue.guildId);
                     });
             })
             .catch((error) => {
                 this.client.emitEvent('error', error);
-                this.handleCallbacks(queue.guildId);
+                this.handleCallbacks(options.queue.guildId);
             });
     }
 

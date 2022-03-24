@@ -1,5 +1,11 @@
 import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
-import { Client, Message, TextChannel } from 'discord.js';
+import {
+    AnyChannel,
+    Client,
+    Message,
+    TextChannel,
+    ThreadChannel,
+} from 'discord.js';
 import {
     ClientEvent,
     ClientEventArgument,
@@ -159,57 +165,33 @@ export class MusicClient extends Client {
         queue: Queue,
         update?: boolean,
     ): Promise<Message | null> {
-        return this.channels
-            .fetch(queue.channelId)
-            .then((channel) => {
-                if (!channel || !(channel instanceof TextChannel)) return null;
-                return channel.threads
-                    .fetch(queue.threadId)
-                    .then((thread) => {
-                        return channel.messages
-                            .fetch(queue.messageId)
-                            .then((message) => {
-                                if (!message && thread) {
-                                    this.emitEvent(
-                                        'musicThreadArchive',
-                                        thread,
-                                    );
-                                    return null;
-                                }
-                                if (!thread && message) {
-                                    message
-                                        .delete()
-                                        .catch((error) =>
-                                            this.emitEvent('error', error),
-                                        );
-                                    return null;
-                                }
-                                if (update)
-                                    this.emitEvent('queueMessageUpdate', {
-                                        queue: queue,
-                                        clientRestart: true,
-                                    });
-                                return message;
-                            })
-                            .catch((e) => {
-                                this.emitEvent('error', e);
-                                if (thread)
-                                    this.emitEvent(
-                                        'musicThreadArchive',
-                                        thread,
-                                    );
-                                return null;
-                            });
-                    })
-                    .catch((error) => {
-                        this.emitEvent('error', error);
-                        return null;
-                    });
-            })
-            .catch((e) => {
-                this.emitEvent('error', e);
-                return null;
+        const channel: AnyChannel | null = await this.channels.fetch(
+            queue.channelId,
+        );
+        if (!channel || !(channel instanceof TextChannel)) return null;
+        const thread: ThreadChannel | null = await channel.threads.fetch(
+            queue.threadId,
+        );
+        const message: Message | null = await channel.messages.fetch(
+            queue.messageId,
+        );
+        if (!thread) {
+            if (message)
+                message.delete().catch((e) => {
+                    this.emitEvent('error', e);
+                });
+            return null;
+        }
+        if (!message) {
+            if (thread) this.emitEvent('musicThreadArchive', thread);
+            return null;
+        }
+        if (update)
+            this.emitEvent('queueMessageUpdate', {
+                queue: queue,
+                clientRestart: true,
             });
+        return message;
     }
 
     private slashCommand(guildId: string): { [key: string]: string } {
