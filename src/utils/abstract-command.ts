@@ -27,8 +27,12 @@ export abstract class AbstractCommand {
         return this.commandId;
     }
 
+    public get alwaysExecute(): boolean {
+        return false;
+    }
+
     public get interactionTimeout(): number {
-        return 250;
+        return this.alwaysExecute ? 0 : 250;
     }
 
     public get id2(): string {

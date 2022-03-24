@@ -66,37 +66,33 @@ export class OnExecuteCommand extends AbstractClientEvent {
                     interaction.component.label === button.label
                 ) {
                     const name: CommandName = command.name as CommandName;
-                    if (
-                        this.client.activeCommandsOptions.hasDeferOption(
-                            name,
-                            guildId,
-                        )
-                    ) {
+                    if (!command.alwaysExecute) {
+                        if (
+                            this.client.activeCommandsOptions.hasDeferOption(
+                                name,
+                                guildId,
+                            )
+                        ) {
+                            this.client.activeCommandsOptions.addToDeferOption(
+                                name,
+                                guildId,
+                                interaction,
+                            );
+                            return;
+                        }
                         this.client.activeCommandsOptions.addToDeferOption(
                             name,
                             guildId,
-                            interaction,
                         );
-                        return;
                     }
-                    this.client.activeCommandsOptions.addToDeferOption(
-                        name,
-                        guildId,
-                    );
 
                     const timeout: NodeJS.Timeout = setTimeout(async () => {
-                        return command
-                            .execute(interaction)
-                            .catch((e) => {
-                                console.error('Error when executing command');
-                                this.client.emitEvent('error', e);
-                            })
-                            .catch((e) => {
-                                this.client.emitEvent('error', e);
-                                const options: ActiveCommandsOptions =
-                                    this.client.activeCommandsOptions;
-                                options.deferInteractions(name, guildId, true);
-                            });
+                        return command.execute(interaction).catch((e) => {
+                            this.client.emitEvent('error', e);
+                            const options: ActiveCommandsOptions =
+                                this.client.activeCommandsOptions;
+                            options.deferInteractions(name, guildId, true);
+                        });
                     }, command.interactionTimeout);
                     timeout.unref();
                     return;

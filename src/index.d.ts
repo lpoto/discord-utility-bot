@@ -56,6 +56,7 @@ export class Command {
     public get description(): string | null;
     public get name(): string;
     public get interactionTimeout(): number;
+    public get alwaysExecute(): boolean;
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;

@@ -11,6 +11,10 @@ export class Help extends AbstractCommand {
         super(client, guildId);
     }
 
+    public get alwaysExecute(): boolean {
+        return true;
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user || interaction.replied) return;
 
