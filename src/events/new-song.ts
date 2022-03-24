@@ -68,6 +68,8 @@ export class OnNewSong extends AbstractClientEvent {
                         this.songsToUpdate[queue.guildId].push(s2);
                     }
                     this.checkIfNeedsUpdate(queue.guildId, songs2.length);
+                } else {
+                    this.songsToUpdateCount[queue.guildId].updated += 1;
                 }
             });
         }
@@ -80,7 +82,11 @@ export class OnNewSong extends AbstractClientEvent {
             this.songsToUpdateCount[guildId].updated === undefined
         )
             return;
-        if (add) this.songsToUpdateCount[guildId].updated += add;
+        if (add) {
+            if (add > 1)
+                this.songsToUpdateCount[guildId].toUpdate += add - 1;
+            this.songsToUpdateCount[guildId].updated += add;
+        }
         const updateAndDelete: boolean =
             this.songsToUpdateCount[guildId].updated ===
             this.songsToUpdateCount[guildId].toUpdate;

@@ -5,7 +5,7 @@ import { MusicClient } from '../client';
 export class ActiveCommandsOptions {
     private client: MusicClient;
     private toDefer: {
-        [name: string]: { [guildId: string]: ButtonInteraction[] };
+        [guildId: string]: { [name: string]: ButtonInteraction[] };
     };
 
     public constructor(client: MusicClient) {
@@ -14,16 +14,16 @@ export class ActiveCommandsOptions {
     }
 
     public hasDeferOption(name: CommandName, guildId: string): boolean {
-        return name in this.toDefer && guildId in this.toDefer[name];
+        return guildId in this.toDefer && name in this.toDefer[guildId];
     }
 
     public getToDeferOption(
         name: CommandName,
         guildId: string,
     ): ButtonInteraction[] | undefined {
-        if (!(name in this.toDefer)) this.toDefer[name] = {};
-        if (!(guildId in this.toDefer[name])) return undefined;
-        return this.toDefer[name][guildId];
+        if (!(guildId in this.toDefer)) this.toDefer[guildId] = {};
+        if (!(name in this.toDefer[guildId])) return undefined;
+        return this.toDefer[guildId][name];
     }
 
     public addToDeferOption(
@@ -31,9 +31,9 @@ export class ActiveCommandsOptions {
         guildId: string,
         interaction?: ButtonInteraction,
     ): void {
-        if (!(name in this.toDefer)) this.toDefer[name] = {};
-        if (!(guildId in this.toDefer[name])) this.toDefer[name][guildId] = [];
-        if (interaction) this.toDefer[name][guildId].push(interaction);
+        if (!(guildId in this.toDefer)) this.toDefer[guildId] = {};
+        if (!(name in this.toDefer[guildId])) this.toDefer[guildId][name] = [];
+        if (interaction) this.toDefer[guildId][name].push(interaction);
     }
 
     public deferInteractions(
@@ -41,23 +41,17 @@ export class ActiveCommandsOptions {
         guildId: string,
         doNotDefer?: boolean,
     ): void {
-        if (!(name in this.toDefer)) return;
-        if (!(guildId in this.toDefer[name])) return;
+        if (!(guildId in this.toDefer)) return;
+        if (!(name in this.toDefer[guildId])) return;
         if (!doNotDefer)
-            for (const i of this.toDefer[name][guildId])
+            for (const i of this.toDefer[guildId][name])
                 i.deferUpdate().catch((e) => {
                     this.client.emitEvent('error', e);
                 });
-        delete this.toDefer[name][guildId];
+        delete this.toDefer[guildId][name];
     }
 
     public clearOptions(guildId: string) {
-        for (const name in Object.keys(this.toDefer)) {
-            try {
-                this.deferInteractions(name as CommandName, guildId, true);
-            } catch (e) {
-                continue;
-            }
-        }
+        if (guildId in this.toDefer) delete this.toDefer[guildId];
     }
 }

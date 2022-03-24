@@ -274,34 +274,34 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         )
             return;
         const interaction: CommandInteraction = options.interaction;
-        const updateOptions: InteractionReplyOptions =
-            this.getQueueOptions(options);
-        return interaction
-            .reply({
+        this.client.emitEvent('joinVoiceRequest', interaction);
+        const timeout: NodeJS.Timeout = setTimeout(async () => {
+            if (!interaction.channelId || !interaction.guildId) return;
+            options.queue.channelId = interaction.channelId;
+            options.queue.guildId = interaction.guildId;
+
+            const updateOptions: InteractionReplyOptions =
+                this.getQueueOptions(options);
+            const message = await interaction.reply({
                 fetchReply: true,
                 embeds: updateOptions.embeds,
                 components: updateOptions.components,
-            })
-            .then(async (message) => {
-                if (!(message instanceof Message) || !message.guildId) return;
-
-                const t: ThreadChannel = await message.startThread(
-                    this.getThreadOptions(),
-                );
-
-                if (t && message.guildId && message.channelId) {
-                    this.client.emitEvent('joinVoiceRequest', interaction);
-                    options.queue.messageId = message.id;
-                    options.queue.threadId = t.id;
-                    options.queue.channelId = message.channelId;
-                    options.queue.guildId = message.guildId;
-                    options.queue.save();
-                    return;
-                }
-                message.delete().catch((error) => {
-                    this.client.emitEvent('error', error);
-                });
             });
+            if (!(message instanceof Message) || !message.guildId) return;
+            const t: ThreadChannel = await message.startThread(
+                this.getThreadOptions(),
+            );
+            if (t && message.guildId && message.channelId) {
+                options.queue.messageId = message.id;
+                options.queue.threadId = t.id;
+                options.queue.save();
+                return;
+            }
+            message.delete().catch((error) => {
+                this.client.emitEvent('error', error);
+            });
+        }, 250);
+        timeout.unref();
     }
 
     private handleCallbacks(guildId: string): void {
