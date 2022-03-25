@@ -46,7 +46,7 @@ export class OnReady extends AbstractClientEvent {
         this.client.user.setActivity(
             '/' + this.client.translate(null, ['slashCommand', 'name']),
             {
-                type: 'PLAYING',
+                type: 'LISTENING',
             },
         );
         this.client.ready = true;
