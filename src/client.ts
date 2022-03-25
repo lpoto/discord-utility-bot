@@ -121,8 +121,12 @@ export class MusicClient extends Client {
         } else this.audioPlayers[guildId] = player;
     }
 
-    public translate(guildId: string | null, keys: LanguageKeyPath): string {
-        return this.translator.translate(guildId, keys);
+    public translate(
+        guildId: string | null,
+        keys: LanguageKeyPath,
+        args?: string[],
+    ): string {
+        return this.translator.translate(guildId, keys, args);
     }
 
     public updateGuildLanguage(lang: LanguageString, guildId: string): void {

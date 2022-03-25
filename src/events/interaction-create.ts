@@ -41,12 +41,11 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     )
                 ) {
                     interaction.reply({
-                        content:
-                            this.client.translate(interaction.guildId, [
-                                'error',
-                                'missingRole',
-                            ]) +
-                            `\`${this.client.permsChecker.roles.join(', ')}\``,
+                        content: this.client.translate(
+                            interaction.guildId,
+                            ['error', 'missingRole'],
+                            [this.client.permsChecker.roles.join(', ')],
+                        ),
                         ephemeral: true,
                     });
                     return;

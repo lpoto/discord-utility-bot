@@ -54,13 +54,11 @@ export class OnSlashCommand extends AbstractClientEvent {
 
                 if (queue && message) {
                     interaction.reply({
-                        content:
-                            this.client.translate(interaction.guildId, [
-                                'error',
-                                'activeThread',
-                            ]) +
-                            '\n' +
-                            message.url,
+                        content: this.client.translate(
+                            interaction.guildId,
+                            ['error', 'activeThread'],
+                            [message.url],
+                        ),
                         ephemeral: true,
                         fetchReply: true,
                     });

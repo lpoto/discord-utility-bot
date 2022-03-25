@@ -4,8 +4,8 @@
         "description": "Opens a new music thread!"
     },
     "error": {
-        "activeThread": "Sporočilo z glasbo že obstaja!",
-        "missingRole": "Manjka ti 'role': ",
+        "activeThread": "Sporočilo z glasbo že obstaja!\n{0}",
+        "missingRole": "Manjka ti 'role': `{0}`",
         "voice": {
             "invalid": "Ne morem se pridružiti temu 'channelu'!",
             "client": {
@@ -38,7 +38,7 @@
         "commands": {
             "play": {
                 "description": "Predvajaj skadbo (ali playlisto) z youtuba tako, da napišeš njeno ime ali link.",
-                "maxSongs": "Na enkrat je v vrsti lahko največ 1000 skladb!"
+                "maxSongs": "Na enkrat je v vrsti lahko največ 10000 skladb!"
             },
             "join": {
                 "label": "Pridruži se!",
@@ -91,7 +91,7 @@
             },
             "forward": {
                 "label": "Prioriteta",
-                "description": "`Prioeriteta`: Pošlje izbrane pesmi na začetek vrste.",
+                "description": "`Prioriteta`: Pošlje izbrane pesmi na začetek vrste.",
                 "dropdown": {
                     "placeholder": "Izberite pesmi, ki jih želite poslati na začetek."
                 }

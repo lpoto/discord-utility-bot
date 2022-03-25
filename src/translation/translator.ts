@@ -29,12 +29,20 @@ export class Translator {
         });
     }
 
-    public translate(guildId: string | null, keys: LanguageKeyPath): string {
+    public translate(
+        guildId: string | null,
+        keys: LanguageKeyPath,
+        args?: string[],
+    ): string {
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let lang: any = this.getLanguage(guildId);
             for (let i = 0; i < keys.length; i++) lang = lang[keys[i]];
-            return lang;
+            let s: string = lang;
+            if (args)
+                for (let i = 0; i < args.length; i++)
+                    s = s.replace(`{${i}}`, args[i]);
+            return s;
         } catch (error) {
             console.error('Error during translation: ', error);
             return ' / ';

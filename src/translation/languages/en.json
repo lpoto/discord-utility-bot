@@ -4,8 +4,8 @@
         "description": "Opens a new music thread!"
     },
     "error": {
-        "activeThread": "Music thread is already active in this server!",
-        "missingRole": "You are missing role: ",
+        "activeThread": "Music thread is already active in this server!\n{0}",
+        "missingRole": "Roles required to use the bot: `{0}`",
         "voice": {
             "invalid": "Invalid voice channel!",
             "client": {
@@ -13,7 +13,7 @@
                 "noPermissions": "I am missing the required permissions to join your channel!"
             },
             "user": {
-                "notConnected": "You are not in a  voice channel!",
+                "notConnected": "You are not in a voice channel!",
                 "differentChannel": "We are not in the same channel!",
                 "memberDeafened": "You need to undeafen!"
             },
@@ -37,7 +37,7 @@
         "commands": {
             "play": {
                 "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.",
-                "maxSongs": "There can only be around 5000 songs in the queue!"
+                "maxSongs": "There can only be around 10000 songs in the queue!"
             },
             "join": {
                 "label": "Join",
@@ -53,25 +53,25 @@
             },
             "pageForward": {
                 "label": ">",
-                "description": "`>`: Show the next page of songs in the queue."
+                "description": "`>`: Shows the next page of songs in the queue."
             },
             "pageBackward": {
                 "label": "<",
-                "description": "`<`: Show the previous page of songs in the queue."
+                "description": "`<`: Shows the previous page of songs in the queue."
             },
             "skip": {
                 "label": ">>",
-                "description": "`>>`: Skip the currently playing song."
+                "description": "`>>`: Skips the currently playing song."
             },
             "pause": {
                 "label": "ll",
-                "description": "`ll`: Pause the currently playing song."
+                "description": "`ll`: Pauses the currently playing song."
             },
             "stop": {
                 "label": "◼",
-                "description": "`◼`: Stop the music completely. Requires double clicking for confirmation",
+                "description": "`◼`: Stops the music completely. Requires double clicking for confirmation.",
                 "confirm": "Click on `◼` again if you are sure you want to stop the music.",
-                "reply": "These are the songs you have removed from the queue, you can paste the whole file or just it's content back in to the queue."
+                "reply": "These are the songs you have removed from the queue, you can paste the whole file or just it's content back in to the thread."
             },
             "replay": {
                 "label": "↺",
@@ -83,7 +83,7 @@
             },
             "remove": {
                 "label": "Remove",
-                "description": "`Remove`: Removes song selected in a dropdown from the queue.",
+                "description": "`Remove`: Removes the songs selected in a dropdown from the queue.",
                 "dropdown": {
                     "placeholder": "Select the songs you want to remove."
                 }
@@ -107,7 +107,7 @@
                 "label": "Clear",
                 "description": "`Clear`: Removes all the songs from the queue.",
                 "confirm": "Click on `Clear` again if you are sure, you want to remove all the songs from the queue.",
-                "reply": "These are the songs you have removed from the queue, you can paste the whole file or just it's content back in to the queue."
+                "reply": "These are the songs you have removed from the queue, you can paste the whole file or just it's content back in to the thread."
             },
             "translate": {
                 "label": "Translate",
