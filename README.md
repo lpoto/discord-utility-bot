@@ -26,7 +26,7 @@ in the same channel or not connected to any.
 - Bot requires a `DJ` role. Only users with the same role may use the
 music commands.
 
-- For more info on the commands, click on `▼` button and then `Help` in the queue message in a discord channel.
+- For more info on the commands, click on `?` in the queue message in a discord channel.
 
 ## Required permissions
 

@@ -239,8 +239,12 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         let lenIdx = 0;
         let idx = 0;
         for (let i = 0; i < buttons.length; i++) {
-            if (rows.length > 5) break;
-            const len: number = idx % 2 === 0 ? 4 : 5;
+            if (idx > 4) break;
+            const s: number = rows[idx].components.reduce((sum, cur) => {
+                if (!(cur instanceof MessageButton)) return sum;
+                return sum + (cur.label ? cur.label.length : 0);
+            }, 0);
+            const len: number = s >= 20 ? 3 : 4;
             if (buttons.length > len && i === lenIdx + len) {
                 lenIdx += len;
                 rows.push(new MessageActionRow());

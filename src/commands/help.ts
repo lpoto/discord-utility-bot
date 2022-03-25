@@ -2,7 +2,7 @@ import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Command } from '../../';
 import { MusicClient } from '../client';
-import { Queue, QueueOption } from '../entities';
+import { Queue } from '../entities';
 import { AbstractCommand } from '../utils';
 import * as Commands from '../commands';
 
@@ -36,8 +36,8 @@ export class Help extends AbstractCommand {
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public button(queue: Queue): MessageButton | null {
-        if (!queue.hasOption(QueueOption.Options.EDITING)) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'help', 'label']))
             .setDisabled(false)

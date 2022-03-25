@@ -3,19 +3,29 @@ import {
     Column,
     Entity,
     Index,
+    JoinColumn,
     ManyToOne,
+    OneToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Queue } from './queue';
 
 @Entity('song')
 export class Song extends BaseEntity {
+    public static lastClearedInactive: Date | undefined;
+    public static persistSeconds: number = 60 * 60 * 2;
+
     @PrimaryGeneratedColumn('uuid')
     public readonly id: string;
 
     @Index()
     @Column({ nullable: false })
     public position: number;
+
+    @Column('timestamp', {
+        default: () => '((CURRENT_TIMESTAMP))',
+    })
+    public timestamp: Date;
 
     @Column({ nullable: false })
     public url: string;
@@ -29,19 +39,32 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     public durationString: string;
 
+    @Column('boolean', { default: true, nullable: false })
+    public active: boolean;
+
     @ManyToOne(() => Queue, (queue) => queue.curPageSongs, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',
-        nullable: false,
     })
-    public queue: Queue;
+    public queue: Queue | null;
+
+    @OneToOne(() => Song, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+        orphanedRowAction: 'delete',
+        lazy: true,
+    })
+    @JoinColumn()
+    public getPrevious: Promise<Song>;
+
+    public previous: Song | null;
 
     public async generatePosition(): Promise<void> {
         // auto increment position for current queue
         const position: number = await Song.createQueryBuilder('song')
             .select('MAX(song.position)', 'max')
-            .where({ queue: this.queue })
+            .where({ queue: this.queue, active: true })
             .getRawOne()
             .then((r) => {
                 if (r && r.max !== undefined && r.max !== null)
@@ -54,7 +77,7 @@ export class Song extends BaseEntity {
     public static async minPosition(queue: Queue): Promise<number> {
         return Song.createQueryBuilder('song')
             .select('MIN(song.position)', 'min')
-            .where({ queue: queue })
+            .where({ queue: queue, active: true })
             .getRawOne()
             .then((p) => {
                 if (p && p.min !== undefined && p.min !== null) return p.min;
@@ -74,7 +97,7 @@ export class Song extends BaseEntity {
         if (!queue) return;
         const position: number = await Song.createQueryBuilder('song')
             .select('MAX(song.position)', 'max')
-            .where({ queue: queue })
+            .where({ queue: queue, active: true })
             .getRawOne()
             .then((r) => {
                 if (r && r.max !== undefined && r.max !== null)
@@ -88,5 +111,16 @@ export class Song extends BaseEntity {
                 return s;
             }),
         );
+    }
+
+    public static async removeInactive() {
+        const currentDate: Date = new Date();
+        this.createQueryBuilder('song')
+            .delete()
+            .where(
+                `song.timestamp + interval '${this.persistSeconds} second' <= :currentDate AND song.active = FALSE`,
+                { currentDate },
+            )
+            .execute();
     }
 }

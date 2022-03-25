@@ -75,18 +75,14 @@ export class Remove extends AbstractCommand {
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        if (queue.hasOption(QueueOption.Options.REMOVE_SELECTED)) {
-            queue = await queue.removeOptions([
-                QueueOption.Options.REMOVE_SELECTED,
-            ]);
-        } else {
-            queue = await queue.removeOptions([
-                QueueOption.Options.FORWARD_SELECTED,
-                QueueOption.Options.TRANSLATE_SELECTED,
-            ]);
+        const add: boolean = queue.hasOption(
+            QueueOption.Options.REMOVE_SELECTED,
+        );
+        queue.removeDropdownOptions();
+        if (!add)
             queue = await queue.addOption(QueueOption.Options.REMOVE_SELECTED);
-        }
-        await queue.save();
+
+        queue = await queue.save();
 
         this.updateQueue({
             interaction: interaction,

@@ -26,7 +26,6 @@ export class Play extends AbstractCommand {
 
     private async next(
         interaction?: ButtonInteraction,
-        replay?: boolean,
         error?: boolean,
     ): Promise<void> {
         if (!this.client.user) return;
@@ -40,27 +39,8 @@ export class Play extends AbstractCommand {
          * Determine if a song needs to be removed from the queue,
          * pushed to the back of the queue or nothing at all.
          */
-        if (error || (!replay && !queue.hasOption(QueueOption.Options.LOOP))) {
-            const headSong: Song | undefined = queue.headSong;
-            if (
-                !error &&
-                headSong &&
-                queue.hasOption(QueueOption.Options.LOOP_QUEUE)
-            ) {
-                const song: Song = Song.create({
-                    url: headSong.url,
-                    name: headSong.name,
-                    durationString: headSong.durationString,
-                    durationSeconds: headSong.durationSeconds,
-                    queue: queue,
-                });
-                await song.generatePosition();
-                await song.save();
-            }
-            if (headSong) await headSong.remove();
-
-            await queue.reload();
-        }
+        if (error || !queue.hasOption(QueueOption.Options.LOOP))
+            queue = await queue.removeHeadSong(true);
 
         queue.color = Math.floor(Math.random() * 16777215);
         queue = await queue.save();
@@ -181,7 +161,7 @@ export class Play extends AbstractCommand {
                         });
                         console.log('Error when playing: ', e?.message);
                         // try to play the song next in queue
-                        this.next(interaction, false, true);
+                        this.next(interaction, true);
                     })
                     .on('unsubscribe', () => {
                         timer?.stop();
@@ -191,12 +171,13 @@ export class Play extends AbstractCommand {
                     .on('debug', (message) => {
                         // replay and skip commands emit debug messages
                         // ('skip' and 'replay')
-                        if (message === 'replay' || message === 'skip') {
+                        if (['replay', 'skip', 'previous'].includes(message)) {
                             timer?.stop();
                             audioPlayer?.removeAllListeners();
                             audioPlayer?.stop();
                             this.client.setAudioPlayer(queue.guildId, null);
-                            this.next(interaction, message === 'replay');
+                            if (message === 'skip') this.next(interaction);
+                            else this.execute(interaction);
                         }
                     });
             })

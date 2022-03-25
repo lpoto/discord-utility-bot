@@ -24,7 +24,11 @@ export class Clear extends AbstractCommand {
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
+        if (
+            !this.connection ||
+            !queue.hasOption(QueueOption.Options.EDITING) ||
+            queue.hasDropdownOption()
+        )
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'clear', 'label']))

@@ -14,7 +14,11 @@ export class Expand extends AbstractCommand {
     }
 
     public button(queue: Queue): MessageButton | null {
-        if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
+        if (
+            !this.connection ||
+            !queue.hasOption(QueueOption.Options.EDITING) ||
+            queue.hasDropdownOption()
+        )
             return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'expand', 'label']))
@@ -33,12 +37,12 @@ export class Expand extends AbstractCommand {
         if (!queue) return;
 
         if (queue.hasOption(QueueOption.Options.EXPANDED))
-            queue = await queue.removeOptions([QueueOption.Options.EXPANDED]);
+            queue = queue.removeOptions([QueueOption.Options.EXPANDED]);
         else queue = await queue.addOption(QueueOption.Options.EXPANDED);
 
         await queue.save();
 
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             interaction: interaction,
             queue: queue,
         });

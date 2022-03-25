@@ -44,14 +44,6 @@
                 "label": "Pridruži se!",
                 "description": "`Pridruži se!`: Pridruži se vašemu 'voice channelu'."
             },
-            "loop": {
-                "label": "Ponavljaj",
-                "description": "`Ponavljaj`: Ponavlja trenutno skladbo."
-            },
-            "loopQueue": {
-                "label": "Ponavljaj\u2000Vse",
-                "description": "`Ponavljaj Vse`: Ponavlja vse skladbe."
-            },
             "pageForward": {
                 "label": ">",
                 "description": "`>`: Pokaže naslednjo stran skladb."
@@ -63,6 +55,18 @@
             "skip": {
                 "label": ">>",
                 "description": "`>>`: Preskoči trenutno pesem."
+            },
+            "previousSong": {
+                "label": "<<",
+                "description": "`<<`: Ponovno predvaja prejšnjo skladbo."
+            },
+            "loop": {
+                "label": "Ponavljaj",
+                "description": "`Ponavljaj`: Ponavlja trenutno skladbo."
+            },
+            "loopQueue": {
+                "label": "Ponavljaj\u2000Vse",
+                "description": "`Ponavljaj Vse`: Ponavlja vse skladbe."
             },
             "pause": {
                 "label": "ll",
@@ -90,8 +94,8 @@
                 }
             },
             "forward": {
-                "label": "Prioriteta",
-                "description": "`Prioriteta`: Pošlje izbrane pesmi na začetek vrste.",
+                "label": "Prednost\u2000",
+                "description": "`Prednost`: Pošlje izbrane pesmi na začetek vrste.",
                 "dropdown": {
                     "placeholder": "Izberite pesmi, ki jih želite poslati na začetek."
                 }
@@ -101,8 +105,8 @@
                 "description": "`Premešaj`: Premeša vse pesmi v vrsti."
             },
             "expand": {
-                "label": "Razširi Pesmi",
-                "description": "`Razširi Pesmi`: Pokaže celotna imena pesmi v vrsti."
+                "label": "Razširi\u2000Imena",
+                "description": "`Razširi Imena`: Pokaže celotna imena pesmi v vrsti."
             },
             "clear": {
                 "label": "Počisti",
@@ -111,18 +115,14 @@
                 "reply": "Te pesmi ste odstranili iz vrste. Lahko jih prekopirate nazaj v 'Thread'."
             },
             "translate": {
-                "label": "Jezik",
-                "description": "`Jezik`: Trenutno dostopni jeziki: ",
+                "label": "Prevedi",
+                "description": "`Prevedi`: Trenutno dostopni jeziki: ",
                 "dropdown": {
                     "placeholder": "Izberite jezik, ki ga želite uporabljati."
                 }
             },
-            "bugs": {
-                "label": "Napaka?",
-                "description": "`Napaka?`: Trenutno še ne deluje. :)"
-            },
             "help": {
-                "label": "Pomoč"
+                "label": "?"
             }
         }
     },

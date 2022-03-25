@@ -66,13 +66,9 @@ export class Queue extends BaseEntity {
         this.checkOptions();
 
         // Set a headSong (song with smallest position)
-        const minPosition: number = await Song.minPosition(this);
-        this.headSong = await Song.findOne({
-            where: {
-                queue: this,
-                position: minPosition,
-            },
-        });
+        await this.reloadHeadSong();
+        if (this.headSong)
+            this.headSong.previous = await this.headSong.getPrevious;
 
         // Load only as many songs that fit a single embed page (based on offset)
         this.curPageSongs = await Song.createQueryBuilder('song')
@@ -81,11 +77,43 @@ export class Queue extends BaseEntity {
             .limit(Queue.songsPerPage)
             .offset(this.offset)
             .getMany();
+
+        if (
+            !Song.lastClearedInactive ||
+            new Date().valueOf() - Song.lastClearedInactive.valueOf() >=
+                Song.persistSeconds * 1000
+        ) {
+            await Song.removeInactive();
+            Song.lastClearedInactive = new Date();
+        }
     }
 
     public hasOption(o: QueueOption.Options): boolean {
         if (!this.options) return false;
         return this.options.find((o2) => o2.name === o) !== undefined;
+    }
+
+    public hasDropdownOption(): boolean {
+        return (
+            this.options.find((o) =>
+                [
+                    QueueOption.Options.REMOVE_SELECTED,
+                    QueueOption.Options.TRANSLATE_SELECTED,
+                    QueueOption.Options.FORWARD_SELECTED,
+                ].includes(o.name),
+            ) !== undefined
+        );
+    }
+
+    public removeDropdownOptions(): void {
+        this.options = this.options.filter(
+            (o) =>
+                ![
+                    QueueOption.Options.REMOVE_SELECTED,
+                    QueueOption.Options.TRANSLATE_SELECTED,
+                    QueueOption.Options.FORWARD_SELECTED,
+                ].includes(o.name),
+        );
     }
 
     public async addOption(o: QueueOption.Options): Promise<Queue> {
@@ -107,6 +135,39 @@ export class Queue extends BaseEntity {
                 (o) => !options.includes(o.name),
             );
         return this;
+    }
+
+    public async removeHeadSong(reload?: boolean): Promise<Queue> {
+        if (!this.headSong) return this;
+        const active: boolean = this.hasOption(QueueOption.Options.LOOP_QUEUE);
+        if (active) {
+            this.headSong.queue = this;
+            this.headSong.active = true;
+            await this.headSong.generatePosition();
+        } else {
+            this.headSong.position = 0;
+            this.headSong.queue = null;
+            this.headSong.active = false;
+        }
+        this.headSong.timestamp = new Date();
+        const song: Song = await this.headSong?.save();
+        await this.reloadHeadSong();
+        if (this.headSong) {
+            this.headSong.getPrevious = Promise.resolve(song);
+            await this.headSong.save();
+        }
+        if (reload) await this.reload();
+        return this;
+    }
+
+    private async reloadHeadSong(): Promise<void> {
+        const minPosition: number = await Song.minPosition(this);
+        this.headSong = await Song.findOne({
+            where: {
+                queue: this,
+                position: minPosition,
+            },
+        });
     }
 
     private checkOffset(): void {

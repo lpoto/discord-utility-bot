@@ -81,19 +81,15 @@ export class Translate extends AbstractCommand {
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        if (queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED)) {
-            queue = await queue.removeOptions([
-                QueueOption.Options.TRANSLATE_SELECTED,
-            ]);
-        } else {
-            queue = await queue.removeOptions([
-                QueueOption.Options.REMOVE_SELECTED,
-                QueueOption.Options.FORWARD_SELECTED,
-            ]);
+        const add: boolean = queue.hasOption(
+            QueueOption.Options.TRANSLATE_SELECTED,
+        );
+        queue.removeDropdownOptions();
+        if (!add)
             queue = await queue.addOption(
                 QueueOption.Options.TRANSLATE_SELECTED,
             );
-        }
+
         queue = await queue.save();
 
         this.updateQueue({
