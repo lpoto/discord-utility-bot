@@ -37,7 +37,7 @@ export class QueueEmbed extends MessageEmbed {
         this.queue = options.queue;
         this.client = options.client;
 
-        const spacer = '\n> \u3000\u2000';
+        const spacer = '\n> \u3000';
 
         if (!this.queue.headSong) return;
 
@@ -54,7 +54,7 @@ export class QueueEmbed extends MessageEmbed {
         let headSong = `${this.toString(
             this.queue.headSong,
             undefined,
-            36,
+            30,
             spacer,
             true,
         )}`;
@@ -63,8 +63,8 @@ export class QueueEmbed extends MessageEmbed {
         const duration: string = this.queue.headSong.durationString;
         const loader: string = this.getSongLoader();
         if (loader !== '') {
-            headSong = `${spacer}${spacer}${headSong}${spacer}`;
-            if (!addEmpty) headSong += spacer;
+            headSong = `${spacer}${spacer}${headSong}\n> `;
+            if (!addEmpty) headSong += '\n> ';
             headSong += loader;
         } else {
             headSong = `${spacer}\n**${duration}**\u3000\u2000${headSong}`;
@@ -84,7 +84,7 @@ export class QueueEmbed extends MessageEmbed {
             let sngs: string = songs.join('\n');
             if (queueSize > 11 && songs.length < 10)
                 sngs += '\n> '.repeat(10 - songs.length);
-            sngs += `\n> \n> ${'\u3000'.repeat(5)}${this.client.translate(
+            sngs += `\n> \n> ${'\u3000'.repeat(4)}${this.client.translate(
                 this.queue.guildId,
                 ['music', 'queue', 'songNumber'],
             )}:\u3000***${queueSize - 1}***`;
@@ -109,7 +109,7 @@ export class QueueEmbed extends MessageEmbed {
 
     private toStringShortened(song: Song, expanded?: boolean): string {
         const name: string = song.name.replace(/\|/g, '│');
-        if (!expanded && name.length > 43) {
+        if (!expanded && name.length > 30) {
             let count = 0;
             const chars: string[] = this.bigChars();
             const chars2: string[] = this.smallChars();
@@ -121,7 +121,7 @@ export class QueueEmbed extends MessageEmbed {
             chars2.map((c) => {
                 count -= name.split(c).length - 1;
             });
-            const x: number = 48 - Math.round(count / 2);
+            const x: number = 33 - Math.round(count / 2);
             return name.substring(0, x).trim() + '...';
         }
         if (
@@ -132,7 +132,7 @@ export class QueueEmbed extends MessageEmbed {
             return this.toString(
                 song,
                 `,\u3000**${song.durationString}**`,
-                43,
+                30,
                 undefined,
                 false,
                 true,
@@ -143,7 +143,7 @@ export class QueueEmbed extends MessageEmbed {
     private toString(
         song: Song,
         add?: string,
-        lineLength: number = 43,
+        lineLength: number = 30,
         spacer?: string,
         alignLines?: boolean,
         expanded?: boolean,
@@ -244,7 +244,10 @@ export class QueueEmbed extends MessageEmbed {
         const t2: number = this.queue.headSong?.durationSeconds;
         const s1: string = SongFinder.secondsToTimeString(t1);
         const s2: string = SongFinder.secondsToTimeString(t2);
-        const n = 17;
+        let n = 15;
+        if (s1.length + s2.length > 9)
+            n -= Math.floor((s1.length + s2.length - 9) / 2);
+        if (n < 10) n = 10;
         let loader = `**${s1}**\u3000`;
         const x: number = Math.round((t1 * n) / t2);
         const y: number = Math.floor((n - x) / 2);

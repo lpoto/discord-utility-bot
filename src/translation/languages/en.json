@@ -23,7 +23,7 @@
     "music": {
         "queue": {
             "title": "Music queue",
-            "footer": "Send the Name / Url of a Youtube Song / Playlist in the Thread!",
+            "footer": "Add youtube songs by typing them in the  thread.",
             "songNumber": "Songs in queue",
             "curPlaying": "Now",
             "duration": "Duration",
@@ -104,8 +104,8 @@
                 "description": "`Shuffle`: Shuffles all the songs in the queue."
             },
             "expand": {
-                "label": "Expand Songs",
-                "description": "`Expand Song Names`: Shows complete names of the songs in the queue."
+                "label": "Wider Embed",
+                "description": "`Wider Embed`: Shows complete names of the songs in the queue."
             },
             "translate": {
                 "label": "Translate",
@@ -125,7 +125,7 @@
             }
         }
     },
-    "clientRestarted": "> ㅤBot has been restarted due to a new update.",
-    "innactivityDisconnect": "> ㅤBot has disconnected due to innactivity,\n> ㅤor being disconnected by another member.",
+    "clientRestarted": "> ㅤBot has been restarted\n> ㅤdue to a new update.",
+    "innactivityDisconnect": "> ㅤBot has disconnected due to:\n> ㅤ- disconnected by another member,\n> ㅤ- innactivity.",
     "help": "Sorry, there is no help available."
 }

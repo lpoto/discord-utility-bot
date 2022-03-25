@@ -23,8 +23,7 @@
     "music": {
         "queue": {
             "title": "Glasba",
-            "footer": "Send the Name / Url of a Youtube Song / Playlist in the Thread!",
-            "footer": "Napišite ime ali pa povezavo do skladbe ali playliste na Youtubu!",
+            "footer": "Dodajte  skladbe  tako, da  jih napišete v 'thread'!",
             "songNumber": "Število pesmi",
             "curPlaying": "Trenutno",
             "duration": "Dolžina pesmi",
@@ -126,7 +125,7 @@
             }
         }
     },
-    "clientRestarted": "> ㅤBot je bil ponovno zagnan zaradi novih sprememb.",
-    "innactivityDisconnect": "> ㅤBot je zapustil 'channel' zaradi neaktivnosti,\n> ㅤali pa ga je nekdo odstranil.",
+    "clientRestarted": "> ㅤBot je bil ponovno zagnan\n> ㅤ zaradi novih sprememb.",
+    "innactivityDisconnect": "> ㅤBot je zapustil 'channel' zaradi:\n>  ㅤ- neaktivnosti,\n> ㅤ- nekdo ga je odstranil.",
     "help": "Opa, ni pomoči..."
 }

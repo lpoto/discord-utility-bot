@@ -46,8 +46,9 @@ export class Song extends BaseEntity {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',
+        nullable: false,
     })
-    public queue: Queue | null;
+    public queue: Queue;
 
     @OneToOne(() => Song, {
         onDelete: 'CASCADE',
@@ -78,6 +79,17 @@ export class Song extends BaseEntity {
         return Song.createQueryBuilder('song')
             .select('MIN(song.position)', 'min')
             .where({ queue: queue, active: true })
+            .getRawOne()
+            .then((p) => {
+                if (p && p.min !== undefined && p.min !== null) return p.min;
+                return 0;
+            });
+    }
+
+    public static async minInactivePosition(queue: Queue): Promise<number> {
+        return Song.createQueryBuilder('song')
+            .select('MIN(song.position)', 'min')
+            .where({ queue: queue, active: false })
             .getRawOne()
             .then((p) => {
                 if (p && p.min !== undefined && p.min !== null) return p.min;

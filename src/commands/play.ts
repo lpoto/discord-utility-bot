@@ -68,7 +68,16 @@ export class Play extends AbstractCommand {
             guildId: this.guildId,
         });
 
-        if (!queue || !queue.headSong) return;
+        if (!queue) return;
+
+        if (!queue.headSong) {
+            this.client.emitEvent('queueMessageUpdate', {
+                queue: queue,
+                interaction: interaction,
+                timeout: 300,
+            });
+            return;
+        }
 
         // play music when at least one (non bot) listener (unmuted)
         // music is auto started when first user joins or unmutes

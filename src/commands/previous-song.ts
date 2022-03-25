@@ -1,4 +1,3 @@
-import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -30,7 +29,7 @@ export class previousSong extends AbstractCommand {
                 this.translate(['music', 'commands', 'previousSong', 'label']),
             )
             .setDisabled(
-                !queue.headSong?.previous ||
+                (!queue.headSong?.previous && !queue.previousSong) ||
                     queue.hasOption(QueueOption.Options.LOOP),
             )
             .setStyle(MessageButtonStyles.SECONDARY)
@@ -38,16 +37,23 @@ export class previousSong extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
+        if (!interaction) return;
+        const queue: Queue | undefined = await this.getQueue();
         if (
-            !interaction ||
-            !this.audioPlayer ||
-            this.audioPlayer.state.status === AudioPlayerStatus.Paused
+            !queue ||
+            ((!queue.headSong || !queue.headSong.previous) &&
+                !queue.previousSong)
         )
             return;
-        const queue: Queue | undefined = await this.getQueue();
-        if (!queue || !queue.headSong || !queue.headSong.previous) return;
-        const song: Song = queue.headSong.previous;
-        song.position = queue.headSong.position - 1;
+        const song: Song | undefined =
+            queue.headSong && queue.headSong.previous
+                ? queue.headSong.previous
+                : queue.previousSong;
+        if (!song) return;
+        song.position =
+            queue.headSong && queue.headSong.previous
+                ? queue.headSong.position - 1
+                : 0;
         song.active = true;
         song.queue = queue;
         await song.save();
@@ -55,8 +61,17 @@ export class previousSong extends AbstractCommand {
         this.updateQueue({
             queue: queue,
             interaction: interaction,
-            timeout: 200,
+            timeout: 300,
         });
-        this.audioPlayer.emit('debug', 'previous');
+
+        if (!this.audioPlayer) {
+            if (!interaction.guildId) return;
+            this.client.emitEvent('executeCommand', {
+                name: 'Play',
+                guildId: interaction.guildId,
+            });
+        } else {
+            this.audioPlayer.emit('debug', 'previous');
+        }
     }
 }

@@ -111,7 +111,7 @@ export class Clear extends AbstractCommand {
                 .reload()
                 .then(async () => {
                     if (!queue) return;
-                    queue = await queue.removeOptions([
+                    queue = queue.removeOptions([
                         QueueOption.Options.CLEAR_SELECTED,
                     ]);
                     queue = await queue.save();
@@ -131,7 +131,7 @@ export class Clear extends AbstractCommand {
         queue.offset = 0;
         queue = await queue.save();
         if (queue.size > 0) {
-            queue.allSongs.then((songs) => {
+            queue.getAllSongs().then((songs) => {
                 if (!songs) return;
                 const attachment = new MessageAttachment(
                     Buffer.from(
@@ -157,7 +157,7 @@ export class Clear extends AbstractCommand {
             });
         }
 
-        queue = await queue.removeOptions([
+        queue = queue.removeOptions([
             QueueOption.Options.CLEAR_SELECTED,
             QueueOption.Options.REMOVE_SELECTED,
             QueueOption.Options.FORWARD_SELECTED,

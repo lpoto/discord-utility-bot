@@ -108,7 +108,7 @@ export class Stop extends AbstractCommand {
                 .reload()
                 .then(async () => {
                     if (!queue) return;
-                    queue = await queue.removeOptions([
+                    queue = queue.removeOptions([
                         QueueOption.Options.STOP_SELECTED,
                     ]);
                     queue = await queue.save();
@@ -127,7 +127,7 @@ export class Stop extends AbstractCommand {
         interaction: ButtonInteraction,
     ): void {
         if (queue.size > 0) {
-            queue.allSongs.then((songs) => {
+            queue.getAllSongs().then((songs) => {
                 if (!songs) return;
                 const attachment = new MessageAttachment(
                     Buffer.from(

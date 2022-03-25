@@ -53,6 +53,8 @@ export class Queue extends BaseEntity {
 
     public headSong: Song | undefined;
 
+    public previousSong: Song | undefined;
+
     public curPageSongs: Song[] = [];
 
     public size = 0;
@@ -60,7 +62,7 @@ export class Queue extends BaseEntity {
     @AfterLoad()
     public async afterQueueLoad(): Promise<void> {
         // count all songs referencing this queue
-        this.size = await Song.count({ where: { queue: this } });
+        this.size = await Song.count({ where: { queue: this, active: true } });
 
         this.checkOffset();
         this.checkOptions();
@@ -86,6 +88,21 @@ export class Queue extends BaseEntity {
             await Song.removeInactive();
             Song.lastClearedInactive = new Date();
         }
+
+        const minInactivePosition: number = await Song.minInactivePosition(
+            this,
+        );
+        this.previousSong = await Song.findOne({
+            where: {
+                queue: this,
+                position: minInactivePosition,
+                active: false,
+            },
+        });
+    }
+
+    public async getAllSongs(): Promise<Song[]> {
+        return Song.find({ queue: this, active: true });
     }
 
     public hasOption(o: QueueOption.Options): boolean {
@@ -145,14 +162,14 @@ export class Queue extends BaseEntity {
             this.headSong.active = true;
             await this.headSong.generatePosition();
         } else {
-            this.headSong.position = 0;
-            this.headSong.queue = null;
+            this.headSong.position =
+                (await Song.minInactivePosition(this)) - 1;
             this.headSong.active = false;
         }
         this.headSong.timestamp = new Date();
         const song: Song = await this.headSong?.save();
         await this.reloadHeadSong();
-        if (this.headSong) {
+        if (this.headSong && this.headSong.id !== song.id) {
             this.headSong.getPrevious = Promise.resolve(song);
             await this.headSong.save();
         }
