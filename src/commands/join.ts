@@ -15,7 +15,7 @@ export class Join extends AbstractCommand {
     }
 
     public get interactionTimeout(): number {
-        return 50;
+        return 300;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -50,28 +50,17 @@ export class Join extends AbstractCommand {
             audioPlayer?.stop();
         } catch (e) {}
         this.client.setAudioPlayer(queue.guildId, null);
-        if (queue.size > 0) {
-            if (interaction && !interaction.deferred && !interaction.replied)
-                interaction
-                    .deferUpdate()
-                    .catch((e) => this.client.emitEvent('error', e));
-
+        this.updateQueue({
+            interaction: interaction,
+            queue: queue,
+            timeout: 300,
+            doNotSetUpdated: true,
+        });
+        if (queue.size > 0)
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: this.guildId,
                 interaction: interaction,
             });
-        } else if (
-            interaction &&
-            !interaction.deferred &&
-            !interaction.replied
-        ) {
-            this.updateQueue({
-                interaction: interaction,
-                queue: queue,
-                timeout: 300,
-                doNotSetUpdated: true,
-            });
-        }
     }
 }

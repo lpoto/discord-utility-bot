@@ -74,7 +74,7 @@ export class Queue extends BaseEntity {
 
         // Load only as many songs that fit a single embed page (based on offset)
         this.curPageSongs = await Song.createQueryBuilder('song')
-            .where({ queue: this, id: Not(this.headSong?.id) })
+            .where({ queue: this, id: Not(this.headSong?.id), active: true })
             .orderBy({ position: 'ASC' })
             .limit(Queue.songsPerPage)
             .offset(this.offset)
@@ -156,6 +156,7 @@ export class Queue extends BaseEntity {
 
     public async removeHeadSong(reload?: boolean): Promise<Queue> {
         if (!this.headSong) return this;
+        if (this.hasOption(QueueOption.Options.LOOP)) return this;
         const active: boolean = this.hasOption(QueueOption.Options.LOOP_QUEUE);
         if (active) {
             this.headSong.queue = this;
@@ -183,6 +184,7 @@ export class Queue extends BaseEntity {
             where: {
                 queue: this,
                 position: minPosition,
+                active: true
             },
         });
     }

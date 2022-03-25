@@ -39,6 +39,7 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     public durationString: string;
 
+    @Index()
     @Column('boolean', { default: true, nullable: false })
     public active: boolean;
 

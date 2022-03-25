@@ -59,7 +59,11 @@ export class Shuffle extends AbstractCommand {
                     'row_number() OVER (ORDER BY RANDOM()) rn, ' +
                         'position AS new_position',
                 )
-                .where({ queue: queue, id: Not(queue.headSong.id) }),
+                .where({
+                    queue: queue,
+                    id: Not(queue.headSong.id),
+                    active: true,
+                }),
         );
 
         const q2 = this.queryToString(
@@ -68,7 +72,11 @@ export class Shuffle extends AbstractCommand {
                     'row_number() OVER (ORDER BY RANDOM()) rn,' +
                         ' id AS ref_id',
                 )
-                .where({ queue: queue, id: Not(queue.headSong.id) }),
+                .where({
+                    queue: queue,
+                    id: Not(queue.headSong.id),
+                    active: true,
+                }),
         );
 
         Song.query(
