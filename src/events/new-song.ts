@@ -26,9 +26,10 @@ export class OnNewSong extends AbstractClientEvent {
             clientId: this.client.user.id,
         });
         if (!queue) return;
-        const songs: string[] = options.songNames;
+
         // limit songs
-        if (queue.size >= 20000 || queue.size + songs.length > 25000) return;
+        if (queue.size >= 10000) return;
+        const songs: string[] = options.songNames.slice(0, 1000);
 
         if (
             !(queue.guildId in this.songsToUpdateCount) ||
@@ -83,8 +84,7 @@ export class OnNewSong extends AbstractClientEvent {
         )
             return;
         if (add) {
-            if (add > 1)
-                this.songsToUpdateCount[guildId].toUpdate += add - 1;
+            if (add > 1) this.songsToUpdateCount[guildId].toUpdate += add - 1;
             this.songsToUpdateCount[guildId].updated += add;
         }
         const updateAndDelete: boolean =
@@ -92,7 +92,7 @@ export class OnNewSong extends AbstractClientEvent {
             this.songsToUpdateCount[guildId].toUpdate;
         const onlyUpdate: boolean = updateAndDelete
             ? false
-            : (this.songsToUpdateCount[guildId].updated + 1) % 50 === 0;
+            : (this.songsToUpdateCount[guildId].updated + 1) % 200 === 0;
         if (updateAndDelete || onlyUpdate) {
             if (updateAndDelete) delete this.songsToUpdateCount[guildId];
             if (!(guildId in this.songsToUpdate))
@@ -101,33 +101,39 @@ export class OnNewSong extends AbstractClientEvent {
                 this.songsToUpdate[guildId],
                 guildId,
                 this.client.user.id,
-            ).then(() => {
-                if (!this.client.user) return;
-                Queue.findOne({
-                    guildId: guildId,
-                    clientId: this.client.user.id,
-                }).then((queue) => {
-                    if (!queue) return;
-                    const audioPlayer: AudioPlayer | null =
-                        this.client.getAudioPlayer(guildId);
-                    this.client.emitEvent('queueMessageUpdate', {
-                        queue: queue,
-                        timeout: 500,
-                    });
-                    if (
-                        !audioPlayer ||
-                        (audioPlayer.state.status !==
-                            AudioPlayerStatus.Playing &&
-                            audioPlayer.state.status !==
-                                AudioPlayerStatus.Paused)
-                    ) {
-                        this.client.emitEvent('executeCommand', {
-                            name: 'Play',
-                            guildId: guildId,
+            )
+                .then(() => {
+                    if (!this.client.user) return;
+                    Queue.findOne({
+                        guildId: guildId,
+                        clientId: this.client.user.id,
+                    }).then((queue) => {
+                        if (!queue) return;
+                        const audioPlayer: AudioPlayer | null =
+                            this.client.getAudioPlayer(guildId);
+                        this.client.emitEvent('queueMessageUpdate', {
+                            queue: queue,
+                            timeout: 500,
                         });
-                    }
+                        if (
+                            !audioPlayer ||
+                            (audioPlayer.state.status !==
+                                AudioPlayerStatus.Playing &&
+                                audioPlayer.state.status !==
+                                    AudioPlayerStatus.Paused)
+                        ) {
+                            this.client.emitEvent('executeCommand', {
+                                name: 'Play',
+                                guildId: guildId,
+                            });
+                        }
+                    });
+                })
+                .catch((e) => {
+                    if (guildId in this.songsToUpdate)
+                        delete this.songsToUpdate[guildId];
+                    this.client.emitEvent('error', e);
                 });
-            });
             delete this.songsToUpdate[guildId];
         }
     }

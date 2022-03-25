@@ -1,4 +1,5 @@
 import { DiscordAPIError } from 'discord.js';
+import { EntityNotFoundError } from 'typeorm';
 import { MusicClient } from '../client';
 import { AbstractClientEvent } from '../utils/abstract-client-event';
 
@@ -15,12 +16,12 @@ export class OnError extends AbstractClientEvent {
     }
 
     public async callback(error: Error): Promise<void> {
-        try {
-            /* if discordApiError, do not log errors when fetching already
-             * deleted messages or missing permissions to delete threads...*/
-            const discordError: DiscordAPIError = error as DiscordAPIError;
+        /* if discordApiError, do not log errors when fetching already
+         * deleted messages or missing permissions to delete threads...*/
+        if (!error) return;
+        if (error instanceof DiscordAPIError) {
             if (
-                discordError.code &&
+                error.code &&
                 [
                     '10008',
                     '50013',
@@ -30,13 +31,10 @@ export class OnError extends AbstractClientEvent {
                     '40060',
                     '50083',
                     '50005',
-                ].includes(discordError.code.toString())
+                ].includes(error.code.toString())
             )
                 return;
-        } catch (e) {
-            console.error('Error: ', e);
-            return;
-        }
+        } else if (error instanceof EntityNotFoundError) return;
         console.error('Error: ', error);
     }
 }
