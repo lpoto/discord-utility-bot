@@ -3,9 +3,7 @@ import {
     Column,
     Entity,
     Index,
-    JoinColumn,
     ManyToOne,
-    OneToOne,
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Queue } from './queue';
@@ -43,7 +41,8 @@ export class Song extends BaseEntity {
     @Column('boolean', { default: true, nullable: false })
     public active: boolean;
 
-    @ManyToOne(() => Queue, (queue) => queue.curPageSongs, {
+    @Index()
+    @ManyToOne(() => Queue, (queue) => queue.allSongs, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',
@@ -51,13 +50,12 @@ export class Song extends BaseEntity {
     })
     public queue: Queue;
 
-    @OneToOne(() => Song, {
+    @ManyToOne(() => Song, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',
         lazy: true,
     })
-    @JoinColumn()
     public getPrevious: Promise<Song>;
 
     public previous: Song | null;
