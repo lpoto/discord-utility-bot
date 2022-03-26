@@ -47,9 +47,6 @@ export class Play extends AbstractCommand {
             if (error || !queue.hasOption(QueueOption.Options.LOOP))
                 queue = await queue.removeHeadSong(true);
 
-            queue.color = Math.floor(Math.random() * 16777215);
-            queue = await queue.save();
-
             this.execute(interaction).catch((e) => {
                 this.client.emit('error', e);
                 if (queue)

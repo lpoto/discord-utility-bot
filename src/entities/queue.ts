@@ -35,9 +35,6 @@ export class Queue extends BaseEntity {
     @Column({ nullable: false })
     public offset: number;
 
-    @Column({ nullable: false })
-    public color: number;
-
     @ManyToMany(() => QueueOption, (queueOption) => queueOption.queue, {
         eager: true,
     })

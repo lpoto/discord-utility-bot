@@ -32,12 +32,14 @@ export class QueueEmbed extends MessageEmbed {
                 : options.client.translate(options.queue.guildId, [
                       'clientRestarted',
                   ]),
-            color: options.queue.color,
         });
         this.queue = options.queue;
         this.client = options.client;
 
         if (!this.queue.headSong) return;
+
+        if (this.queue.headSong.color)
+            this.setColor(this.queue.headSong.color);
 
         const queueSongs: Song[] = this.queue.curPageSongs;
 

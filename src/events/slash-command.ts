@@ -75,7 +75,6 @@ export class OnSlashCommand extends AbstractClientEvent {
                         offset: 0,
                         curPageSongs: [],
                         options: [],
-                        color: Math.floor(Math.random() * 16777215),
                     });
 
                     this.client.emitEvent('queueMessageUpdate', {
