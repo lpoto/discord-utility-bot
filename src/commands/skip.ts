@@ -35,8 +35,8 @@ export class Skip extends AbstractCommand {
         if (
             !interaction ||
             !interaction.guildId ||
-            !this.audioPlayer ||
-            this.audioPlayer.state.status === AudioPlayerStatus.Paused
+            (this.audioPlayer &&
+                this.audioPlayer.state.status === AudioPlayerStatus.Paused)
         )
             return;
         const queue: Queue | undefined = await this.getQueue();
@@ -49,6 +49,11 @@ export class Skip extends AbstractCommand {
             interaction: interaction,
             timeout: 200,
         });
-        this.audioPlayer.emit('debug', 'skip');
+        if (this.audioPlayer) this.audioPlayer.emit('debug', 'skip');
+        else
+            this.client.emitEvent('executeCommand', {
+                name: 'Play',
+                guildId: queue.guildId,
+            });
     }
 }

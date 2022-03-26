@@ -1,3 +1,4 @@
+import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -28,7 +29,10 @@ export class PageBackward extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'pageBackward', 'label']),
             )
-            .setDisabled(Queue.songsPerPage >= queue.size - 1)
+            .setDisabled(
+                this.audioPlayer?.state.status === AudioPlayerStatus.Paused ||
+                    Queue.songsPerPage >= queue.size - 1,
+            )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

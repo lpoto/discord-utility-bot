@@ -27,33 +27,49 @@ export class Play extends AbstractCommand {
     private async next(
         interaction?: ButtonInteraction,
         error?: boolean,
+        retries: number = 0,
     ): Promise<void> {
         if (!this.client.user) return;
+        if (retries >= 5) return;
         let queue: Queue | undefined = await Queue.findOne({
             clientId: this.client.user.id,
             guildId: this.guildId,
+        }).catch((e) => {
+            this.client.emitEvent('error', e);
+            return undefined;
         });
         if (!queue) return;
+        try {
+            /*
+             * Determine if a song needs to be removed from the queue,
+             * pushed to the back of the queue or nothing at all.
+             */
+            if (error || !queue.hasOption(QueueOption.Options.LOOP))
+                queue = await queue.removeHeadSong(true);
 
-        /*
-         * Determine if a song needs to be removed from the queue,
-         * pushed to the back of the queue or nothing at all.
-         */
-        if (error || !queue.hasOption(QueueOption.Options.LOOP))
-            queue = await queue.removeHeadSong(true);
+            queue.color = Math.floor(Math.random() * 16777215);
+            queue = await queue.save();
 
-        queue.color = Math.floor(Math.random() * 16777215);
-        queue = await queue.save();
-
-        this.execute(interaction).catch((e) => {
-            this.client.emit('error', e);
-            if (queue)
+            this.execute(interaction).catch((e) => {
+                this.client.emit('error', e);
+                if (queue)
+                    this.client.emitEvent('queueMessageUpdate', {
+                        queue: queue,
+                        interaction: interaction,
+                        timeout: 300,
+                    });
+                this.next(interaction, true, retries + 1);
+            });
+        } catch (e) {
+            if (e instanceof Error) this.client.emitEvent('error', e);
+            if (retries === 0)
                 this.client.emitEvent('queueMessageUpdate', {
                     queue: queue,
                     interaction: interaction,
                     timeout: 300,
                 });
-        });
+            this.next(interaction, error, retries + 1);
+        }
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
@@ -152,24 +168,20 @@ export class Play extends AbstractCommand {
                         audioPlayer?.stop();
                         this.next(interaction);
                     })
-                    .on('error', (e) => {
+                    .on('error', async (e) => {
                         /* on error remove all occurances of the song
                          * that threw error from the queue */
+                        console.log('Error when playing: ', e?.message);
                         timer?.stop();
                         audioPlayer?.removeAllListeners();
                         audioPlayer?.stop();
-                        this.getQueue().then((q) => {
-                            if (!q || q.curPageSongs.length === 0) return;
-                            const url: string = q.curPageSongs[0].url;
-                            q.curPageSongs = q.curPageSongs.filter(
-                                (s) => s.url !== url,
-                            );
-                            q.save().then(() => {
-                                this.next(interaction);
-                            });
-                        });
-                        console.log('Error when playing: ', e?.message);
-                        // try to play the song next in queue
+                        const q: Queue | undefined = await this.getQueue();
+                        if (!q || q.curPageSongs.length === 0) return;
+                        const url: string = q.curPageSongs[0].url;
+                        q.curPageSongs = q.curPageSongs.filter(
+                            (s) => s.url !== url,
+                        );
+                        await q.save();
                         this.next(interaction, true);
                     })
                     .on('unsubscribe', () => {

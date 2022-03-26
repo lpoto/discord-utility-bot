@@ -104,8 +104,8 @@ export class QueueEmbed extends MessageEmbed {
 
     private toStringWrapped(song: Song): string {
         let name: string = song.name.replace(/\|/g, '│');
-        const lineLength: number = 30;
-        const split: string = '\n> ㅤ';
+        const lineLength = 30;
+        const split = '\n> ㅤ';
 
         if (name.length > 100) name = name.substring(0, 100);
         const re = new RegExp(

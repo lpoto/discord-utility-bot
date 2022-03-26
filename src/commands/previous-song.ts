@@ -64,14 +64,11 @@ export class previousSong extends AbstractCommand {
             timeout: 300,
         });
 
-        if (!this.audioPlayer) {
-            if (!interaction.guildId) return;
+        if (!this.audioPlayer)
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: interaction.guildId,
+                guildId: queue.guildId,
             });
-        } else {
-            this.audioPlayer.emit('debug', 'previous');
-        }
+        else this.audioPlayer.emit('debug', 'previous');
     }
 }

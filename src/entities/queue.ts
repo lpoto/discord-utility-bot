@@ -184,7 +184,7 @@ export class Queue extends BaseEntity {
             where: {
                 queue: this,
                 position: minPosition,
-                active: true
+                active: true,
             },
         });
     }

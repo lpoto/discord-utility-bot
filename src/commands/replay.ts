@@ -34,8 +34,8 @@ export class Replay extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (
             !interaction ||
-            !this.audioPlayer ||
-            this.audioPlayer.state.status === AudioPlayerStatus.Paused
+            (this.audioPlayer &&
+                this.audioPlayer.state.status === AudioPlayerStatus.Paused)
         )
             return;
         const queue: Queue | undefined = await this.getQueue();
@@ -49,6 +49,11 @@ export class Replay extends AbstractCommand {
 
         // emit replay debug message to audioPlayer
         // (replay event handled in play command)
-        this.audioPlayer.emit('debug', 'replay');
+        if (this.audioPlayer) this.audioPlayer.emit('debug', 'replay');
+        else
+            this.client.emitEvent('executeCommand', {
+                name: 'Play',
+                guildId: queue.guildId,
+            });
     }
 }
