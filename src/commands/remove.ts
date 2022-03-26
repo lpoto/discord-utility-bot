@@ -99,7 +99,8 @@ export class Remove extends AbstractCommand {
 
         for await (const i of interaction.values) {
             const s: Song = queue.curPageSongs[Number(i)];
-            await s.remove();
+            s.active = false;
+            await s.save();
         }
         await queue.reload();
 

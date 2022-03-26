@@ -127,7 +127,7 @@ export class Stop extends AbstractCommand {
         interaction: ButtonInteraction,
     ): void {
         if (queue.size > 0) {
-            queue.getAllSongs().then((songs) => {
+            queue.getAllSongsWithoutHead().then((songs) => {
                 if (!songs) return;
                 const attachment = new MessageAttachment(
                     Buffer.from(

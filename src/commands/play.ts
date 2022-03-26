@@ -73,9 +73,8 @@ export class Play extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!this.client.user) return;
 
-        const connection: VoiceConnection | null = this.client.getVoiceConnection(
-            this.guildId,
-        );
+        const connection: VoiceConnection | null =
+            this.client.getVoiceConnection(this.guildId);
         if (!connection) return;
 
         const queue: Queue | undefined = await Queue.findOne({
@@ -104,9 +103,8 @@ export class Play extends AbstractCommand {
             });
 
         if (!guild || !this.connection?.joinConfig.channelId) return;
-        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
-            this.connection?.joinConfig.channelId,
-        );
+        const channel: NonThreadGuildBasedChannel | null =
+            await guild.channels.fetch(this.connection?.joinConfig.channelId);
         if (
             !channel ||
             !(channel instanceof VoiceChannel) ||

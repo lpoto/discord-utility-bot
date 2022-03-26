@@ -56,7 +56,7 @@ export class Queue extends BaseEntity {
         // Set a headSong (song with smallest position)
         await this.reloadHeadSong();
         if (this.headSong)
-            this.headSong.previous = await this.headSong.getPrevious;
+            this.headSong.previous = await this.headSong.prev;
 
         // Load only as many songs that fit a single embed page (based on offset)
         this.curPageSongs = await Song.createQueryBuilder('song')
@@ -78,6 +78,7 @@ export class Queue extends BaseEntity {
         const minInactivePosition: number = await Song.minInactivePosition(
             this,
         );
+        if (!this.headSong)
         this.previousSong = await Song.findOne({
             where: {
                 queue: this,
@@ -89,6 +90,16 @@ export class Queue extends BaseEntity {
 
     public async getAllSongs(): Promise<Song[]> {
         return Song.find({ queue: this, active: true });
+    }
+
+    public async getAllSongsWithoutHead(): Promise<Song[]> {
+        if (this.headSong)
+            return Song.find({
+                queue: this,
+                active: true,
+                id: Not(this.headSong.id),
+            });
+        else return Song.find({ queue: this, active: true });
     }
 
     public hasOption(o: QueueOption.Options): boolean {
@@ -157,7 +168,7 @@ export class Queue extends BaseEntity {
         const song: Song = await this.headSong?.save();
         await this.reloadHeadSong();
         if (this.headSong && this.headSong.id !== song.id) {
-            this.headSong.getPrevious = Promise.resolve(song);
+            this.headSong.prev = Promise.resolve(song);
             await this.headSong.save();
         }
         if (reload) await this.reload();

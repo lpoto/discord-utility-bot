@@ -131,7 +131,7 @@ export class Clear extends AbstractCommand {
         queue.offset = 0;
         queue = await queue.save();
         if (queue.size > 0) {
-            queue.getAllSongs().then((songs) => {
+            queue.getAllSongsWithoutHead().then((songs) => {
                 if (!songs) return;
                 const attachment = new MessageAttachment(
                     Buffer.from(
@@ -167,10 +167,16 @@ export class Clear extends AbstractCommand {
         queue = await queue.save();
 
         // remove all songs but the head song
-        await Song.createQueryBuilder('song')
-            .where({ id: Not(queue.headSong?.id) })
-            .delete()
-            .execute();
+        if (queue.headSong)
+            await Song.update(
+                { active: true, queue: queue, id: Not(queue.headSong.id) },
+                { active: false },
+            );
+        else
+            await Song.update(
+                { active: true, queue: queue},
+                { active: false },
+            );
 
         this.client.emitEvent('queueMessageUpdate', {
             interaction: interaction,

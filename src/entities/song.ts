@@ -4,7 +4,9 @@ import {
     Column,
     Entity,
     Index,
+    ManyToMany,
     ManyToOne,
+    OneToMany,
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Queue } from './queue';
@@ -55,12 +57,11 @@ export class Song extends BaseEntity {
     public queue: Queue;
 
     @ManyToOne(() => Song, {
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-        orphanedRowAction: 'delete',
+        orphanedRowAction: 'nullify',
         lazy: true,
+        nullable: true
     })
-    public getPrevious: Promise<Song>;
+    public prev: Promise<Song | null>;
 
     public previous: Song | null;
 
