@@ -88,6 +88,7 @@ export class Shuffle extends AbstractCommand {
             this.updateQueue({
                 queue: queue,
                 interaction: interaction,
+                embedOnly: true,
             });
         });
     }

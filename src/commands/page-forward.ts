@@ -46,6 +46,7 @@ export class PageForward extends AbstractCommand {
             this.updateQueue({
                 queue: q,
                 interaction: interaction,
+                embedOnly: true,
             });
         });
     }

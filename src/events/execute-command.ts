@@ -44,7 +44,6 @@ export class OnExecuteCommand extends AbstractClientEvent {
         guildId: string,
         interaction?: ButtonInteraction,
     ) {
-        console.log(name);
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
         command.execute(interaction).catch((e) => {

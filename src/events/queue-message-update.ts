@@ -72,6 +72,8 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
         if (guildId in this.updatingOptions) {
             if (options.message && !this.updatingOptions[guildId].message)
                 this.updatingOptions[guildId].message = options.message;
+            if (!options.embedOnly)
+                this.updatingOptions[guildId].embedOnly = false;
             if (options.interaction)
                 if (!this.updatingOptions[guildId].interaction) {
                     this.updatingOptions[guildId].interaction =
@@ -202,6 +204,9 @@ export class OnQueueMessageUpdate extends AbstractClientEvent {
     ): InteractionReplyOptions {
         const embedOptions: QueueEmbedOptions = options as QueueEmbedOptions;
         embedOptions.client = this.client;
+        if (options.embedOnly) {
+            return { embeds: [new QueueEmbed(embedOptions)] };
+        }
         const components: MessageActionRow[] = [];
         let commandActionRow: MessageActionRow[] = [];
         commandActionRow = commandActionRow.concat(

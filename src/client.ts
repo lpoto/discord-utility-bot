@@ -123,8 +123,10 @@ export class MusicClient extends Client {
         player: CustomAudioPlayer | null,
     ): void {
         if (!player) {
-            if (guildId in this.audioPlayers)
+            if (guildId in this.audioPlayers) {
+                this.audioPlayers[guildId].kill();
                 delete this.audioPlayers[guildId];
+            }
         } else this.audioPlayers[guildId] = player;
     }
 

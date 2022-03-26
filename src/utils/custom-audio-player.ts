@@ -81,8 +81,8 @@ export class CustomAudioPlayer {
 
     public kill(): void {
         try {
-            this.ap.stop();
             this.ap.removeAllListeners();
+            this.ap.stop();
         } catch (e) {
             return;
         }

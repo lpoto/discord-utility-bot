@@ -52,6 +52,7 @@ export class PageBackward extends AbstractCommand {
             this.updateQueue({
                 interaction: interaction,
                 queue: q,
+                embedOnly: true,
             });
         });
     }

@@ -57,7 +57,7 @@ export class SongTimer {
 
                 if (!audioPlayer) return this.stop();
                 if (audioPlayer.paused) return;
-                if (audioPlayer.playing) return;
+                if (!audioPlayer.playing) return;
 
                 this.canUpdate = false;
 
@@ -66,6 +66,7 @@ export class SongTimer {
                     message: this.message,
                     checkIfUpdated: true,
                     doNotSetUpdated: true,
+                    embedOnly: true,
                     timeout: 500,
                     onUpdate: async () => {
                         setTimeout(() => {

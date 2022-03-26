@@ -73,8 +73,9 @@ export class Play extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!this.client.user) return;
 
-        const connection: VoiceConnection | null =
-            this.client.getVoiceConnection(this.guildId);
+        const connection: VoiceConnection | null = this.client.getVoiceConnection(
+            this.guildId,
+        );
         if (!connection) return;
 
         const queue: Queue | undefined = await Queue.findOne({
@@ -85,12 +86,13 @@ export class Play extends AbstractCommand {
         if (!queue) return;
 
         if (!queue.headSong) {
+            await queue.reload();
             this.client.emitEvent('queueMessageUpdate', {
                 queue: queue,
                 interaction: interaction,
                 timeout: 300,
             });
-            return;
+            if (!queue.headSong) return;
         }
 
         // play music when at least one (non bot) listener (unmuted)
@@ -100,9 +102,11 @@ export class Play extends AbstractCommand {
             .catch((e) => {
                 this.client.emitEvent('error', e);
             });
+
         if (!guild || !this.connection?.joinConfig.channelId) return;
-        const channel: NonThreadGuildBasedChannel | null =
-            await guild.channels.fetch(this.connection?.joinConfig.channelId);
+        const channel: NonThreadGuildBasedChannel | null = await guild.channels.fetch(
+            this.connection?.joinConfig.channelId,
+        );
         if (
             !channel ||
             !(channel instanceof VoiceChannel) ||
@@ -160,6 +164,7 @@ export class Play extends AbstractCommand {
                         // when the songs stops playing
                         timer?.stop();
                         audioPlayer?.kill();
+                        this.client.setAudioPlayer(queue.guildId, null);
                         this.next(interaction);
                     })
                     .onError(async (e) => {
@@ -168,6 +173,7 @@ export class Play extends AbstractCommand {
                         console.log('Error when playing: ', e?.message);
                         timer?.stop();
                         audioPlayer?.kill();
+                        this.client.setAudioPlayer(queue.guildId, null);
                         const q: Queue | undefined = await this.getQueue();
                         if (!q || q.curPageSongs.length === 0) return;
                         const url: string = q.curPageSongs[0].url;
@@ -180,6 +186,7 @@ export class Play extends AbstractCommand {
                     .onUnsubscribe(async () => {
                         timer?.stop();
                         audioPlayer?.kill();
+                        this.client.setAudioPlayer(queue.guildId, null);
                         console.log('Unsubscribed audio player');
                     })
                     .onTrigger(
