@@ -1,7 +1,6 @@
-import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { NewSongOptions } from '../../';
 import { MusicClient } from '../client';
-import { SongFinder } from '../utils';
+import { CustomAudioPlayer, SongFinder } from '../utils';
 import { AbstractClientEvent } from '../utils/abstract-client-event';
 import { Queue, Song } from '../entities';
 
@@ -109,7 +108,7 @@ export class OnNewSong extends AbstractClientEvent {
                         clientId: this.client.user.id,
                     }).then((queue) => {
                         if (!queue) return;
-                        const audioPlayer: AudioPlayer | null =
+                        const audioPlayer: CustomAudioPlayer | null =
                             this.client.getAudioPlayer(guildId);
                         this.client.emitEvent('queueMessageUpdate', {
                             queue: queue,
@@ -117,10 +116,7 @@ export class OnNewSong extends AbstractClientEvent {
                         });
                         if (
                             !audioPlayer ||
-                            (audioPlayer.state.status !==
-                                AudioPlayerStatus.Playing &&
-                                audioPlayer.state.status !==
-                                    AudioPlayerStatus.Paused)
+                            (!audioPlayer.playing && audioPlayer.paused)
                         ) {
                             this.client.emitEvent('executeCommand', {
                                 name: 'Play',

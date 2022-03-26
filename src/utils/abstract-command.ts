@@ -1,4 +1,4 @@
-import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
+import { VoiceConnection } from '@discordjs/voice';
 import { randomUUID } from 'crypto';
 import {
     ButtonInteraction,
@@ -9,10 +9,12 @@ import {
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { CommandName, LanguageKeyPath, UpdateQueueOptions } from '../../';
+import { CustomAudioPlayer } from './custom-audio-player';
 
 export abstract class AbstractCommand {
     private commandId: string;
     private commandId2: string;
+    private shouldDefer: boolean;
     protected client: MusicClient;
     protected guildId: string;
 
@@ -21,6 +23,7 @@ export abstract class AbstractCommand {
         this.guildId = guildId;
         this.commandId = this.name + '||' + randomUUID();
         this.commandId2 = this.name + '||' + randomUUID();
+        this.shouldDefer = true;
     }
 
     public get id(): string {
@@ -29,6 +32,10 @@ export abstract class AbstractCommand {
 
     public get alwaysExecute(): boolean {
         return false;
+    }
+
+    public get needsDefer(): boolean {
+        return this.alwaysExecute ? false : this.shouldDefer;
     }
 
     public get interactionTimeout(): number {
@@ -44,7 +51,7 @@ export abstract class AbstractCommand {
         return (<any>this).constructor.name;
     }
 
-    public get audioPlayer(): AudioPlayer | null {
+    public get audioPlayer(): CustomAudioPlayer | null {
         return this.client.getAudioPlayer(this.guildId);
     }
 
@@ -108,6 +115,7 @@ export abstract class AbstractCommand {
     }
 
     protected updateQueue(options: UpdateQueueOptions): void {
+        this.shouldDefer = false;
         if (options.onUpdate === undefined)
             options.onUpdate = () => this.deferInteractions();
         if (options.onError === undefined)

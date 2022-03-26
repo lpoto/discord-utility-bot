@@ -29,7 +29,8 @@ export class previousSong extends AbstractCommand {
                 this.translate(['music', 'commands', 'previousSong', 'label']),
             )
             .setDisabled(
-                (!queue.headSong?.previous && !queue.previousSong) ||
+                this.audioPlayer?.paused ||
+                    (!queue.headSong?.previous && !queue.previousSong) ||
                     queue.hasOption(QueueOption.Options.LOOP),
             )
             .setStyle(MessageButtonStyles.SECONDARY)
@@ -37,7 +38,7 @@ export class previousSong extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction) return;
+        if (!interaction || this.audioPlayer?.paused) return;
         const queue: Queue | undefined = await this.getQueue();
         if (
             !queue ||
@@ -58,17 +59,12 @@ export class previousSong extends AbstractCommand {
         song.queue = queue;
         await song.save();
 
-        this.updateQueue({
-            queue: queue,
-            interaction: interaction,
-            timeout: 300,
-        });
-
         if (!this.audioPlayer)
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: queue.guildId,
+                interaction: interaction,
             });
-        else this.audioPlayer.emit('debug', 'previous');
+        else this.audioPlayer.trigger('previous', interaction);
     }
 }

@@ -1,4 +1,3 @@
-import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -22,38 +21,25 @@ export class Replay extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'replay', 'label']))
-            .setDisabled(
-                queue.size === 0 ||
-                    this.audioPlayer?.state.status ===
-                        AudioPlayerStatus.Paused,
-            )
+            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            (this.audioPlayer &&
-                this.audioPlayer.state.status === AudioPlayerStatus.Paused)
-        )
+        if (!interaction || (this.audioPlayer && this.audioPlayer.paused))
             return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        this.updateQueue({
-            queue: queue,
-            interaction: interaction,
-            timeout: 250,
-        });
-
         // emit replay debug message to audioPlayer
         // (replay event handled in play command)
-        if (this.audioPlayer) this.audioPlayer.emit('debug', 'replay');
+        if (this.audioPlayer) this.audioPlayer.trigger('replay', interaction);
         else
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: queue.guildId,
+                interaction: interaction,
             });
     }
 }

@@ -1,7 +1,7 @@
-import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { Guild, VoiceState } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { CustomAudioPlayer } from '../utils';
 import { AbstractClientEvent } from '../utils/abstract-client-event';
 
 export class OnVoiceStateUpdate extends AbstractClientEvent {
@@ -25,13 +25,11 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
             voiceStateAfter.member?.id !== this.client.user?.id &&
             guild.me?.voice.channel
         ) {
-            const audioPlayer: AudioPlayer | null =
+            const audioPlayer: CustomAudioPlayer | null =
                 this.client.getAudioPlayer(guildId);
             if (
                 (!audioPlayer ||
-                    (audioPlayer.state.status !== AudioPlayerStatus.Playing &&
-                        audioPlayer.state.status !==
-                            AudioPlayerStatus.Paused)) &&
+                    (!audioPlayer.playing && audioPlayer.paused)) &&
                 voiceStateAfter.channel?.id === guild.me?.voice.channel.id &&
                 ((voiceStatePrev.deaf && !voiceStateAfter.deaf) ||
                     (voiceStatePrev.channel?.id !==

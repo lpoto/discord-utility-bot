@@ -6,7 +6,6 @@ import {
     JoinTable,
     ManyToMany,
     Not,
-    OneToMany,
     PrimaryColumn,
 } from 'typeorm';
 import { Languages } from '../translation';
@@ -41,19 +40,9 @@ export class Queue extends BaseEntity {
     @JoinTable()
     public options: QueueOption[];
 
-    @OneToMany(() => Song, (song) => song.queue, {
-        cascade: true,
-        orphanedRowAction: 'delete',
-        lazy: true,
-    })
-    public allSongs: Promise<Song[]>;
-
     public headSong: Song | undefined;
-
     public previousSong: Song | undefined;
-
     public curPageSongs: Song[] = [];
-
     public size = 0;
 
     @AfterLoad()

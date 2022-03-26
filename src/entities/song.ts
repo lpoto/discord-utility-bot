@@ -46,7 +46,7 @@ export class Song extends BaseEntity {
     public active: boolean;
 
     @Index()
-    @ManyToOne(() => Queue, (queue) => queue.allSongs, {
+    @ManyToOne(() => Queue, {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
         orphanedRowAction: 'delete',

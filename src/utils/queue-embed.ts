@@ -2,8 +2,8 @@ import { MessageEmbed } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue, Song, QueueOption } from '../entities';
 import { QueueEmbedOptions } from '../../';
-import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { SongFinder } from './song-finder';
+import { CustomAudioPlayer } from './custom-audio-player';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
@@ -197,20 +197,16 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private getSongLoader(): string {
-        const audioPlayer: AudioPlayer | null = this.client.getAudioPlayer(
-            this.queue.guildId,
-        );
+        const audioPlayer: CustomAudioPlayer | null =
+            this.client.getAudioPlayer(this.queue.guildId);
         if (
             !this.queue.headSong ||
             this.queue.headSong.durationSeconds < 10 ||
             !audioPlayer ||
-            (audioPlayer.state.status !== AudioPlayerStatus.Playing &&
-                audioPlayer.state.status !== AudioPlayerStatus.Paused)
+            (!audioPlayer.playing && !audioPlayer.paused)
         )
             return '';
-        const t1: number = Math.round(
-            audioPlayer.state.playbackDuration / 1000,
-        );
+        const t1: number = audioPlayer.playbackDuration;
         const t2: number = this.queue.headSong?.durationSeconds;
         const s1: string = SongFinder.secondsToTimeString(t1);
         const s2: string = SongFinder.secondsToTimeString(t2);

@@ -17,8 +17,16 @@ export class OnExecuteCommand extends AbstractClientEvent {
     }
 
     public async callback(options: ExecuteCommandOptions): Promise<void> {
-        if (options.name && options.guildId)
-            return this.execute(options.name, options.guildId);
+        if (options.name && (options.interaction?.guildId || options.guildId))
+            return this.execute(
+                options.name,
+                options.guildId
+                    ? options.guildId
+                    : options.interaction!.guildId!,
+                options.interaction instanceof ButtonInteraction
+                    ? options.interaction
+                    : undefined,
+            );
         if (
             options.interaction &&
             options.interaction instanceof SelectMenuInteraction
@@ -31,11 +39,15 @@ export class OnExecuteCommand extends AbstractClientEvent {
             return this.executeFromInteraction(options.interaction);
     }
 
-    private execute(name: CommandName, guildId: string) {
+    private execute(
+        name: CommandName,
+        guildId: string,
+        interaction?: ButtonInteraction,
+    ) {
+        console.log(name);
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;
-        command.execute().catch((e) => {
-            console.error('Error when executing command');
+        command.execute(interaction).catch((e) => {
             this.client.emitEvent('error', e);
         });
     }
@@ -87,12 +99,23 @@ export class OnExecuteCommand extends AbstractClientEvent {
                     }
 
                     const timeout: NodeJS.Timeout = setTimeout(async () => {
-                        return command.execute(interaction).catch((e) => {
-                            this.client.emitEvent('error', e);
-                            const options: ActiveCommandsOptions =
-                                this.client.activeCommandsOptions;
-                            options.deferInteractions(name, guildId, true);
-                        });
+                        return command
+                            .execute(interaction)
+                            .then(() => {
+                                const t: NodeJS.Timeout = setTimeout(() => {
+                                    if (!command.needsDefer) return;
+                                    const o: ActiveCommandsOptions =
+                                        this.client.activeCommandsOptions;
+                                    o.deferInteractions(name, guildId, true);
+                                }, 100);
+                                t.unref();
+                            })
+                            .catch((e) => {
+                                this.client.emitEvent('error', e);
+                                const options: ActiveCommandsOptions =
+                                    this.client.activeCommandsOptions;
+                                options.deferInteractions(name, guildId, true);
+                            });
                     }, command.interactionTimeout);
                     timeout.unref();
                     return;

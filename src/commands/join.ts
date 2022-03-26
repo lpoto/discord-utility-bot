@@ -1,9 +1,8 @@
-import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
-import { AbstractCommand } from '../utils';
+import { AbstractCommand, CustomAudioPlayer } from '../utils';
 
 export class Join extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -40,15 +39,9 @@ export class Join extends AbstractCommand {
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
-        const audioPlayer: AudioPlayer | null = this.audioPlayer;
-        if (
-            audioPlayer &&
-            audioPlayer.state.status === AudioPlayerStatus.Playing
-        )
-            return;
-        try {
-            audioPlayer?.stop();
-        } catch (e) {}
+        const audioPlayer: CustomAudioPlayer | null = this.audioPlayer;
+        if (audioPlayer && audioPlayer.playing) return;
+        audioPlayer?.kill();
         this.client.setAudioPlayer(queue.guildId, null);
         this.updateQueue({
             interaction: interaction,

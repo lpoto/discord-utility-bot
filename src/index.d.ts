@@ -57,6 +57,7 @@ export class Command {
     public get name(): string;
     public get interactionTimeout(): number;
     public get alwaysExecute(): boolean;
+    public get needsDefer(): boolean;
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;
@@ -137,3 +138,5 @@ export interface ExecuteCommandOptions {
     name?: CommandName;
     guildId?: string;
 }
+
+export type CustomAudioPlayerTrigger = 'skip' | 'replay' | 'previous';

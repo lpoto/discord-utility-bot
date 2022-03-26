@@ -1,4 +1,3 @@
-import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -20,7 +19,7 @@ export class Pause extends AbstractCommand {
             .setLabel(this.translate(['music', 'commands', 'pause', 'label']))
             .setDisabled(queue.size === 0)
             .setStyle(
-                this.audioPlayer?.state.status === AudioPlayerStatus.Paused
+                this.audioPlayer?.paused
                     ? MessageButtonStyles.SUCCESS
                     : MessageButtonStyles.SECONDARY,
             )
@@ -33,8 +32,7 @@ export class Pause extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         const audioPlayer = this.audioPlayer;
         if (!queue || !audioPlayer) return;
-        if (audioPlayer.state.status === AudioPlayerStatus.Paused)
-            audioPlayer.unpause();
+        if (audioPlayer.paused) audioPlayer.unpause();
         else audioPlayer.pause();
         this.updateQueue({
             interaction: interaction,

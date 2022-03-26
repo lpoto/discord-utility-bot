@@ -1,7 +1,7 @@
-import { AudioPlayer, AudioPlayerStatus } from '@discordjs/voice';
 import { Guild, Message, TextChannel } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
+import { CustomAudioPlayer } from './custom-audio-player';
 
 export class SongTimer {
     private message: Message | undefined;
@@ -52,14 +52,12 @@ export class SongTimer {
                 if (!queue) return this.stop();
                 if (!this.message) this.message = await this.getMessage(queue);
                 if (!this.message || !this.guildId) return this.stop();
-                const audioPlayer: AudioPlayer | null =
+                const audioPlayer: CustomAudioPlayer | null =
                     this.client.getAudioPlayer(this.guildId);
 
                 if (!audioPlayer) return this.stop();
-                if (audioPlayer.state.status === AudioPlayerStatus.Paused)
-                    return;
-                if (audioPlayer.state.status !== AudioPlayerStatus.Playing)
-                    return;
+                if (audioPlayer.paused) return;
+                if (audioPlayer.playing) return;
 
                 this.canUpdate = false;
 

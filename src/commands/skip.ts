@@ -1,4 +1,3 @@
-import { AudioPlayerStatus } from '@discordjs/voice';
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -22,11 +21,7 @@ export class Skip extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
-            .setDisabled(
-                queue.size === 0 ||
-                    this.audioPlayer?.state.status ===
-                        AudioPlayerStatus.Paused,
-            )
+            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -35,8 +30,7 @@ export class Skip extends AbstractCommand {
         if (
             !interaction ||
             !interaction.guildId ||
-            (this.audioPlayer &&
-                this.audioPlayer.state.status === AudioPlayerStatus.Paused)
+            (this.audioPlayer && this.audioPlayer.paused)
         )
             return;
         const queue: Queue | undefined = await this.getQueue();
@@ -44,16 +38,12 @@ export class Skip extends AbstractCommand {
 
         // emit skip debug message to audioPlayer
         // (skip event handled in play command)
-        this.updateQueue({
-            queue: queue,
-            interaction: interaction,
-            timeout: 200,
-        });
-        if (this.audioPlayer) this.audioPlayer.emit('debug', 'skip');
+        if (this.audioPlayer) this.audioPlayer.trigger('skip', interaction);
         else
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
                 guildId: queue.guildId,
+                interaction: interaction,
             });
     }
 }

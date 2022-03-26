@@ -19,8 +19,13 @@ export class OnError extends AbstractClientEvent {
         /* if discordApiError, do not log errors when fetching already
          * deleted messages or missing permissions to delete threads...*/
         if (!error) return;
-        if (error instanceof DiscordAPIError) {
-            if (
+        if (
+            (error.name &&
+                ['Error [INTERACTION_ALREADY_REPLIED]'].includes(
+                    error.name.toString().trim(),
+                )) ||
+            error instanceof EntityNotFoundError ||
+            (error instanceof DiscordAPIError &&
                 error.code &&
                 [
                     '10008',
@@ -31,10 +36,9 @@ export class OnError extends AbstractClientEvent {
                     '40060',
                     '50083',
                     '50005',
-                ].includes(error.code.toString())
-            )
-                return;
-        } else if (error instanceof EntityNotFoundError) return;
+                ].includes(error.code.toString()))
+        )
+            return;
         console.error('Error: ', error);
     }
 }

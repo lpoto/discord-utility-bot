@@ -1,4 +1,4 @@
-import { AudioPlayer, VoiceConnection } from '@discordjs/voice';
+import { VoiceConnection } from '@discordjs/voice';
 import {
     AnyChannel,
     Client,
@@ -15,7 +15,11 @@ import {
     MusicClientOptions,
 } from '../';
 import { Translator } from './translation';
-import { ActiveCommandsOptions, PermissionChecker } from './utils';
+import {
+    ActiveCommandsOptions,
+    CustomAudioPlayer,
+    PermissionChecker,
+} from './utils';
 import * as Events from './events';
 import { Queue } from './entities';
 import { Routes } from 'discord-api-types/v9';
@@ -26,7 +30,7 @@ export class MusicClient extends Client {
     private translating: Translator;
     private permissionChecker: PermissionChecker;
     private voiceConnections: { [guildId: string]: VoiceConnection };
-    private audioPlayers: { [guildId: string]: AudioPlayer };
+    private audioPlayers: { [guildId: string]: CustomAudioPlayer };
     private clientReady: boolean;
     private shouldNotBeUpdated: { [guildId: string]: boolean };
     private activeOptions: ActiveCommandsOptions;
@@ -108,13 +112,16 @@ export class MusicClient extends Client {
         delete this.voiceConnections[guildId];
     }
 
-    public getAudioPlayer(guildId: string): AudioPlayer | null {
+    public getAudioPlayer(guildId: string): CustomAudioPlayer | null {
         return guildId in this.audioPlayers
             ? this.audioPlayers[guildId]
             : null;
     }
 
-    public setAudioPlayer(guildId: string, player: AudioPlayer | null): void {
+    public setAudioPlayer(
+        guildId: string,
+        player: CustomAudioPlayer | null,
+    ): void {
         if (!player) {
             if (guildId in this.audioPlayers)
                 delete this.audioPlayers[guildId];
