@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
+import { Queue, QueueOption } from '../entities';
 import { AbstractCommand } from '../utils';
 
 export class Skip extends AbstractCommand {
@@ -21,7 +21,12 @@ export class Skip extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
-            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
+            .setDisabled(
+                queue.size === 0 ||
+                    this.audioPlayer?.paused ||
+                    (!queue.headSong?.previous && !queue.previousSong) ||
+                    queue.hasOption(QueueOption.Options.LOOP),
+            )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

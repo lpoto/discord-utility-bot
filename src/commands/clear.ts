@@ -174,7 +174,7 @@ export class Clear extends AbstractCommand {
             );
         else
             await Song.update(
-                { active: true, queue: queue},
+                { active: true, queue: queue },
                 { active: false },
             );
 
