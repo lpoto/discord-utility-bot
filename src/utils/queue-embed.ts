@@ -100,8 +100,10 @@ export class QueueEmbed extends MessageEmbed {
 
     private toString(song: Song): string {
         let name: string = song.name.replace(/\|/g, '│');
-        if (name.length > 100) name = name.substring(0, 100);
-        return name;
+        const d: string = `\u3000*${song.durationString}*`;
+        if (name.length + d.length > 100)
+            name = name.substring(0, 100 - d.length);
+        return name + d;
     }
 
     private toStringWrapped(song: Song): string {
@@ -126,20 +128,19 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private toStringShorter(song: Song): string {
-        const name: string = song.name.replace(/\|/g, '│');
+        let name: string = song.name.replace(/\|/g, '│');
         if (name.length > 35) {
+            name = name.substring(0, 40);
             let count = 0;
             const chars: string[] = this.bigChars();
             const chars2: string[] = this.smallChars();
             chars.map((c) => {
-                count +=
-                    name.split(c).length -
-                    (count > 25 ? 2 : count > 10 ? 1 : 0);
+                count += name.split(c).length - count / 10;
             });
             chars2.map((c) => {
                 count -= name.split(c).length - 1;
             });
-            const x: number = 35 - Math.round(count / 2);
+            const x: number = 32 - Math.round(count / 2);
             return name.substring(0, x).trim() + '...';
         }
         return name;
@@ -170,7 +171,6 @@ export class QueueEmbed extends MessageEmbed {
             'Y',
             'X',
             'W',
-            ' ',
         ];
     }
 
@@ -184,15 +184,14 @@ export class QueueEmbed extends MessageEmbed {
             '-',
             'f',
             'j',
-            'k',
             '1',
             '|',
-            '(',
-            ')',
             '!',
             '?',
             'r',
             't',
+            '│',
+            '/',
         ];
     }
 
