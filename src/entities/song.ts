@@ -32,6 +32,9 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     public name: string;
 
+    @Column('text', { nullable: true })
+    public shortName: string | null;
+
     @Column({ nullable: false })
     public durationSeconds: number;
 

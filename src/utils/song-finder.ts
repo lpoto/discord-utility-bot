@@ -3,6 +3,7 @@ import ytdl from 'ytdl-core';
 import ytpl from 'ytpl';
 import * as yt from 'youtube-search-without-api-key';
 import { Song } from '../entities';
+import * as canvas from 'canvas';
 
 export class SongFinder {
     private songs: Promise<Song[] | null>;
@@ -38,14 +39,14 @@ export class SongFinder {
             .then((playlist) => {
                 if (playlist && playlist.items && playlist.items.length > 0) {
                     return playlist.items.map((p) => {
-                        return Song.create({
-                            name: this.trimName(p.title),
-                            url: p.url,
-                            durationSeconds: Number(p.durationSec),
-                            durationString: SongFinder.secondsToTimeString(
+                        return this.newSong(
+                            this.trimName(p.title),
+                            p.url,
+                            SongFinder.secondsToTimeString(
                                 Number(p.durationSec),
                             ),
-                        });
+                            Number(p.durationSec),
+                        );
                     });
                 }
                 return null;
@@ -55,16 +56,16 @@ export class SongFinder {
                     .getInfo(url)
                     .then((result) => {
                         return [
-                            Song.create({
-                                name: this.trimName(result.videoDetails.title),
-                                url: result.videoDetails.video_url,
-                                durationSeconds: Number(
-                                    result.videoDetails.lengthSeconds,
-                                ),
-                                durationString: SongFinder.secondsToTimeString(
+                            this.newSong(
+                                this.trimName(result.videoDetails.title),
+                                result.videoDetails.video_url,
+                                SongFinder.secondsToTimeString(
                                     Number(result.videoDetails.lengthSeconds),
                                 ),
-                            }),
+                                Number(
+                                    result.videoDetails.lengthSeconds,
+                                ),
+                            ),
                         ];
                     })
                     .catch(() => {
@@ -81,14 +82,14 @@ export class SongFinder {
             .then(async (results) => {
                 if (!results || results.length < 1) return null;
                 return [
-                    Song.create({
-                        name: this.trimName(results[0].snippet.title),
-                        url: results[0].url,
-                        durationString: results[0].duration_raw,
-                        durationSeconds: SongFinder.durationStringToSeconds(
+                    this.newSong(
+                         this.trimName(results[0].snippet.title),
+                         results[0].url,
+                         results[0].duration_raw,
+                         SongFinder.durationStringToSeconds(
                             results[0].duration_raw,
                         ),
-                    }),
+                    ),
                 ];
             })
             .catch((e) => {
@@ -100,8 +101,7 @@ export class SongFinder {
     private isYoutubeUrl(url: string): boolean {
         if (!url) return false;
         // eslint-disable-next-line max-len
-        const regExp =
-            /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
+        const regExp = /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
         const match: RegExpMatchArray | null = url.match(regExp);
         return match !== null && match !== undefined;
     }
@@ -152,5 +152,31 @@ export class SongFinder {
         return hours > 0
             ? `${hours}:${minutesString}:${secondsString}`
             : `${minutesString}:${secondsString}`;
+    }
+
+    private newSong(
+        title: string,
+        url: string,
+        time: string,
+        seconds: number,
+    ): Song {
+        const song: Song = Song.create({
+            name: this.trimName(title),
+            url: url,
+            durationSeconds: seconds,
+            durationString: time
+        });
+        const c = canvas.createCanvas(100, 100);
+        const context = c.getContext('2d');
+        context.font = 'normal 16px Uni Sans';
+        const n: number = title.length;
+        while (context.measureText(title).width > 270) {
+            title = title.substring(0, title.length - 1);
+        }
+        if (title.length !== n) {
+            title += '...';
+            song.shortName = title;
+        }
+        return song;
     }
 }

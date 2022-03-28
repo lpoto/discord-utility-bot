@@ -4,7 +4,6 @@ import { Queue, Song, QueueOption } from '../entities';
 import { QueueEmbedOptions } from '../../';
 import { SongFinder } from './song-finder';
 import { CustomAudioPlayer } from './custom-audio-player';
-import * as canvas from 'canvas';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
@@ -49,11 +48,11 @@ export class QueueEmbed extends MessageEmbed {
             return `***${index + this.queue.offset + 1}.***\u3000${
                 this.queue.hasOption(QueueOption.Options.EXPANDED)
                     ? this.toString(song)
-                    : this.toStringShorter(song)
+                    : song.shortName === null ? song.name : song.shortName
             }`;
         });
         // show full head song name but wrapp it
-        let headSong = this.toStringWrapped(this.queue.headSong);
+        let headSong = this.wrap(this.queue.headSong);
 
         const duration: string = this.queue.headSong.durationString;
 
@@ -107,7 +106,7 @@ export class QueueEmbed extends MessageEmbed {
         return name + d;
     }
 
-    private toStringWrapped(song: Song): string {
+    private wrap(song: Song): string {
         let name: string = song.name;
         const lineLength = 30;
         const split = '\n> ㅤ';
@@ -126,19 +125,6 @@ export class QueueEmbed extends MessageEmbed {
             if (dif > 0) nameList[i] = '\u2000'.repeat(dif) + nameList[i];
         }
         return nameList.join(split);
-    }
-
-    private toStringShorter(song: Song): string {
-        const c = canvas.createCanvas(100, 100);
-        const context = c.getContext('2d');
-        context.font = 'normal 16px Uni Sans';
-        let name: string = song.name;
-        const n: number = name.length;
-        while (context.measureText(name).width > 270) {
-            name = name.substring(0, name.length - 1);
-        }
-        if (name.length !== n) name += '...';
-        return name;
     }
 
     private getSongLoader(): string {
