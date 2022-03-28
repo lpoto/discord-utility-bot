@@ -39,7 +39,7 @@ export class SongFinder {
                 if (playlist && playlist.items && playlist.items.length > 0) {
                     return playlist.items.map((p) => {
                         return Song.create({
-                            name: p.title,
+                            name: this.trimName(p.title),
                             url: p.url,
                             durationSeconds: Number(p.durationSec),
                             durationString: SongFinder.secondsToTimeString(
@@ -56,7 +56,7 @@ export class SongFinder {
                     .then((result) => {
                         return [
                             Song.create({
-                                name: result.videoDetails.title,
+                                name: this.trimName(result.videoDetails.title),
                                 url: result.videoDetails.video_url,
                                 durationSeconds: Number(
                                     result.videoDetails.lengthSeconds,
@@ -82,7 +82,7 @@ export class SongFinder {
                 if (!results || results.length < 1) return null;
                 return [
                     Song.create({
-                        name: results[0].snippet.title,
+                        name: this.trimName(results[0].snippet.title),
                         url: results[0].url,
                         durationString: results[0].duration_raw,
                         durationSeconds: SongFinder.durationStringToSeconds(
@@ -113,6 +113,28 @@ export class SongFinder {
         else if (hms.length === 2) return hms[0] * 60 + hms[1];
         else if (hms.length === 1) return hms[0];
         return 0;
+    }
+
+    private trimName(name: string): string {
+        name = name.replace(
+            /((\s+)?-?(\s+)?)(\(|\||\[)(\s+)?((offici|audio[^(\d)+]*(\d+)|(\d+)p|lyric(s)?|(\w+)(\s+)version|h(d|q))[^(\)|\||\])]*(\s+)?(\)|\||\])(\s+)?)|(((\s+)?#(\w+))+$)|(off?icij?al(ni)?(\s+)(spot|video|audio)(\s+)$)/gi,
+            '',
+        );
+        name = name.replace(
+            /(\s+)?-?(\s+)?((off?ici([^(spot)]|[^(video)])*(\s+)?(spot|video))|(h(d|q))|(\d+p))$/gi,
+            '',
+        );
+        name = name.replace(/(\/\/)(\/+)?/, '-');
+        name = name.replace(/(\|\|)(\|+)?/, '-');
+        return name
+            .split(/\s+/)
+            .map((w) => {
+                return (
+                    w.charAt(0).toUpperCase() +
+                    w.substring(1, w.length).toLowerCase()
+                );
+            })
+            .join(' ');
     }
 
     public static secondsToTimeString(seconds: number) {

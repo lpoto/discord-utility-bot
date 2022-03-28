@@ -24,7 +24,6 @@ export class Skip extends AbstractCommand {
             .setDisabled(
                 queue.size === 0 ||
                     this.audioPlayer?.paused ||
-                    (!queue.headSong?.previous && !queue.previousSong) ||
                     queue.hasOption(QueueOption.Options.LOOP),
             )
             .setStyle(MessageButtonStyles.SECONDARY)

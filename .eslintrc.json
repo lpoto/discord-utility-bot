@@ -89,6 +89,7 @@
         "no-empty": "off",
         "no-empty-function": "off",
         "no-unused-vars": "off",
-        "no-underscore-dangle": "off"
+        "no-underscore-dangle": "off",
+        "no-useless-escape": "off"
       }
 }

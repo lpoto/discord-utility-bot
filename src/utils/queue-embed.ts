@@ -4,6 +4,7 @@ import { Queue, Song, QueueOption } from '../entities';
 import { QueueEmbedOptions } from '../../';
 import { SongFinder } from './song-finder';
 import { CustomAudioPlayer } from './custom-audio-player';
+import * as canvas from 'canvas';
 
 export class QueueEmbed extends MessageEmbed {
     private queue: Queue;
@@ -99,15 +100,15 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private toString(song: Song): string {
-        let name: string = song.name.replace(/\|/g, '│');
-        const d: string = `\u3000*${song.durationString}*`;
+        let name: string = song.name;
+        const d = `\u3000*${song.durationString}*`;
         if (name.length + d.length > 100)
             name = name.substring(0, 100 - d.length);
         return name + d;
     }
 
     private toStringWrapped(song: Song): string {
-        let name: string = song.name.replace(/\|/g, '│');
+        let name: string = song.name;
         const lineLength = 30;
         const split = '\n> ㅤ';
 
@@ -128,71 +129,16 @@ export class QueueEmbed extends MessageEmbed {
     }
 
     private toStringShorter(song: Song): string {
-        let name: string = song.name.replace(/\|/g, '│');
-        if (name.length > 35) {
-            name = name.substring(0, 40);
-            let count = 0;
-            const chars: string[] = this.bigChars();
-            const chars2: string[] = this.smallChars();
-            chars.map((c) => {
-                count += name.split(c).length - count / 10;
-            });
-            chars2.map((c) => {
-                count -= name.split(c).length - 1;
-            });
-            const x: number = 32 - Math.round(count / 2);
-            return name.substring(0, x).trim() + '...';
+        const c = canvas.createCanvas(100, 100);
+        const context = c.getContext('2d');
+        context.font = 'normal 16px Uni Sans';
+        let name: string = song.name;
+        const n: number = name.length;
+        while (context.measureText(name).width > 270) {
+            name = name.substring(0, name.length - 1);
         }
+        if (name.length !== n) name += '...';
         return name;
-    }
-
-    private bigChars(): string[] {
-        return [
-            'A',
-            'B',
-            'C',
-            'D',
-            'E',
-            'F',
-            'G',
-            'H',
-            'K',
-            'L',
-            'M',
-            'N',
-            'O',
-            'P',
-            'R',
-            'S',
-            'T',
-            'U',
-            'V',
-            'Z',
-            'Y',
-            'X',
-            'W',
-        ];
-    }
-
-    private smallChars(): string[] {
-        return [
-            'I',
-            'l',
-            'i',
-            '.',
-            ',',
-            '-',
-            'f',
-            'j',
-            '1',
-            '|',
-            '!',
-            '?',
-            'r',
-            't',
-            '│',
-            '/',
-        ];
     }
 
     private getSongLoader(): string {
