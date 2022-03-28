@@ -31,9 +31,10 @@ export class EditQueue extends AbstractCommand {
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
-        if (queue.hasOption(QueueOption.Options.EDITING))
-            queue = await queue.removeOptions([QueueOption.Options.EDITING]);
-        else queue = await queue.addOption(QueueOption.Options.EDITING);
+        if (queue.hasOption(QueueOption.Options.EDITING)) {
+            queue = queue.removeOptions([QueueOption.Options.EDITING]);
+            queue.removeDropdownOptions();
+        } else queue = await queue.addOption(QueueOption.Options.EDITING);
 
         await queue.save();
 

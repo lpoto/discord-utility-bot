@@ -99,7 +99,8 @@ export class SongFinder {
     private isYoutubeUrl(url: string): boolean {
         if (!url) return false;
         // eslint-disable-next-line max-len
-        const regExp = /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
+        const regExp =
+            /^https?:\/\/(?:www\.youtube(?:-nocookie)?\.com\/|m\.youtube\.com\/|youtube\.com\/)/i;
         const match: RegExpMatchArray | null = url.match(regExp);
         return match !== null && match !== undefined;
     }
