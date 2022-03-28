@@ -18,12 +18,16 @@ RUN npm run build
 RUN npm prune --production
 RUN node-prune
 
-FROM node:17-alpine3.15
+FROM alpine:3.15.2
 
-COPY --from=BUILD_IMAGE /app/package*.json ./
-COPY --from=BUILD_IMAGE /app/dist ./dist
-COPY --from=BUILD_IMAGE /app/node_modules ./node_modules
+RUN apk add --no-cache nodejs ffmpeg
+RUN addgroup -S node && adduser -S node -G node
 
-RUN apk add --no-cache ffmpeg
+USER node
 
-CMD npm run start
+COPY --from=BUILD_IMAGE --chown=node:node /app/package*.json ./
+COPY --from=BUILD_IMAGE --chown=node:node /app/dist ./dist
+COPY --from=BUILD_IMAGE --chown=node:node /app/node_modules ./node_modules
+
+
+CMD node dist/index.js

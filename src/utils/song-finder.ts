@@ -3,7 +3,7 @@ import ytdl from 'ytdl-core';
 import ytpl from 'ytpl';
 import * as yt from 'youtube-search-without-api-key';
 import { Song } from '../entities';
-import * as canvas from 'canvas';
+import pixelWidth from 'string-pixel-width';
 
 export class SongFinder {
     private songs: Promise<Song[] | null>;
@@ -40,7 +40,7 @@ export class SongFinder {
                 if (playlist && playlist.items && playlist.items.length > 0) {
                     return playlist.items.map((p) => {
                         return this.newSong(
-                            this.trimName(p.title),
+                            p.title,
                             p.url,
                             SongFinder.secondsToTimeString(
                                 Number(p.durationSec),
@@ -57,14 +57,12 @@ export class SongFinder {
                     .then((result) => {
                         return [
                             this.newSong(
-                                this.trimName(result.videoDetails.title),
+                                result.videoDetails.title,
                                 result.videoDetails.video_url,
                                 SongFinder.secondsToTimeString(
                                     Number(result.videoDetails.lengthSeconds),
                                 ),
-                                Number(
-                                    result.videoDetails.lengthSeconds,
-                                ),
+                                Number(result.videoDetails.lengthSeconds),
                             ),
                         ];
                     })
@@ -83,10 +81,10 @@ export class SongFinder {
                 if (!results || results.length < 1) return null;
                 return [
                     this.newSong(
-                         this.trimName(results[0].snippet.title),
-                         results[0].url,
-                         results[0].duration_raw,
-                         SongFinder.durationStringToSeconds(
+                        results[0].snippet.title,
+                        results[0].url,
+                        results[0].duration_raw,
+                        SongFinder.durationStringToSeconds(
                             results[0].duration_raw,
                         ),
                     ),
@@ -117,11 +115,15 @@ export class SongFinder {
 
     private trimName(name: string): string {
         name = name.replace(
-            /((\s+)?-?(\s+)?)(\(|\||\[)(\s+)?((offici|audio[^(\d)+]*(\d+)|(\d+)p|lyric(s)?|(\w+)(\s+)version|h(d|q))[^(\)|\||\])]*(\s+)?(\)|\||\])(\s+)?)|(((\s+)?#(\w+))+$)|(off?icij?al(ni)?(\s+)(spot|video|audio)(\s+)$)/gi,
+            /(-(\s+)?)?(\(|\[|\|).*?(lyric(s)?|text|tekst|of(f)?ici(j)?al(ni)?|video|film|audio|spot|hd|hq|\dk)((\s+)?(\d+)?)(\)|\]|\|)/gi,
             '',
         );
         name = name.replace(
-            /(\s+)?-?(\s+)?((off?ici([^(spot)]|[^(video)])*(\s+)?(spot|video))|(h(d|q))|(\d+p))$/gi,
+            /(-(\s+))?((off?ici([^(spot)]|[^(video)])*(\s+)?(spot|video))|(h(d|q))|(\d+p)|(\dk))$/gim,
+            '',
+        );
+        name = name.replace(
+            /((\+)?(\s+)?(lyric(s)?|text|tekst))|(#(\w+)?(\s+)?)+$/gim,
             '',
         );
         name = name.replace(/(\/\/)(\/+)?/, '-');
@@ -160,23 +162,30 @@ export class SongFinder {
         time: string,
         seconds: number,
     ): Song {
+        title = this.trimName(title);
         const song: Song = Song.create({
-            name: this.trimName(title),
+            name: title,
             url: url,
             durationSeconds: seconds,
-            durationString: time
+            durationString: time,
+            shortName: this.shorterTitle(title),
         });
-        const c = canvas.createCanvas(100, 100);
-        const context = c.getContext('2d');
-        context.font = 'normal 16px Uni Sans';
+        return song;
+    }
+
+    private shorterTitle(title: string): string | null {
         const n: number = title.length;
-        while (context.measureText(title).width > 270) {
+        while (
+            pixelWidth(title, {
+                size: 11,
+                italic: false,
+                bold: false,
+                font: 'open sans',
+            }) > 170
+        ) {
             title = title.substring(0, title.length - 1);
         }
-        if (title.length !== n) {
-            title += '...';
-            song.shortName = title;
-        }
-        return song;
+        if (title.length === n) return null;
+        return title + '...';
     }
 }

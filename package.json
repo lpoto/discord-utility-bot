@@ -25,10 +25,10 @@
     "dependencies": {
         "@discordjs/rest": "^0.3.0",
         "@discordjs/voice": "^0.8.0",
-        "canvas": "^2.9.1",
         "discord-api-types": "^0.29.0",
         "discord.js": "^13.6.0",
         "pg": "^8.7.3",
+        "string-pixel-width": "^1.10.0",
         "tweetnacl": "^1.0.3",
         "typeorm": "^0.2.45",
         "youtube-search-without-api-key": "^1.0.7",
@@ -37,6 +37,7 @@
     },
     "devDependencies": {
         "@types/node": "^17.0.21",
+        "@types/string-pixel-width": "^1.7.2",
         "@typescript-eslint/eslint-plugin": "^5.13.0",
         "@typescript-eslint/parser": "^5.13.0",
         "eslint": "^8.10.0",

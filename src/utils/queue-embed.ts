@@ -48,7 +48,9 @@ export class QueueEmbed extends MessageEmbed {
             return `***${index + this.queue.offset + 1}.***\u3000${
                 this.queue.hasOption(QueueOption.Options.EXPANDED)
                     ? this.toString(song)
-                    : song.shortName === null ? song.name : song.shortName
+                    : song.shortName
+                    ? song.shortName
+                    : song.name
             }`;
         });
         // show full head song name but wrapp it
