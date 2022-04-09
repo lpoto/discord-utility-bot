@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue } from '../entities';
+import { Queue, QueueOption } from '../entities';
 import { AbstractCommand } from '../utils';
 
 export class PageForward extends AbstractCommand {
@@ -46,7 +46,7 @@ export class PageForward extends AbstractCommand {
             this.updateQueue({
                 queue: q,
                 interaction: interaction,
-                embedOnly: true,
+                embedOnly: !queue.hasOption(QueueOption.Options.EDITING),
             });
         });
     }

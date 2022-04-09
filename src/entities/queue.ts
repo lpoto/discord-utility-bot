@@ -118,7 +118,7 @@ export class Queue extends BaseEntity {
         );
     }
 
-    public removeDropdownOptions(): void {
+    public removeDropdownOptions(): Queue {
         this.options = this.options.filter(
             (o) =>
                 ![
@@ -127,6 +127,7 @@ export class Queue extends BaseEntity {
                     QueueOption.Options.FORWARD_SELECTED,
                 ].includes(o.name),
         );
+        return this;
     }
 
     public async addOption(o: QueueOption.Options): Promise<Queue> {

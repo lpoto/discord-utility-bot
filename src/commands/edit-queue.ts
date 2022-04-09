@@ -32,8 +32,8 @@ export class EditQueue extends AbstractCommand {
         if (!queue) return;
 
         if (queue.hasOption(QueueOption.Options.EDITING)) {
+            queue = queue.removeDropdownOptions();
             queue = queue.removeOptions([QueueOption.Options.EDITING]);
-            queue.removeDropdownOptions();
         } else queue = await queue.addOption(QueueOption.Options.EDITING);
 
         await queue.save();
