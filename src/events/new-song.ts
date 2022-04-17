@@ -9,7 +9,7 @@ export class OnNewSong extends AbstractClientEvent {
         [guildId: string]: { [key in 'toUpdate' | 'updated']: number };
     };
     private songsToUpdate: {
-        [guildId: string]: Song[];
+        [guildId: string]: {[key: number]: Song[]};
     };
 
     public constructor(client: MusicClient) {
@@ -63,10 +63,8 @@ export class OnNewSong extends AbstractClientEvent {
             new SongFinder(n).getSongs().then((songs2) => {
                 if (songs2 && songs2.length > 0) {
                     if (!(queue.guildId in this.songsToUpdate))
-                        this.songsToUpdate[queue.guildId] = [];
-                    for (const s2 of songs2) {
-                        this.songsToUpdate[queue.guildId].push(s2);
-                    }
+                        this.songsToUpdate[queue.guildId] = {};
+                    this.songsToUpdate[queue.guildId][i] = songs2;
                     this.checkIfNeedsUpdate(queue.guildId, songs2.length);
                 } else {
                     this.songsToUpdateCount[queue.guildId].updated += 1;
@@ -95,9 +93,12 @@ export class OnNewSong extends AbstractClientEvent {
         if (updateAndDelete || onlyUpdate) {
             if (updateAndDelete) delete this.songsToUpdateCount[guildId];
             if (!(guildId in this.songsToUpdate))
-                this.songsToUpdate[guildId] = [];
+                this.songsToUpdate[guildId] = {};
+            let songs: Song[] =  []
+            for (const s of Object.values(this.songsToUpdate[guildId]))
+                    songs = songs.concat(s);
             Song.saveAll(
-                this.songsToUpdate[guildId],
+                songs,
                 guildId,
                 this.client.user.id,
             )
