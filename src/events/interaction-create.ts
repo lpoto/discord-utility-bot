@@ -1,9 +1,12 @@
 import { VoiceConnection } from '@discordjs/voice';
 import {
+    ButtonInteraction,
     GuildMember,
     Interaction,
+    Message,
     MessageButton,
     MessageSelectMenu,
+    SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -35,6 +38,18 @@ export class OnInteractionCreate extends AbstractClientEvent {
                 interaction.member &&
                 interaction.member instanceof GuildMember
             ) {
+                if (
+                    (interaction instanceof ButtonInteraction ||
+                        interaction instanceof SelectMenuInteraction) &&
+                    interaction.message &&
+                    interaction.message.id != queue.messageId
+                ) {
+                    if (interaction.message instanceof Message)
+                        interaction.message.delete().catch((e) => {
+                            this.client.emitEvent('error', e);
+                        });
+                    return;
+                }
                 if (
                     !this.client.permsChecker.checkMemberRoles(
                         interaction.member,

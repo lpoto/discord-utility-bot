@@ -41,10 +41,6 @@ export class OnMessageCreate extends AbstractClientEvent {
             })
                 .then(async (queue) => {
                     if (!queue) return;
-                    if (message.id !== queue.messageId) 
-                        return message.delete().catch((e) => {
-                            this.client.emitEvent('error', e);
-                        });
 
                     if (
                         (message.guildId &&

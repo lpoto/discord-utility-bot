@@ -22,7 +22,7 @@ export class OnMessageDelete extends AbstractClientEvent {
             });
             if (queue && queue.messageId === message.id)
                 this.client.emitEvent('musicDestroy', {
-                 guildId: message.guildId,
+                    guildId: message.guildId,
                 });
         }
     }

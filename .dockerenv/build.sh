@@ -12,7 +12,7 @@ TAG=$(sed 's/.*"name": "\(.*\)".*/\1/;t;d' ../package.json)
 # extract version from package.json
 VERSION=$(sed 's/.*"version": "\(.*\)".*/\1/;t;d' ../package.json)
 
-REPO="dicord-bot"
+REPO="discord-bot"
 echo "Project version: $VERSION"
 echo "Using image tag: $TAG"
 echo "Using docker repo: $REPO"

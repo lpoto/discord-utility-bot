@@ -9,7 +9,7 @@ export class OnNewSong extends AbstractClientEvent {
         [guildId: string]: { [key in 'toUpdate' | 'updated']: number };
     };
     private songsToUpdate: {
-        [guildId: string]: {[key: number]: Song[]};
+        [guildId: string]: { [key: number]: Song[] };
     };
 
     public constructor(client: MusicClient) {
@@ -94,14 +94,10 @@ export class OnNewSong extends AbstractClientEvent {
             if (updateAndDelete) delete this.songsToUpdateCount[guildId];
             if (!(guildId in this.songsToUpdate))
                 this.songsToUpdate[guildId] = {};
-            let songs: Song[] =  []
+            let songs: Song[] = [];
             for (const s of Object.values(this.songsToUpdate[guildId]))
-                    songs = songs.concat(s);
-            Song.saveAll(
-                songs,
-                guildId,
-                this.client.user.id,
-            )
+                songs = songs.concat(s);
+            Song.saveAll(songs, guildId, this.client.user.id)
                 .then(() => {
                     if (!this.client.user) return;
                     Queue.findOne({
