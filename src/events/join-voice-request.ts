@@ -1,4 +1,7 @@
-import { joinVoiceChannel } from '@discordjs/voice';
+import {
+    DiscordGatewayAdapterCreator,
+    joinVoiceChannel,
+} from '@discordjs/voice';
 import {
     ButtonInteraction,
     CommandInteraction,
@@ -46,11 +49,12 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
         this.client.setVoiceConnection(
             guild.id,
             joinVoiceChannel({
-                channelId: voiceChannelId,
                 guildId: guild.id,
-                adapterCreator: guild.voiceAdapterCreator,
-                selfMute: false,
+                channelId: voiceChannelId,
                 selfDeaf: true,
+                selfMute: false,
+                adapterCreator:
+                    guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
             }).on('error', (error) => {
                 this.client.emitEvent('error', error);
                 if (resource instanceof Interaction) {
