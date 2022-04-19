@@ -59,6 +59,7 @@ export class Song extends BaseEntity {
 
     @ManyToOne(() => Song, {
         orphanedRowAction: 'nullify',
+        onDelete: 'SET NULL',
         lazy: true,
         nullable: true,
     })
