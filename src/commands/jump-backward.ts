@@ -49,6 +49,6 @@ export class JumpBackward extends AbstractCommand {
             this.audioPlayer.trigger('jumpBackward', interaction);
         setTimeout(() => {
             this.updateQueue({ queue: queue, interaction: interaction });
-        }, 100);
+        }, 200);
     }
 }

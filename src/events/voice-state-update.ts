@@ -28,8 +28,7 @@ export class OnVoiceStateUpdate extends AbstractClientEvent {
             const audioPlayer: CustomAudioPlayer | null =
                 this.client.getAudioPlayer(guildId);
             if (
-                (!audioPlayer ||
-                    (!audioPlayer.playing && audioPlayer.paused)) &&
+                (!audioPlayer || audioPlayer.idle) &&
                 voiceStateAfter.channel?.id === guild.me?.voice.channel.id &&
                 ((voiceStatePrev.deaf && !voiceStateAfter.deaf) ||
                     (voiceStatePrev.channel?.id !==

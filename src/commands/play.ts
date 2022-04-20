@@ -149,7 +149,10 @@ export class Play extends AbstractCommand {
                 interaction: interaction,
                 doNotSetUpdated: true,
             });
-            if (startTime) audioPlayer.setOffsetPlayback(startTime);
+            if (startTime) {
+                audioPlayer.setOffsetPlayback(startTime);
+                audioPlayer.setNextPlaybackDuration(startTime);
+            }
             audioPlayer.play(song, startTime);
             audioPlayer
                 .onIdle(async () => {
@@ -193,9 +196,9 @@ export class Play extends AbstractCommand {
                         audioPlayer?.kill();
                         this.client.setAudioPlayer(queue.guildId, null);
                         if (t === 'jumpForward')
-                            return this.execute(i, d + 10);
+                            return this.execute(i, d + 20);
                         if (t === 'jumpBackward')
-                            return this.execute(i, d - 10 > 0 ? d - 10 : 0);
+                            return this.execute(i, d - 20 > 0 ? d - 20 : 0);
                         if (t === 'skip') return this.next(i);
                         return this.execute(i);
                     },

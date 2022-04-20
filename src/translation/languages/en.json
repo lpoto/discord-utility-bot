@@ -64,12 +64,12 @@
                 "description": "`Loop`: Loops all the songs in the queue."
             },
             "jumpBackward": {
-                "label": "-10s",
-                "description": "`-10s`: Rewinds the song by 10 seconds."
+                "label": "-20s",
+                "description": "`-20s`: Rewinds the song by 20 seconds."
             },
             "jumpForward": {
-                "label": "+10s",
-                "description": "`+10s`: Jumps 10 seconds forward in current song."
+                "label": "+20s",
+                "description": "`+20s`: Jumps 30 seconds forward in current song."
             },
             "pause": {
                 "label": "ll",

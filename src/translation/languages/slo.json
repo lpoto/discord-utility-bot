@@ -64,12 +64,12 @@
                 "description": "`loop`: Ponavlja vse skladbe."
             },
             "jumpBackward": {
-                "label": "-10s",
-                "description": "`-10s`: Skoči 10 sekund nazaj v skadbi."
+                "label": "-20s",
+                "description": "`-20s`: Skoči 20 sekund nazaj v skadbi."
             },
             "jumpForward": {
-                "label": "+10s",
-                "description": "`+10s`: Skoči 10 selund naprej v skladbi."
+                "label": "+20s",
+                "description": "`+20s`: Skoči 20 sekund naprej v skladbi."
             },
             "pause": {
                 "label": "ll",

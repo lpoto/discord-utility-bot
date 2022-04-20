@@ -49,7 +49,7 @@ export class JumpForward extends AbstractCommand {
             this.audioPlayer.trigger('jumpForward', interaction);
             setTimeout(() => {
                 this.updateQueue({ queue: queue, interaction: interaction });
-            }, 100);
+            }, 200);
         }
     }
 }

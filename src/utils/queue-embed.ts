@@ -135,8 +135,7 @@ export class QueueEmbed extends MessageEmbed {
         if (
             !this.queue.headSong ||
             this.queue.headSong.durationSeconds < 10 ||
-            !audioPlayer ||
-            audioPlayer.idle
+            !audioPlayer
         )
             return '';
         const t1: number = audioPlayer.playbackDuration;
