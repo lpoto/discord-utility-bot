@@ -40,7 +40,7 @@ export class Play extends AbstractCommand {
              * Determine if a song needs to be removed from the queue,
              * pushed to the back of the queue or nothing at all.
              */
-            if (error) queue = await queue.removeHeadSong(true);
+            queue = await queue.removeHeadSong(true);
 
             this.execute(interaction).catch((e) => {
                 this.client.emit('error', e);
@@ -149,6 +149,7 @@ export class Play extends AbstractCommand {
                 interaction: interaction,
                 doNotSetUpdated: true,
             });
+            if (startTime) audioPlayer.setOffsetPlayback(startTime);
             audioPlayer.play(song, startTime);
             audioPlayer
                 .onIdle(async () => {
@@ -185,32 +186,18 @@ export class Play extends AbstractCommand {
                         t: CustomAudioPlayerTrigger,
                         i?: ButtonInteraction,
                     ) => {
-                        // replay and skip commands emit debug messages
-                        // ('skip' and 'replay')
-                        switch (t) {
-                            case 'skip' || 'previous' || 'replay':
-                                timer?.stop();
-                                audioPlayer?.kill();
-                                this.client.setAudioPlayer(
-                                    queue.guildId,
-                                    null,
-                                );
-                            case 'skip':
-                                this.next(i);
-                                break;
-                            case 'previous':
-                                this.execute(i);
-                                break;
-                            case 'replay':
-                                this.execute(i);
-                                break;
-                            case 'jumpForward':
-                                audioPlayer?.seek(10);
-                                break;
-                            case 'jumpBackward':
-                                audioPlayer?.seek(-10);
-                                break;
-                        }
+                        const d: number = audioPlayer
+                            ? audioPlayer.playbackDuration
+                            : 0;
+                        timer?.stop();
+                        audioPlayer?.kill();
+                        this.client.setAudioPlayer(queue.guildId, null);
+                        if (t === 'jumpForward')
+                            return this.execute(i, d + 10);
+                        if (t === 'jumpBackward')
+                            return this.execute(i, d - 10 > 0 ? d - 10 : 0);
+                        if (t === 'skip') return this.next(i);
+                        return this.execute(i);
                     },
                 );
         } catch (e) {

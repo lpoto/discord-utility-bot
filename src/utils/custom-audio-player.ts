@@ -24,22 +24,16 @@ export class CustomAudioPlayer {
               interaction?: ButtonInteraction,
           ) => Promise<void>)
         | undefined;
-    private song: Song | null;
     private offsetPlayback: number;
 
     public constructor() {
         this.ap = createAudioPlayer();
         this.offsetPlayback = 0;
-        if (
-            this.ap.state.status === AudioPlayerStatus.Playing ||
-            this.ap.state.status === AudioPlayerStatus.Paused
-        )
-            this.ap.on('error', (e) => {
-                if (!this.onErrorCb) return;
-                this.offsetPlayback = 0;
-                this.song = null;
-                this.onErrorCb(e);
-            });
+        this.ap.on('error', (e) => {
+            if (!this.onErrorCb) return;
+            this.offsetPlayback = 0;
+            this.onErrorCb(e);
+        });
         this.ap.on('unsubscribe', () => {
             if (!this.onUnsubscribeCb) return;
             this.onUnsubscribeCb();
@@ -47,10 +41,8 @@ export class CustomAudioPlayer {
         this.ap.on(AudioPlayerStatus.Idle, () => {
             if (!this.onIdleCb) return;
             this.offsetPlayback = 0;
-            this.song = null;
             this.onIdleCb();
         });
-        this.song = null;
     }
 
     public get status(): AudioPlayerStatus {
@@ -82,9 +74,13 @@ export class CustomAudioPlayer {
             const t: number = Math.round(
                 this.ap.state.resource.playbackDuration / 1000,
             );
-            return t + this.offsetPlayback > 0 ? t + this.offsetPlayback : 0;
+            return t + this.offsetPlayback;
         }
         return 0;
+    }
+
+    public setOffsetPlayback(value: number) {
+        this.offsetPlayback = value;
     }
 
     public subscribeToConnection(connection: VoiceConnection): void {
@@ -93,19 +89,10 @@ export class CustomAudioPlayer {
     }
 
     public play(song: Song, startTime?: number): void {
-        this.song = song;
         this.getResource(song, startTime).then((r) => {
             if (!r) return;
             this.ap.play(r);
         });
-    }
-
-    public seek(seconds: number): void {
-        if (!this.song) return;
-        const t: number = this.playbackDuration;
-        if (t + seconds < 0) seconds = -t;
-        this.offsetPlayback += seconds;
-        this.play(this.song, this.playbackDuration + seconds);
     }
 
     public pause(): boolean {
@@ -167,11 +154,12 @@ export class CustomAudioPlayer {
             Ffmpeg({
                 source: ytdl(song.url, {
                     filter: 'audioonly',
-                    highWaterMark: 1 << 25,
+                    highWaterMark: 1024 * 1024 * 10,
                     quality: 'highestaudio',
                 }),
             })
                 .toFormat('mp3')
+                .noVideo()
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .setStartTime(startTime ? startTime : 0) as any,
         );

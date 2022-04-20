@@ -25,8 +25,6 @@
     "dependencies": {
         "@discordjs/rest": "^0.4.1",
         "@discordjs/voice": "^0.9.0",
-        "@types/fluent-ffmpeg": "^2.1.20",
-        "discord-api-types": "^0.31.2",
         "discord.js": "^13.6.0",
         "fluent-ffmpeg": "^2.1.2",
         "pg": "^8.7.3",
@@ -39,9 +37,11 @@
     },
     "devDependencies": {
         "@types/node": "^17.0.21",
+        "discord-api-types": "^0.31.2",
         "@types/string-pixel-width": "^1.7.2",
         "@typescript-eslint/eslint-plugin": "^5.13.0",
         "@typescript-eslint/parser": "^5.13.0",
+        "@types/fluent-ffmpeg": "^2.1.20",
         "eslint": "^8.10.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.0.0",
