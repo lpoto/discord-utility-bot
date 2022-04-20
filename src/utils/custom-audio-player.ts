@@ -1,13 +1,17 @@
+import Ffmpeg from 'fluent-ffmpeg';
 import {
     AudioPlayer,
     AudioPlayerError,
     AudioPlayerStatus,
     AudioResource,
     createAudioPlayer,
+    createAudioResource,
     VoiceConnection,
 } from '@discordjs/voice';
 import { ButtonInteraction } from 'discord.js';
 import { CustomAudioPlayerTrigger } from '../../';
+import { Song } from '../entities';
+import ytdl from 'ytdl-core';
 
 export class CustomAudioPlayer {
     private ap: AudioPlayer;
@@ -20,21 +24,33 @@ export class CustomAudioPlayer {
               interaction?: ButtonInteraction,
           ) => Promise<void>)
         | undefined;
+    private song: Song | null;
+    private offsetPlayback: number;
 
     public constructor() {
         this.ap = createAudioPlayer();
-        this.ap.on('error', (e) => {
-            if (!this.onErrorCb) return;
-            this.onErrorCb(e);
-        });
+        this.offsetPlayback = 0;
+        if (
+            this.ap.state.status === AudioPlayerStatus.Playing ||
+            this.ap.state.status === AudioPlayerStatus.Paused
+        )
+            this.ap.on('error', (e) => {
+                if (!this.onErrorCb) return;
+                this.offsetPlayback = 0;
+                this.song = null;
+                this.onErrorCb(e);
+            });
         this.ap.on('unsubscribe', () => {
             if (!this.onUnsubscribeCb) return;
             this.onUnsubscribeCb();
         });
         this.ap.on(AudioPlayerStatus.Idle, () => {
             if (!this.onIdleCb) return;
+            this.offsetPlayback = 0;
+            this.song = null;
             this.onIdleCb();
         });
+        this.song = null;
     }
 
     public get status(): AudioPlayerStatus {
@@ -43,6 +59,10 @@ export class CustomAudioPlayer {
 
     public get paused(): boolean {
         return this.status === AudioPlayerStatus.Paused;
+    }
+
+    public get buffering(): boolean {
+        return this.status === AudioPlayerStatus.Buffering;
     }
 
     public get playing(): boolean {
@@ -56,9 +76,14 @@ export class CustomAudioPlayer {
     public get playbackDuration(): number {
         if (
             this.ap.state.status === AudioPlayerStatus.Playing ||
-            this.ap.state.status === AudioPlayerStatus.Paused
-        )
-            return Math.round(this.ap.state.playbackDuration / 1000);
+            this.ap.state.status === AudioPlayerStatus.Paused ||
+            this.ap.state.status === AudioPlayerStatus.Buffering
+        ) {
+            const t: number = Math.round(
+                this.ap.state.resource.playbackDuration / 1000,
+            );
+            return t + this.offsetPlayback > 0 ? t + this.offsetPlayback : 0;
+        }
         return 0;
     }
 
@@ -67,8 +92,20 @@ export class CustomAudioPlayer {
         connection.subscribe(this.ap);
     }
 
-    public play(resource: AudioResource): void {
-        return this.ap.play(resource);
+    public play(song: Song, startTime?: number): void {
+        this.song = song;
+        this.getResource(song, startTime).then((r) => {
+            if (!r) return;
+            this.ap.play(r);
+        });
+    }
+
+    public seek(seconds: number): void {
+        if (!this.song) return;
+        const t: number = this.playbackDuration;
+        if (t + seconds < 0) seconds = -t;
+        this.offsetPlayback += seconds;
+        this.play(this.song, this.playbackDuration + seconds);
     }
 
     public pause(): boolean {
@@ -120,5 +157,23 @@ export class CustomAudioPlayer {
     ): Promise<void> {
         if (this.onTriggerCb !== undefined)
             return this.onTriggerCb(t, interaction);
+    }
+
+    public async getResource(
+        song: Song,
+        startTime?: number,
+    ): Promise<AudioResource | null> {
+        return createAudioResource(
+            Ffmpeg({
+                source: ytdl(song.url, {
+                    filter: 'audioonly',
+                    highWaterMark: 1 << 25,
+                    quality: 'highestaudio',
+                }),
+            })
+                .toFormat('mp3')
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                .setStartTime(startTime ? startTime : 0) as any,
+        );
     }
 }

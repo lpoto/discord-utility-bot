@@ -81,6 +81,7 @@
         "@typescript-eslint/no-non-null-assertion": "off",
 
         "quotes": "off",
+        "no-fallthrough": "off",
         "brace-style": "off",
         "dot-notation": "off",
         "guard-for-in": "off",

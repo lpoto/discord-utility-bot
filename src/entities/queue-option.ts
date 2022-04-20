@@ -39,7 +39,6 @@ export namespace QueueOption {
         TRANSLATE_SELECTED = 'translateSelected',
         STOP_SELECTED = 'stopSelected',
         CLEAR_SELECTED = 'clearSelected',
-        LOOP = 'loop',
         LOOP_QUEUE = 'loopQueue',
         EXPANDED = 'expanded',
     }

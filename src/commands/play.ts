@@ -8,13 +8,8 @@ import {
 } from 'discord.js';
 import { CustomAudioPlayerTrigger } from '../../';
 import { MusicClient } from '../client';
-import { Queue, Song, QueueOption } from '../entities';
-import {
-    AbstractCommand,
-    CustomAudioPlayer,
-    SongFinder,
-    SongTimer,
-} from '../utils';
+import { Queue, Song } from '../entities';
+import { AbstractCommand, CustomAudioPlayer, SongTimer } from '../utils';
 
 export class Play extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
@@ -45,8 +40,7 @@ export class Play extends AbstractCommand {
              * Determine if a song needs to be removed from the queue,
              * pushed to the back of the queue or nothing at all.
              */
-            if (error || !queue.hasOption(QueueOption.Options.LOOP))
-                queue = await queue.removeHeadSong(true);
+            if (error) queue = await queue.removeHeadSong(true);
 
             this.execute(interaction).catch((e) => {
                 this.client.emit('error', e);
@@ -70,7 +64,10 @@ export class Play extends AbstractCommand {
         }
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
+    public async execute(
+        interaction?: ButtonInteraction,
+        startTime?: number,
+    ): Promise<void> {
         if (!this.client.user) return;
 
         const connection: VoiceConnection | null =
@@ -132,80 +129,94 @@ export class Play extends AbstractCommand {
         if (audioPlayer.paused || audioPlayer.playing) return;
 
         this.client.setAudioPlayer(queue.guildId, audioPlayer);
+        try {
+            audioPlayer.subscribeToConnection(connection);
 
-        audioPlayer.subscribeToConnection(connection);
+            const timer: SongTimer = new SongTimer(
+                this.client,
+                this.guildId,
+                song.durationSeconds,
+                interaction?.message instanceof Message
+                    ? interaction.message
+                    : undefined,
+            );
 
-        SongFinder.getResource(song)
-            .then((resource) => {
-                if (!resource || !audioPlayer) return;
+            timer?.start();
 
-                const timer: SongTimer = new SongTimer(
-                    this.client,
-                    this.guildId,
-                    song.durationSeconds,
-                    interaction?.message instanceof Message
-                        ? interaction.message
-                        : undefined,
-                );
-
-                timer?.start();
-
-                this.client.emitEvent('queueMessageUpdate', {
-                    queue: queue,
-                    timeout: 250,
-                    interaction: interaction,
-                    doNotSetUpdated: true,
-                });
-                audioPlayer.play(resource);
-                audioPlayer
-                    .onIdle(async () => {
-                        // when the songs stops playing
-                        timer?.stop();
-                        audioPlayer?.kill();
-                        this.client.setAudioPlayer(queue.guildId, null);
-                        this.next(interaction);
-                    })
-                    .onError(async (e) => {
-                        /* on error remove all occurances of the song
-                         * that threw error from the queue */
-                        console.log('Error when playing: ', e?.message);
-                        timer?.stop();
-                        audioPlayer?.kill();
-                        this.client.setAudioPlayer(queue.guildId, null);
-                        const q: Queue | undefined = await this.getQueue();
-                        if (!q || q.curPageSongs.length === 0) return;
-                        const url: string = q.curPageSongs[0].url;
-                        q.curPageSongs = q.curPageSongs.filter(
-                            (s) => s.url !== url,
-                        );
-                        await q.save();
-                        this.next(interaction, true);
-                    })
-                    .onUnsubscribe(async () => {
-                        timer?.stop();
-                        audioPlayer?.kill();
-                        this.client.setAudioPlayer(queue.guildId, null);
-                        console.log('Unsubscribed audio player');
-                    })
-                    .onTrigger(
-                        async (
-                            t: CustomAudioPlayerTrigger,
-                            i?: ButtonInteraction,
-                        ) => {
-                            // replay and skip commands emit debug messages
-                            // ('skip' and 'replay')
-                            timer?.stop();
-                            audioPlayer?.kill();
-                            this.client.setAudioPlayer(queue.guildId, null);
-                            if (t === 'skip') this.next(i);
-                            else this.execute(i);
-                        },
-                    );
-            })
-            .catch((e) => {
-                this.client.emitEvent('error', e);
-                this.client.setAudioPlayer(queue.guildId, null);
-                return;
+            this.client.emitEvent('queueMessageUpdate', {
+                queue: queue,
+                timeout: 250,
+                interaction: interaction,
+                doNotSetUpdated: true,
             });
+            audioPlayer.play(song, startTime);
+            audioPlayer
+                .onIdle(async () => {
+                    // when the songs stops playing
+                    timer?.stop();
+                    audioPlayer?.kill();
+                    this.client.setAudioPlayer(queue.guildId, null);
+                    this.next(interaction);
+                })
+                .onError(async (e) => {
+                    /* on error remove all occurances of the song
+                     * that threw error from the queue */
+                    console.log('Error when playing: ', e?.message);
+                    timer?.stop();
+                    audioPlayer?.kill();
+                    this.client.setAudioPlayer(queue.guildId, null);
+                    const q: Queue | undefined = await this.getQueue();
+                    if (!q || q.curPageSongs.length === 0) return;
+                    const url: string = q.curPageSongs[0].url;
+                    q.curPageSongs = q.curPageSongs.filter(
+                        (s) => s.url !== url,
+                    );
+                    await q.save();
+                    this.next(interaction, true);
+                })
+                .onUnsubscribe(async () => {
+                    timer?.stop();
+                    audioPlayer?.kill();
+                    this.client.setAudioPlayer(queue.guildId, null);
+                    console.log('Unsubscribed audio player');
+                })
+                .onTrigger(
+                    async (
+                        t: CustomAudioPlayerTrigger,
+                        i?: ButtonInteraction,
+                    ) => {
+                        // replay and skip commands emit debug messages
+                        // ('skip' and 'replay')
+                        switch (t) {
+                            case 'skip' || 'previous' || 'replay':
+                                timer?.stop();
+                                audioPlayer?.kill();
+                                this.client.setAudioPlayer(
+                                    queue.guildId,
+                                    null,
+                                );
+                            case 'skip':
+                                this.next(i);
+                                break;
+                            case 'previous':
+                                this.execute(i);
+                                break;
+                            case 'replay':
+                                this.execute(i);
+                                break;
+                            case 'jumpForward':
+                                audioPlayer?.seek(10);
+                                break;
+                            case 'jumpBackward':
+                                audioPlayer?.seek(-10);
+                                break;
+                        }
+                    },
+                );
+        } catch (e) {
+            if (e instanceof Error) this.client.emitEvent('error', e);
+            this.client.setAudioPlayer(queue.guildId, null);
+            return;
+        }
     }
 }

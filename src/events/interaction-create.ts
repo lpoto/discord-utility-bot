@@ -42,7 +42,7 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     (interaction instanceof ButtonInteraction ||
                         interaction instanceof SelectMenuInteraction) &&
                     interaction.message &&
-                    interaction.message.id != queue.messageId
+                    interaction.message.id !== queue.messageId
                 ) {
                     if (interaction.message instanceof Message)
                         interaction.message.delete().catch((e) => {

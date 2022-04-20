@@ -153,7 +153,6 @@ export class Queue extends BaseEntity {
 
     public async removeHeadSong(reload?: boolean): Promise<Queue> {
         if (!this.headSong) return this;
-        if (this.hasOption(QueueOption.Options.LOOP)) return this;
         const active: boolean = this.hasOption(QueueOption.Options.LOOP_QUEUE);
         if (active) {
             this.headSong.queue = this;

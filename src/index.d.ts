@@ -140,4 +140,9 @@ export interface ExecuteCommandOptions {
     guildId?: string;
 }
 
-export type CustomAudioPlayerTrigger = 'skip' | 'replay' | 'previous';
+export type CustomAudioPlayerTrigger =
+    | 'skip'
+    | 'replay'
+    | 'previous'
+    | 'jumpForward'
+    | 'jumpBackward';

@@ -4,7 +4,7 @@ import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractCommand } from '../utils';
 
-export class Skip extends AbstractCommand {
+export class JumpForward extends AbstractCommand {
     public constructor(client: MusicClient, guildId: string) {
         super(client, guildId);
     }
@@ -14,13 +14,20 @@ export class Skip extends AbstractCommand {
     }
 
     public get description(): string {
-        return this.translate(['music', 'commands', 'skip', 'description']);
+        return this.translate([
+            'music',
+            'commands',
+            'jumpForward',
+            'description',
+        ]);
     }
 
     public button(queue: Queue): MessageButton | null {
         if (!this.connection) return null;
         return new MessageButton()
-            .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
+            .setLabel(
+                this.translate(['music', 'commands', 'jumpForward', 'label']),
+            )
             .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
@@ -36,14 +43,13 @@ export class Skip extends AbstractCommand {
         const queue: Queue | undefined = await this.getQueue();
         if (!queue || !queue.headSong) return;
 
-        // emit skip debug message to audioPlayer
-        // (skip event handled in play command)
-        if (this.audioPlayer) this.audioPlayer.trigger('skip', interaction);
-        else
-            this.client.emitEvent('executeCommand', {
-                name: 'Play',
-                guildId: queue.guildId,
-                interaction: interaction,
-            });
+        // emit jumpForward debug message to audioPlayer
+        // (jumpForward event handled in play command)
+        if (this.audioPlayer) {
+            this.audioPlayer.trigger('jumpForward', interaction);
+            setTimeout(() => {
+                this.updateQueue({ queue: queue, interaction: interaction });
+            }, 100);
+        }
     }
 }

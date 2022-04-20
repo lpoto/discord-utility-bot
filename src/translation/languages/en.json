@@ -59,13 +59,17 @@
                 "label": "<<",
                 "description": "`<<`: Replays the previously played song. "
             },
-            "loop": {
-                "label": "Loop Song",
-                "description": "`Loop Song`: Loops the currently played song."
-            },
             "loopQueue": {
-                "label": "Loop\u2000Queue",
-                "description": "`Loop Queue`: Loops all the songs in the queue."
+                "label": "Loop",
+                "description": "`Loop`: Loops all the songs in the queue."
+            },
+            "jumpBackward": {
+                "label": "-10s",
+                "description": "`-10s`: Rewinds the song by 10 seconds."
+            },
+            "jumpForward": {
+                "label": "+10s",
+                "description": "`+10s`: Jumps 10 seconds forward in current song."
             },
             "pause": {
                 "label": "ll",

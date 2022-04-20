@@ -1,7 +1,7 @@
 import { ButtonInteraction, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
-import { Queue, QueueOption, Song } from '../entities';
+import { Queue, Song } from '../entities';
 import { AbstractCommand } from '../utils';
 
 export class previousSong extends AbstractCommand {
@@ -30,8 +30,7 @@ export class previousSong extends AbstractCommand {
             )
             .setDisabled(
                 this.audioPlayer?.paused ||
-                    (!queue.headSong?.previous && !queue.previousSong) ||
-                    queue.hasOption(QueueOption.Options.LOOP),
+                    (!queue.headSong?.previous && !queue.previousSong),
             )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);

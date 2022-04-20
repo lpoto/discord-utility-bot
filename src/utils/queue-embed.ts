@@ -136,10 +136,11 @@ export class QueueEmbed extends MessageEmbed {
             !this.queue.headSong ||
             this.queue.headSong.durationSeconds < 10 ||
             !audioPlayer ||
-            (!audioPlayer.playing && !audioPlayer.paused)
+            audioPlayer.idle
         )
             return '';
         const t1: number = audioPlayer.playbackDuration;
+        if (t1 === 0) return '';
         const t2: number = this.queue.headSong?.durationSeconds;
         const s1: string = SongFinder.secondsToTimeString(t1);
         const s2: string = SongFinder.secondsToTimeString(t2);

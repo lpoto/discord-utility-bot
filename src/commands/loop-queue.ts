@@ -28,7 +28,6 @@ export class LoopQueue extends AbstractCommand {
                 QueueOption.Options.LOOP_QUEUE,
             ]);
         } else {
-            queue = await queue.removeOptions([QueueOption.Options.LOOP]);
             queue = await queue.addOption(QueueOption.Options.LOOP_QUEUE);
         }
         await queue.save();

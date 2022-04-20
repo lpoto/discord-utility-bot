@@ -1,4 +1,3 @@
-import { AudioResource, createAudioResource } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
 import ytpl from 'ytpl';
 import * as yt from 'youtube-search-without-api-key';
@@ -14,18 +13,6 @@ export class SongFinder {
 
     public async getSongs(): Promise<Song[] | null> {
         return this.songs;
-    }
-
-    public static async getResource(
-        song: Song,
-    ): Promise<AudioResource | null> {
-        return createAudioResource(
-            ytdl(song.url, {
-                filter: 'audioonly',
-                highWaterMark: 1 << 25,
-                quality: 'highestaudio',
-            }),
-        );
     }
 
     private async findOnYoutube(nameOrUrl: string): Promise<Song[] | null> {
