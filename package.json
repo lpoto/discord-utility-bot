@@ -1,6 +1,6 @@
 {
     "name": "music-bot",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "description": "A discord bot for playing music.",
     "author": "Luka Potočnik",
     "license": "MIT",
