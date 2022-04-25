@@ -30,7 +30,9 @@ services:
             POSTGRES_PASSWORD: postgres
             POSTGRES_HOST: postgresdb
             POSTGRES_PORT: 5432
-            MUSIC_BOT_TOKEN: your-token
+            MUSIC_BOT_TOKEN: your-music-token
+            MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
+            UTILITY_BOT_TOKEN: your-utility-token
             MUSIC_BOT_LOG_LEVEL: INFO
 
 volumes:

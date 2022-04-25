@@ -4,7 +4,11 @@
     "bots": {
         "music": {
             "version": "1.4.0",
-            "description": "Bot for playing music"
+            "description": "Bot for playing music."
+        },
+        "utility": {
+            "version": "1.1.0",
+            "description": "Bot for managing smaller discord servers."
         }
     },
     "description": "A collection of discord bots.",
@@ -14,19 +18,20 @@
         "type": "git",
         "url": "git+https://github.com/lpoto/discord-bots.git"
     },
-    "main": "common/index.ts",
+    "main": "src/index.ts",
     "scripts": {
-        "dev": "nodemon common/index.ts",
+        "dev": "nodemon src/index.ts",
         "build": "tsc -p .",
         "start": "node dist/index.js",
         "lint": "eslint --ext .ts .",
-        "lint:fix": "eslint --ext .ts . --fix",
-        "format": "prettier -w ."
+        "lint:fix": "eslint --ext .ts src --fix",
+        "format": "prettier -w ./src"
     },
     "engines": {
         "npm": ">=7.0.0",
         "node": ">=17.0.0"
     },
+    "types": "src/index.d.ts",
     "dependencies": {
         "@discordjs/rest": "^0.4.1",
         "@discordjs/voice": "^0.9.0",

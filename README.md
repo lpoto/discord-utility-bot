@@ -1,10 +1,11 @@
 # Discord bots
 
+A collection of discord bots using using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
+
 ## Music bot
 
-A bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
-
-[invite bot](https://discord.com/api/oauth2/authorize?client_id=806226473069314048&permissions=51576375296&scope=bot%20applications.commands)
+A bot for playing music.
+[invite to server](https://discord.com/api/oauth2/authorize?client_id=806226473069314048&permissions=51576375296&scope=bot%20applications.commands)
 
 ### Features
 
@@ -41,7 +42,10 @@ A bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJ
 -   Speak
 -   Use Voice Activity
 
-##
+## Utility bot
+
+A bot for manaing smaller discord servers.
+[invite to server]()
 
 ## Development
 
