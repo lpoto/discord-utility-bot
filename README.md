@@ -1,10 +1,12 @@
-# Discord music bot
+# Discord bots
 
-A discord bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
+## Music bot
+
+A bot for playing music, using [discord.js](https://discord.js.org/#/) in [nodeJS](https://nodejs.org/en/about/).
 
 [invite bot](https://discord.com/api/oauth2/authorize?client_id=806226473069314048&permissions=51576375296&scope=bot%20applications.commands)
 
-## Features
+### Features
 
 -   `/music` command sends a new queue message and opens a music thread on that message.
 
@@ -29,7 +31,7 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 
 -   For more info on the commands, click on `?` in the queue message in a discord channel.
 
-## Required permissions
+### Required permissions
 
 -   View Channels
 -   Send Messages
@@ -40,12 +42,6 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 -   Use Voice Activity
 
 ##
-
-![queue message](assets/message.png)
-
-## Additional Planned Features
-
--   Allow administrator to personalize commands for different roles
 
 ## Development
 

@@ -12,7 +12,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/lpoto/discord-music-bot.git"
+        "url": "git+https://github.com/lpoto/discord-bots.git"
     },
     "main": "common/index.ts",
     "scripts": {

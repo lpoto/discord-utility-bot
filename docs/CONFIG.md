@@ -8,15 +8,15 @@
 -   Clone the repository:
 
 ```bash
-git clone https://github.com/lpoto/discord-music-bot.git
-cd ./discord-music-bot
+git clone https://github.com/lpoto/discord-bots.git
+cd ./discord-bots
 ```
 
 -   Add your discord token to [docker-compose.yaml](../.dockerenv/docker-compose.yaml) under `services/client/environment/DISCORD_TOKEN`.
 
 **NOTE** You may also replace other environment variables' values (ex. `POSTGRES_PASSWORD`)
 
-## Run the bot in a docker container
+## Run the bots in a docker container
 
 ```bash
 cd .dockerenv
@@ -42,13 +42,14 @@ to run the pushed image with docker-compose.
 
 ### Requirements
 
--   NodeJS v16+
+-   NodeJS v17+
 -   npm
 
 ##
 
 ```bash
-export DISCORD_TOKEN=your_token
+export MUSIC_BOT_TOKEN=your_music_bot_token
+export MUSIC_BOT_LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
 export POSTGRES_DB=database_name
 export POSTGRES_USER=database_user
 export POSTGRES_PASSWORD=database_password
@@ -64,8 +65,3 @@ npm run start
 # or
 npm run dev
 ```
-
-## Adding new languages for translation
-
-To add a new language, create a new `json` file in `src/translation/languages` with same keys as `src/translation/languages/en.json`, but translated values
-and export it in `src/translation/languages/index.ts`.
