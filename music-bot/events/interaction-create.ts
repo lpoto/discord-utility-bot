@@ -1,12 +1,11 @@
 import { VoiceConnection } from '@discordjs/voice';
 import {
-    ButtonInteraction,
+    CommandInteraction,
     GuildMember,
     Interaction,
     Message,
     MessageButton,
     MessageSelectMenu,
-    SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -25,9 +24,24 @@ export class OnInteractionCreate extends AbstractClientEvent {
                 !interaction.isSelectMenu()) ||
             interaction.deferred ||
             interaction.replied ||
+            !(interaction.member instanceof GuildMember) ||
             interaction.applicationId !== this.client.user?.id
         )
             return;
+        if (!this.client.permsChecker.checkMemberRoles(interaction.member)) {
+            interaction.reply({
+                content: this.client.translate(
+                    ['music', 'error', 'missingRole'],
+                    [this.client.permsChecker.roles.join(', ')],
+                ),
+                ephemeral: true,
+            });
+            return;
+        }
+
+        if (interaction.isCommand())
+            return this.client.emitEvent('slashCommand', interaction);
+
         Queue.findOne({
             guildId: interaction.guildId,
             clientId: this.client.user.id,
@@ -38,9 +52,8 @@ export class OnInteractionCreate extends AbstractClientEvent {
                 interaction.member &&
                 interaction.member instanceof GuildMember
             ) {
+                if (interaction instanceof CommandInteraction) return;
                 if (
-                    (interaction instanceof ButtonInteraction ||
-                        interaction instanceof SelectMenuInteraction) &&
                     interaction.message &&
                     interaction.message.id !== queue.messageId
                 ) {
@@ -48,20 +61,6 @@ export class OnInteractionCreate extends AbstractClientEvent {
                         interaction.message.delete().catch((e) => {
                             this.client.emitEvent('error', e);
                         });
-                    return;
-                }
-                if (
-                    !this.client.permsChecker.checkMemberRoles(
-                        interaction.member,
-                    )
-                ) {
-                    interaction.reply({
-                        content: this.client.translate(
-                            ['error', 'missingRole'],
-                            [this.client.permsChecker.roles.join(', ')],
-                        ),
-                        ephemeral: true,
-                    });
                     return;
                 }
 
@@ -98,10 +97,6 @@ export class OnInteractionCreate extends AbstractClientEvent {
                     return;
                 }
             }
-
-            if (!interaction.isCommand()) return;
-
-            this.client.emitEvent('slashCommand', interaction);
         });
     }
 }

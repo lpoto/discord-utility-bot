@@ -120,6 +120,7 @@ export class PermissionChecker {
                     notification.save().then(() => {
                         interaction.reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'user',
@@ -146,6 +147,7 @@ export class PermissionChecker {
                     notification.save().then(() => {
                         interaction.reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'invalid',
@@ -162,6 +164,7 @@ export class PermissionChecker {
             if (interaction) {
                 interaction.reply({
                     content: this.client.translate([
+                        'music',
                         'error',
                         'voice',
                         'client',
@@ -189,6 +192,7 @@ export class PermissionChecker {
                     notification.save().then(() => {
                         interaction.reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'user',
@@ -215,6 +219,7 @@ export class PermissionChecker {
                     notification.save().then(() => {
                         interaction.reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'user',

@@ -45,7 +45,7 @@ export class OnReady extends AbstractClientEvent {
         await QueueOption.seed();
         await this.client.registerSlashCommands();
         this.client.user.setActivity(
-            '/' + this.client.translate(['slashCommand', 'name']),
+            '/' + this.client.translate(['music', 'slashCommands', 'name']),
             {
                 type: 'LISTENING',
             },

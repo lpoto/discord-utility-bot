@@ -13,7 +13,7 @@ export class Translate extends AbstractCommand {
         if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;
         return new MessageButton()
-            .setLabel('X')
+            .setLabel('-----------')
             .setDisabled(true)
             .setStyle(
                 queue.hasOption(QueueOption.Options.TRANSLATE_SELECTED)

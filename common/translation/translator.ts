@@ -22,4 +22,8 @@ export class Translator {
             return ' / ';
         }
     }
+
+    public getFullLanguage(): Language {
+        return this.textJson;
+    }
 }

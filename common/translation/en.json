@@ -1,26 +1,33 @@
 {
-    "slashCommand": {
-        "name": "music",
-        "description": "Opens a new music thread!"
-    },
-    "error": {
-        "activeThread": "Music thread is already active in this server!\n{0}",
-        "missingRole": "Roles required to use the bot: `{0}`",
-        "voice": {
-            "invalid": "Invalid voice channel!",
-            "client": {
-                "cannotJoin": "Cannot join your voice channel!",
-                "noPermissions": "I am missing the required permissions to join your channel!"
-            },
-            "user": {
-                "notConnected": "You are not in a voice channel!",
-                "differentChannel": "We are not in the same channel!",
-                "memberDeafened": "You need to undeafen!"
-            },
-            "failedJoining": "Could not join your voice channel!"
-        }
-    },
     "music": {
+        "name": "MusicBot",
+        "slashCommands": [
+            {
+                "name": "music",
+                "description": "Opens a new music thread!"
+            },
+            {
+                "name": "help",
+                "description": "Sends music bot help!"
+            }
+        ],
+        "error": {
+            "activeThread": "Music thread is already active in this server!\n{0}",
+            "missingRole": "Roles required to use the bot: `{0}`",
+            "voice": {
+                "invalid": "Invalid voice channel!",
+                "client": {
+                    "cannotJoin": "Cannot join your voice channel!",
+                    "noPermissions": "I am missing the required permissions to join your channel!"
+                },
+                "user": {
+                    "notConnected": "You are not in a voice channel!",
+                    "differentChannel": "We are not in the same channel!",
+                    "memberDeafened": "You need to undeafen!"
+                },
+                "failedJoining": "Could not join your voice channel!"
+            }
+        },
         "queue": {
             "title": "Music queue",
             "footer": "Add youtube songs by typing them in the  thread.",
@@ -120,9 +127,9 @@
             "help": {
                 "label": "?"
             }
-        }
-    },
-    "clientRestarted": "> ㅤBot has been restarted\n> ㅤdue to a new update.",
-    "innactivityDisconnect": "> ㅤBot has disconnected due to:\n> ㅤ- disconnected by another member,\n> ㅤ- innactivity.",
-    "help": "Sorry, there is no help available."
+        },
+        "clientRestarted": "> ㅤBot has been restarted\n> ㅤdue to a new update.",
+        "innactivityDisconnect": "> ㅤBot has disconnected due to:\n> ㅤ- disconnected by another member,\n> ㅤ- innactivity.",
+        "help": "Sorry, there is no help available."
+    }
 }

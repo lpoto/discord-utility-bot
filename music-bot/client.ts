@@ -27,6 +27,7 @@ import { Logger } from '../common/utils';
 
 export class MusicClient extends Client {
     private clientToken: string;
+    private curVersion: string;
     private musicLogger: Logger;
     private translating: Translator;
     private permissionChecker: PermissionChecker;
@@ -39,6 +40,7 @@ export class MusicClient extends Client {
     public constructor(options: MusicClientOptions) {
         super(options);
         this.clientReady = false;
+        this.curVersion = options.version;
         this.musicLogger = options.logger;
         this.clientToken = options.token;
         this.voiceConnections = {};
@@ -66,6 +68,10 @@ export class MusicClient extends Client {
 
     public set ready(value: boolean) {
         this.clientReady = value;
+    }
+
+    public get version(): string {
+        return this.curVersion;
     }
 
     public get activeCommandsOptions(): ActiveCommandsOptions {
@@ -159,9 +165,8 @@ export class MusicClient extends Client {
         }
     }
 
-    /** Register a new music command that initializes the music in the server */
     public async registerSlashCommand(guildId: string): Promise<void> {
-        const commands = [this.slashCommand()];
+        const commands = this.translator.getFullLanguage().music.slashCommands;
         const rest = new REST({ version: '9' }).setToken(this.clientToken);
         (async () => {
             if (!this.user) return;
@@ -205,12 +210,6 @@ export class MusicClient extends Client {
         return message;
     }
 
-    private slashCommand(): { [key: string]: string } {
-        return {
-            name: this.translate(['slashCommand', 'name']),
-            description: this.translate(['slashCommand', 'description']),
-        };
-    }
     /** Subscribe to required client events for the music client and login */
     public async run(): Promise<void> {
         for (const E of Object.values(Events)) {

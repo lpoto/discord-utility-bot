@@ -1,5 +1,6 @@
 import {
     ButtonInteraction,
+    CommandInteraction,
     MessageButton,
     MessageSelectMenu,
     SelectMenuInteraction,
@@ -23,7 +24,8 @@ export class OnExecuteCommand extends AbstractClientEvent {
                 options.guildId
                     ? options.guildId
                     : options.interaction!.guildId!,
-                options.interaction instanceof ButtonInteraction
+                options.interaction instanceof ButtonInteraction ||
+                    options.interaction instanceof CommandInteraction
                     ? options.interaction
                     : undefined,
             );
@@ -42,7 +44,7 @@ export class OnExecuteCommand extends AbstractClientEvent {
     private execute(
         name: CommandName,
         guildId: string,
-        interaction?: ButtonInteraction,
+        interaction?: ButtonInteraction | CommandInteraction,
     ) {
         const command: Command | null = this.getCommand(name, guildId);
         if (!command) return;

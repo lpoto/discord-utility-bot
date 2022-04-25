@@ -1,3 +1,4 @@
+import { VoiceConnection } from '@discordjs/voice';
 import {
     CommandInteraction,
     GuildMember,
@@ -42,7 +43,22 @@ export class OnSlashCommand extends AbstractClientEvent {
             interaction.member &&
             interaction.member instanceof GuildMember
         ) {
-            this.client.logger.debug('Handle slash command:', interaction.id);
+            this.client.logger.debug(
+                'Handle slash command: ',
+                interaction.commandName,
+                interaction.id,
+            );
+
+            const commands =
+                this.client.translator.getFullLanguage().music.slashCommands;
+
+            if (interaction.commandName === commands[1].name) {
+                return this.client.emitEvent('executeCommand', {
+                    name: 'Help',
+                    interaction: interaction,
+                    guildId: interaction.guildId,
+                });
+            }
 
             await Queue.findOne({
                 guildId: interaction.guildId,
@@ -52,10 +68,10 @@ export class OnSlashCommand extends AbstractClientEvent {
                 if (queue)
                     message = await this.client.checkThreadAndMessage(queue);
 
-                if (queue && message) {
+                if (message) {
                     interaction.reply({
                         content: this.client.translate(
-                            ['error', 'activeThread'],
+                            ['music', 'error', 'activeThread'],
                             [message.url],
                         ),
                         ephemeral: true,
@@ -63,11 +79,25 @@ export class OnSlashCommand extends AbstractClientEvent {
                     });
                 } else if (
                     this.client.user &&
+                    interaction.guildId &&
                     this.client.permsChecker.validateMemberVoice(interaction)
                 ) {
                     this.client.logger.info(
                         `Initializing queue message in guild '${interaction.guildId}'`,
                     );
+
+                    const c: VoiceConnection | null =
+                        this.client.getVoiceConnection(interaction.guildId);
+
+                    if (
+                        !c ||
+                        (interaction.guildId &&
+                            !this.client.getVoiceConnection(
+                                interaction.guildId,
+                            )) ||
+                        !interaction.guild?.me?.voice.channel
+                    )
+                        this.client.emitEvent('joinVoiceRequest', interaction);
 
                     const q: Queue = Queue.create({
                         clientId: this.client.user.id,

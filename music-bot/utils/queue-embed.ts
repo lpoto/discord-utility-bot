@@ -18,8 +18,11 @@ export class QueueEmbed extends MessageEmbed {
             description: !options.clientRestart
                 ? !options.innactivity
                     ? ''
-                    : options.client.translate(['innactivityDisconnect'])
-                : options.client.translate(['clientRestarted']),
+                    : options.client.translate([
+                          'music',
+                          'innactivityDisconnect',
+                      ])
+                : options.client.translate(['music', 'clientRestarted']),
         });
         this.queue = options.queue;
         this.client = options.client;

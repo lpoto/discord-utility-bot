@@ -21,6 +21,7 @@ export async function startMusicClient(
     return new MusicClient({
         token: token,
         logger: logger,
+        version: version,
         intents: [
             Intents.FLAGS.GUILDS,
             Intents.FLAGS.GUILD_MESSAGES,

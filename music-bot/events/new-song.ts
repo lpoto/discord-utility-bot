@@ -60,7 +60,7 @@ export class OnNewSong extends AbstractClientEvent {
                 (n[0] === '`' && n[n.length - 1] === '`')
             )
                 n = n.substring(1, n.length - 1);
-            new SongFinder(n).getSongs().then((songs2) => {
+            new SongFinder(n, this.client).getSongs().then((songs2) => {
                 if (songs2 && songs2.length > 0) {
                     if (!(queue.guildId in this.songsToUpdate))
                         this.songsToUpdate[queue.guildId] = {};

@@ -1,4 +1,8 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    CommandInteraction,
+    MessageButton,
+} from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { Command } from '../music-bot';
 import { MusicClient } from '../client';
@@ -15,22 +19,28 @@ export class Help extends AbstractCommand {
         return true;
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
+    public async execute(
+        interaction?: ButtonInteraction | CommandInteraction,
+    ): Promise<void> {
         if (!interaction || !interaction.user || interaction.replied) return;
 
         const descriptions: string[] = this.getAllDescriptions(this.guildId);
         if (this.description?.length === 0) {
             interaction.reply({
-                content: this.translate(['help']),
+                content: this.translate(['music', 'help']),
                 ephemeral: true,
             });
         } else {
             interaction.reply({
-                content: descriptions
-                    .map((d) => {
-                        return '*\u3000' + d;
-                    })
-                    .join('\n'),
+                content:
+                    `${this.translate(['music', 'name'])} ${
+                        this.client.version
+                    }\n\n` +
+                    descriptions
+                        .map((d) => {
+                            return '*\u3000' + d;
+                        })
+                        .join('\n'),
                 ephemeral: true,
             });
         }

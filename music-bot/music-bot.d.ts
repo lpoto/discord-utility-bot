@@ -42,6 +42,7 @@ export interface QueueEmbedOptions extends UpdateQueueOptions {
 export interface MusicClientOptions extends ClientOptions {
     token: string;
     logger: Logger;
+    version: string;
     requiredMemberRoles: string[];
     clientVoicePermissions: PermissionResolvable[];
     clientTextPermissions: PermissionResolvable[];
@@ -62,7 +63,9 @@ export class Command {
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;
-    public execute(interaction?: ButtonInteraction): Promise<void>;
+    public execute(
+        interaction?: ButtonInteraction | CommandInteraction,
+    ): Promise<void>;
     public updateQueue(options: UpdateQueueOptions): void;
     public executeFromSelectMenu(
         interaction: SelectMenuInteraction,
@@ -126,7 +129,10 @@ export interface NewSongOptions {
 }
 
 export interface ExecuteCommandOptions {
-    interaction?: ButtonInteraction | SelectMenuInteraction;
+    interaction?:
+        | ButtonInteraction
+        | SelectMenuInteraction
+        | CommandInteraction;
     name?: CommandName;
     guildId?: string;
 }

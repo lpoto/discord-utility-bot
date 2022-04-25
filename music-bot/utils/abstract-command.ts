@@ -2,6 +2,7 @@ import { VoiceConnection } from '@discordjs/voice';
 import { randomUUID } from 'crypto';
 import {
     ButtonInteraction,
+    CommandInteraction,
     MessageButton,
     MessageSelectMenu,
     SelectMenuInteraction,
@@ -88,7 +89,9 @@ export abstract class AbstractCommand {
         return this.client.translate(keys);
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
+    public async execute(
+        interaction?: ButtonInteraction | CommandInteraction,
+    ): Promise<void> {
         if (!interaction || !this.client.user) return;
         this.client.logger.debug(interaction.id);
         this.client.logger.debug(this.client.user.id);

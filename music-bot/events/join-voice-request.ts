@@ -61,6 +61,7 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
                     resource
                         .reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'failedJoining',
@@ -74,6 +75,7 @@ export class OnJoinVoiceRequest extends AbstractClientEvent {
                     resource
                         .reply({
                             content: this.client.translate([
+                                'music',
                                 'error',
                                 'voice',
                                 'failedJoining',
