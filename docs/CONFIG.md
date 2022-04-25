@@ -1,17 +1,18 @@
 ## Requirements
 
-- [Docker](https://www.docker.com/), docker-compose
-- your own [discord bot client](CREATING_CLIENT.md)
+-   [Docker](https://www.docker.com/), docker-compose
+-   your own [discord bot client](CREATING_CLIENT.md)
 
 ## Prerequisites
 
-- Clone the repository:
+-   Clone the repository:
+
 ```bash
 git clone https://github.com/lpoto/discord-music-bot.git
 cd ./discord-music-bot
 ```
 
-- Add your discord token to [docker-compose.yaml](../.dockerenv/docker-compose.yaml) under `services/client/environment/DISCORD_TOKEN`.
+-   Add your discord token to [docker-compose.yaml](../.dockerenv/docker-compose.yaml) under `services/client/environment/DISCORD_TOKEN`.
 
 **NOTE** You may also replace other environment variables' values (ex. `POSTGRES_PASSWORD`)
 
@@ -41,8 +42,8 @@ to run the pushed image with docker-compose.
 
 ### Requirements
 
-- NodeJS v16+
-- npm
+-   NodeJS v16+
+-   npm
 
 ##
 
@@ -56,6 +57,7 @@ export POSTGRES_PORT=database_port
 
 npm install
 ```
+
 ```bash
 npm run build
 npm run start

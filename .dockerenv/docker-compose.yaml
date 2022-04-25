@@ -1,37 +1,38 @@
 version: '3'
 
 services:
-  postgresdb:
-    image: postgres:14.1-alpine
-    container_name: postgresdb
-    restart: unless-stopped
-    ports:
-      - 5433:5432
-    environment:
-      POSTGRES_DB: discord_music_bot
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+    postgresdb:
+        image: postgres:14.1-alpine
+        container_name: postgresdb
+        restart: unless-stopped
+        ports:
+            - 5433:5432
+        environment:
+            POSTGRES_DB: discord_bot
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
 
-  client:
-    # image: docker_id/docker_hub_repo:tag
-    build:
-      context: ..
-      dockerfile: .dockerenv/Dockerfile
-    container_name: discord-music-client
-    restart: unless-stopped
-    environment:
-      DISCORD_TOKEN: your-token
-      POSTGRES_DB: discord_music_bot
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST: postgresdb
-      POSTGRES_PORT: 5432
-    depends_on:
-      - postgresdb
+    client:
+        # image: docker_id/docker_hub_repo:tag
+        build:
+            context: ..
+            dockerfile: .dockerenv/Dockerfile
+        container_name: discord-bots
+        restart: unless-stopped
+        depends_on:
+            postgresdb:
+                condition: service_started
+        environment:
+            POSTGRES_DB: discord_bot
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_HOST: postgresdb
+            POSTGRES_PORT: 5432
+            MUSIC_BOT_TOKEN: your-token
+            MUSIC_BOT_LOG_LEVEL: INFO
 
 volumes:
-  postgres-data:
-    driver: local
-
+    postgres-data:
+        driver: local

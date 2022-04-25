@@ -2,9 +2,7 @@ FROM node:17-alpine3.15 AS BUILD_IMAGE
 
 WORKDIR /app
 
-COPY package.json ./
-COPY tsconfig.json ./
-COPY src /app/src
+COPY . ./
 
 RUN ls -a
 

@@ -1,23 +1,28 @@
 {
-    "name": "music-bot",
+    "name": "discord-bots",
     "version": "1.4.0",
-    "description": "A discord bot for playing music.",
+    "bots": {
+        "music": {
+            "version": "1.4.0",
+            "description": "Bot for playing music"
+        }
+    },
+    "description": "A collection of discord bots.",
     "author": "Luka Potočnik",
     "license": "MIT",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/lpoto/discord-music-bot.git"
     },
-    "main": "src/index.ts",
+    "main": "common/index.ts",
     "scripts": {
-        "dev": "nodemon src/index.ts",
+        "dev": "nodemon common/index.ts",
         "build": "tsc -p .",
         "start": "node dist/index.js",
-        "lint": "eslint --ext .ts src",
-        "lint:fix": "eslint --ext .ts src --fix",
-        "format": "prettier -w ./src"
+        "lint": "eslint --ext .ts .",
+        "lint:fix": "eslint --ext .ts . --fix",
+        "format": "prettier -w ."
     },
-    "types": "./src/index.d.ts",
     "engines": {
         "npm": ">=7.0.0",
         "node": ">=17.0.0"

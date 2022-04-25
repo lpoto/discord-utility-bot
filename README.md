@@ -6,37 +6,38 @@ A discord bot for playing music, using [discord.js](https://discord.js.org/#/) i
 
 ## Features
 
-- `/music` command sends a new queue message and opens a music thread on that message.
+-   `/music` command sends a new queue message and opens a music thread on that message.
 
-- Only a single queue with a music thread may be active at once in a server.
+-   Only a single queue with a music thread may be active at once in a server.
 
-- Songs are added by typing the name/url of a youtube song/playlist in the music thread.
+-   Songs are added by typing the name/url of a youtube song/playlist in the music thread.
 
-- Deleting the queue message or thread will stop the music.
+-   Deleting the queue message or thread will stop the music.
 
-- Bot requires at least one unmuted (non bot) listener.
-    - If no unmuted members are in the channel, bot will eventually disconnect.
-    - Reconnect it by clicking `Join`.
+-   Bot requires at least one unmuted (non bot) listener.
 
-- Queue message offers a variety of commands by clicking on buttons. (ex. loop, skip, shuffle, ... )
+    -   If no unmuted members are in the channel, bot will eventually disconnect.
+    -   Reconnect it by clicking `Join`.
 
-- User may only use music commands if they are undeafened in a voice channel and bot is either
-in the same channel or not connected to any.
+-   Queue message offers a variety of commands by clicking on buttons. (ex. loop, skip, shuffle, ... )
 
-- Bot requires a `DJ` role. Only users with the same role may use the
-music commands.
+-   User may only use music commands if they are undeafened in a voice channel and bot is either
+    in the same channel or not connected to any.
 
-- For more info on the commands, click on `?` in the queue message in a discord channel.
+-   Bot requires a `DJ` role. Only users with the same role may use the
+    music commands.
+
+-   For more info on the commands, click on `?` in the queue message in a discord channel.
 
 ## Required permissions
 
-- View Channels
-- Send Messages
-- Read Message History
-- Create Public Threads
-- Connect
-- Speak
-- Use Voice Activity
+-   View Channels
+-   Send Messages
+-   Read Message History
+-   Create Public Threads
+-   Connect
+-   Speak
+-   Use Voice Activity
 
 ##
 
@@ -44,7 +45,7 @@ music commands.
 
 ## Additional Planned Features
 
-- Allow administrator to personalize commands for different roles
+-   Allow administrator to personalize commands for different roles
 
 ## Development
 
