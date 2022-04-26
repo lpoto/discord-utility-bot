@@ -10,7 +10,7 @@ import {
 import { Logger } from '.';
 import { Translator } from '../utils/translation';
 
-export class CustomClient extends Client {
+export abstract class CustomClient extends Client {
     private clientReady: boolean;
     private clientToken: string;
     private curVersion: string;
@@ -57,8 +57,10 @@ export class CustomClient extends Client {
     }
 
     public async registerSlashCommands(commands: any[]): Promise<void> {
-        if (!this.user) return;
-        this.logger.info('Refreshing application (/) commands.');
+        if (!this.user || commands.length === 0) return;
+        this.logger.info(
+            `Refreshing ${commands.length} application (/) command/s.`,
+        );
 
         this.slashCommandsInfo.toRegister = this.guilds.cache.size;
         for await (const guild of this.guilds.cache) {
@@ -89,7 +91,9 @@ export class CustomClient extends Client {
                 })
                 .catch((e) => {
                     this.logger.debug(
-                        `Failed registering slash commands for guild: "${guildId}": `,
+                        'Failed registering slash commands for guild: ' +
+                            guildId +
+                            ': ',
                         e.message,
                     );
                     this.slashCommandsInfo.failed += 1;
@@ -101,7 +105,10 @@ export class CustomClient extends Client {
                         this.slashCommandsInfo.toRegister
                     )
                         this.logger.info(
-                            `Registered slash commands in ${this.slashCommandsInfo.registered} guilds, failed in ${this.slashCommandsInfo.failed}`,
+                            'Registered slash commands in',
+                            this.slashCommandsInfo.registered.toString(),
+                            'guild/s, failed in ',
+                            this.slashCommandsInfo.failed.toString(),
                         );
                 });
         })();
@@ -116,6 +123,8 @@ export class CustomClient extends Client {
     }
 
     public emitEvent(...args: Event): void {
+        if (this.getEvents().length > 0)
+            this.logger.warn('emitEvent method should be overriden!');
         this.emit(args[0] as string, args[1]);
     }
 
@@ -124,14 +133,16 @@ export class CustomClient extends Client {
         for (const E of this.getEvents()) {
             const e: ClientEvent = new E(this);
 
-            const callEvent = (
-                n: string,
-                f: (...args2: any[]) => Promise<void>,
-            ) => (e.once ? this.once(n, f) : this.on(n, f));
-
-            callEvent(E.eventName, async (...args) => {
-                e.callback(...args);
-            });
+            if (e.once)
+                this.once(E.eventName, async (...args) => {
+                    e.callback(...args);
+                });
+            else {
+                this.on(E.eventName, async (...args) => {
+                    if (!this.ready) return;
+                    e.callback(...args);
+                });
+            }
         }
         this.login(this.clientToken);
     }

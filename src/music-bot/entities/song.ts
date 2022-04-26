@@ -1,6 +1,5 @@
 import {
     BaseEntity,
-    BeforeInsert,
     Column,
     Entity,
     Index,
@@ -38,7 +37,7 @@ export class Song extends BaseEntity {
     @Column({ nullable: false })
     public durationSeconds: number;
 
-    @Column({ nullable: false })
+    @Column({ nullable: false, default: Math.floor(Math.random() * 16777215) })
     public color: number;
 
     @Column({ nullable: false })
@@ -66,11 +65,6 @@ export class Song extends BaseEntity {
     public prev: Promise<Song | null>;
 
     public previous: Song | null;
-
-    @BeforeInsert()
-    public setColor(): void {
-        this.color = Math.floor(Math.random() * 16777215);
-    }
 
     public async generatePosition(): Promise<void> {
         // auto increment position for current queue

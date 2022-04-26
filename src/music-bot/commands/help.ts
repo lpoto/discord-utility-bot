@@ -38,7 +38,7 @@ export class Help extends AbstractCommand {
                     }\n\n` +
                     descriptions
                         .map((d) => {
-                            return '*\u3000' + d;
+                            return '> \u3000' + d;
                         })
                         .join('\n'),
                 ephemeral: true,

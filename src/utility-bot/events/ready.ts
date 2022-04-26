@@ -19,14 +19,11 @@ export class OnReady extends AbstractUtilityEvent {
         );
 
         await this.client.registerSlashCommands(
-            this.client.translator.getFullLanguage().music.slashCommands,
+            this.client.translator.getFullLanguage().utility.slashCommands,
         );
-        this.client.user.setActivity(
-            '/' + this.client.translate(['music', 'slashCommands', 'name']),
-            {
-                type: 'LISTENING',
-            },
-        );
+        this.client.user.setActivity('/help', {
+            type: 'LISTENING',
+        });
         this.client.ready = true;
         this.client.logger.info('Utility Client ready!');
     }

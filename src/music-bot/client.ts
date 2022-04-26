@@ -1,6 +1,6 @@
 import { VoiceConnection } from '@discordjs/voice';
 import { AnyChannel, Message, TextChannel, ThreadChannel } from 'discord.js';
-import { MusicClientOptions } from './music-bot';
+import { MusicClientOptions, Event } from './music-bot';
 import {
     ActiveCommandsOptions,
     CustomAudioPlayer,
@@ -126,5 +126,9 @@ export class MusicClient extends CustomClient {
 
     public getEvents(): any[] {
         return Object.values(Events);
+    }
+
+    public emitEvent(...args: Event): void {
+        super.emit(args[0] as string, args[1]);
     }
 }

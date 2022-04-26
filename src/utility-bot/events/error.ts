@@ -1,10 +1,10 @@
 import { DiscordAPIError } from 'discord.js';
 import { EntityNotFoundError } from 'typeorm';
-import { MusicClient } from '../client';
-import { AbstractMusicEvent } from '../utils/abstract-music-event';
+import { UtilityClient } from '../client';
+import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
-export class OnError extends AbstractMusicEvent {
-    public constructor(client: MusicClient) {
+export class OnError extends AbstractUtilityEvent {
+    public constructor(client: UtilityClient) {
         super(client);
     }
 

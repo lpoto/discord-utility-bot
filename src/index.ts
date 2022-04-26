@@ -2,8 +2,8 @@ import { Connection, createConnection } from 'typeorm';
 import { getMusicEntitites, startMusicClient } from './music-bot';
 import { Notification } from './common-entities';
 import { bots } from '../package.json';
-import { Logger } from './utils';
-import { startUtilityClient } from './utility-bot';
+import { handleErrors, Logger } from './utils';
+import { getUtilityEntities, startUtilityClient } from './utility-bot';
 
 createConnection({
     type: 'postgres',
@@ -13,9 +13,11 @@ createConnection({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     synchronize: true,
-    entities: [Notification].concat(getMusicEntitites()),
+    entities: [Notification]
+        .concat(getMusicEntitites())
+        .concat(getUtilityEntities()),
 }).then((con: Connection) => {
-    const logger: Logger = new Logger('Main', Logger.Level.INFO);
+    const logger: Logger = new Logger();
     const tokens: { [key: string]: string | undefined } = {
         music: process.env.MUSIC_BOT_TOKEN,
         utility: process.env.UTILITY_BOT_TOKEN,
@@ -24,6 +26,14 @@ createConnection({
         return logger.error('No discord tokens provided');
     if (!con.isConnected)
         return logger.error('Could not establish database connection.');
+
+    process.on('uncaughtException', (error: Error) => {
+        handleErrors(error);
+    });
+    process.on('unhandledRejection', (error: Error) => {
+        handleErrors(error);
+    });
+
     if (tokens.music !== undefined)
         startMusicClient(
             con,

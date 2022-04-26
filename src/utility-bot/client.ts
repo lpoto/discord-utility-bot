@@ -1,5 +1,5 @@
 import { CustomClient } from '../utils';
-import { UtilityClientOptions } from './utility-bot';
+import { UtilityClientOptions, Event } from './utility-bot';
 import * as Events from './events';
 
 export class UtilityClient extends CustomClient {
@@ -9,5 +9,9 @@ export class UtilityClient extends CustomClient {
 
     public getEvents(): any[] {
         return Object.values(Events);
+    }
+
+    public emitEvent(...args: Event): void {
+        super.emit(args[0] as string, args[1]);
     }
 }

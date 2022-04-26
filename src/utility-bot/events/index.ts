@@ -1,1 +1,14 @@
 export { OnReady } from './ready';
+export { OnSlashCommand } from './slash-command';
+export { OnHelpSlashCommand } from './help-slash-command';
+export { OnPollSlashCommand } from './poll-slash-command';
+export { OnRolesSlashCommand } from './roles-slash-command';
+export { OnHandleRolesMessage } from './handle-roles-message';
+export { OnConfigSlashCommand } from './config-slash-command';
+export { OnGamesSlashCommand } from './games-slash-command';
+export { OnInteractionCreate } from './interaction-create';
+export { OnError } from './error';
+export { OnMessageDelete } from './message-delete';
+export { OnButtonClick } from './button-click';
+export { OnMenuSelect } from './menu-select';
+export { OnMessageCreate } from './message-create';

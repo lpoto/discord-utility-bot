@@ -2,9 +2,10 @@ import { Intents, Permissions } from 'discord.js';
 import { Connection } from 'typeorm';
 import { Logger } from '../utils';
 import { UtilityClient } from './client';
+import { GuildRole, RolesMessage } from './entities';
 
-export function getMusicEntitites(): any[] {
-    return [];
+export function getUtilityEntities(): any[] {
+    return [GuildRole, RolesMessage];
 }
 
 export async function startUtilityClient(

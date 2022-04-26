@@ -137,19 +137,50 @@
         "slashCommands": [
             {
                 "name": "help",
-                "description": "Sends utility bot help!"
+                "description": "Sends info about the utility bot commands!"
             },
             {
                 "name": "poll",
-                "description": "Starts a new poll!"
+                "description": "Starts a new poll for users to vote on!",
+                "help": [
+                    "Type 'question <question>' in the message's thread to change the poll's question.",
+                    "Type '<response>' in the thread to add a response to the poll.",
+                    "Type 'remove <idx>' in the thread to remove a response by it's index (index el. [0, #reponses])",
+                    "Multiple options may be added at once, separated by a new line.",
+                    "Click the 'commit' button to finish editing the poll.",
+                    "Reply 'edit' to the poll message to start editing again.",
+                    "Reply 'resend' to the message or type 'resend' in the thread to resend the poll message in a channel."
+                ]
             },
             {
                 "name": "roles",
-                "description": "Creates a new message for adding and removing roles!"
+                "description": "Creates a new message for adding and removing roles with buttons!",
+                "help": [
+                    "Select the roles you want to add to the message in a dropdown.",
+                    "Navigate between the pages of roles with '<' and '>'.",
+                    "Select the roles again to remove them from the message.",
+                    "Click the 'commit' button to finish editing the roles message.",
+                    "Reply 'edit' to the roles message to start editing again.",
+                    "Reply 'resend' to the message to resend the roles message in a channel."
+                ]
             },
             {
                 "name": "games",
-                "description": "Created a message for playing games!"
+                "description": "Creates a message for playing games!",
+                "help": [
+                    "Select the game you want to play in a dropdown.",
+                    "Select a game's leaderboard in a dropdown.",
+                    "There is no additional information on how to play the games."
+                ]
+            },
+            {
+                "name": "config",
+                "description": "Set up which roles are allowed to use a command",
+                "help": [
+                    "Select a command in a dropdown.",
+                    "Select the roles in a dropdown for the selected command.",
+                    "Navigate the pages of roles with '<' and '>'."
+                ]
             }
         ]
     }

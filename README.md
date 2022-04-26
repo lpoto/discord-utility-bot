@@ -45,7 +45,7 @@ A bot for playing music.
 ## Utility bot
 
 A bot for manaing smaller discord servers.
-[invite to server]()
+[invite to server](https://discord.com/api/oauth2/authorize?client_id=763366736586080257&permissions=309237712896&scope=bot%20applications.commands)
 
 ## Development
 
