@@ -412,6 +412,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
                     value: r.id,
                 };
             });
+        if (curRoles.length < 1) return [];
         return [
             new MessageActionRow().addComponents([
                 new MessageButton()
@@ -469,9 +470,9 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         return guild.roles.cache
             .filter(
                 (r) =>
-                    (!highestRole || highestRole && (
-                        r.comparePositionTo(highestRole) > 0
-                    )) &&
+                    (!highestRole ||
+                        (highestRole &&
+                            r.comparePositionTo(highestRole) < 0)) &&
                     !r.tags?.botId &&
                     !r.tags?.integrationId &&
                     !r.tags?.premiumSubscriberRole &&
@@ -484,6 +485,6 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
 export namespace OnHandleRolesMessage {
     export type Type = [
         'handleRolesMessage',
-        ...Parameters<OnHandleRolesMessage['callback']>
+        ...Parameters<OnHandleRolesMessage['callback']>,
     ];
 }
