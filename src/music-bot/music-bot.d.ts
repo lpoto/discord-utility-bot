@@ -1,4 +1,4 @@
-import { Queue } from './music-bot/entities';
+import { Queue } from '../music-bot/entities';
 import {
     Message,
     MessageButton,

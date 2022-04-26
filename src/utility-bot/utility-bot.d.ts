@@ -4,7 +4,7 @@ import {
     Message,
     SelectMenuInteraction,
 } from 'discord.js';
-import { CustomClientOptions } from '../common/common';
+import { CustomClientOptions } from '../../';
 import * as Events from './events';
 
 export type UtilityClientOptions = CustomClientOptions;
@@ -26,7 +26,7 @@ export type Event =
     | Events.OnError.Type;
 
 interface HandleMessageOptions {
-    type: 'create' | 'update';
+    type: string;
     messageId: string;
     interaction?:
         | ButtonInteraction

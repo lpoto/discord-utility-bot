@@ -173,12 +173,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             return this.resend(options);
         if (['edit', 'reedit', 'open'].includes(content.trim().toLowerCase()))
             return this.reedit(options);
-        if (
-            ['rename', 'change', 'name', 'title'].some((s) =>
-                content.trim().toLowerCase().startsWith(s),
-            )
-        )
-            return this.changeName(options);
+        return this.changeName(options);
     }
 
     private async selectRoles(
@@ -256,10 +251,8 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             messageId: options.messageId,
         });
         if (!rm) return;
-        const name: string = options.repliedMessage.content
-            .replace(/((re)?name)|(title)|(change)/i, '')
-            .trim();
-        if (name.length > 0) rm.name = name;
+        const name: string = options.repliedMessage.content;
+        if (name.length === 0) return;
         await rm.save();
         await this.updateRolesMessage(options);
     }
@@ -472,9 +465,13 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
     }
 
     private editableRoles(guild: Guild): Role[] {
+        const highestRole: Role | undefined = guild.me?.roles.highest;
         return guild.roles.cache
             .filter(
                 (r) =>
+                    (!highestRole || highestRole && (
+                        r.comparePositionTo(highestRole) > 0
+                    )) &&
                     !r.tags?.botId &&
                     !r.tags?.integrationId &&
                     !r.tags?.premiumSubscriberRole &&
@@ -487,6 +484,6 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
 export namespace OnHandleRolesMessage {
     export type Type = [
         'handleRolesMessage',
-        ...Parameters<OnHandleRolesMessage['callback']>,
+        ...Parameters<OnHandleRolesMessage['callback']>
     ];
 }

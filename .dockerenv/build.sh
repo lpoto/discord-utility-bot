@@ -8,11 +8,11 @@ fi
 echo $USERNAME
 
 # extract name from package.json
-TAG=$(sed 's/.*"name": "\(.*\)".*/\1/;t;d' ../package.json)
+TAG=$(sed 's/.*"name": "\(.*\)".*/\1/;t;d' ../package.json | head -1)
 # extract version from package.json
-VERSION=$(sed 's/.*"version": "\(.*\)".*/\1/;t;d' ../package.json)
-
-REPO="discord-bot"
+VERSION=$(sed 's/.*"version": "\(.*\)".*/\1/;t;d' ../package.json | head -1)
+# extract repo from package.json
+REPO=$(sed 's/.*"repository": "\(.*\)".*/\1/;t;d' ../package.json | head -1)
 echo "Project version: $VERSION"
 echo "Using image tag: $TAG"
 echo "Using docker repo: $REPO"

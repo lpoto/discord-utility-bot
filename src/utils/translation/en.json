@@ -161,7 +161,8 @@
                     "Select the roles again to remove them from the message.",
                     "Click the 'commit' button to finish editing the roles message.",
                     "Reply 'edit' to the roles message to start editing again.",
-                    "Reply 'resend' to the message to resend the roles message in a channel."
+                    "Reply 'resend' to the message to resend the roles message in a channel.",
+                    "Reply '<new-name'> to change the title of the roles message."
                 ]
             },
             {
