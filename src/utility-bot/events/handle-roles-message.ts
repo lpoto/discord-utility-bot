@@ -253,6 +253,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         if (!rm) return;
         const name: string = options.repliedMessage.content;
         if (name.length === 0) return;
+        rm.name = name;
         await rm.save();
         await this.updateRolesMessage(options);
     }
