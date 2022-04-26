@@ -1,13 +1,14 @@
 {
-    "name": "discord-bots",
-    "version": "1.4.0",
+    "name": "bots",
+    "group": "discord",
+    "version": "2.0.0-beta",
     "bots": {
         "music": {
-            "version": "1.4.0",
+            "version": "1.5.0-beta",
             "description": "Bot for playing music."
         },
         "utility": {
-            "version": "1.1.0",
+            "version": "2.0.0-beta",
             "description": "Bot for managing smaller discord servers."
         }
     },
