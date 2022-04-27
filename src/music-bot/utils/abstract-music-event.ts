@@ -3,6 +3,7 @@ import { MusicClient } from '../client';
 
 export abstract class AbstractMusicEvent {
     public once?: boolean;
+    public needsClientReady = true;
     public client: MusicClient;
     public eventQueue: ClientEventQueue;
 

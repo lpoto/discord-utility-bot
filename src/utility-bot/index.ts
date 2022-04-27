@@ -3,9 +3,11 @@ import { Connection } from 'typeorm';
 import { Logger } from '../utils';
 import { UtilityClient } from './client';
 import { GuildRole, RolesMessage } from './entities';
+import { Poll } from './entities/poll';
+import { PollResponse } from './entities/poll-response';
 
 export function getUtilityEntities(): any[] {
-    return [GuildRole, RolesMessage];
+    return [GuildRole, RolesMessage, Poll, PollResponse];
 }
 
 export async function startUtilityClient(

@@ -35,6 +35,7 @@ export type ClientEventArgument =
 
 export class ClientEvent {
     public once?: boolean;
+    public needsClientReady: boolean;
     public client: CustomClient;
     public eventQueue: ClientEventQueue;
     public constructor(client: CustomClient);

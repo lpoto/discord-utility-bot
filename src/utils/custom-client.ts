@@ -139,7 +139,7 @@ export abstract class CustomClient extends Client {
                 });
             else {
                 this.on(E.eventName, async (...args) => {
-                    if (!this.ready) return;
+                    if (!this.ready && e.needsClientReady) return;
                     e.callback(...args);
                 });
             }

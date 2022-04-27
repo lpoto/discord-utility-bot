@@ -47,6 +47,19 @@ A bot for playing music.
 A bot for manaing smaller discord servers.
 [invite to server](https://discord.com/api/oauth2/authorize?client_id=763366736586080257&permissions=309237712896&scope=bot%20applications.commands)
 
+## Features
+
+-   Hosting polls,
+-   Adding and removing roles with button clicks,
+-   Configuring which roles may use which commands.
+
+### Required permissions
+
+-   View Channels
+-   Send Messages
+-   Read Message History
+-   Create Public Threads
+
 ## Development
 
 For more info on developing the bot see [config](docs/CONFIG.md)

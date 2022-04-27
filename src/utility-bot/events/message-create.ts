@@ -1,6 +1,7 @@
 import { Message } from 'discord.js';
 import { UtilityClient } from '../client';
 import { RolesMessage } from '../entities';
+import { Poll } from '../entities/poll';
 import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
 export class OnMessageCreate extends AbstractUtilityEvent {
@@ -11,14 +12,26 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     public async callback(message: Message): Promise<void> {
         if (message.channel.type === 'DM')
             return this.handlePrivateMessage(message);
-        if (message.channel.type === 'GUILD_PUBLIC_THREAD')
+        if (message.channel.isThread())
             return this.handleThreadMessage(message);
         if (message.channel.type !== 'GUILD_TEXT') return;
         if (message.reference !== null) return this.handleReply(message);
     }
 
     private async handleThreadMessage(message: Message): Promise<void> {
-        this.client.logger.debug(`Thread message ${message.id}`);
+        if (!message.channel.isThread() || !message.channel?.id) return;
+        this.client.logger.debug(
+            `Thread message ${message.id} in guild ${message.guildId}`,
+        );
+        const poll: Poll | undefined = await Poll.findOne({
+            messageId: message.channel.id,
+        });
+        if (poll)
+            return this.client.emitEvent('handlePollMessage', {
+                type: 'threadMessage',
+                messageId: message.channel.id,
+                threadMessage: message,
+            });
     }
 
     private async handleReply(message: Message): Promise<void> {
@@ -31,11 +44,25 @@ export class OnMessageCreate extends AbstractUtilityEvent {
             });
         if (!referencedMsg || referencedMsg.author.id !== this.client.user.id)
             return;
+
+        this.client.logger.debug(
+            `Reply ${message.id} to message ${referencedMsg.id} in guild ${message.guildId}`,
+        );
+
         const rm: RolesMessage | undefined = await RolesMessage.findOne({
             messageId: referencedMsg.id,
         });
         if (rm)
             return this.client.emitEvent('handleRolesMessage', {
+                type: 'reply',
+                messageId: referencedMsg.id,
+                repliedMessage: message,
+            });
+        const poll: Poll | undefined = await Poll.findOne({
+            messageId: referencedMsg.id,
+        });
+        if (poll)
+            return this.client.emitEvent('handlePollMessage', {
                 type: 'reply',
                 messageId: referencedMsg.id,
                 repliedMessage: message,

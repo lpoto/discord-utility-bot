@@ -50,6 +50,8 @@ to run the pushed image with docker-compose.
 ```bash
 export MUSIC_BOT_TOKEN=your_music_bot_token
 export MUSIC_BOT_LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
+export UTILITY_BOT_TOKEN=your_utility_bot_token
+export UTILITY_BOT_LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
 export POSTGRES_DB=database_name
 export POSTGRES_USER=database_user
 export POSTGRES_PASSWORD=database_password

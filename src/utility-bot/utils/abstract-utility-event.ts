@@ -5,6 +5,7 @@ import { UtilityClient } from '../client';
 export abstract class AbstractUtilityEvent {
     public once?: boolean;
     public client: UtilityClient;
+    public needsClientReady = true;
     public eventQueue: ClientEventQueue;
 
     public constructor(client: UtilityClient) {

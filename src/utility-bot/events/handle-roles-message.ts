@@ -317,8 +317,9 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         const rm: RolesMessage | undefined = await RolesMessage.findOne({
             messageId: options.messageId,
         });
-        if (!rm) return;
+        if (!rm || !rm.commited) return;
         rm.commited = false;
+        rm.created = new Date();
         await rm.save();
         await this.updateRolesMessage(options);
     }
@@ -384,21 +385,19 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             if (rm.roles.length === 0) return [];
             const rows: MessageActionRow[] = [new MessageActionRow()];
             let idx = 0;
-            let idx2 = 0;
             for (const r of rm.roles) {
-                if (rows[idx2].components.length >= 5) {
-                    idx2 += 1;
+                if (rows[idx].components.length >= 5) {
+                    if (idx >= 4) break;
                     rows.push(new MessageActionRow());
+                    idx += 1;
                 }
-                rows[idx2].addComponents([
+                rows[idx].addComponents([
                     new MessageButton()
                         .setCustomId(randomUUID().toString() + '__' + r.id)
                         .setStyle(MessageButtonStyles.SECONDARY)
                         .setDisabled(false)
                         .setLabel(r.name),
                 ]);
-                if (idx >= 25) break;
-                idx++;
             }
             return rows;
         }

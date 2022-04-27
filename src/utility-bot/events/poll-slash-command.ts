@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js';
+import { CommandInteraction, TextChannel } from 'discord.js';
 import { UtilityClient } from '../client';
 import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
@@ -8,15 +8,32 @@ export class OnPollSlashCommand extends AbstractUtilityEvent {
     }
 
     public async callback(interaction: CommandInteraction): Promise<void> {
-        this.eventQueue.addToQueue(interaction.id, () =>
-            this.execute(interaction),
-        );
+        if (
+            interaction.guildId &&
+            interaction.guild &&
+            interaction.guild.me &&
+            interaction.channel &&
+            interaction.channel instanceof TextChannel &&
+            interaction.member &&
+            this.client.user
+        ) {
+            this.eventQueue.addToQueue(interaction.id, () =>
+                this.execute(interaction),
+            );
+        }
     }
 
     private async execute(interaction: CommandInteraction): Promise<void> {
-        interaction.reply({
-            content: 'Sori ne dela zdle tole.',
-            ephemeral: true,
+        if (
+            !interaction.guild ||
+            !interaction.channel ||
+            !(interaction.channel instanceof TextChannel)
+        )
+            return;
+        this.client.emitEvent('handlePollMessage', {
+            type: 'create',
+            messageId: '',
+            interaction: interaction,
         });
     }
 }

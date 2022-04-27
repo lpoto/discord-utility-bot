@@ -18,6 +18,7 @@ export type Event =
     | Events.OnRolesSlashCommand.Type
     | Events.OnConfigSlashCommand.Type
     | Events.OnHandleRolesMessage.Type
+    | Events.OnHandlePollMessage.Type
     | Events.OnHelpSlashCommand.Type
     | Events.OnButtonClick.Type
     | Events.OnMessageDelete.Type
@@ -38,4 +39,8 @@ interface HandleMessageOptions {
 
 interface HandleRolesMessageOptions extends HandleMessageOptions {
     type: 'create' | 'update' | 'selectMenu' | 'reply' | 'buttonClick';
+}
+
+interface HandlePollMessageOptions extends HandleMessageOptions {
+    type: 'create' | 'update' | 'reply' | 'buttonClick' | 'threadMessage';
 }

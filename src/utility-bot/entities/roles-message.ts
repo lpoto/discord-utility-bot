@@ -1,4 +1,5 @@
 import {
+    AfterInsert,
     BaseEntity,
     BeforeInsert,
     Column,
@@ -31,7 +32,7 @@ export class RolesMessage extends BaseEntity {
     public offset: number;
 
     @Column('timestamp', { default: () => '((CURRENT_TIMESTAMP))' })
-    public readonly created: Date;
+    public created: Date;
 
     @Column({ nullable: false })
     public color: number;
@@ -45,5 +46,17 @@ export class RolesMessage extends BaseEntity {
     @BeforeInsert()
     public setColor(): void {
         this.color = Math.floor(Math.random() * 16777215);
+    }
+
+    @AfterInsert()
+    public removeOldMessages(): void {
+        const currentDate: Date = new Date();
+        RolesMessage.createQueryBuilder('rm')
+            .delete()
+            .where(
+                `rm.created + interval '${24} hour' ` +
+                    '< :currentDate AND rm.commited = FALSE',
+                { currentDate },
+            );
     }
 }

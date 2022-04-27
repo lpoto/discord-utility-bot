@@ -20,6 +20,7 @@ import * as Commands from '../commands';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
 
 export class OnQueueMessageUpdate extends AbstractMusicEvent {
+    public needsClientReady = false;
     private toDefer: {
         [guildId: string]: (ButtonInteraction | SelectMenuInteraction)[];
     };

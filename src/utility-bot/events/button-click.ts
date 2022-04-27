@@ -1,6 +1,7 @@
 import { ButtonInteraction } from 'discord.js';
 import { UtilityClient } from '../client';
 import { RolesMessage } from '../entities';
+import { Poll } from '../entities/poll';
 import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
 export class OnButtonClick extends AbstractUtilityEvent {
@@ -30,6 +31,19 @@ export class OnButtonClick extends AbstractUtilityEvent {
         });
         if (rm)
             return this.client.emitEvent('handleRolesMessage', {
+                type: 'buttonClick',
+                interaction: interaction,
+                messageId: interaction.message.id,
+            });
+
+        const poll: Poll | undefined = await Poll.findOne({
+            messageId: interaction.message.id,
+        }).catch((e) => {
+            this.client.emitEvent('error', e);
+            return undefined;
+        });
+        if (poll)
+            return this.client.emitEvent('handlePollMessage', {
                 type: 'buttonClick',
                 interaction: interaction,
                 messageId: interaction.message.id,
