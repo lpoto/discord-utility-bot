@@ -323,6 +323,7 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
                     .trim(),
             );
             if (idx >= poll.responses.length) return;
+            poll.responses = poll.responses.sort((a, b) => a.id - b.id);
             poll.responses.splice(idx, 1);
             await poll.save();
             await this.updatePoll(options);
