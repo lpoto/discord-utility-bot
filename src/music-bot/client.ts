@@ -1,10 +1,7 @@
 import { VoiceConnection } from '@discordjs/voice';
 import { AnyChannel, Message, TextChannel, ThreadChannel } from 'discord.js';
 import { MusicClientOptions, Event } from './music-bot';
-import {
-    ActiveCommandsOptions,
-    CustomAudioPlayer,
-} from './utils';
+import { ActiveCommandsOptions, CustomAudioPlayer } from './utils';
 import * as Events from './events';
 import { Queue } from './entities';
 import { CustomClient } from '../utils';

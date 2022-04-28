@@ -2,7 +2,6 @@ import {
     GuildMember,
     Message,
     MessageAttachment,
-    TextChannel,
     ThreadChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';

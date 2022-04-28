@@ -35,14 +35,19 @@ export class Poll extends BaseEntity {
     public responses: PollResponse[];
 
     @AfterInsert()
-    public removeOldMessages(): void {
+    public async removeOldMessages(): Promise<void> {
+        return await Poll.removeOldMessages();
+    }
+
+    public static async removeOldMessages(): Promise<void> {
         const currentDate: Date = new Date();
-        Poll.createQueryBuilder('poll')
+        await Poll.createQueryBuilder('poll')
             .delete()
             .where(
                 `poll.created + interval '${24} hour' ` +
                     '< :currentDate AND poll.commited = FALSE',
                 { currentDate },
-            );
+            )
+            .execute();
     }
 }

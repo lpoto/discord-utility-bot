@@ -49,14 +49,19 @@ export class RolesMessage extends BaseEntity {
     }
 
     @AfterInsert()
-    public removeOldMessages(): void {
+    public async removeOldMessages(): Promise<void> {
+        await RolesMessage.removeOldMessages();
+    }
+
+    public static async removeOldMessages(): Promise<void> {
         const currentDate: Date = new Date();
-        RolesMessage.createQueryBuilder('rm')
+        await RolesMessage.createQueryBuilder('rm')
             .delete()
             .where(
                 `rm.created + interval '${24} hour' ` +
                     '< :currentDate AND rm.commited = FALSE',
                 { currentDate },
-            );
+            )
+            .execute();
     }
 }

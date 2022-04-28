@@ -50,6 +50,8 @@ A bot for playing music.
 
 A bot for manaing smaller discord servers.
 
+**NOTE** Uncommited messages become unresponsive after 24h.
+
 ## Features
 
 -   Hosting polls,

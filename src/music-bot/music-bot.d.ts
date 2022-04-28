@@ -3,7 +3,6 @@ import {
     Message,
     MessageButton,
     MessageSelectMenu,
-    PermissionResolvable,
     SelectMenuInteraction,
     VoiceState,
 } from 'discord.js';
@@ -40,10 +39,7 @@ export interface QueueEmbedOptions extends UpdateQueueOptions {
     client: MusicClient;
 }
 
-export interface MusicClientOptions extends CustomClientOptions {
-    requiredMemberRoles: string[];
-    clientVoicePermissions: PermissionResolvable[];
-}
+export type MusicClientOptions = CustomClientOptions;
 
 export type CommandName = keyof typeof Commands;
 

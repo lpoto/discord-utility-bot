@@ -40,6 +40,6 @@ export async function startUtilityClient(
             Permissions.FLAGS.SEND_MESSAGES_IN_THREADS,
         ],
         clientVoicePermissions: [],
-        requiredMemberRoles: []
+        requiredMemberRoles: [],
     }).run();
 }

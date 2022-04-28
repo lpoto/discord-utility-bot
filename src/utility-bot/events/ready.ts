@@ -1,4 +1,6 @@
 import { UtilityClient } from '../client';
+import { RolesMessage } from '../entities';
+import { Poll } from '../entities/poll';
 import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
 export class OnReady extends AbstractUtilityEvent {
@@ -11,12 +13,19 @@ export class OnReady extends AbstractUtilityEvent {
         await this.setup();
     }
 
+    private async checkEntities(): Promise<void> {
+        await RolesMessage.removeOldMessages();
+        await Poll.removeOldMessages();
+    }
+
     private async setup(): Promise<void> {
         if (!this.client.user) return;
 
         this.client.logger.info(
             `Utility Client Logged in as user ${this.client.user.tag}`,
         );
+
+        await this.checkEntities();
 
         await this.client.registerSlashCommands(
             this.client.translator.getFullLanguage().utility.slashCommands,

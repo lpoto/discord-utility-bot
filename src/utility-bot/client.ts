@@ -3,7 +3,6 @@ import { UtilityClientOptions, Event } from './utility-bot';
 import * as Events from './events';
 
 export class UtilityClient extends CustomClient {
-
     public constructor(options: UtilityClientOptions) {
         super(options);
     }

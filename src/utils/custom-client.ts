@@ -38,8 +38,8 @@ export abstract class CustomClient extends Client {
             options.clientVoicePermissions,
             options.clientTextPermissions,
             options.requiredMemberRoles,
-            this
-        )
+            this,
+        );
     }
 
     public get logger(): Logger {
