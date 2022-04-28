@@ -1,0 +1,5 @@
+utility-bot:
+    poll:
+        - adding reponses and votes with slight delay (to minimize message editing)
+        - group together added responses
+        - group together added votes

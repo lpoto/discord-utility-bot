@@ -173,6 +173,22 @@
                     "Navigate the pages of roles with '<' and '>'."
                 ]
             }
-        ]
+        ],
+        "commands": {
+            "roles": {
+                "addedRole": "Added role `{0}`",
+                "removedRole": "Removed role `{0}`",
+                "selectUnselectRoles": "Select/unselect roles in the dropdown.",
+                "selectRolesToRemove": "Select the roles you want to add or remove."
+            },
+            "poll": {
+                "noResponses": "There are currently no responses.",
+                "replyToThread": "Reply with a question and responses in the thread.",
+                "thread": {
+                    "name": "Poll Thread",
+                    "reason": "Adding responses and the question to the poll."
+                }
+            }
+        }
     }
 }

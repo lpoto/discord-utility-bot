@@ -282,7 +282,10 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
                 'from user',
                 member.id,
             );
-            txt = 'Added role `' + options.interaction.component.label + '`';
+            txt = this.translate(
+                ['utility', 'commands', 'roles', 'removedRole'],
+                options.interaction.component.label,
+            );
             member.roles.remove(id);
         } else {
             this.client.logger.debug(
@@ -292,7 +295,10 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
                 member.id,
             );
             member.roles.add(id);
-            txt = 'Removed role `' + options.interaction.component.label + '`';
+            txt = this.translate(
+                ['utility', 'commands', 'roles', 'addedRole'],
+                options.interaction.component.label,
+            );
         }
         options.interaction
             .reply({
@@ -376,7 +382,14 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             title: rm.name ? rm.name : 'Roles',
             color: rm.color ? rm.color : undefined,
             description: this.getRoles(rm.offset, guild, rm).join('\n'),
-            footer: { text: 'Select/unselect roles in the dropdown.' },
+            footer: {
+                text: this.translate([
+                    'utility',
+                    'commands',
+                    'roles',
+                    'selectUnselectRoles',
+                ]),
+            },
         });
     }
 
@@ -441,7 +454,12 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
                 new MessageSelectMenu()
                     .setCustomId(randomUUID().toString())
                     .setPlaceholder(
-                        'Select the roles you want to add or remove.',
+                        this.translate([
+                            'utility',
+                            'commands',
+                            'roles',
+                            'selectRolesToRemove',
+                        ]),
                     )
                     .setMaxValues(curRoles.length)
                     .addOptions(curRoles),

@@ -181,7 +181,6 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
     private async commit(options: HandlePollMessageOptions): Promise<void> {
         if (
             !options.interaction ||
-            !this.client.user ||
             !options.interaction.isButton() ||
             !(options.interaction.message instanceof Message) ||
             options.interaction.component.label !== 'commit'
@@ -197,7 +196,7 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
         poll.commited = true;
         await poll.save();
         const msg: Message = options.interaction.message;
-        if (msg.thread && msg.thread.ownerId === this.client.user.id) {
+        if (msg.thread) {
             msg.thread.delete().catch((e) => {
                 this.client.emitEvent('error', e);
             });
@@ -217,10 +216,22 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
                             .join('\n> '),
                 );
             else {
-                embed.setDescription('There are currently no responses');
+                embed.setDescription(
+                    this.translate([
+                        'utility',
+                        'commands',
+                        'poll',
+                        'noResponses',
+                    ]),
+                );
             }
             embed.setFooter({
-                text: 'Reply with a question and responses in the thread.',
+                text: this.translate([
+                    'utility',
+                    'commands',
+                    'poll',
+                    'replyToThread',
+                ]),
             });
         } else {
             embed.setDescription('');
@@ -387,8 +398,20 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
     private openThread(pollMessage: Message): void {
         pollMessage
             .startThread({
-                name: 'Poll thread',
-                reason: 'Adding responses and question to the poll.',
+                name: this.translate([
+                    'utility',
+                    'commands',
+                    'poll',
+                    'thread',
+                    'name',
+                ]),
+                reason: this.translate([
+                    'utility',
+                    'commands',
+                    'poll',
+                    'thread',
+                    'reason',
+                ]),
             })
             .catch((e) => {
                 this.client.emitEvent('error', e);

@@ -20,7 +20,7 @@ export class OnMessageDelete extends AbstractUtilityEvent {
             if (message.hasThread) {
                 message.thread?.delete().catch((e) => {
                     this.client.emitEvent('error', e);
-                })
+                });
             }
             this.client.logger.debug('Deleting message ', message.id);
             RolesMessage.findOne({ messageId: message.id })
