@@ -55,11 +55,11 @@ export class RolesMessage extends BaseEntity {
 
     public static async removeOldMessages(): Promise<void> {
         const currentDate: Date = new Date();
-        await RolesMessage.createQueryBuilder('rm')
+        await RolesMessage.createQueryBuilder('roles_message')
             .delete()
             .where(
-                `rm.created + interval '${24} hour' ` +
-                    '< :currentDate AND rm.commited = FALSE',
+                `roles_message.created + interval '${24} hour' ` +
+                    '< :currentDate AND roles_message.commited = FALSE',
                 { currentDate },
             )
             .execute();
