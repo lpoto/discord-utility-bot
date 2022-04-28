@@ -5,6 +5,8 @@ A collection of discord bots using using [discord.js](https://discord.js.org/#/)
 Utility bot: [invite to server](https://discord.com/api/oauth2/authorize?client_id=763366736586080257&permissions=326685953024&scope=applications.commands%20bot)
 Music bot: [invite to server](https://discord.com/api/oauth2/authorize?client_id=806226473069314048&permissions=51576375296&scope=bot%20applications.commands)
 
+**NOTE** Bots only work when given all the required permissions (listed below).
+
 ## Music bot
 
 A bot for playing music.
@@ -61,6 +63,7 @@ A bot for manaing smaller discord servers.
 -   Read Message History
 -   Create Public Threads
 -   Manage Roles
+-   Manage Threads
 
 ## Development
 

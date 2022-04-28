@@ -23,11 +23,15 @@ export class OnInteractionCreate extends AbstractMusicEvent {
                 !interaction.isCommand() &&
                 !interaction.isSelectMenu()) ||
             interaction.deferred ||
+            !interaction.channel ||
             interaction.replied ||
             !(interaction.member instanceof GuildMember) ||
             interaction.applicationId !== this.client.user?.id
         )
             return;
+        if (!this.client.permsChecker.checkClientText(interaction.channel))
+            return;
+
         if (!this.client.permsChecker.checkMemberRoles(interaction.member)) {
             interaction.reply({
                 content: this.client.translate(

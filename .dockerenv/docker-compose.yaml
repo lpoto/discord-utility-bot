@@ -6,7 +6,7 @@ services:
         container_name: postgresdb
         restart: unless-stopped
         ports:
-            - 5433:5432
+            - 6543:5432
         environment:
             POSTGRES_DB: discord_bot
             POSTGRES_USER: postgres

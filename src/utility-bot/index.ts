@@ -35,6 +35,11 @@ export async function startUtilityClient(
             Permissions.FLAGS.SEND_MESSAGES,
             Permissions.FLAGS.READ_MESSAGE_HISTORY,
             Permissions.FLAGS.CREATE_PUBLIC_THREADS,
+            Permissions.FLAGS.MANAGE_THREADS,
+            Permissions.FLAGS.MANAGE_ROLES,
+            Permissions.FLAGS.SEND_MESSAGES_IN_THREADS,
         ],
+        clientVoicePermissions: [],
+        requiredMemberRoles: []
     }).run();
 }

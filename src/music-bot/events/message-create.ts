@@ -2,6 +2,7 @@ import {
     GuildMember,
     Message,
     MessageAttachment,
+    TextChannel,
     ThreadChannel,
 } from 'discord.js';
 import { MusicClient } from '../client';
@@ -17,6 +18,7 @@ export class OnMessageCreate extends AbstractMusicEvent {
     public async callback(message: Message): Promise<void> {
         if (!this.client.ready || !(message.channel instanceof ThreadChannel))
             return;
+        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         if (
             message.guildId &&
             message.member instanceof GuildMember &&

@@ -4,14 +4,12 @@ import { MusicClientOptions, Event } from './music-bot';
 import {
     ActiveCommandsOptions,
     CustomAudioPlayer,
-    PermissionChecker,
 } from './utils';
 import * as Events from './events';
 import { Queue } from './entities';
 import { CustomClient } from '../utils';
 
 export class MusicClient extends CustomClient {
-    private permissionChecker: PermissionChecker;
     private voiceConnections: { [guildId: string]: VoiceConnection };
     private audioPlayers: { [guildId: string]: CustomAudioPlayer };
     private shouldNotBeUpdated: { [guildId: string]: boolean };
@@ -23,12 +21,6 @@ export class MusicClient extends CustomClient {
         this.audioPlayers = {};
         this.shouldNotBeUpdated = {};
         this.activeOptions = new ActiveCommandsOptions(this);
-        this.permissionChecker = new PermissionChecker(
-            options.clientVoicePermissions,
-            options.clientTextPermissions,
-            options.requiredMemberRoles,
-            this,
-        );
     }
 
     public get activeCommandsOptions(): ActiveCommandsOptions {
@@ -48,10 +40,6 @@ export class MusicClient extends CustomClient {
             return;
         }
         this.shouldNotBeUpdated[guildId] = value;
-    }
-
-    public get permsChecker(): PermissionChecker {
-        return this.permissionChecker;
     }
 
     public getVoiceConnection(guildId: string): VoiceConnection | null {

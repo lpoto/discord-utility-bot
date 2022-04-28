@@ -1,6 +1,7 @@
 import { DiscordAPIError } from 'discord.js';
 import { EntityNotFoundError } from 'typeorm';
 
+export { PermissionChecker } from './permission-checker';
 export { Logger } from './logger';
 export { CustomClient } from './custom-client';
 

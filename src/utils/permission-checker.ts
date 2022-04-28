@@ -12,35 +12,35 @@ import {
     VoiceBasedChannel,
     VoiceChannel,
 } from 'discord.js';
-import { MusicClient } from '../client';
-import { Notification } from '../../common-entities';
+import { Notification } from '../common-entities';
+import { CustomClient } from '.';
 
 export class PermissionChecker {
-    private voicePermissions: PermissionResolvable[];
-    private textPermissions: PermissionResolvable[];
-    private roleNames: string[];
-    private client: MusicClient;
+    private clientVoicePermissions: PermissionResolvable[];
+    private clientTextPermissions: PermissionResolvable[];
+    private requiredMemberRoles: string[];
+    private client: CustomClient;
 
     public constructor(
-        voicePermissions: PermissionResolvable[],
-        textPermissions: PermissionResolvable[],
-        roleNames: string[],
-        client: MusicClient,
+        clientVoicePermissions: PermissionResolvable[],
+        clientTextPermissions: PermissionResolvable[],
+        requiredMemberRoles: string[],
+        client: CustomClient,
     ) {
-        this.voicePermissions = voicePermissions;
-        this.textPermissions = textPermissions;
-        this.roleNames = roleNames;
+        this.clientVoicePermissions = clientVoicePermissions;
+        this.clientTextPermissions = clientTextPermissions;
+        this.requiredMemberRoles = requiredMemberRoles;
         this.client = client;
     }
 
     public get roles(): string[] {
-        return this.roleNames;
+        return this.requiredMemberRoles;
     }
 
     public checkMemberRoles(member: GuildMember): boolean {
         return (
             member.roles.cache.find((r: Role) =>
-                this.roleNames.includes(r.name),
+                this.requiredMemberRoles.includes(r.name),
             ) !== undefined
         );
     }
@@ -48,7 +48,7 @@ export class PermissionChecker {
     public checkClientVoice(channel: VoiceBasedChannel): boolean {
         if (!channel.guild || !channel.guild.me) return true;
         const member: GuildMember = channel.guild.me;
-        return this.voicePermissions.every((p) =>
+        return this.clientVoicePermissions.every((p) =>
             channel.permissionsFor(member).has(p),
         );
     }
@@ -64,7 +64,7 @@ export class PermissionChecker {
         )
             return true;
         const member: GuildMember = channel.guild.me;
-        return this.textPermissions.every((p) =>
+        return this.clientTextPermissions.every((p) =>
             channel.permissionsFor(member).has(p),
         );
     }

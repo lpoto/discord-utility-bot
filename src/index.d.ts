@@ -23,6 +23,8 @@ export interface CustomClientOptions extends ClientOptions {
     token: string;
     version: string;
     clientTextPermissions: PermissionResolvable[];
+    clientVoicePermissions: PermissionResolvable[];
+    requiredMemberRoles: string[];
 }
 
 export type ClientEventArgument =

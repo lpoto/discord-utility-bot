@@ -9,6 +9,7 @@ import {
 } from '../../';
 import { Logger } from '.';
 import { Translator } from '../utils/translation';
+import { PermissionChecker } from './permission-checker';
 
 export abstract class CustomClient extends Client {
     private clientReady: boolean;
@@ -16,6 +17,7 @@ export abstract class CustomClient extends Client {
     private curVersion: string;
     private customLogger: Logger;
     private translating: Translator;
+    private permissionChecker: PermissionChecker;
     private slashCommandsInfo: {
         [key in 'registered' | 'toRegister' | 'failed']: number;
     };
@@ -32,10 +34,20 @@ export abstract class CustomClient extends Client {
             registered: 0,
             toRegister: this.guilds.cache.size,
         };
+        this.permissionChecker = new PermissionChecker(
+            options.clientVoicePermissions,
+            options.clientTextPermissions,
+            options.requiredMemberRoles,
+            this
+        )
     }
 
     public get logger(): Logger {
         return this.customLogger;
+    }
+
+    public get permsChecker(): PermissionChecker {
+        return this.permissionChecker;
     }
 
     public get translator(): Translator {
