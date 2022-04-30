@@ -86,6 +86,13 @@ export abstract class CustomClient extends Client {
     }
 
     public async registerSlashCommands(commands: any[]): Promise<void> {
+        if (process.env.REGISTER_SLASH_COMMANDS?.toLowerCase() !== 'true') {
+            this.logger.debug(
+                'Not Refreshing application (/) commands',
+                '(env REGISTER_SLASH_COMMANDS is not set to true).',
+            );
+            return;
+        }
         if (!this.user || commands.length === 0) return;
         this.logger.info(
             `Refreshing ${commands.length} application (/) command/s.`,

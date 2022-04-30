@@ -142,10 +142,24 @@
             {
                 "name": "poll",
                 "description": "Starts a new poll for users to vote on!",
+                "options": [
+                    {
+                        "name": "question",
+                        "description": "The question of the poll",
+                        "type": 3,
+                        "required": true
+                    },
+                    {
+                        "name": "responses",
+                        "description": "A list of poll responses, separated by ';'",
+                        "type": 3,
+                        "required": false
+                    }
+                ],
                 "help": [
-                    "Type 'question <question>' in the message's thread to change the poll's question.",
                     "Type '<response>' in the thread to add a response to the poll.",
                     "Type 'remove <idx>' in the thread to remove a response by it's index (index el. [0, #reponses])",
+                    "Question may be changed by typing 'question <question>' in the message's thread to change the poll's question.",
                     "Click the 'commit' button to finish editing the poll.",
                     "Reply 'edit' to the poll message to start editing again.",
                     "Reply 'resend' to the message or type 'resend' in the thread to resend the poll message in a channel."
@@ -154,8 +168,17 @@
             {
                 "name": "roles",
                 "description": "Creates a new message for adding and removing roles with buttons!",
+                "options": [
+                    {
+                        "name": "title",
+                        "description": "The title of the roles message",
+                        "type": 3,
+                        "required": true
+                    }
+                ],
                 "help": [
                     "Select the roles you want to add to the message in a dropdown.",
+                    "Only roles lower than bot's highest role will appear.",
                     "Navigate between the pages of roles with '<' and '>'.",
                     "Select the roles again to remove them from the message.",
                     "Click the 'commit' button to finish editing the roles message.",
@@ -167,10 +190,46 @@
             {
                 "name": "config",
                 "description": "Set up which roles are allowed to use a command",
+                "options": [
+                    {
+                        "name": "command",
+                        "description": "Select a command you want to change the allowed roles for.",
+                        "type": 3,
+                        "required": true,
+                        "choices": [
+                            {
+                                "name": "/roles",
+                                "value": "roles"
+                            },
+                            {
+                                "name": "/poll",
+                                "value": "poll"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "role1",
+                        "description": "The first role allowed to use the command",
+                        "type": 8,
+                        "required": false
+                    },
+                    {
+                        "name": "role2",
+                        "description": "The second role allowed to use the command",
+                        "type": 8,
+                        "required": false
+                    },
+                    {
+                        "name": "role3",
+                        "description": "The thrid role allowed to use the command",
+                        "type": 8,
+                        "required": false
+                    }
+                ],
                 "help": [
-                    "Select a command in a dropdown.",
-                    "Select the roles in a dropdown for the selected command.",
-                    "Navigate the pages of roles with '<' and '>'."
+                    "This command may only be used by the administrators.",
+                    "Select the command and up to three roles that may use the selected slash command.",
+                    "Members without those roles are still be able to use some features of a command. (Example: They may vote on the poll, but they cannot start a new poll or add responses to the poll... )"
                 ]
             }
         ],
@@ -183,11 +242,15 @@
             },
             "poll": {
                 "noResponses": "There are currently no responses.",
-                "replyToThread": "Reply with a question and responses in the thread.",
+                "replyToThread": "Reply with the responses in the thread.",
                 "thread": {
                     "name": "Poll Thread",
                     "reason": "Adding responses and the question to the poll."
                 }
+            },
+            "config": {
+                "resetRoles": "Reset allowed roles for `{0}`. Now everyone can use it and it's subcommands.",
+                "changedRoles": "Changed allowed roles for `{0}` to `{1}`."
             }
         }
     }

@@ -38,9 +38,9 @@ interface HandleMessageOptions {
 }
 
 interface HandleRolesMessageOptions extends HandleMessageOptions {
-    type: 'create' | 'update' | 'selectMenu' | 'reply' | 'buttonClick';
+    type: 'create' | 'selectMenu' | 'reply' | 'buttonClick';
 }
 
 interface HandlePollMessageOptions extends HandleMessageOptions {
-    type: 'create' | 'update' | 'reply' | 'buttonClick' | 'threadMessage';
+    type: 'create' | 'reply' | 'buttonClick' | 'threadMessage';
 }

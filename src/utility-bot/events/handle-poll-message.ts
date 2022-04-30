@@ -24,8 +24,6 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
         switch (options.type) {
             case 'create':
                 return this.createPoll(options);
-            case 'update':
-                return this.updatePoll(options);
             case 'buttonClick':
                 return this.buttonClick(options);
             case 'threadMessage':
@@ -40,16 +38,36 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
     ): Promise<void> {
         if (
             !options.interaction ||
-            !(options.interaction.channel instanceof TextChannel)
+            !options.interaction.isCommand() ||
+            !(options.interaction.channel instanceof TextChannel) ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.interaction.member,
+                'poll',
+            ))
         )
             return;
         const channel: TextChannel = options.interaction.channel;
+        const question: string | undefined = options.interaction.options
+            .get('question')
+            ?.value?.toString();
+        const responses: PollResponse[] | undefined =
+            options.interaction.options
+                .get('responses')
+                ?.value?.toString()
+                .split(';')
+                .map((r) => {
+                    return PollResponse.create({
+                        name: r.trim(),
+                        users: [],
+                    });
+                });
+
         const poll: Poll = Poll.create({
-            question: 'The question',
+            question: question ? question : 'The question?',
             guildId: channel.guildId,
             channelId: channel.id,
             commited: false,
-            responses: [],
+            responses: responses ? responses : [],
         });
         await options.interaction
             .reply({
@@ -141,6 +159,13 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             return;
         if (options.interaction.customId.includes('__'))
             return this.responseClick(options);
+        if (
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.interaction.member,
+                'poll',
+            ))
+        )
+            return;
         if (options.interaction.component.label !== 'commit') return;
         return this.commit(options);
     }
@@ -243,7 +268,11 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
     private async reply(options: HandlePollMessageOptions): Promise<void> {
         if (
             !options.repliedMessage ||
-            !(options.repliedMessage.channel instanceof TextChannel)
+            !(options.repliedMessage.channel instanceof TextChannel) ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.repliedMessage.member,
+                'poll',
+            ))
         )
             return;
         if (
@@ -267,7 +296,11 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !this.client.user ||
             !options.threadMessage ||
             !options.threadMessage.channel.isThread() ||
-            options.threadMessage.channel.ownerId !== this.client.user.id
+            options.threadMessage.channel.ownerId !== this.client.user.id ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.threadMessage.member,
+                'poll',
+            ))
         )
             return;
         const content: string = options.threadMessage.content.trim();

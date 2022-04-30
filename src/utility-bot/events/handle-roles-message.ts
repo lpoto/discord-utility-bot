@@ -29,8 +29,6 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         switch (options.type) {
             case 'create':
                 return this.createRolesMessage(options);
-            case 'update':
-                return this.updateRolesMessage(options);
             case 'selectMenu':
                 return this.selectRoles(options);
             case 'reply':
@@ -45,17 +43,25 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
     ): Promise<void> {
         if (
             !options.interaction ||
-            !(options.interaction.channel instanceof TextChannel)
+            !options.interaction.isCommand() ||
+            !(options.interaction.channel instanceof TextChannel) ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.interaction.member,
+                'roles',
+            ))
         )
             return;
         const channel: TextChannel = options.interaction.channel;
+        const name: string | undefined = options.interaction.options
+            .get('title')
+            ?.value?.toString();
         const rm: RolesMessage = RolesMessage.create({
             messageId: '',
             channelId: channel.id,
             color: Math.floor(Math.random() * 16777215),
             guildId: channel.guildId,
             commited: false,
-            name: null,
+            name: name ? name : 'Roles',
             roles: [],
             offset: 0,
         });
@@ -149,6 +155,15 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             return;
         if (options.interaction.customId.includes('__'))
             return this.addRemoveRole(options);
+
+        if (
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.interaction.member,
+                'roles',
+            ))
+        )
+            return;
+
         switch (options.interaction.component.label) {
             case '>':
                 return this.updateOffset(options);
@@ -165,7 +180,11 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         if (
             !options.repliedMessage ||
             !options.repliedMessage.member ||
-            !(options.repliedMessage.channel instanceof TextChannel)
+            !(options.repliedMessage.channel instanceof TextChannel) ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.repliedMessage.member,
+                'roles',
+            ))
         )
             return;
         const content: string = options.repliedMessage.content;
@@ -182,7 +201,11 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         if (
             !options.interaction ||
             !(options.interaction instanceof SelectMenuInteraction) ||
-            !options.interaction.guild
+            !options.interaction.guild ||
+            !(await this.client.rolesChecker.checkMemberRolesForCommand(
+                options.interaction.member,
+                'roles',
+            ))
         )
             return;
         const values: string[] = options.interaction.values;
