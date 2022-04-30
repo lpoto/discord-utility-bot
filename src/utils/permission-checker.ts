@@ -4,7 +4,6 @@ import {
     GuildMember,
     Message,
     PermissionResolvable,
-    Role,
     SelectMenuInteraction,
     TextBasedChannel,
     TextChannel,
@@ -18,31 +17,16 @@ import { CustomClient } from '.';
 export class PermissionChecker {
     private clientVoicePermissions: PermissionResolvable[];
     private clientTextPermissions: PermissionResolvable[];
-    private requiredMemberRoles: string[];
     private client: CustomClient;
 
     public constructor(
         clientVoicePermissions: PermissionResolvable[],
         clientTextPermissions: PermissionResolvable[],
-        requiredMemberRoles: string[],
         client: CustomClient,
     ) {
         this.clientVoicePermissions = clientVoicePermissions;
         this.clientTextPermissions = clientTextPermissions;
-        this.requiredMemberRoles = requiredMemberRoles;
         this.client = client;
-    }
-
-    public get roles(): string[] {
-        return this.requiredMemberRoles;
-    }
-
-    public checkMemberRoles(member: GuildMember): boolean {
-        return (
-            member.roles.cache.find((r: Role) =>
-                this.requiredMemberRoles.includes(r.name),
-            ) !== undefined
-        );
     }
 
     public checkClientVoice(channel: VoiceBasedChannel): boolean {

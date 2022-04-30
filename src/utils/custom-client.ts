@@ -1,15 +1,24 @@
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
-import { Client } from 'discord.js';
 import {
     ClientEvent,
     CustomClientOptions,
     Event,
     LanguageKeyPath,
+    StartClientOptions,
 } from '../../';
 import { Logger } from '.';
 import { Translator } from '../utils/translation';
 import { PermissionChecker } from './permission-checker';
+import {
+    BitFieldResolvable,
+    Client,
+    Intents,
+    IntentsString,
+    PermissionResolvable,
+    Permissions,
+} from 'discord.js';
+import { RolesChecker } from './roles-checker';
 
 export abstract class CustomClient extends Client {
     private clientReady: boolean;
@@ -18,6 +27,7 @@ export abstract class CustomClient extends Client {
     private customLogger: Logger;
     private translating: Translator;
     private permissionChecker: PermissionChecker;
+    private checkingRoles: RolesChecker;
     private slashCommandsInfo: {
         [key in 'registered' | 'toRegister' | 'failed']: number;
     };
@@ -37,8 +47,11 @@ export abstract class CustomClient extends Client {
         this.permissionChecker = new PermissionChecker(
             options.clientVoicePermissions,
             options.clientTextPermissions,
-            options.requiredMemberRoles,
             this,
+        );
+        this.checkingRoles = new RolesChecker(
+            this,
+            options.requiredMemberRoles,
         );
     }
 
@@ -48,6 +61,10 @@ export abstract class CustomClient extends Client {
 
     public get permsChecker(): PermissionChecker {
         return this.permissionChecker;
+    }
+
+    public get rolesChecker(): RolesChecker {
+        return this.checkingRoles;
     }
 
     public get translator(): Translator {
@@ -157,5 +174,77 @@ export abstract class CustomClient extends Client {
             }
         }
         this.login(this.clientToken);
+    }
+
+    protected static getClientTextPermissions(): PermissionResolvable[] {
+        return [
+            Permissions.FLAGS.SEND_MESSAGES,
+            Permissions.FLAGS.READ_MESSAGE_HISTORY,
+            Permissions.FLAGS.CREATE_PUBLIC_THREADS,
+        ];
+    }
+
+    protected static getClientVoicePermissions(): PermissionResolvable[] {
+        return [
+            Permissions.FLAGS.SPEAK,
+            Permissions.FLAGS.CONNECT,
+            Permissions.FLAGS.USE_VAD,
+        ];
+    }
+
+    protected static getRequiredMemberRoles(): string[] {
+        return [];
+    }
+
+    protected static getRequiredIntents(): BitFieldResolvable<
+        IntentsString,
+        number
+    > {
+        return [
+            Intents.FLAGS.GUILDS,
+            Intents.FLAGS.GUILD_MESSAGES,
+            Intents.FLAGS.GUILD_INTEGRATIONS,
+        ];
+    }
+
+    public static async start(
+        options: StartClientOptions,
+    ): Promise<[Logger.Level, string]> {
+        const NewClient: any = this;
+        const clientName: string = this.name;
+        if (!options.token)
+            return [Logger.Level.INFO, `No token provided for ${clientName}`];
+        if (!options.connection.isConnected)
+            return [
+                Logger.Level.ERROR,
+                `No valid database connection when starting ${clientName}`,
+            ];
+        let result: [Logger.Level, string] = [
+            Logger.Level.WARN,
+            'Something went wrong',
+        ];
+        await (
+            new NewClient({
+                token: options.token,
+                version: options.version,
+                logger: new Logger(clientName, options.logLevel),
+                clientTextPermissions: this.getClientTextPermissions(),
+                clientVoicePermissions: this.getClientVoicePermissions(),
+                requiredMemberRoles: this.getRequiredMemberRoles(),
+                intents: this.getRequiredIntents(),
+            } as CustomClientOptions) as CustomClient
+        )
+            .run()
+            .then(() => {
+                result = [
+                    Logger.Level.INFO,
+                    `Started ${clientName} ${options.version}`,
+                ];
+            })
+            .catch((e: Error) => {
+                result[0] = Logger.Level.ERROR;
+                result[1] = e.message;
+            });
+        return result;
     }
 }

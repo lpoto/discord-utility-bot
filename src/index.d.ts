@@ -9,6 +9,14 @@ import {
 import { english } from './utils/translation';
 import { CustomClient, Logger } from './utils';
 import { ClientEventQueue } from './utils/client-event-queue';
+import { Connection } from 'typeorm';
+
+export interface StartClientOptions {
+    connection: Connection;
+    token: string | undefined;
+    version: string;
+    logLevel?: Logger.Level;
+}
 
 export type Language = typeof english;
 

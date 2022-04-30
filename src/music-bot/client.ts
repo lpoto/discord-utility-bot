@@ -1,5 +1,13 @@
 import { VoiceConnection } from '@discordjs/voice';
-import { AnyChannel, Message, TextChannel, ThreadChannel } from 'discord.js';
+import {
+    AnyChannel,
+    BitFieldResolvable,
+    Intents,
+    IntentsString,
+    Message,
+    TextChannel,
+    ThreadChannel,
+} from 'discord.js';
 import { MusicClientOptions, Event } from './music-bot';
 import { ActiveCommandsOptions, CustomAudioPlayer } from './utils';
 import * as Events from './events';
@@ -115,5 +123,21 @@ export class MusicClient extends CustomClient {
 
     public emitEvent(...args: Event): void {
         super.emit(args[0] as string, args[1]);
+    }
+
+    protected static getRequiredMemberRoles(): string[] {
+        return ['DJ'];
+    }
+
+    protected static getRequiredIntents(): BitFieldResolvable<
+        IntentsString,
+        number
+    > {
+        return [
+            Intents.FLAGS.GUILDS,
+            Intents.FLAGS.GUILD_MESSAGES,
+            Intents.FLAGS.GUILD_MEMBERS,
+            Intents.FLAGS.GUILD_VOICE_STATES,
+        ];
     }
 }

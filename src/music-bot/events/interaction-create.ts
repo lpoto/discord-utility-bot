@@ -32,11 +32,15 @@ export class OnInteractionCreate extends AbstractMusicEvent {
         if (!this.client.permsChecker.checkClientText(interaction.channel))
             return;
 
-        if (!this.client.permsChecker.checkMemberRoles(interaction.member)) {
+        if (
+            !this.client.rolesChecker.checkMemberDefaultRoles(
+                interaction.member,
+            )
+        ) {
             interaction.reply({
                 content: this.client.translate(
                     ['music', 'error', 'missingRole'],
-                    [this.client.permsChecker.roles.join(', ')],
+                    [this.client.rolesChecker.defaultRoles.join(', ')],
                 ),
                 ephemeral: true,
             });

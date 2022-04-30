@@ -1,9 +1,26 @@
 import { Connection, createConnection } from 'typeorm';
-import { getMusicEntitites, startMusicClient } from './music-bot';
-import { Notification } from './common-entities';
 import { bots } from '../package.json';
-import { handleErrors, Logger } from './utils';
-import { getUtilityEntities, startUtilityClient } from './utility-bot';
+import { CustomClient, handleErrors, Logger } from './utils';
+import { MusicClient } from './music-bot';
+import { UtilityClient } from './utility-bot';
+import { StartClientOptions } from '../';
+import { MusicEntities } from './music-bot';
+import { UtilityEntities } from './utility-bot';
+import * as CommonEntities from './common-entities';
+
+process.on('uncaughtException', (error: Error) => {
+    handleErrors(error);
+});
+process.on('unhandledRejection', (error: Error) => {
+    handleErrors(error);
+});
+
+function getEntities(): any[] {
+    let entities: any[] = Object.values(CommonEntities);
+    for (const e of [MusicEntities, UtilityEntities])
+        entities = entities.concat(Object.values(e));
+    return entities;
+}
 
 createConnection({
     type: 'postgres',
@@ -13,51 +30,35 @@ createConnection({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
     synchronize: true,
-    entities: [Notification]
-        .concat(getMusicEntitites())
-        .concat(getUtilityEntities()),
+    entities: getEntities(),
 }).then((con: Connection) => {
     const logger: Logger = new Logger();
-    const tokens: { [key: string]: string | undefined } = {
-        music: process.env.MUSIC_BOT_TOKEN,
-        utility: process.env.UTILITY_BOT_TOKEN,
-    };
-    if (Object.values(tokens).every((t) => t === undefined))
-        return logger.error('No discord tokens provided');
     if (!con.isConnected)
         return logger.error('Could not establish database connection.');
 
-    process.on('uncaughtException', (error: Error) => {
-        handleErrors(error);
-    });
-    process.on('unhandledRejection', (error: Error) => {
-        handleErrors(error);
-    });
-
-    if (tokens.music !== undefined)
-        startMusicClient(
-            con,
-            tokens.music,
-            bots.music.version,
-            new Logger(
-                'MusicBot',
-                Logger.getLevel(process.env.MUSIC_BOT_LOG_LEVEL),
-            ),
-        ).catch((e) => {
-            logger.error(e);
+    const clients: [typeof CustomClient, StartClientOptions][] = [
+        [
+            MusicClient,
+            {
+                connection: con,
+                token: process.env.MUSIC_BOT_TOKEN,
+                version: bots.music.version,
+                logLevel: Logger.getLevel(process.env.MUSIC_BOT_LOG_LEVEL),
+            },
+        ],
+        [
+            UtilityClient,
+            {
+                connection: con,
+                token: process.env.UTILITY_BOT_TOKEN,
+                version: bots.utility.version,
+                logLevel: Logger.getLevel(process.env.UTILITY_BOT_LOG_LEVEL),
+            },
+        ],
+    ];
+    clients.forEach((c) => {
+        c[0].start(c[1]).then((r) => {
+            logger.log(r[0], r[1]);
         });
-    else logger.debug('No music bot token found');
-    if (tokens.utility)
-        startUtilityClient(
-            con,
-            tokens.utility,
-            bots.utility.version,
-            new Logger(
-                'UtilityBot',
-                Logger.getLevel(process.env.UTILITY_BOT_LOG_LEVEL),
-            ),
-        ).catch((e) => {
-            logger.error(e);
-        });
-    else logger.debug('No utility bot token found');
+    });
 });

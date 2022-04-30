@@ -60,15 +60,17 @@ export class Logger {
         msg: string,
         main?: boolean,
     ): void {
+        let name: string = main ? Logger.mainLogger : this.name;
+        if (name.length > 13) name = name.substring(0, 13);
         let spaces = '  ';
         if ([Logger.Level.ERROR, Logger.Level.DEBUG].includes(level))
             spaces = ' ';
+        const x: number =
+            21 - (Logger.Level[level].length + spaces.length + name.length);
+        let s = `${Logger.Level[level]}${spaces}${name}:`;
+        if (x >= 1) s += ' '.repeat(x);
 
-        console.log(
-            `${Logger.Level[level]}${spaces}(${
-                main ? Logger.mainLogger : this.name
-            }):  ${msg}`,
-        );
+        console.log(`${s}${msg}`);
     }
 
     public static getLevel(lvl: string | undefined): Logger.Level {
