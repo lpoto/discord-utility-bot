@@ -45,7 +45,7 @@ export class RolesMessage extends BaseEntity {
 
     @BeforeInsert()
     public setColor(): void {
-        this.color = Math.floor(Math.random() * 16777215);
+        if (!this.color) this.color = Math.floor(Math.random() * 16777215);
     }
 
     @AfterInsert()

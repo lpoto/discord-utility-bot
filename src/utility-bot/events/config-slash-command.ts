@@ -55,13 +55,10 @@ export class OnConfigSlashCommand extends AbstractUtilityEvent {
                           )
                           .join(', '),
                   );
-        interaction
-            .reply({
-                content: txt,
-            })
-            .catch((e) => {
-                this.client.emitEvent('error', e);
-            });
+        this.client.notify({
+            content: txt,
+            interaction: interaction,
+        });
     }
 }
 
