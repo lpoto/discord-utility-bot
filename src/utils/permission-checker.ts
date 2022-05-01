@@ -37,7 +37,13 @@ export class PermissionChecker {
         );
     }
 
-    public checkClientText(channel: TextBasedChannel): boolean {
+    public checkClientText(
+        channel: TextBasedChannel,
+        interaction?:
+            | ButtonInteraction
+            | CommandInteraction
+            | SelectMenuInteraction,
+    ): boolean {
         if (
             !(
                 channel instanceof TextChannel ||
@@ -48,9 +54,21 @@ export class PermissionChecker {
         )
             return true;
         const member: GuildMember = channel.guild.me;
-        return this.clientTextPermissions.every((p) =>
+        const valid: boolean = this.clientTextPermissions.every((p) =>
             channel.permissionsFor(member).has(p),
         );
+        if (!valid) {
+            this.client.notify({
+                warn: true,
+                interaction: interaction,
+                channelId: channel.id,
+                content: this.client.translate(
+                    ['common', 'errors', 'missingPermissions'],
+                    this.clientTextPermissions.join(', '),
+                ),
+            });
+        }
+        return valid;
     }
 
     public validateMemberVoice(
@@ -72,7 +90,11 @@ export class PermissionChecker {
 
     public validateMemberVoiceFromThread(message: Message): boolean {
         if (!message.guild || !message.member) return false;
-        return this.validateMember(message.member);
+        return this.validateMember(
+            message.member,
+            undefined,
+            message.channelId,
+        );
     }
 
     private validateMember(
@@ -81,6 +103,7 @@ export class PermissionChecker {
             | CommandInteraction
             | ButtonInteraction
             | SelectMenuInteraction,
+        channelId?: string,
     ): boolean {
         if (!this.client.user || !member.guild.id) return false;
         const notification: Notification = Notification.create({
@@ -88,7 +111,7 @@ export class PermissionChecker {
             userId: member.id,
             guildId: member.guild.id,
             name: '?',
-            minutesToPersist: 10,
+            minutesToPersist: 1,
         });
 
         if (!member.voice.channel) {
@@ -99,21 +122,22 @@ export class PermissionChecker {
                 name: 'memberNoVoice',
             }).then((r) => {
                 if (r) return;
-                if (interaction) {
-                    notification.name = 'memberNoVoice';
-                    notification.save().then(() => {
-                        interaction.reply({
-                            content: this.client.translate([
-                                'music',
-                                'error',
-                                'voice',
-                                'user',
-                                'notConnected',
-                            ]),
-                            ephemeral: true,
-                        });
+                notification.name = 'memberNoVoice';
+                notification.save().then(() => {
+                    this.client.notify({
+                        warn: true,
+                        content: this.client.translate([
+                            'common',
+                            'errors',
+                            'voice',
+                            'user',
+                            'notConnected',
+                        ]),
+                        ephemeral: true,
+                        interaction: interaction,
+                        channelId: channelId,
                     });
-                }
+                });
             });
             return false;
         }
@@ -126,37 +150,39 @@ export class PermissionChecker {
                 name: 'invalidVoice',
             }).then((r) => {
                 if (r) return;
-                if (interaction) {
-                    notification.name = 'invalidVoice';
-                    notification.save().then(() => {
-                        interaction.reply({
-                            content: this.client.translate([
-                                'music',
-                                'error',
-                                'voice',
-                                'invalid',
-                            ]),
-                            ephemeral: true,
-                        });
+                notification.name = 'invalidVoice';
+                notification.save().then(() => {
+                    this.client.notify({
+                        content: this.client.translate([
+                            'common',
+                            'errors',
+                            'voice',
+                            'invalid',
+                        ]),
+                        ephemeral: true,
+                        warn: true,
+                        interaction: interaction,
+                        channelId: channelId,
                     });
-                }
+                });
             });
             return false;
         }
 
         if (!this.checkClientVoice(member.voice.channel)) {
-            if (interaction) {
-                interaction.reply({
-                    content: this.client.translate([
-                        'music',
-                        'error',
-                        'voice',
-                        'client',
-                        'noPermissions',
-                    ]),
-                    ephemeral: true,
-                });
-            }
+            this.client.notify({
+                content: this.client.translate([
+                    'common',
+                    'errors',
+                    'voice',
+                    'client',
+                    'noPermissions',
+                ]),
+                ephemeral: true,
+                warn: true,
+                interaction: interaction,
+                channelId: channelId,
+            });
             return false;
         }
 
@@ -171,21 +197,22 @@ export class PermissionChecker {
                 name: 'memberDifferentChannel',
             }).then((r) => {
                 if (r) return;
-                if (interaction) {
-                    notification.name = 'memberDifferentChannel';
-                    notification.save().then(() => {
-                        interaction.reply({
-                            content: this.client.translate([
-                                'music',
-                                'error',
-                                'voice',
-                                'user',
-                                'differentChannel',
-                            ]),
-                            ephemeral: true,
-                        });
+                notification.name = 'memberDifferentChannel';
+                notification.save().then(() => {
+                    this.client.notify({
+                        content: this.client.translate([
+                            'common',
+                            'errors',
+                            'voice',
+                            'user',
+                            'differentChannel',
+                        ]),
+                        ephemeral: true,
+                        interaction: interaction,
+                        warn: true,
+                        channelId: channelId,
                     });
-                }
+                });
             });
             return false;
         }
@@ -198,21 +225,22 @@ export class PermissionChecker {
                 name: 'memberDeafened',
             }).then((r) => {
                 if (r) return;
-                if (interaction) {
-                    notification.name = 'memberDeafened';
-                    notification.save().then(() => {
-                        interaction.reply({
-                            content: this.client.translate([
-                                'music',
-                                'error',
-                                'voice',
-                                'user',
-                                'memberDeafened',
-                            ]),
-                            ephemeral: true,
-                        });
+                notification.name = 'memberDeafened';
+                notification.save().then(() => {
+                    this.client.notify({
+                        content: this.client.translate([
+                            'common',
+                            'errors',
+                            'voice',
+                            'user',
+                            'memberDeafened',
+                        ]),
+                        ephemeral: true,
+                        warn: true,
+                        channelId: channelId,
+                        interaction: interaction,
                     });
-                }
+                });
             });
             return false;
         }

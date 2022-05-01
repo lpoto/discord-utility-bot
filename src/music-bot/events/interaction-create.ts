@@ -29,23 +29,21 @@ export class OnInteractionCreate extends AbstractMusicEvent {
             interaction.applicationId !== this.client.user?.id
         )
             return;
-        if (!this.client.permsChecker.checkClientText(interaction.channel))
+        if (
+            !this.client.permsChecker.checkClientText(
+                interaction.channel,
+                interaction,
+            )
+        )
             return;
 
         if (
             !this.client.rolesChecker.checkMemberDefaultRoles(
                 interaction.member,
+                interaction,
             )
-        ) {
-            interaction.reply({
-                content: this.client.translate(
-                    ['music', 'error', 'missingRole'],
-                    [this.client.rolesChecker.defaultRoles.join(', ')],
-                ),
-                ephemeral: true,
-            });
+        )
             return;
-        }
 
         if (interaction.isCommand())
             return this.client.emitEvent('slashCommand', interaction);

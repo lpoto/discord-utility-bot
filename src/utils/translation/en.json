@@ -12,21 +12,7 @@
             }
         ],
         "error": {
-            "activeThread": "Music thread is already active in this server!\n{0}",
-            "missingRole": "Roles required to use the bot: `{0}`",
-            "voice": {
-                "invalid": "Invalid voice channel!",
-                "client": {
-                    "cannotJoin": "Cannot join your voice channel!",
-                    "noPermissions": "I am missing the required permissions to join your channel!"
-                },
-                "user": {
-                    "notConnected": "You are not in a voice channel!",
-                    "differentChannel": "We are not in the same channel!",
-                    "memberDeafened": "You need to undeafen!"
-                },
-                "failedJoining": "Could not join your voice channel!"
-            }
+            "activeThread": "Music thread is already active in this server!\n{0}"
         },
         "queue": {
             "title": "Music queue",
@@ -251,6 +237,26 @@
             "config": {
                 "resetRoles": "Reset allowed roles for `{0}`. Now everyone can use it and it's subcommands.",
                 "changedRoles": "Changed allowed roles for `{0}` to `{1}`."
+            }
+        }
+    },
+    "common": {
+        "errors": {
+            "missingRolesAll": "You need all of the following roles: `{0}`",
+            "missingRolesAny": "You need at least one of the following roles: `{0}`",
+            "missingPermissions": "You need the following permissions: `{0}",
+            "voice": {
+                "invalid": "Invalid voice channel!",
+                "client": {
+                    "cannotJoin": "Cannot join your voice channel!",
+                    "noPermissions": "I am missing the required permissions to join your channel!"
+                },
+                "user": {
+                    "notConnected": "You are not in a voice channel!",
+                    "differentChannel": "We are not in the same channel!",
+                    "memberDeafened": "You need to undeafen!"
+                },
+                "failedJoining": "Could not join your voice channel!"
             }
         }
     }

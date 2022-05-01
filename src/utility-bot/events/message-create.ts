@@ -10,6 +10,7 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     }
 
     public async callback(message: Message): Promise<void> {
+        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         if (message.channel.type === 'DM')
             return this.handlePrivateMessage(message);
         if (message.channel.isThread())

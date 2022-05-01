@@ -24,7 +24,10 @@ export class OnSlashCommand extends AbstractMusicEvent {
             interaction.member &&
             this.client.user &&
             interaction.member instanceof GuildMember &&
-            this.client.permsChecker.checkClientText(interaction.channel)
+            this.client.permsChecker.checkClientText(
+                interaction.channel,
+                interaction,
+            )
         ) {
             this.eventQueue.addToQueue(interaction.id, () =>
                 this.execute(interaction),
@@ -72,7 +75,7 @@ export class OnSlashCommand extends AbstractMusicEvent {
                     interaction.reply({
                         content: this.client.translate(
                             ['music', 'error', 'activeThread'],
-                            [message.url],
+                            message.url,
                         ),
                         ephemeral: true,
                         fetchReply: true,

@@ -28,13 +28,11 @@ A bot for playing music.
 
 -   Queue message offers a variety of commands by clicking on buttons. (ex. loop, skip, shuffle, ... )
 
--   User may only use music commands if they are undeafened in a voice channel and bot is either
-    in the same channel or not connected to any.
+-   User may only use music commands if they are undeafened in a voice channel and bot is either in the same channel or not connected to any.
 
--   Bot requires a `DJ` role. Only users with the same role may use the
-    music commands.
+-   Bot requires a `DJ` role. Only users with the same role may use the music commands.
 
--   For more info on the commands, click on `?` in the queue message in a discord channel.
+-   For more info on the commands, use `/help` slash command or click on `?` in the queue message in a discord channel.
 
 ### Required permissions
 
@@ -48,7 +46,7 @@ A bot for playing music.
 
 ## Utility bot
 
-A bot for manaing smaller discord servers.
+A bot for managing smaller discord servers.
 
 **NOTE** Uncommited messages become unresponsive after 24h.
 
@@ -57,6 +55,8 @@ A bot for manaing smaller discord servers.
 -   Hosting polls,
 -   Adding and removing roles with button clicks,
 -   Configuring which roles may use which commands.
+
+-   For more info, use `/help` slash command in a discord server.
 
 ### Required permissions
 

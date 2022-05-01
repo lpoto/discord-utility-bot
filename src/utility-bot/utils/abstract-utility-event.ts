@@ -14,7 +14,7 @@ export abstract class AbstractUtilityEvent {
     }
 
     public translate(keys: LanguageKeyPath, ...args: string[]): string {
-        return this.client.translate(keys, args);
+        return this.client.translate(keys, ...args);
     }
 
     public async callback(...args: any[]): Promise<void> {

@@ -5,6 +5,7 @@ import {
     CustomClientOptions,
     Event,
     LanguageKeyPath,
+    NotifyOptions,
     StartClientOptions,
 } from '../../';
 import { Logger } from '.';
@@ -15,8 +16,10 @@ import {
     Client,
     Intents,
     IntentsString,
+    MessageEmbed,
     PermissionResolvable,
     Permissions,
+    TextChannel,
 } from 'discord.js';
 import { RolesChecker } from './roles-checker';
 
@@ -150,7 +153,45 @@ export abstract class CustomClient extends Client {
         })();
     }
 
-    public translate(keys: LanguageKeyPath, args?: string[]): string {
+    public async notify(options: NotifyOptions): Promise<void> {
+        if (
+            (!options.interaction && !options.channelId) ||
+            options.content.length === 0
+        )
+            return;
+        const embed: MessageEmbed = new MessageEmbed()
+            .setDescription(options.content)
+            .setColor(options.warn ? 'RED' : 'GREEN');
+        if (options.interaction)
+            return await options.interaction
+                .reply({
+                    embeds: [embed],
+                    ephemeral: options.ephemeral,
+                })
+                .catch((e: Error) => {
+                    this.emitEvent('error', e);
+                });
+        if (!options.channelId) return;
+        const channel: TextChannel | undefined = await this.channels
+            .fetch(options.channelId)
+            .then((c) => {
+                if (!(c instanceof TextChannel)) return undefined;
+                return c;
+            })
+            .catch((e: Error) => {
+                this.emitEvent('error', e);
+                return undefined;
+            });
+        await channel
+            ?.send({
+                embeds: [embed],
+            })
+            .catch((e: Error) => {
+                this.emitEvent('error', e);
+            });
+    }
+
+    public translate(keys: LanguageKeyPath, ...args: string[]): string {
         return this.translator.translate(keys, args);
     }
 

@@ -1,4 +1,10 @@
-import { GuildMember, Role } from 'discord.js';
+import {
+    ButtonInteraction,
+    CommandInteraction,
+    GuildMember,
+    Role,
+    SelectMenuInteraction,
+} from 'discord.js';
 import { CommandRolesConfig } from '../common-entities';
 import { CustomClient } from './custom-client';
 
@@ -17,17 +23,41 @@ export class RolesChecker {
         return this.requiredDefaultRoles;
     }
 
-    public checkMemberDefaultRoles(member: GuildMember): boolean {
-        return (
+    public checkMemberDefaultRoles(
+        member: GuildMember,
+        interaction?:
+            | ButtonInteraction
+            | SelectMenuInteraction
+            | CommandInteraction,
+        channelId?: string,
+    ): boolean {
+        const valid: boolean =
             member.roles.cache.find((r: Role) =>
                 this.requiredDefaultRoles.includes(r.name),
-            ) !== undefined
-        );
+            ) !== undefined;
+        if (!valid) {
+            this.client.notify({
+                warn: true,
+                content: this.client.translate(
+                    ['common', 'errors', 'missingRolesAll'],
+                    this.requiredDefaultRoles.join(', '),
+                ),
+                ephemeral: true,
+                interaction: interaction,
+                channelId: channelId,
+            });
+        }
+        return valid;
     }
 
     public async checkMemberRolesForCommand(
         member: any,
         command: string,
+        interaction?:
+            | ButtonInteraction
+            | SelectMenuInteraction
+            | CommandInteraction,
+        channelId?: string,
     ): Promise<boolean> {
         if (
             !this.client.user ||
@@ -47,12 +77,30 @@ export class RolesChecker {
         if (!crc) return true;
         await crc.filterRoles(this.client);
         crc = await crc.save();
-        return (
+        const valid: boolean =
             crc.roleIds.length === 0 ||
             crc.roleIds.some((r) => {
                 member.roles.cache.has(r);
-            })
-        );
+            });
+        if (!valid) {
+            this.client.notify({
+                warn: true,
+                interaction: interaction,
+                channelId: channelId,
+                ephemeral: true,
+                content: this.client.translate(
+                    ['common', 'errors', 'missingRolesAny'],
+                    crc.roleIds
+                        .map((rId) => {
+                            return member.guild.roles.cache.find(
+                                (r) => r.id === rId,
+                            )?.name;
+                        })
+                        .join(', '),
+                ),
+            });
+        }
+        return valid;
     }
 
     public async setRolesForCommand(

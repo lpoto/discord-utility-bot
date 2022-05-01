@@ -14,9 +14,19 @@ export class OnInteractionCreate extends AbstractUtilityEvent {
             interaction.guild.me &&
             interaction.channel &&
             interaction.channel instanceof TextChannel &&
+            (interaction.isButton() ||
+                interaction.isCommand() ||
+                interaction.isSelectMenu()) &&
             interaction.member &&
             this.client.user
         ) {
+            if (
+                !this.client.permsChecker.checkClientText(
+                    interaction.channel,
+                    interaction,
+                )
+            )
+                return;
             this.execute(interaction);
         }
     }

@@ -48,6 +48,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.interaction.member,
                 'roles',
+                options.interaction,
             ))
         )
             return;
@@ -160,6 +161,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.interaction.member,
                 'roles',
+                options.interaction,
             ))
         )
             return;
@@ -184,6 +186,8 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.repliedMessage.member,
                 'roles',
+                undefined,
+                options.repliedMessage.channelId,
             ))
         )
             return;
@@ -205,6 +209,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.interaction.member,
                 'roles',
+                options.interaction,
             ))
         )
             return;
@@ -298,6 +303,7 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
         const id: string = c[1];
         const member: GuildMember = options.interaction.member;
         let txt = '';
+        let added = false;
         if (member.roles.cache.find((r) => r.id === id)) {
             this.client.logger.debug(
                 'Removing role',
@@ -322,13 +328,14 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
                 ['utility', 'commands', 'roles', 'addedRole'],
                 options.interaction.component.label,
             );
+            added = true;
         }
-        options.interaction
-            .reply({
-                content: txt,
-                ephemeral: true,
-            })
-            .catch((e) => this.client.emitEvent('error', e));
+        this.client.notify({
+            content: txt,
+            warn: !added,
+            ephemeral: true,
+            interaction: options.interaction,
+        });
     }
 
     private async commit(options: HandleRolesMessageOptions): Promise<void> {

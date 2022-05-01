@@ -1,9 +1,12 @@
 import {
+    ButtonInteraction,
     ClientOptions,
+    CommandInteraction,
     Interaction,
     Message,
     PartialMessage,
     PermissionResolvable,
+    SelectMenuInteraction,
     ThreadChannel,
 } from 'discord.js';
 import { english } from './utils/translation';
@@ -59,4 +62,15 @@ export interface EventHandlerQueueOptions {
     name: string;
     id: string;
     callback?: () => Promise<void>;
+}
+
+export interface NotifyOptions {
+    warn?: boolean;
+    content: string;
+    interaction?:
+        | ButtonInteraction
+        | CommandInteraction
+        | SelectMenuInteraction;
+    channelId?: string;
+    ephemeral?: boolean;
 }

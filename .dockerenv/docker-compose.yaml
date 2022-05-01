@@ -14,7 +14,7 @@ services:
         volumes:
             - postgres-data:/var/lib/postgresql/data
 
-    client:
+    bots:
         # image: docker_id/docker_hub_repo:tag
         build:
             context: ..
@@ -34,6 +34,7 @@ services:
             MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
             UTILITY_BOT_TOKEN: your-utility-token
             MUSIC_BOT_LOG_LEVEL: INFO
+            REGISTER_SLASH_COMMANDS: true
 
 volumes:
     postgres-data:

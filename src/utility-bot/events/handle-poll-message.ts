@@ -43,6 +43,7 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.interaction.member,
                 'poll',
+                options.interaction,
             ))
         )
             return;
@@ -163,6 +164,7 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.interaction.member,
                 'poll',
+                options.interaction,
             ))
         )
             return;
@@ -272,6 +274,8 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.repliedMessage.member,
                 'poll',
+                undefined,
+                options.repliedMessage.channelId,
             ))
         )
             return;
@@ -300,6 +304,8 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !(await this.client.rolesChecker.checkMemberRolesForCommand(
                 options.threadMessage.member,
                 'poll',
+                undefined,
+                options.threadMessage.channelId,
             ))
         )
             return;

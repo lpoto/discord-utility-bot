@@ -29,7 +29,11 @@ export class OnMessageCreate extends AbstractMusicEvent {
                 this.client.translate(['music', 'thread', 'name']) &&
             (message.content || message.attachments.size > 0) &&
             message.channel.ownerId === this.client.user?.id &&
-            this.client.rolesChecker.checkMemberDefaultRoles(message.member) &&
+            this.client.rolesChecker.checkMemberDefaultRoles(
+                message.member,
+                undefined,
+                message.channel.id,
+            ) &&
             this.client.permsChecker.validateMemberVoiceFromThread(message)
         ) {
             Queue.findOne({
