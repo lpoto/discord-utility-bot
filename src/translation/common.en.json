@@ -1,0 +1,20 @@
+{
+    "errors": {
+        "missingRolesAll": "You need all of the following roles: `{0}`",
+        "missingRolesAny": "You need at least one of the following roles: `{0}`",
+        "missingPermissions": "You need the following permissions: `{0}",
+        "voice": {
+            "invalid": "Invalid voice channel!",
+            "client": {
+                "cannotJoin": "Cannot join your voice channel!",
+                "noPermissions": "I am missing the required permissions to join your channel!"
+            },
+            "user": {
+                "notConnected": "You are not in a voice channel!",
+                "differentChannel": "We are not in the same channel!",
+                "memberDeafened": "You need to undeafen!"
+            },
+            "failedJoining": "Could not join your voice channel!"
+        }
+    }
+}

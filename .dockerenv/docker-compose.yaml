@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-    postgresdb:
+    discord-postgres:
         image: postgres:14.1-alpine
-        container_name: postgresdb
+        container_name: discord-postgresdb
         restart: unless-stopped
         ports:
             - 6543:5432
@@ -22,13 +22,13 @@ services:
         container_name: discord-bots
         restart: unless-stopped
         depends_on:
-            postgresdb:
+            postgres:
                 condition: service_started
         environment:
             POSTGRES_DB: discord_bot
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
-            POSTGRES_HOST: postgresdb
+            POSTGRES_HOST: discord-postgres
             POSTGRES_PORT: 5432
             MUSIC_BOT_TOKEN: your-music-token
             MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN

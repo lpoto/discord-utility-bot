@@ -9,7 +9,7 @@ import {
     StartClientOptions,
 } from '../../';
 import { Logger } from '.';
-import { Translator } from '../utils/translation';
+import { Translator } from '../translation';
 import { PermissionChecker } from './permission-checker';
 import {
     BitFieldResolvable,

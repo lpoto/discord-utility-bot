@@ -13,6 +13,7 @@ import { ActiveCommandsOptions, CustomAudioPlayer } from './utils';
 import * as Events from './events';
 import { Queue } from './entities';
 import { CustomClient } from '../utils';
+import { musicBotEn } from './utils/translation';
 
 export class MusicClient extends CustomClient {
     private voiceConnections: { [guildId: string]: VoiceConnection };
@@ -26,6 +27,10 @@ export class MusicClient extends CustomClient {
         this.audioPlayers = {};
         this.shouldNotBeUpdated = {};
         this.activeOptions = new ActiveCommandsOptions(this);
+    }
+
+    public get text(): typeof musicBotEn {
+        return musicBotEn;
     }
 
     public get activeCommandsOptions(): ActiveCommandsOptions {

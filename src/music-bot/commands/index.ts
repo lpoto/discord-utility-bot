@@ -17,5 +17,5 @@ export { Forward } from './forward';
 export { Remove } from './remove';
 export { Shuffle } from './shuffle';
 export { Expand } from './expand';
-export { Translate } from './translate';
+export { Resend } from './resend';
 export { Clear } from './clear';

@@ -1,11 +1,10 @@
-import { english } from '.';
-import { Language, LanguageKeyPath } from '../../../';
+import { Language, LanguageKeyPath, text } from '.';
 
 export class Translator {
     private textJson: Language;
 
     public constructor() {
-        this.textJson = english;
+        this.textJson = text;
     }
 
     public translate(keys: LanguageKeyPath, args?: string[]): string {

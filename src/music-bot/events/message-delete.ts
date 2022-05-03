@@ -19,11 +19,15 @@ export class OnMessageDelete extends AbstractMusicEvent {
             const queue: Queue | undefined = await Queue.findOne({
                 guildId: message.guildId,
                 clientId: this.client.user.id,
+                messageId: message.id,
             });
             if (queue && queue.messageId === message.id)
                 this.client.emitEvent('musicDestroy', {
                     guildId: message.guildId,
                 });
+            else if (message.hasThread && message.thread) {
+                this.client.emitEvent('musicThreadArchive', message.thread);
+            }
         }
     }
 }

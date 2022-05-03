@@ -43,7 +43,8 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
     public async callback(options: UpdateQueueOptions): Promise<void> {
         if (
             options.interaction &&
-            options.interaction instanceof CommandInteraction
+            (options.interaction.isCommand() ||
+                (options.resend && options.interaction.isButton()))
         )
             return this.newQueueMessage(options);
 
@@ -279,10 +280,12 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
     private async newQueueMessage(options: UpdateQueueOptions) {
         if (
             !options.interaction ||
-            !(options.interaction instanceof CommandInteraction)
+            (!options.interaction.isButton() &&
+                !options.interaction.isCommand())
         )
             return;
-        const interaction: CommandInteraction = options.interaction;
+        const interaction: CommandInteraction | ButtonInteraction =
+            options.interaction;
         this.client.emitEvent('joinVoiceRequest', interaction);
         const timeout: NodeJS.Timeout = setTimeout(async () => {
             if (!interaction.channelId || !interaction.guildId) return;
@@ -303,7 +306,7 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
             if (t && message.guildId && message.channelId) {
                 options.queue.messageId = message.id;
                 options.queue.threadId = t.id;
-                options.queue.save();
+                options.queue = await options.queue.save();
                 return;
             }
             message.delete().catch((error) => {

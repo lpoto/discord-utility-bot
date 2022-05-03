@@ -27,6 +27,7 @@ export interface UpdateQueueOptions {
     doNotSetUpdated?: boolean;
     onUpdate?: () => Promise<void>;
     onError?: () => Promise<void>;
+    resend?: boolean;
     embedOnly?: boolean;
 }
 

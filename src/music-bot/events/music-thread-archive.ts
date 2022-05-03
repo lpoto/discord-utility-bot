@@ -25,7 +25,7 @@ export class OnMusicThreadArchive extends AbstractMusicEvent {
                 thread
                     .setArchived()
                     .then(() => {
-                        this.client.logger.info(
+                        this.client.logger.debug(
                             `Archived thread: '${thread.id}' in guild '${thread.guildId}'`,
                         );
                         thread
@@ -49,7 +49,7 @@ export class OnMusicThreadArchive extends AbstractMusicEvent {
                         thread
                             .delete()
                             .then(() => {
-                                this.client.logger.info(
+                                this.client.logger.debug(
                                     `Deleted thread: '${thread.id}'`,
                                 );
                             })

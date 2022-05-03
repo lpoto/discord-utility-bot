@@ -50,8 +50,10 @@ export class SongTimer {
                 });
 
                 if (!queue) return this.stop();
-                if (!this.message) this.message = await this.getMessage(queue);
-                if (!this.message || !this.guildId) return this.stop();
+                if (!this.message || this.message.id !== queue.messageId)
+                    this.message = await this.getMessage(queue);
+                if (!this.message) return;
+                if (!this.guildId) return this.stop();
                 const audioPlayer: CustomAudioPlayer | null =
                     this.client.getAudioPlayer(this.guildId);
 

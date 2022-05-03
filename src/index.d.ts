@@ -9,10 +9,11 @@ import {
     SelectMenuInteraction,
     ThreadChannel,
 } from 'discord.js';
-import { english } from './utils/translation';
 import { CustomClient, Logger } from './utils';
 import { ClientEventQueue } from './utils/client-event-queue';
 import { Connection } from 'typeorm';
+
+export { Language, LanguageKeyPath } from './translation';
 
 export interface StartClientOptions {
     connection: Connection;
@@ -20,14 +21,6 @@ export interface StartClientOptions {
     version: string;
     logLevel?: Logger.Level;
 }
-
-export type Language = typeof english;
-
-type Path<T> = PathTree<T>[keyof PathTree<T>];
-type PathTree<T> = {
-    [P in keyof T]-?: T[P] extends object ? [P] | [P, ...Path<T[P]>] : [P];
-};
-export type LanguageKeyPath = Path<Language>;
 
 export interface CustomClientOptions extends ClientOptions {
     logger: Logger;
