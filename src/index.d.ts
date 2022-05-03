@@ -17,9 +17,10 @@ export { Language, LanguageKeyPath } from './translation';
 
 export interface StartClientOptions {
     connection: Connection;
-    token: string | undefined;
+    token: string;
     version: string;
     logLevel?: Logger.Level;
+    id?: string;
 }
 
 export interface CustomClientOptions extends ClientOptions {

@@ -259,9 +259,8 @@ export abstract class CustomClient extends Client {
         options: StartClientOptions,
     ): Promise<[Logger.Level, string]> {
         const NewClient: any = this;
-        const clientName: string = this.name;
-        if (!options.token)
-            return [Logger.Level.INFO, `No token provided for ${clientName}`];
+        let clientName: string = this.name;
+        if (options.id) clientName += options.id;
         if (!options.connection.isConnected)
             return [
                 Logger.Level.ERROR,

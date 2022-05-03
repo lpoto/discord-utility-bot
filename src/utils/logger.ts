@@ -2,7 +2,7 @@ export class Logger {
     private name: string;
     private level: Logger.Level;
 
-    private static mainLogger = 'Main';
+    public static mainLogger = 'Main';
 
     public constructor(name?: string, level?: Logger.Level) {
         if (name === undefined) this.name = Logger.mainLogger;

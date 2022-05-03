@@ -1,6 +1,57 @@
-version: '3'
+version: '3.8'
 
 services:
+    # NOTE: you can split bots service into multiple services, if you want to run
+    #       the bots in separate containers
+
+    bots:
+        # image: docker_id/docker_hub_repo:tag
+        build:
+            context: ..
+            dockerfile: .dockerenv/Dockerfile
+        container_name: discord-bots
+        restart: unless-stopped
+        environment:
+            # NOTE: up to 4 bots of a single type may be added (with different tokens)
+
+            MUSIC_BOT_TOKEN: your-music-token
+            #MUSIC_BOT1_TOKEN: your-music-token1
+            #MUSIC_BOT2_TOKEN: your-music-token2
+            #MUSIC_BOT3_TOKEN: your-music-token3
+
+            UTILITY_BOT_TOKEN: your-utility-token
+            #UTILITY_BOT1_TOKEN: your-utility-token1
+            #UTILITY_BOT2_TOKEN: your-utility-token2
+            #UTILITY_BOT3_TOKEN: your-utility-token3
+
+            LOG_LEVEL: DEBUG # INFO, ERROR, WARN
+
+            MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
+            #MUSIC_BOT1_LOG_LEVEL: WARN
+            #MUSIC_BOT2_LOG_LEVEL: WARN
+            #MUSIC_BOT3_LOG_LEVEL: WARN
+
+            MUSIC_BOT_LOG_LEVEL: INFO
+            #MUSIC_BOT1_LOG_LEVEL: WARN
+            #MUSIC_BOT2_LOG_LEVEL: WARN
+            #MUSIC_BOT3_LOG_LEVEL: WARN
+
+            # if true, the bots will register their slash commands
+            # on start in all the servers thay are part of
+            REGISTER_SLASH_COMMANDS: true
+
+            # The Following options match the discord-postgres service
+            POSTGRES_DB: discord_bot
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_HOST: discord-postgres
+            POSTGRES_PORT: 5432
+
+        depends_on:
+            postgres:
+                condition: service_started
+
+
     discord-postgres:
         image: postgres:14.1-alpine
         container_name: discord-postgresdb
@@ -14,27 +65,6 @@ services:
         volumes:
             - postgres-data:/var/lib/postgresql/data
 
-    bots:
-        # image: docker_id/docker_hub_repo:tag
-        build:
-            context: ..
-            dockerfile: .dockerenv/Dockerfile
-        container_name: discord-bots
-        restart: unless-stopped
-        depends_on:
-            postgres:
-                condition: service_started
-        environment:
-            POSTGRES_DB: discord_bot
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_HOST: discord-postgres
-            POSTGRES_PORT: 5432
-            MUSIC_BOT_TOKEN: your-music-token
-            MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
-            UTILITY_BOT_TOKEN: your-utility-token
-            MUSIC_BOT_LOG_LEVEL: INFO
-            REGISTER_SLASH_COMMANDS: true
 
 volumes:
     postgres-data:

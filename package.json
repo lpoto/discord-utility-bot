@@ -1,11 +1,11 @@
 {
     "name": "bots",
     "repository": "discord",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "bots": {
         "music": {
             "name": "music-bot",
-            "version": "1.5.0",
+            "version": "1.5.1",
             "description": "Bot for playing music."
         },
         "utility": {

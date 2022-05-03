@@ -14,7 +14,8 @@ cd ./discord-bots
 
 -   Add your discord tokens to [docker-compose.yaml](../.dockerenv/docker-compose.yaml) under `services/bots/environment`.
 
-**NOTE** You may also provide token for only a single bot, which allows splitting the bots in separate containers.
+**NOTE** You may provide from 0 up to 4 tokens for every bot type (the tokens must be different).
+**NOTE** You may split the bots service into multiple services, if you want to run the bots in separate containers.
 
 ## Run the bots in a docker container
 
@@ -22,9 +23,6 @@ cd ./discord-bots
 cd .dockerenv
 docker-compose up -d --build
 ```
-
-**NOTE** You can add additional client services `docker-compose.yaml`, so you can run multiple instances
-of bots at once.
 
 ## Pushing image to docker hub
 
@@ -49,10 +47,22 @@ to run the pushed image with docker-compose.
 
 ```bash
 export MUSIC_BOT_TOKEN=your_music_bot_token
+#export MUSIC_BOT1_TOKEN=your_music_bot_token1
+#export MUSIC_BOT2_TOKEN=your_music_bot_token2
+#export MUSIC_BOT3_TOKEN=your_music_bot_token3
 export MUSIC_BOT_LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
+#export MUSIC_BOT1_LOG_LEVEL=INFO
+#export MUSIC_BOT2_LOG_LEVEL=INFO
+#export MUSIC_BOT2_LOG_LEVEL=INFO
 
 export UTILITY_BOT_TOKEN=your_utility_bot_token
+#export UTILITY_BOT1_TOKEN=your_utility_bot_token1
+#export UTILITY_BOT2_TOKEN=your_utility_bot_token2
+#export UTILITY_BOT3_TOKEN=your_utility_bot_token3
 export UTILITY_BOT_LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
+#export UTILITY1_BOT_LOG_LEVEL=INFO
+#export UTILITY2_BOT_LOG_LEVEL=INFO
+#export UTILITY3_BOT_LOG_LEVEL=INFO
 
 export POSTGRES_DB=database_name
 export POSTGRES_USER=database_user
@@ -62,6 +72,7 @@ export POSTGRES_PORT=database_port
 
 export REGISTER_SLASH_COMMANDS=true
 
+#install dependencies
 npm install
 ```
 
