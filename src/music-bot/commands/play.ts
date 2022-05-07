@@ -163,10 +163,11 @@ export class Play extends AbstractCommand {
                 interaction: interaction,
                 doNotSetUpdated: true,
             });
-            if (startTime && startTime < 0) startTime = undefined;
-            if (startTime && startTime >= song.durationSeconds)
+            if (startTime !== undefined && startTime < 0)
+                startTime = undefined;
+            if (startTime !== undefined && startTime >= song.durationSeconds)
                 startTime = song.durationSeconds - 3;
-            if (startTime) {
+            if (startTime !== undefined) {
                 audioPlayer.setOffsetPlayback(startTime);
                 audioPlayer.setNextPlaybackDuration(startTime);
             }
@@ -226,11 +227,16 @@ export class Play extends AbstractCommand {
                         audioPlayer?.kill();
                         this.client.setAudioPlayer(queue.guildId, null);
                         if (t === 'jumpForward')
-                            return this.execute(i, d + (n ? n : 20));
+                            return this.execute(
+                                i,
+                                d + (n !== undefined ? n : 20),
+                            );
                         if (t === 'jumpBackward')
                             return this.execute(
                                 i,
-                                d - (n ? n : 20) > 0 ? d - (n ? n : 20) : 0,
+                                d - (n !== undefined ? n : 20) > 0
+                                    ? d - (n !== undefined ? n : 20)
+                                    : 0,
                             );
                         if (t === 'skip')
                             return this.next(i, undefined, undefined, n);

@@ -14,7 +14,7 @@ export class JumpForward extends AbstractCommand {
     }
 
     public get reggex(): RegExp {
-        return /^!(\+(\+)?)|(f(orward))|(j((um)?p)?)((\s+)\d+)?$/i;
+        return /^!(\+(\+)?)|(f(orward))|(j((um)?p)?)((\s+)-?\d+)?$/i;
     }
 
     public get additionalHelp(): string {
@@ -79,6 +79,9 @@ export class JumpForward extends AbstractCommand {
                 if (e instanceof Error) this.client.emitEvent('error', e);
             }
         }
-        this.audioPlayer?.trigger('jumpForward', undefined, t);
+        this.audioPlayer.trigger('jumpForward', undefined, t);
+        setTimeout(() => {
+            this.updateQueue({ queue: queue });
+        }, 200);
     }
 }

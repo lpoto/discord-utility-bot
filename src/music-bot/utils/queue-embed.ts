@@ -49,7 +49,9 @@ export class QueueEmbed extends MessageEmbed {
 
         const duration: string = this.queue.headSong.durationString;
 
-        const loader: string = this.getSongLoader();
+        const loader: string = this.queue.hasDropdownOption()
+            ? ''
+            : this.getSongLoader();
         if (loader !== '') headSong = `> \u3000${headSong}\n> \n> ${loader}`;
         else headSong = `**${duration}**\u3000${headSong}\n> ㅤ`;
         headSong = `> \n${headSong}`;

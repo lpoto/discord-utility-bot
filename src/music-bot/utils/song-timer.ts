@@ -58,8 +58,7 @@ export class SongTimer {
                     this.client.getAudioPlayer(this.guildId);
 
                 if (!audioPlayer) return this.stop();
-                if (audioPlayer.paused) return;
-                if (!audioPlayer.playing) return;
+                if (!audioPlayer.playing || queue.hasDropdownOption()) return;
 
                 this.canUpdate = false;
 
