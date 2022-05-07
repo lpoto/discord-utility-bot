@@ -22,6 +22,7 @@ export class CustomAudioPlayer {
         | ((
               trigger: CustomAudioPlayerTrigger,
               interaction?: ButtonInteraction,
+              n?: number,
           ) => Promise<void>)
         | undefined;
     private offsetPlayback: number;
@@ -195,9 +196,10 @@ export class CustomAudioPlayer {
     public async trigger(
         t: CustomAudioPlayerTrigger,
         interaction?: ButtonInteraction,
+        n?: number,
     ): Promise<void> {
         if (this.onTriggerCb !== undefined)
-            return this.onTriggerCb(t, interaction);
+            return this.onTriggerCb(t, interaction, n);
     }
 
     public async getResource(

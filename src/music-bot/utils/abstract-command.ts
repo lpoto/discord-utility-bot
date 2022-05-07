@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import {
     ButtonInteraction,
     CommandInteraction,
+    Message,
     MessageButton,
     MessageSelectMenu,
     SelectMenuInteraction,
@@ -36,6 +37,10 @@ export abstract class AbstractCommand {
         return false;
     }
 
+    public get reggex(): RegExp | null {
+        return null;
+    }
+
     public get needsDefer(): boolean {
         return this.alwaysExecute ? false : this.shouldDefer;
     }
@@ -63,6 +68,11 @@ export abstract class AbstractCommand {
     public get description(): string | null {
         return null;
     }
+
+    public get additionalHelp(): string | null {
+        return null;
+    }
+
     public async getQueue(): Promise<Queue | undefined> {
         if (!this.client.user) return undefined;
         return await Queue.findOne({
@@ -105,6 +115,11 @@ export abstract class AbstractCommand {
         this.client.logger.debug(interaction.id);
         this.client.logger.debug(this.client.user.id);
         this.client.logger.debug(this.guildId);
+    }
+
+    public async executeFromReggex(message: Message): Promise<void> {
+        if (!message) return;
+        this.client.logger.debug(message.id);
     }
 
     public async deferInteractions(doNotDefer?: boolean): Promise<void> {

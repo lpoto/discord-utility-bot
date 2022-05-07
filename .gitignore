@@ -9,5 +9,7 @@ dist
 
 node_modules
 
+tsconfig.tsbuildinfo
+
 docker-compose.yaml
 !.dockerenv/docker-compose.yaml

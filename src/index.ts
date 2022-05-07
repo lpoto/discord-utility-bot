@@ -76,7 +76,7 @@ createConnection({
             ]);
         }
     }
-    mainLogger.info(`Starting ${clients.length} clients`);
+    mainLogger.info(`Starting ${clients.length} client/s`);
     clients.forEach((c) => {
         c[0].start(c[1]).then((r) => {
             mainLogger.log(r[0], r[1]);

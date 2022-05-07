@@ -29,7 +29,8 @@
     "commands": {
         "play": {
             "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.",
-            "maxSongs": "There can only be around 10000 songs in the queue!"
+            "maxSongs": "There can only be around 10000 songs in the queue!",
+            "additionalHelp": "Type `!now <songs>` to add the songs to the front of the queue."
         },
         "join": {
             "label": "Join",
@@ -45,7 +46,8 @@
         },
         "skip": {
             "label": ">>",
-            "description": "`>>`: Skips the currently playing song."
+            "description": "`>>`: Skips the currently playing song.",
+            "additionalHelp": "Type `!skip <count>` in the thread to skip <count> songs."
         },
         "previousSong": {
             "label": "<<",
@@ -61,7 +63,8 @@
         },
         "jumpForward": {
             "label": "+20s",
-            "description": "`+20s`: Jumps 30 seconds forward in current song."
+            "description": "`+20s`: Jumps 30 seconds forward in current song.",
+            "additionalHelp": "Type `!jump <number>` in the thread to skip <number> of seconds in the song (use negative number to jump backward)."
         },
         "pause": {
             "label": "ll",

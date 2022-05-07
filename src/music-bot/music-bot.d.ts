@@ -49,7 +49,9 @@ export class Command {
     protected client: MusicClient;
     protected guildId: string;
     public constructor(client: MusicClient, guildId: string);
+    public get reggex(): RegExp | null;
     public get description(): string | null;
+    public get additionalHelp(): string | null;
     public get name(): string;
     public get interactionTimeout(): number;
     public get alwaysExecute(): boolean;
@@ -64,6 +66,7 @@ export class Command {
     public executeFromSelectMenu(
         interaction: SelectMenuInteraction,
     ): Promise<void>;
+    public executeFromReggex(message: Message): Promise<void>;
 }
 
 export type MusicClientEventArgument =
@@ -100,6 +103,7 @@ export interface DestroyMusicOptions {
 export interface NewSongOptions {
     guildId: string;
     songNames: string[];
+    toFront?: boolean;
 }
 
 export interface ExecuteCommandOptions {

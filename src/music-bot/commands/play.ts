@@ -3,9 +3,11 @@ import {
     ButtonInteraction,
     Guild,
     Message,
+    MessageAttachment,
     NonThreadGuildBasedChannel,
     VoiceChannel,
 } from 'discord.js';
+import fetch from 'node-fetch';
 import { CustomAudioPlayerTrigger } from '../music-bot';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
@@ -20,10 +22,19 @@ export class Play extends AbstractCommand {
         return this.translate(['music', 'commands', 'play', 'description']);
     }
 
+    public get additionalHelp(): string | null {
+        return this.translate(['music', 'commands', 'play', 'additionalHelp']);
+    }
+
+    public get reggex(): RegExp | null {
+        return /^!((p(lay)?)|(add))?(n(ow)?)|(f(ront)?)(\s+)/i;
+    }
+
     private async next(
         interaction?: ButtonInteraction,
         error?: boolean,
         retries: number = 0,
+        count?: number,
     ): Promise<void> {
         if (!this.client.user) return;
         if (retries >= 5) return;
@@ -40,7 +51,10 @@ export class Play extends AbstractCommand {
              * Determine if a song needs to be removed from the queue,
              * pushed to the back of the queue or nothing at all.
              */
-            queue = await queue.removeHeadSong(true);
+            if (!count) count = 1;
+            if (count > queue.size) count = queue.size;
+            for (let i = 0; i < count; i++)
+                queue = await queue.removeHeadSong(true);
 
             this.execute(interaction).catch((e) => {
                 this.client.emit('error', e);
@@ -149,12 +163,16 @@ export class Play extends AbstractCommand {
                 interaction: interaction,
                 doNotSetUpdated: true,
             });
+            if (startTime && startTime < 0) startTime = undefined;
+            if (startTime && startTime >= song.durationSeconds)
+                startTime = song.durationSeconds - 3;
             if (startTime) {
                 audioPlayer.setOffsetPlayback(startTime);
                 audioPlayer.setNextPlaybackDuration(startTime);
             }
             this.client.logger.debug(
                 `Playing song '${song.shortName}' in guild ${queue.guildId}`,
+                !startTime ? '' : ` with offset ${startTime}s`,
             );
             audioPlayer.play(song, startTime);
             audioPlayer
@@ -199,6 +217,7 @@ export class Play extends AbstractCommand {
                     async (
                         t: CustomAudioPlayerTrigger,
                         i?: ButtonInteraction,
+                        n?: number,
                     ) => {
                         const d: number = audioPlayer
                             ? audioPlayer.playbackDuration
@@ -207,10 +226,14 @@ export class Play extends AbstractCommand {
                         audioPlayer?.kill();
                         this.client.setAudioPlayer(queue.guildId, null);
                         if (t === 'jumpForward')
-                            return this.execute(i, d + 20);
+                            return this.execute(i, d + (n ? n : 20));
                         if (t === 'jumpBackward')
-                            return this.execute(i, d - 20 > 0 ? d - 20 : 0);
-                        if (t === 'skip') return this.next(i);
+                            return this.execute(
+                                i,
+                                d - (n ? n : 20) > 0 ? d - (n ? n : 20) : 0,
+                            );
+                        if (t === 'skip')
+                            return this.next(i, undefined, undefined, n);
                         return this.execute(i);
                     },
                 );
@@ -219,5 +242,34 @@ export class Play extends AbstractCommand {
             this.client.setAudioPlayer(queue.guildId, null);
             return;
         }
+    }
+
+    public async executeFromReggex(message: Message): Promise<void> {
+        const queue: Queue | undefined = await this.getQueue();
+        if (!queue) return;
+        const content: string = message.content
+            .replace(message.content.split(/\s+/)[0], '')
+            .trim();
+        let songs: string[] = content.split('\n');
+
+        if (message.attachments.size > 0) {
+            for (let i = 0; i < message.attachments.size; i++) {
+                const file: MessageAttachment | undefined =
+                    message.attachments.at(i);
+                if (!file) continue;
+                const re = await fetch(file.url);
+                if (!re.ok) continue;
+                const text: string = await re.text();
+                if (text.length === 0) continue;
+
+                songs = songs.concat(text.split('\n'));
+            }
+        }
+
+        this.client.emitEvent('newSong', {
+            guildId: queue.guildId,
+            songNames: songs,
+            toFront: true,
+        });
     }
 }

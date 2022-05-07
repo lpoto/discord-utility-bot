@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import { ButtonInteraction, Message, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -15,6 +15,14 @@ export class Skip extends AbstractCommand {
 
     public get description(): string {
         return this.translate(['music', 'commands', 'skip', 'description']);
+    }
+
+    public get reggex(): RegExp {
+        return /^!s(kip)?(\s+\d+)?$/i;
+    }
+
+    public get additionalHelp(): string {
+        return this.translate(['music', 'commands', 'skip', 'additionalHelp']);
     }
 
     public button(queue: Queue): MessageButton | null {
@@ -45,5 +53,29 @@ export class Skip extends AbstractCommand {
                 guildId: queue.guildId,
                 interaction: interaction,
             });
+    }
+
+    public async executeFromReggex(message: Message): Promise<void> {
+        const queue: Queue | undefined = await this.getQueue();
+        if (
+            !queue ||
+            !this.audioPlayer ||
+            queue.size === 0 ||
+            !this.audioPlayer
+        )
+            return;
+
+        const l: string[] = message.content.split(/\s+/);
+        let t: number | undefined = undefined;
+        if (l.length > 1 && l[1].length > 0) {
+            try {
+                t = Number(l[1].trim());
+            } catch (e) {
+                if (e instanceof Error) this.client.emitEvent('error', e);
+            }
+        }
+        if (t && t > queue.size) t = queue.size;
+        if (t && t < 0) t = undefined;
+        this.audioPlayer.trigger('skip', undefined, t);
     }
 }

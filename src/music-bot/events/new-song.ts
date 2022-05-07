@@ -65,7 +65,11 @@ export class OnNewSong extends AbstractMusicEvent {
                     if (!(queue.guildId in this.songsToUpdate))
                         this.songsToUpdate[queue.guildId] = {};
                     this.songsToUpdate[queue.guildId][i] = songs2;
-                    this.checkIfNeedsUpdate(queue.guildId, songs2.length);
+                    this.checkIfNeedsUpdate(
+                        queue.guildId,
+                        songs2.length,
+                        options.toFront,
+                    );
                 } else {
                     this.songsToUpdateCount[queue.guildId].updated += 1;
                 }
@@ -73,7 +77,11 @@ export class OnNewSong extends AbstractMusicEvent {
         }
     }
 
-    private checkIfNeedsUpdate(guildId: string, add?: number): void {
+    private checkIfNeedsUpdate(
+        guildId: string,
+        add?: number,
+        toFront?: boolean,
+    ): void {
         if (
             !this.client.user ||
             !this.songsToUpdateCount[guildId] ||
@@ -97,7 +105,7 @@ export class OnNewSong extends AbstractMusicEvent {
             let songs: Song[] = [];
             for (const s of Object.values(this.songsToUpdate[guildId]))
                 songs = songs.concat(s);
-            Song.saveAll(songs, guildId, this.client.user.id)
+            Song.saveAll(songs, guildId, this.client.user.id, toFront)
                 .then(() => {
                     if (!this.client.user) return;
                     Queue.findOne({
@@ -107,10 +115,6 @@ export class OnNewSong extends AbstractMusicEvent {
                         if (!queue) return;
                         const audioPlayer: CustomAudioPlayer | null =
                             this.client.getAudioPlayer(guildId);
-                        this.client.emitEvent('queueMessageUpdate', {
-                            queue: queue,
-                            timeout: 500,
-                        });
                         if (
                             !audioPlayer ||
                             (!audioPlayer.playing && audioPlayer.paused)

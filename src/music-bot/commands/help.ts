@@ -62,6 +62,10 @@ export class Help extends AbstractCommand {
                 const command: Command | null = this.getCommand(val, guildId);
                 if (!command || !command.description) continue;
                 descriptions.push(command.description);
+                if (command.additionalHelp)
+                    descriptions.push(
+                        '\u3000\u3000- ' + command.additionalHelp,
+                    );
             } catch (e) {
                 console.error(e);
             }

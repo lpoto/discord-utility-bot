@@ -106,28 +106,34 @@ export class Song extends BaseEntity {
         songs: Song[],
         guildId: string,
         clientId: string,
+        addFront?: boolean,
     ): Promise<void> {
         const queue: Queue | undefined = await Queue.findOne({
             guildId: guildId,
             clientId: clientId,
         });
         if (!queue) return;
+        const s: string = addFront
+            ? 'MIN(song.position)'
+            : 'MAX(song.position)';
         const position: number = await Song.createQueryBuilder('song')
-            .select('MAX(song.position)', 'max')
+            .select(s, 'm')
             .where({ queue: queue, active: true })
             .getRawOne()
             .then((r) => {
-                if (r && r.max !== undefined && r.max !== null)
-                    return r.max + 1;
+                if (r && r.m !== undefined && r.m !== null)
+                    return r.m + (addFront ? -1 : 1);
                 return 0;
             });
-        await this.save(
-            songs.map((s, idx) => {
-                s.position = idx + position;
-                s.queue = queue;
-                return s;
-            }),
-        );
+        const idx = 0;
+        for (let i = 0; i < songs.length; i++) {
+            songs[i].position = position + (addFront ? -idx : idx);
+            songs[i].queue = queue;
+            if (queue.headSong && addFront)
+                queue.headSong.position = songs[i].position - 1;
+        }
+        if (queue.headSong) await this.save(queue.headSong);
+        await this.save(songs);
     }
 
     public static async removeInactive() {

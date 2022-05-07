@@ -8,6 +8,8 @@ import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import fetch from 'node-fetch';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
+import * as Commands from '../commands';
+import { Command } from '../music-bot';
 
 export class OnMessageCreate extends AbstractMusicEvent {
     public constructor(client: MusicClient) {
@@ -52,6 +54,25 @@ export class OnMessageCreate extends AbstractMusicEvent {
                     )
                         this.client.emitEvent('joinVoiceRequest', message);
 
+                    for (const val in Commands) {
+                        try {
+                            const command: Command | null = this.getCommand(
+                                val,
+                                message.guildId,
+                            );
+                            if (
+                                !command ||
+                                !command.reggex ||
+                                !command.reggex.test(message.content)
+                            )
+                                continue;
+                            return command.executeFromReggex(message);
+                        } catch (e) {
+                            if (e instanceof Error)
+                                this.client.emitEvent('error', e);
+                        }
+                    }
+
                     // get songs from message content and from all text file attachments
                     // multiple songs may be added, each in its own line
 
@@ -78,6 +99,11 @@ export class OnMessageCreate extends AbstractMusicEvent {
                 })
                 .catch((e) => this.client.emitEvent('error', e));
         }
+    }
+
+    private getCommand(val: string, guildId: string | null): Command | null {
+        if (!guildId) return null;
+        return new (<any>Commands)[val](this.client, guildId);
     }
 }
 
