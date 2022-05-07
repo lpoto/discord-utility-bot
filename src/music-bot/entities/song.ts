@@ -80,6 +80,17 @@ export class Song extends BaseEntity {
         this.position = position;
     }
 
+    public static async maxPosition(queue: Queue): Promise<number> {
+        return Song.createQueryBuilder('song')
+            .select('MAX(song.position)', 'max')
+            .where({ queue: queue, active: true })
+            .getRawOne()
+            .then((p) => {
+                if (p && p.max !== undefined && p.max !== null) return p.max;
+                return 0;
+            });
+    }
+
     public static async minPosition(queue: Queue): Promise<number> {
         return Song.createQueryBuilder('song')
             .select('MIN(song.position)', 'min')
@@ -113,26 +124,30 @@ export class Song extends BaseEntity {
             clientId: clientId,
         });
         if (!queue) return;
-        const s: string = addFront
+        const s: string = addFront == true 
             ? 'MIN(song.position)'
             : 'MAX(song.position)';
-        const position: number = await Song.createQueryBuilder('song')
+        let position: number = await Song.createQueryBuilder('song')
             .select(s, 'm')
             .where({ queue: queue, active: true })
             .getRawOne()
             .then((r) => {
                 if (r && r.m !== undefined && r.m !== null)
-                    return r.m + (addFront ? -1 : 1);
+                    return r.m;
                 return 0;
             });
-        const idx = 0;
-        for (let i = 0; i < songs.length; i++) {
-            songs[i].position = position + (addFront ? -idx : idx);
-            songs[i].queue = queue;
+        if (addFront) position -= songs.length + 1;
+
+        for (let i = 1; i <= songs.length; i++) {
+            songs[i - 1].position = position + i;
+            songs[i - 1].queue = queue;
             if (queue.headSong && addFront)
-                queue.headSong.position = songs[i].position - 1;
+                queue.headSong.position = songs[i - 1].position - 1;
         }
-        if (queue.headSong) await this.save(queue.headSong);
+        if (queue.headSong && addFront) {
+            queue.headSong.position -= songs.length + 1;
+            await this.save(queue.headSong);
+        }
         await this.save(songs);
     }
 

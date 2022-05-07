@@ -53,8 +53,7 @@ export class Play extends AbstractCommand {
              */
             if (!count) count = 1;
             if (count > queue.size) count = queue.size;
-            for (let i = 0; i < count; i++)
-                queue = await queue.removeHeadSong(true);
+            queue = await queue.removeHeadSongs(count);
 
             this.execute(interaction).catch((e) => {
                 this.client.emit('error', e);

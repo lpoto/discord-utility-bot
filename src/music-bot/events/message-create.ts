@@ -95,6 +95,7 @@ export class OnMessageCreate extends AbstractMusicEvent {
                     this.client.emitEvent('newSong', {
                         guildId: queue.guildId,
                         songNames: songs,
+                        toFront: false
                     });
                 })
                 .catch((e) => this.client.emitEvent('error', e));

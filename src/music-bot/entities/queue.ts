@@ -150,26 +150,56 @@ export class Queue extends BaseEntity {
         return this;
     }
 
-    public async removeHeadSong(reload?: boolean): Promise<Queue> {
+    public async removeHeadSongs(n: number): Promise<Queue> {
         if (!this.headSong) return this;
-        const active: boolean = this.hasOption(QueueOption.Options.LOOP_QUEUE);
-        if (active) {
-            this.headSong.queue = this;
-            this.headSong.active = true;
-            await this.headSong.generatePosition();
+        const song: Song = this.headSong;
+        const pos: number | undefined = await Song.createQueryBuilder('song')
+            .where({
+                active: true,
+            })
+            .offset(n - 1)
+            .orderBy({
+                position: 'ASC',
+            })
+            .getOne()
+            .then((s) => {
+                if (!s) return undefined;
+                return s.position;
+            });
+        let where = 'song.active = TRUE';
+        if (pos) where += ` AND song.position <= ${pos}`;
+        if (this.hasOption(QueueOption.Options.LOOP_QUEUE)) {
+            const max: number = (await Song.maxPosition(this)) + 1;
+            await Song.createQueryBuilder('song')
+                .from(Song, 'song')
+                .where(where)
+                .update()
+                .set({
+                    position: () => `song.position + ${max}`,
+                    active: true,
+                    timestamp: new Date(),
+                })
+                .execute();
         } else {
-            this.headSong.position =
-                (await Song.minInactivePosition(this)) - 1;
-            this.headSong.active = false;
+            const min: number = (await Song.minInactivePosition(this)) - 1;
+            await Song.createQueryBuilder('song')
+                .from(Song, 'song')
+                .where(where)
+                .update()
+                .set({
+                    active: false,
+                    position: () => `${min} - song.position`,
+                    timestamp: new Date(),
+                })
+                .execute();
         }
-        this.headSong.timestamp = new Date();
-        const song: Song = await this.headSong?.save();
-        await this.reloadHeadSong();
+
+        await this.reload();
         if (this.headSong && this.headSong.id !== song.id) {
             this.headSong.prev = Promise.resolve(song);
-            await this.headSong.save();
+            this.headSong = await this.headSong.save();
         }
-        if (reload) await this.reload();
+
         return this;
     }
 

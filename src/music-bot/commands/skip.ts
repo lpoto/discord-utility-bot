@@ -57,13 +57,13 @@ export class Skip extends AbstractCommand {
 
     public async executeFromReggex(message: Message): Promise<void> {
         const queue: Queue | undefined = await this.getQueue();
-        if (
-            !queue ||
-            !this.audioPlayer ||
-            queue.size === 0 ||
-            !this.audioPlayer
-        )
-            return;
+        if (!queue || !this.audioPlayer || queue.size === 0) return;
+
+        if (!this.audioPlayer)
+            return this.client.emitEvent('executeCommand', {
+                name: 'Play',
+                guildId: queue.guildId,
+            });
 
         const l: string[] = message.content.split(/\s+/);
         let t: number | undefined = undefined;
