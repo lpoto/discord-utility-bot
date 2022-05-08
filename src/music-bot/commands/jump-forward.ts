@@ -14,7 +14,7 @@ export class JumpForward extends AbstractCommand {
     }
 
     public get reggex(): RegExp {
-        return /^!(\+(\+)?)|(f(orward))|(j((um)?p)?)((\s+)-?\d+)?$/i;
+        return /^!((\+(\+)?)|(forward)|(j((um)?p)?)((\s+)-?\d+)?)$/i;
     }
 
     public get additionalHelp(): string {

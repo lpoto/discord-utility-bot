@@ -36,6 +36,8 @@ services:
             #MUSIC_BOT2_LOG_LEVEL: WARN
             #MUSIC_BOT3_LOG_LEVEL: WARN
 
+            LOGGER_SHOW_TIMESTAMP: true
+
             # if true, the bots will register their slash commands
             # on start in all the servers thay are part of
             REGISTER_SLASH_COMMANDS: true

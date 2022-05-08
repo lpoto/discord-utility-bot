@@ -27,7 +27,7 @@ export class Play extends AbstractCommand {
     }
 
     public get reggex(): RegExp | null {
-        return /^!((p(lay)?)|(add))?(n(ow)?)|(f(ront)?)(\s+)/i;
+        return /^!(((p(lay)?)|(add))?((n(ow)?)|(f(ront)?))(\s+))/i;
     }
 
     private async next(

@@ -71,6 +71,7 @@ export POSTGRES_HOST=database_host
 export POSTGRES_PORT=database_port
 
 export REGISTER_SLASH_COMMANDS=true
+export LOGGER_SHOW_TIMESTAMP=true
 
 #install dependencies
 npm install

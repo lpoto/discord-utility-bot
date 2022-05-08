@@ -7,6 +7,7 @@ import {
     ManyToMany,
     Not,
     PrimaryColumn,
+    SelectQueryBuilder,
 } from 'typeorm';
 import { QueueOption } from './queue-option';
 import { Song } from './song';
@@ -166,20 +167,29 @@ export class Queue extends BaseEntity {
                 if (!s) return undefined;
                 return s.position;
             });
-        let where = 'song.active = TRUE';
-        if (pos) where += ` AND song.position <= ${pos}`;
+        const whereQuery: SelectQueryBuilder<Song> = Song.createQueryBuilder(
+            'song',
+        )
+            .select('song.id')
+            .where(
+                'song.active = TRUE' +
+                    (pos ? ` AND song.position <= ${pos}` : ''),
+            )
+            .limit(n);
+        const where = `song.id IN (${whereQuery.getSql()})`;
         if (this.hasOption(QueueOption.Options.LOOP_QUEUE)) {
             const max: number = (await Song.maxPosition(this)) + 1;
-            await Song.createQueryBuilder('song')
+            const min: number = await Song.minPosition(this);
+            const query = Song.createQueryBuilder('song')
                 .from(Song, 'song')
                 .where(where)
                 .update()
                 .set({
-                    position: () => `song.position + ${max}`,
+                    position: () => `song.position + ${max} - ${min}`,
                     active: true,
                     timestamp: new Date(),
-                })
-                .execute();
+                });
+            await query.execute();
         } else {
             const min: number = (await Song.minInactivePosition(this)) - 1;
             await Song.createQueryBuilder('song')

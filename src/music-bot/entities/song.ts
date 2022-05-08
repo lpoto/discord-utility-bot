@@ -124,16 +124,14 @@ export class Song extends BaseEntity {
             clientId: clientId,
         });
         if (!queue) return;
-        const s: string = addFront == true 
-            ? 'MIN(song.position)'
-            : 'MAX(song.position)';
+        const s: string =
+            addFront === true ? 'MIN(song.position)' : 'MAX(song.position)';
         let position: number = await Song.createQueryBuilder('song')
             .select(s, 'm')
             .where({ queue: queue, active: true })
             .getRawOne()
             .then((r) => {
-                if (r && r.m !== undefined && r.m !== null)
-                    return r.m;
+                if (r && r.m !== undefined && r.m !== null) return r.m;
                 return 0;
             });
         if (addFront) position -= songs.length + 1;

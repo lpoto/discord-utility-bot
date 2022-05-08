@@ -18,7 +18,7 @@ export class Skip extends AbstractCommand {
     }
 
     public get reggex(): RegExp {
-        return /^!s(kip)?(\s+\d+)?$/i;
+        return /^!(s(kip)?(\s+\d+)?)$/i;
     }
 
     public get additionalHelp(): string {

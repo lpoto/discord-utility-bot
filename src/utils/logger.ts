@@ -1,10 +1,13 @@
 export class Logger {
     private name: string;
     private level: Logger.Level;
+    private showTimestamp: boolean;
 
     public static mainLogger = 'Main';
 
     public constructor(name?: string, level?: Logger.Level) {
+        if (process.env.LOGGER_SHOW_TIMESTAMP) this.showTimestamp = true;
+        else this.showTimestamp = false;
         if (name === undefined) this.name = Logger.mainLogger;
         else this.name = name;
         if (level === undefined) this.level = Logger.Level.INFO;
@@ -67,7 +70,9 @@ export class Logger {
             spaces = ' ';
         const x: number =
             21 - (Logger.Level[level].length + spaces.length + name.length);
-        let s = `${Logger.Level[level]}${spaces}${name}:`;
+        const date: string = new Date(Date.now()).toLocaleString();
+        let s: string = this.showTimestamp ? `${date}  ` : '';
+        s += `${Logger.Level[level]}${spaces} ${name}:`;
         if (x >= 1) s += ' '.repeat(x);
 
         console.log(`${s}${msg}`);
