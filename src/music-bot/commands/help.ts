@@ -58,12 +58,14 @@ export class Help extends AbstractCommand {
     }
 
     private getAllSlashCommands(): string[] {
-        return this.client.translator
-            .getFullLanguage()
-            .music.slashCommands.map((c) => {
-                return `\`/${c.name}\`: ${c.description}`;
-            })
-            .concat(['']);
+        const h: string[] = [];
+        for (let c of this.client.translator.getFullLanguage().music
+            .slashCommands) {
+            h.push(`\`/${c.name}\`: ${c.description}`);
+            if (!c.help) continue;
+            for (let c2 of c.help) h.push(`\u3000\u3000-\u2000${c2}`);
+        }
+        return h;
     }
 
     private getAllDescriptions(guildId: string): string[] {

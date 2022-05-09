@@ -55,12 +55,17 @@ export class OnSlashCommand extends AbstractMusicEvent {
             const commands =
                 this.client.translator.getFullLanguage().music.slashCommands;
 
-            if (interaction.commandName === commands[1].name) {
+            // HELP COMMAND
+            if (interaction.commandName === commands[2].name) {
                 return this.client.emitEvent('executeCommand', {
                     name: 'Help',
                     interaction: interaction,
                     guildId: interaction.guildId,
                 });
+            }
+            // CONFIG COMMAND
+            else if (interaction.commandName === commands[1].name) {
+                this.client.emitEvent('configSlashCommand', interaction);
             }
 
             await Queue.findOne({

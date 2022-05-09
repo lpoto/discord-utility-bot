@@ -4,6 +4,7 @@ export { OnInteractionCreate } from './interaction-create';
 export { OnButtonClick } from './button-click';
 export { OnMenuSelect } from './menu-select';
 export { OnSlashCommand } from './slash-command';
+export { OnConfigSlashCommand } from './config-slash-command';
 export { OnVoiceStateUpdate } from './voice-state-update';
 export { OnMessageCreate } from './message-create';
 export { OnMessageDelete } from './message-delete';

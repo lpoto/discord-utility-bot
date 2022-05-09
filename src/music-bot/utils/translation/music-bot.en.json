@@ -52,7 +52,29 @@
                             "value": "join"
                         }
                     ]
+                },
+                {
+                    "name": "role1",
+                    "description": "The first role allowed to use the command",
+                    "type": 8,
+                    "required": false
+                },
+                {
+                    "name": "role2",
+                    "description": "The second role allowed to use the command",
+                    "type": 8,
+                    "required": false
+                },
+                {
+                    "name": "role3",
+                    "description": "The thrid role allowed to use the command",
+                    "type": 8,
+                    "required": false
                 }
+            ],
+            "help": [
+                "This command may only be used by an administrator.",
+                "Select the command and up to three roles that may use the selected slash command."
             ]
         },
         {
@@ -152,6 +174,10 @@
         },
         "help": {
             "label": "?"
+        },
+        "config": {
+            "resetRoles": "Reset allowed roles for `{0}`. Now everyone can use it and it's subcommands.",
+            "changedRoles": "Changed allowed roles for `{0}` to `{1}`."
         }
     },
     "error": {

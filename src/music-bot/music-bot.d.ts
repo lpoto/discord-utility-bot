@@ -86,16 +86,15 @@ export type Event =
     | Events.OnNewSong.Type
     | Events.OnMenuSelect.Type
     | Events.OnButtonClick.Type
-    | Events.OnMusicDestroy.Type
     | Events.OnThreadDelete.Type
     | Events.OnMessageDelete.Type
+    | Events.OnConfigSlashCommand.Type
     | Events.OnMessageCreate.Type
     | Events.OnExecuteCommand.Type
     | Events.OnJoinVoiceRequest.Type
     | Events.OnInteractionCreate.Type
     | Events.OnVoiceStateUpdate.Type
     | Events.OnQueueMessageUpdate.Type
-    | Events.OnMusicThreadArchive.Type
     | Events.OnSlashCommand.Type;
 
 export interface DestroyMusicOptions {
