@@ -8,8 +8,11 @@ import {
     MessageButton,
     MessageSelectMenu,
     NonThreadGuildBasedChannel,
+    PartialMessage,
     SelectMenuInteraction,
     StartThreadOptions,
+    TextBasedChannel,
+    TextChannel,
     ThreadChannel,
 } from 'discord.js';
 import { Command, QueueEmbedOptions, UpdateQueueOptions } from '../music-bot';
@@ -42,9 +45,23 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
 
     public async callback(options: UpdateQueueOptions): Promise<void> {
         if (
-            options.interaction &&
-            (options.interaction.isCommand() ||
-                (options.resend && options.interaction.isButton()))
+            (options.openThread || options.openThreadOnly) &&
+            options.message
+        ) {
+            const r: ThreadChannel | undefined = await this.startThread(
+                options.message,
+            );
+            if (r) {
+                options.queue.threadId = r.id;
+                options.queue = await options.queue.save();
+            }
+            if (options.openThreadOnly) return;
+        }
+        if (
+            (options.interaction && options.interaction.isCommand()) ||
+            (options.resend &&
+                (options.message ||
+                    (options.interaction && options.interaction.isButton())))
         )
             return this.newQueueMessage(options);
 
@@ -238,7 +255,7 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
                 if (!command || !button) continue;
                 buttons.push(button);
             } catch (e) {
-                console.error(e);
+                if (e instanceof Error) this.client.emitEvent('error', e);
             }
         }
         const rows: MessageActionRow[] = [];
@@ -279,41 +296,90 @@ export class OnQueueMessageUpdate extends AbstractMusicEvent {
 
     private async newQueueMessage(options: UpdateQueueOptions) {
         if (
-            !options.interaction ||
-            (!options.interaction.isButton() &&
+            (!options.interaction && !options.message) ||
+            (options.interaction &&
+                !options.interaction.isButton() &&
                 !options.interaction.isCommand())
         )
             return;
-        const interaction: CommandInteraction | ButtonInteraction =
-            options.interaction;
-        this.client.emitEvent('joinVoiceRequest', interaction);
-        const timeout: NodeJS.Timeout = setTimeout(async () => {
-            if (!interaction.channelId || !interaction.guildId) return;
-            options.queue.channelId = interaction.channelId;
-            options.queue.guildId = interaction.guildId;
+        const guild: Guild | undefined | null = options.interaction
+            ? options.interaction.guild
+            : options.message?.guild;
+        const channel: TextBasedChannel | undefined | null =
+            options.interaction
+                ? options.interaction.channel
+                : options.message?.channel;
+        if (!guild || !channel || !(channel instanceof TextChannel)) return;
+        this.client.logger.debug(
+            `Sending new queue message in guild '${guild.id}'`,
+        );
+        options.queue.channelId = channel.id;
+        options.queue.guildId = guild.id;
 
-            const updateOptions: InteractionReplyOptions =
-                this.getQueueOptions(options);
-            const message = await interaction.reply({
-                fetchReply: true,
-                embeds: updateOptions.embeds,
-                components: updateOptions.components,
+        const updateOptions: InteractionReplyOptions =
+            this.getQueueOptions(options);
+        let message: Message | undefined = undefined;
+        if (options.interaction && options.interaction.isCommand())
+            message = await options.interaction
+                .reply({
+                    fetchReply: true,
+                    embeds: updateOptions.embeds,
+                    components: updateOptions.components,
+                })
+                .then((r) => {
+                    if (!(r instanceof Message)) return undefined;
+                    return r;
+                })
+                .catch((e) => {
+                    this.client.emitEvent('error', e);
+                    return undefined;
+                });
+        else
+            message = await channel
+                .send({
+                    embeds: updateOptions.embeds,
+                    components: updateOptions.components,
+                })
+                .catch((e) => {
+                    this.client.emitEvent('error', e);
+                    return undefined;
+                });
+        if (!message) return;
+        const t: ThreadChannel | undefined = await this.startThread(message);
+        if (!t || !message.guildId || !message.channelId) {
+            message.delete().catch((e) => {
+                this.client.emitEvent('error', e);
             });
-            if (!(message instanceof Message) || !message.guildId) return;
-            const t: ThreadChannel = await message.startThread(
-                this.getThreadOptions(),
-            );
-            if (t && message.guildId && message.channelId) {
-                options.queue.messageId = message.id;
-                options.queue.threadId = t.id;
-                options.queue = await options.queue.save();
-                return;
-            }
-            message.delete().catch((error) => {
-                this.client.emitEvent('error', error);
+            return;
+        }
+        options.queue.messageId = message.id;
+        options.queue.threadId = t.id;
+        options.queue = await options.queue.save();
+        if (
+            options.interaction &&
+            !options.interaction.deferred &&
+            options.interaction.isButton()
+        ) {
+            options.interaction.deferUpdate().catch((e) => {
+                this.client.emitEvent('error', e);
             });
-        }, 250);
-        timeout.unref();
+        }
+    }
+
+    private async startThread(
+        message: Message | PartialMessage,
+    ): Promise<ThreadChannel | undefined> {
+        if (!message.guildId) return;
+        const gId: string = message.guildId;
+        this.client.logger.debug(
+            `Oppening thread on message '${message.id}' in guild '${gId}'`,
+        );
+        return await message
+            .startThread(this.getThreadOptions())
+            .catch((e) => {
+                this.client.emitEvent('error', e);
+                return undefined;
+            });
     }
 
     private handleCallbacks(guildId: string): void {

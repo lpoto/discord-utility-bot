@@ -58,9 +58,11 @@ createConnection({
             const botName = `${bot[2]}${i > 0 ? i.toString() : ''}`;
             const token: string | undefined = process.env[`${botName}_TOKEN`];
             if (!token) continue;
-            mainLogger.debug(`Found '${botName}_TOKEN'`);
+            mainLogger.debug(
+                `${botName}_TOKEN = ${token.substring(0, 20)}...`,
+            );
             if (clients.find((c) => c[1].token === token)) {
-                mainLogger.debug(`'${botName}_TOKEN' is already used`);
+                mainLogger.debug(`${botName}_TOKEN is already used`);
                 continue;
             }
             clients.push([
@@ -69,6 +71,7 @@ createConnection({
                     connection: con,
                     token: token,
                     version: bot[1] as string,
+                    botName: botName,
                     logLevel: Logger.getLevel(
                         process.env[`${botName}_LOG_LEVEL`],
                     ),

@@ -6,26 +6,60 @@
             "description": "Opens a new music thread!"
         },
         {
+            "name": "config",
+            "description": "Set up which roles are allowed to use a command.",
+            "options": [
+                {
+                    "name": "command",
+                    "description": "Select a command you want to change the allowed roles for.",
+                    "type": 3,
+                    "required": true,
+                    "choices": [
+                        {
+                            "name": "Add songs in thread",
+                            "value": "play"
+                        },
+                        {
+                            "name": "'!' commands in thread",
+                            "value": "!"
+                        },
+                        {
+                            "name": ">> or <<",
+                            "value": "skip"
+                        },
+                        {
+                            "name": "> or <",
+                            "value": "> or <"
+                        },
+                        {
+                            "name": "↺",
+                            "value": "replay"
+                        },
+                        {
+                            "name": "ll",
+                            "value": "pause"
+                        },
+                        {
+                            "name": "◼",
+                            "value": "stop"
+                        },
+                        {
+                            "name": "▼",
+                            "value": "expand"
+                        },
+                        {
+                            "name": "join",
+                            "value": "join"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "help",
             "description": "Sends music bot help!"
         }
     ],
-    "error": {
-        "activeThread": "Music thread is already active in this server!\n{0}"
-    },
-    "queue": {
-        "title": "Music queue",
-        "footer": "Add youtube songs by typing them in the  thread.",
-        "songNumber": "Songs in queue",
-        "curPlaying": "Now",
-        "duration": "Duration",
-        "next": "Next"
-    },
-    "thread": {
-        "name": "Music thread!",
-        "archivedName": "Used to be a music thread...",
-        "reason": "Adding songs to the queue."
-    },
     "commands": {
         "play": {
             "description": "Play a youtube song or playlist by typing it's name or url in the Music thread.",
@@ -119,6 +153,22 @@
         "help": {
             "label": "?"
         }
+    },
+    "error": {
+        "activeThread": "Music thread is already active in this server!\n{0}"
+    },
+    "queue": {
+        "title": "Music queue",
+        "footer": "Add youtube songs by typing them in the  thread.",
+        "songNumber": "Songs in queue",
+        "curPlaying": "Now",
+        "duration": "Duration",
+        "next": "Next"
+    },
+    "thread": {
+        "name": "Music thread!",
+        "archivedName": "Used to be a music thread...",
+        "reason": "Adding songs to the queue."
     },
     "clientRestarted": "> ㅤBot has been restarted\n> ㅤdue to a new update.",
     "innactivityDisconnect": "> ㅤBot has disconnected due to:\n> ㅤ- disconnected by another member,\n> ㅤ- innactivity.",

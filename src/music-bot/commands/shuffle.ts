@@ -41,6 +41,9 @@ export class Shuffle extends AbstractCommand {
         queue: Queue,
         interaction: ButtonInteraction,
     ): Promise<void> {
+        this.client.logger.debug(
+            `Shuffling songs in guild '${queue.guildId}'`,
+        );
         await queue.reload();
 
         if (queue.size < 3 || !queue.headSong) {

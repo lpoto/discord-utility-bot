@@ -10,7 +10,5 @@ export { OnMessageDelete } from './message-delete';
 export { OnThreadDelete } from './thread-delete';
 export { OnJoinVoiceRequest } from './join-voice-request';
 export { OnQueueMessageUpdate } from './queue-message-update';
-export { OnMusicDestroy } from './music-destroy';
 export { OnNewSong } from './new-song';
 export { OnExecuteCommand } from './execute-command';
-export { OnMusicThreadArchive } from './music-thread-archive';

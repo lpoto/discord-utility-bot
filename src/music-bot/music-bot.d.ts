@@ -3,6 +3,7 @@ import {
     Message,
     MessageButton,
     MessageSelectMenu,
+    PartialMessage,
     SelectMenuInteraction,
     VoiceState,
 } from 'discord.js';
@@ -19,7 +20,9 @@ export interface UpdateQueueOptions {
         | ButtonInteraction
         | CommandInteraction
         | SelectMenuInteraction;
-    message?: Message;
+    message?: Message | PartialMessage;
+    openThreadOnly?: boolean;
+    openThread?: boolean;
     clientRestart?: boolean;
     innactivity?: boolean;
     timeout?: number;

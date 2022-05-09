@@ -19,6 +19,7 @@ export interface StartClientOptions {
     connection: Connection;
     token: string;
     version: string;
+    botName: string;
     logLevel?: Logger.Level;
     id?: string;
 }

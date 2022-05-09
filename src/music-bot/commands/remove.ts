@@ -96,6 +96,11 @@ export class Remove extends AbstractCommand {
         let queue: Queue | undefined = await this.getQueue();
         if (!queue || queue.size < 2 || interaction.values.length === 0)
             return;
+        const gId: string = queue.guildId;
+
+        this.client.logger.debug(
+            `Removing ${interaction.values} song/s in guild '${gId}'`,
+        );
 
         for await (const i of interaction.values) {
             const s: Song = queue.curPageSongs[Number(i)];

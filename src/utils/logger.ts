@@ -3,7 +3,7 @@ export class Logger {
     private level: Logger.Level;
     private showTimestamp: boolean;
 
-    public static mainLogger = 'Main';
+    public static mainLogger = 'MAIN';
 
     public constructor(name?: string, level?: Logger.Level) {
         if (process.env.LOGGER_SHOW_TIMESTAMP) this.showTimestamp = true;
@@ -12,11 +12,17 @@ export class Logger {
         else this.name = name;
         if (level === undefined) this.level = Logger.Level.INFO;
         else this.level = level;
+        let n = 'LOG_LEVEL';
+        if (this.name === Logger.mainLogger) {
+            if (this.showTimestamp) this.debug('LOGGER_SHOW_TIMESTAMP = true');
+            else this.debug('LOGGER_SHOW_TIMESTAMP = false');
+        } else {
+            n = name + '_' + n;
+        }
+        this.debug(`${n} = ${Logger.Level[this.level]}`);
         this.mainLog(
             Logger.Level.INFO,
-            `Initialized logger '${this.name}' with level '${
-                Logger.Level[this.level]
-            }'`,
+            `Initialized logger '${this.name.toLowerCase()}'`,
         );
     }
 
@@ -69,10 +75,10 @@ export class Logger {
         if ([Logger.Level.ERROR, Logger.Level.DEBUG].includes(level))
             spaces = ' ';
         const x: number =
-            21 - (Logger.Level[level].length + spaces.length + name.length);
+            19 - (Logger.Level[level].length + spaces.length + name.length);
         const date: string = new Date(Date.now()).toLocaleString();
         let s: string = this.showTimestamp ? `${date}  ` : '';
-        s += `${Logger.Level[level]}${spaces} ${name}:`;
+        s += `${Logger.Level[level]}${spaces} ${name.toLowerCase()}:`;
         if (x >= 1) s += ' '.repeat(x);
 
         console.log(`${s}${msg}`);

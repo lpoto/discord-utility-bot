@@ -26,7 +26,7 @@ export class OnJoinVoiceRequest extends AbstractMusicEvent {
             | ButtonInteraction
             | SelectMenuInteraction,
     ): Promise<void> {
-        let voiceChannelId: string;
+        let vcId: string;
         let guild: Guild;
         if (
             !(resource instanceof Message) &&
@@ -34,7 +34,7 @@ export class OnJoinVoiceRequest extends AbstractMusicEvent {
             resource.member.voice.channel &&
             resource.guild
         ) {
-            voiceChannelId = resource.member.voice.channel.id;
+            vcId = resource.member.voice.channel.id;
             guild = resource.guild;
         } else if (
             resource instanceof Message &&
@@ -42,15 +42,19 @@ export class OnJoinVoiceRequest extends AbstractMusicEvent {
             resource.member.voice.channel &&
             resource.guild
         ) {
-            voiceChannelId = resource.member.voice.channel.id;
+            vcId = resource.member.voice.channel.id;
             guild = resource.guild;
         } else return;
+
+        this.client.logger.debug(
+            `Joining voice channel '${vcId}' in guild: '${guild.id}'`,
+        );
 
         this.client.setVoiceConnection(
             guild.id,
             joinVoiceChannel({
                 guildId: guild.id,
-                channelId: voiceChannelId,
+                channelId: vcId,
                 selfDeaf: true,
                 selfMute: false,
                 adapterCreator:

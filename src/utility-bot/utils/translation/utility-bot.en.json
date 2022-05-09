@@ -55,7 +55,7 @@
         },
         {
             "name": "config",
-            "description": "Set up which roles are allowed to use a command",
+            "description": "Set up which roles are allowed to use a command.",
             "options": [
                 {
                     "name": "command",

@@ -70,8 +70,10 @@ export POSTGRES_PASSWORD=database_password
 export POSTGRES_HOST=database_host
 export POSTGRES_PORT=database_port
 
-export REGISTER_SLASH_COMMANDS=true
+export LOG_LEVEL=INFO #or WARN, ERROR, DEBUG
 export LOGGER_SHOW_TIMESTAMP=true
+
+export REGISTER_SLASH_COMMANDS=true
 
 #install dependencies
 npm install

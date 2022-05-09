@@ -3,6 +3,7 @@ import {
     BaseEntity,
     Column,
     Entity,
+    Index,
     JoinTable,
     ManyToMany,
     Not,
@@ -22,14 +23,16 @@ export class Queue extends BaseEntity {
     @PrimaryColumn()
     public guildId: string;
 
-    @Column({ nullable: false })
-    public channelId: string;
-
+    @Index()
     @Column({ nullable: false })
     public messageId: string;
 
+    @Index()
     @Column({ nullable: false })
     public threadId: string;
+
+    @Column({ nullable: false })
+    public channelId: string;
 
     @Column({ nullable: false })
     public offset: number;

@@ -61,7 +61,7 @@ export class Resend extends AbstractCommand {
             msg.delete().catch((e) => {
                 this.client.emitEvent('error', e);
             });
-        }, 500);
+        }, 300);
         timeout.unref();
     }
 }

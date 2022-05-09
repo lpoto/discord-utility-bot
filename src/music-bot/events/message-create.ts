@@ -39,8 +39,8 @@ export class OnMessageCreate extends AbstractMusicEvent {
             this.client.permsChecker.validateMemberVoiceFromThread(message)
         ) {
             Queue.findOne({
-                guildId: message.guildId,
                 clientId: this.client.user.id,
+                messageId: message.channelId,
             })
                 .then(async (queue) => {
                     if (!queue) return;

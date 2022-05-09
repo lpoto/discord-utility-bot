@@ -90,12 +90,10 @@ export abstract class CustomClient extends Client {
 
     public async registerSlashCommands(commands: any[]): Promise<void> {
         if (process.env.REGISTER_SLASH_COMMANDS?.toLowerCase() !== 'true') {
-            this.logger.debug(
-                'Not Refreshing application (/) commands',
-                '(env REGISTER_SLASH_COMMANDS is not set to true).',
-            );
+            this.logger.debug('REGISTER_SLASH_COMMANDS = false');
             return;
         }
+        this.logger.debug('REGISTER_SLASH_COMMANDS = true');
         if (!this.user || commands.length === 0) return;
         this.logger.info(
             `Refreshing ${commands.length} application (/) command/s.`,
@@ -229,6 +227,7 @@ export abstract class CustomClient extends Client {
             Permissions.FLAGS.SEND_MESSAGES,
             Permissions.FLAGS.READ_MESSAGE_HISTORY,
             Permissions.FLAGS.CREATE_PUBLIC_THREADS,
+            Permissions.FLAGS.MANAGE_THREADS,
         ];
     }
 
@@ -274,7 +273,7 @@ export abstract class CustomClient extends Client {
             new NewClient({
                 token: options.token,
                 version: options.version,
-                logger: new Logger(clientName, options.logLevel),
+                logger: new Logger(options.botName, options.logLevel),
                 clientTextPermissions: this.getClientTextPermissions(),
                 clientVoicePermissions: this.getClientVoicePermissions(),
                 requiredMemberRoles: this.getRequiredMemberRoles(),
@@ -285,7 +284,7 @@ export abstract class CustomClient extends Client {
             .then(() => {
                 result = [
                     Logger.Level.INFO,
-                    `Started ${clientName} ${options.version}`,
+                    `Starting ${clientName} ${options.version}`,
                 ];
             })
             .catch((e: Error) => {

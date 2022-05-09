@@ -100,6 +100,12 @@ export class Forward extends AbstractCommand {
         if (!queue || queue.size < 3 || interaction.values.length === 0)
             return;
 
+        const gId: string = queue.guildId;
+
+        this.client.logger.debug(
+            `Forwarding ${interaction.values} song/s in guild '${gId}'`,
+        );
+
         let idx: number = (await Song.minPosition(queue)) - 1;
 
         for await (const i of interaction.values) {

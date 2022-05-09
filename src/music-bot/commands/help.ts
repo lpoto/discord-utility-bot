@@ -24,7 +24,9 @@ export class Help extends AbstractCommand {
     ): Promise<void> {
         if (!interaction || !interaction.user || interaction.replied) return;
 
-        const descriptions: string[] = this.getAllDescriptions(this.guildId);
+        const descriptions: string[] = this.getAllSlashCommands().concat(
+            this.getAllDescriptions(this.guildId),
+        );
         if (this.description?.length === 0) {
             interaction.reply({
                 content: this.translate(['music', 'help']),
@@ -53,6 +55,15 @@ export class Help extends AbstractCommand {
             .setDisabled(false)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
+    }
+
+    private getAllSlashCommands(): string[] {
+        return this.client.translator
+            .getFullLanguage()
+            .music.slashCommands.map((c) => {
+                return `\`/${c.name}\`: ${c.description}`;
+            })
+            .concat(['']);
     }
 
     private getAllDescriptions(guildId: string): string[] {

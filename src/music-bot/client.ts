@@ -65,8 +65,8 @@ export class MusicClient extends CustomClient {
         this.voiceConnections[guildId] = connection;
     }
 
-    public destroyVoiceConnection(guildId: string): void {
-        if (!(guildId in this.voiceConnections)) return;
+    public destroyVoiceConnection(guildId: string | null | undefined): void {
+        if (!guildId || !(guildId in this.voiceConnections)) return;
         this.voiceConnections[guildId].destroy();
         delete this.voiceConnections[guildId];
     }
@@ -93,33 +93,71 @@ export class MusicClient extends CustomClient {
         queue: Queue,
         update?: boolean,
     ): Promise<Message | null> {
-        const channel: AnyChannel | null = await this.channels.fetch(
-            queue.channelId,
-        );
+        const channel: AnyChannel | null | undefined = await this.channels
+            .fetch(queue.channelId)
+            .catch((e) => {
+                this.emitEvent('error', e);
+                return undefined;
+            });
         if (!channel || !(channel instanceof TextChannel)) return null;
-        const thread: ThreadChannel | null = await channel.threads.fetch(
-            queue.threadId,
-        );
-        const message: Message | null = await channel.messages.fetch(
-            queue.messageId,
-        );
-        if (!thread) {
-            if (message)
-                message.delete().catch((e) => {
-                    this.emitEvent('error', e);
-                });
-            return null;
-        }
+        const thread: ThreadChannel | null | undefined = await channel.threads
+            .fetch(queue.threadId)
+            .catch((e) => {
+                this.emitEvent('error', e);
+                return undefined;
+            });
+        const message: Message | null | undefined = await channel.messages
+            .fetch(queue.messageId)
+            .catch((e) => {
+                this.emitEvent('error', e);
+                return undefined;
+            });
         if (!message) {
-            if (thread) this.emitEvent('musicThreadArchive', thread);
+            if (thread)
+                thread.delete().catch((e) => this.emitEvent('error', e));
             return null;
         }
-        if (update)
+        if (!thread || update)
             this.emitEvent('queueMessageUpdate', {
                 queue: queue,
+                openThreadOnly: !update && !thread,
+                openThread: !thread,
+                message: message,
                 clientRestart: true,
             });
         return message;
+    }
+
+    public async checkThreads(): Promise<void> {
+        if (!this.user) return;
+        this.logger.debug('Checking for orphaned threads');
+        let i = 0;
+        for (const c of this.channels.cache) {
+            const channel: AnyChannel = c[1];
+            if (
+                !(channel instanceof ThreadChannel) ||
+                channel.ownerId !== this.user.id
+            )
+                continue;
+            const queue: Queue | undefined = await Queue.findOne({
+                guildId: channel.guildId,
+                clientId: this.user.id,
+                threadId: channel.id,
+            }).catch((e) => {
+                this.emitEvent('error', e);
+                return undefined;
+            });
+            if (queue) continue;
+            i++;
+            await channel
+                .delete()
+                .then()
+                .catch((e) => {
+                    this.emitEvent('error', e);
+                    i--;
+                });
+        }
+        this.logger.debug(`Deleted ${i} orphaned thread/s`);
     }
 
     public getEvents(): any[] {

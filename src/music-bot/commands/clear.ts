@@ -129,6 +129,7 @@ export class Clear extends AbstractCommand {
         queue: Queue,
         interaction: ButtonInteraction,
     ): Promise<void> {
+        this.client.logger.debug(`Clearing songs in guild '${queue.guildId}'`);
         queue.offset = 0;
         queue = await queue.save();
         if (queue.size > 0) {

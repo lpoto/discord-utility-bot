@@ -16,18 +16,28 @@ export class OnMessageDelete extends AbstractMusicEvent {
             this.client.user &&
             message.author?.id === this.client.user?.id
         ) {
+            const gId: string = message.guildId;
+            this.client.logger.debug(
+                `Message '${message.id}' deleted in guild '${gId}'`,
+            );
             const queue: Queue | undefined = await Queue.findOne({
-                guildId: message.guildId,
+                guildId: gId,
                 clientId: this.client.user.id,
                 messageId: message.id,
+            }).catch((e) => {
+                this.client.emitEvent('error', e);
+                return undefined;
             });
-            if (queue && queue.messageId === message.id)
-                this.client.emitEvent('musicDestroy', {
-                    guildId: message.guildId,
+            if (message.thread)
+                message.thread.delete().catch((e) => {
+                    this.client.emitEvent('error', e);
                 });
-            else if (message.hasThread && message.thread) {
-                this.client.emitEvent('musicThreadArchive', message.thread);
-            }
+            if (!queue) return;
+            this.client.emitEvent('queueMessageUpdate', {
+                resend: true,
+                message: message,
+                queue: queue,
+            });
         }
     }
 }

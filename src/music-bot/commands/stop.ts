@@ -1,8 +1,10 @@
 import {
     ButtonInteraction,
     InteractionWebhook,
+    Message,
     MessageAttachment,
     MessageButton,
+    ThreadChannel,
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -123,10 +125,11 @@ export class Stop extends AbstractCommand {
         x.unref();
     }
 
-    private stopSelectedClick(
+    private async stopSelectedClick(
         queue: Queue,
         interaction: ButtonInteraction,
-    ): void {
+    ): Promise<void> {
+        this.client.logger.debug(`Stopping music in guild '${queue.guildId}'`);
         if (queue.size > 0) {
             queue.getAllSongsWithoutHead().then((songs) => {
                 if (!songs) return;
@@ -153,6 +156,18 @@ export class Stop extends AbstractCommand {
                 });
             });
         }
-        this.client.emitEvent('musicDestroy', { guildId: this.guildId });
+        await queue.remove();
+        if (
+            interaction.message.thread &&
+            interaction.message.thread instanceof ThreadChannel
+        )
+            interaction.message.thread.delete().catch((e) => {
+                this.client.emitEvent('error', e);
+            });
+        if (interaction.message instanceof Message)
+            interaction.message.delete().catch((e) => {
+                this.client.emitEvent('error', e);
+            });
+        this.client.destroyVoiceConnection(interaction.guildId);
     }
 }

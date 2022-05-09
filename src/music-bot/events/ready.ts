@@ -11,6 +11,8 @@ export class OnReady extends AbstractMusicEvent {
 
     public async callback(): Promise<void> {
         const queues: Queue[] = await Queue.find();
+        let i = 0;
+        this.client.logger.debug('Checking for orphaned queue/s');
         for (let queue of queues) {
             const message: Message | null = await this.client
                 .checkThreadAndMessage(queue, true)
@@ -19,7 +21,9 @@ export class OnReady extends AbstractMusicEvent {
                     return null;
                 });
             if (message == null) {
+                i++;
                 await queue.remove().catch((e) => {
+                    i--;
                     this.client.emitEvent('error', e);
                 });
                 continue;
@@ -30,6 +34,8 @@ export class OnReady extends AbstractMusicEvent {
             ]);
             queue = await queue.save();
         }
+        this.client.logger.debug(`Deleted ${i} orphaned queues`);
+        await this.client.checkThreads();
         await this.setup();
     }
 
@@ -51,7 +57,10 @@ export class OnReady extends AbstractMusicEvent {
             },
         );
         this.client.ready = true;
-        this.client.logger.info('Music Client ready!');
+        const timeout: NodeJS.Timeout = setTimeout(() => {
+            this.client.logger.info('Music Client ready!');
+        }, 500);
+        timeout.unref();
     }
 }
 
