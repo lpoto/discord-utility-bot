@@ -57,7 +57,7 @@ export class Join extends AbstractCommand {
         this.updateQueue({
             interaction: interaction,
             queue: queue,
-            timeout: 300,
+            timeout: 500,
             doNotSetUpdated: true,
         });
         if (queue.size > 0)

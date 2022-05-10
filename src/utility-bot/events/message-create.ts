@@ -10,9 +10,8 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     }
 
     public async callback(message: Message): Promise<void> {
-        if (!this.client.permsChecker.checkClientText(message.channel)) return;
-        if (message.channel.type === 'DM')
-            return this.handlePrivateMessage(message);
+        if (!this.client.user || message.author.id === this.client.user.id)
+            return;
         if (message.channel.isThread())
             return this.handleThreadMessage(message);
         if (message.channel.type !== 'GUILD_TEXT') return;
@@ -20,7 +19,14 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     }
 
     private async handleThreadMessage(message: Message): Promise<void> {
-        if (!message.channel.isThread() || !message.channel?.id) return;
+        if (
+            !this.client.user ||
+            !message.channel.isThread() ||
+            !message.channel?.id ||
+            message.channel.ownerId !== this.client.user.id
+        )
+            return;
+        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         this.client.logger.debug(
             `Thread message ${message.id} in guild ${message.guildId}`,
         );
@@ -36,7 +42,15 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     }
 
     private async handleReply(message: Message): Promise<void> {
-        if (!message.reference || !this.client.user) return;
+        if (!message.reference || !this.client.user || !this.client.user)
+            return;
+        if (
+            !this.client.user ||
+            !message.channel.isThread() ||
+            !message.channel?.id ||
+            message.channel.ownerId !== this.client.user.id
+        )
+            return;
         const referencedMsg: Message | undefined = await message
             .fetchReference()
             .catch((e) => {
@@ -45,6 +59,7 @@ export class OnMessageCreate extends AbstractUtilityEvent {
             });
         if (!referencedMsg || referencedMsg.author.id !== this.client.user.id)
             return;
+        if (!this.client.permsChecker.checkClientText(message.channel)) return;
 
         this.client.logger.debug(
             `Reply ${message.id} to message ${referencedMsg.id} in guild ${message.guildId}`,
@@ -68,10 +83,6 @@ export class OnMessageCreate extends AbstractUtilityEvent {
                 messageId: referencedMsg.id,
                 repliedMessage: message,
             });
-    }
-
-    private async handlePrivateMessage(message: Message): Promise<void> {
-        this.client.logger.debug(`Private message ${message.id}`);
     }
 }
 

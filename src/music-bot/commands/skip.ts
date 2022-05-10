@@ -43,7 +43,7 @@ export class Skip extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'skip', 'label']))
-            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
+            .setDisabled(queue.size === 0)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

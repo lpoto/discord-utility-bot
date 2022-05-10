@@ -26,6 +26,7 @@ export class OnSlashCommand extends AbstractMusicEvent {
             this.client.permsChecker.checkClientText(
                 interaction.channel,
                 interaction,
+                interaction.member,
             )
         ) {
             this.eventQueue.addToQueue(interaction.id, () =>

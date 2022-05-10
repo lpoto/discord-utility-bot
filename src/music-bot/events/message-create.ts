@@ -20,7 +20,6 @@ export class OnMessageCreate extends AbstractMusicEvent {
     public async callback(message: Message): Promise<void> {
         if (!this.client.ready || !(message.channel instanceof ThreadChannel))
             return;
-        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         if (
             message.guildId &&
             message.member instanceof GuildMember &&
@@ -31,7 +30,14 @@ export class OnMessageCreate extends AbstractMusicEvent {
             message.channel.name ===
                 this.client.translate(['music', 'thread', 'name']) &&
             (message.content || message.attachments.size > 0) &&
-            message.channel.ownerId === this.client.user?.id &&
+            this.client.user &&
+            message.channel.ownerId === this.client.user.id &&
+            this.client.permsChecker.checkClientText(
+                message.channel,
+                undefined,
+                message.member,
+                message,
+            ) &&
             this.client.rolesChecker.checkMemberDefaultRoles({
                 member: message.member,
                 channelId: message.channelId,

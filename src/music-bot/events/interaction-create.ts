@@ -32,6 +32,7 @@ export class OnInteractionCreate extends AbstractMusicEvent {
             !this.client.permsChecker.checkClientText(
                 interaction.channel,
                 interaction,
+                interaction.member,
             )
         )
             return;

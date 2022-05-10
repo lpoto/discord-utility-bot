@@ -38,7 +38,7 @@ export class previousSong extends AbstractCommand {
                 this.translate(['music', 'commands', 'previousSong', 'label']),
             )
             .setDisabled(
-                this.audioPlayer?.paused ||
+                (this.audioPlayer !== null && !this.audioPlayer.paused) ||
                     (!queue.headSong?.previous && !queue.previousSong),
             )
             .setStyle(MessageButtonStyles.SECONDARY)

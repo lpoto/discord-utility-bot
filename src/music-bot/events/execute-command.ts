@@ -99,7 +99,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                     this.client.emitEvent('error', e);
                 });
             },
-            joined ? 0 : 300,
+            joined ? 0 : 250,
         );
         joined = true;
     }

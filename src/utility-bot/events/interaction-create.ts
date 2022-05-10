@@ -1,4 +1,4 @@
-import { Interaction, TextChannel } from 'discord.js';
+import { GuildMember, Interaction, TextChannel } from 'discord.js';
 import { UtilityClient } from '../client';
 import { AbstractUtilityEvent } from '../utils/abstract-utility-event';
 
@@ -13,20 +13,21 @@ export class OnInteractionCreate extends AbstractUtilityEvent {
             interaction.guild &&
             interaction.guild.me &&
             interaction.channel &&
+            this.client.user &&
+            interaction.applicationId === this.client.user.id &&
             interaction.channel instanceof TextChannel &&
             (interaction.isButton() ||
                 interaction.isCommand() ||
                 interaction.isSelectMenu()) &&
             interaction.member &&
-            this.client.user
-        ) {
-            if (
-                !this.client.permsChecker.checkClientText(
-                    interaction.channel,
-                    interaction,
-                )
+            interaction.member instanceof GuildMember &&
+            this.client.user &&
+            this.client.permsChecker.checkClientText(
+                interaction.channel,
+                interaction,
+                interaction.member,
             )
-                return;
+        ) {
             this.execute(interaction);
         }
     }

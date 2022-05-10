@@ -37,7 +37,10 @@ export class JumpBackward extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'jumpBackward', 'label']),
             )
-            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
+            .setDisabled(
+                queue.size === 0 ||
+                    (this.audioPlayer !== null && !this.audioPlayer.paused),
+            )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }

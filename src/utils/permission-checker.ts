@@ -42,6 +42,9 @@ export class PermissionChecker {
             | ButtonInteraction
             | CommandInteraction
             | SelectMenuInteraction,
+        member?: GuildMember | null,
+        message?: Message,
+        dontReply?: boolean,
     ): boolean {
         if (
             !(
@@ -52,19 +55,28 @@ export class PermissionChecker {
             !channel.guild.me
         )
             return true;
-        const member: GuildMember = channel.guild.me;
-        const valid: boolean = this.clientTextPermissions.every((p) =>
-            channel.permissionsFor(member).has(p),
+        if (!member && message) member = message.member;
+        if (
+            !member &&
+            interaction &&
+            interaction.member instanceof GuildMember
+        )
+            member = interaction.member;
+        if (!member) return true;
+        const valid: boolean = this.clientTextPermissions.every(
+            (p) => member && channel.permissionsFor(member).has(p),
         );
-        if (!valid) {
+        if (!valid && !dontReply) {
             this.client.notify({
                 warn: true,
                 interaction: interaction,
                 channelId: channel.id,
                 content: this.client.translate(
-                    ['common', 'errors', 'missingPermissions'],
+                    ['common', 'errors', 'clientMissingPermissions'],
                     this.clientTextPermissions.join(', '),
                 ),
+                member: member,
+                message: message,
             });
         }
         return valid;

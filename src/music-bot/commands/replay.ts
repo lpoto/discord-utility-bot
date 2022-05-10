@@ -30,7 +30,10 @@ export class Replay extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'replay', 'label']))
-            .setDisabled(queue.size === 0 || this.audioPlayer?.paused)
+            .setDisabled(
+                queue.size === 0 ||
+                    (this.audioPlayer !== null && !this.audioPlayer.paused),
+            )
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
