@@ -40,11 +40,11 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !options.interaction ||
             !options.interaction.isCommand() ||
             !(options.interaction.channel instanceof TextChannel) ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.interaction.member,
-                'poll',
-                options.interaction,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.interaction.member,
+                command: 'poll',
+                interaction: options.interaction,
+            }))
         )
             return;
         const channel: TextChannel = options.interaction.channel;
@@ -161,11 +161,11 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
         if (options.interaction.customId.includes('__'))
             return this.responseClick(options);
         if (
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.interaction.member,
-                'poll',
-                options.interaction,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.interaction.member,
+                command: 'poll',
+                interaction: options.interaction,
+            }))
         )
             return;
         if (options.interaction.component.label !== 'commit') return;
@@ -271,12 +271,12 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
         if (
             !options.repliedMessage ||
             !(options.repliedMessage.channel instanceof TextChannel) ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.repliedMessage.member,
-                'poll',
-                undefined,
-                options.repliedMessage.channelId,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.repliedMessage.member,
+                command: 'poll',
+                channelId: options.repliedMessage.channelId,
+                message: options.repliedMessage,
+            }))
         )
             return;
         if (
@@ -301,12 +301,12 @@ export class OnHandlePollMessage extends AbstractUtilityEvent {
             !options.threadMessage ||
             !options.threadMessage.channel.isThread() ||
             options.threadMessage.channel.ownerId !== this.client.user.id ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.threadMessage.member,
-                'poll',
-                undefined,
-                options.threadMessage.channelId,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.threadMessage.member,
+                command: 'poll',
+                channelId: options.threadMessage.channelId,
+                message: options.threadMessage,
+            }))
         )
             return;
         const content: string = options.threadMessage.content.trim();

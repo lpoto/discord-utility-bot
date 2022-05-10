@@ -19,6 +19,14 @@ export class Help extends AbstractCommand {
         return true;
     }
 
+    public get joinVoice(): boolean {
+        return false;
+    }
+
+    public get checkMemberPerms(): boolean {
+        return false;
+    }
+
     public async execute(
         interaction?: ButtonInteraction | CommandInteraction,
     ): Promise<void> {
@@ -59,13 +67,13 @@ export class Help extends AbstractCommand {
 
     private getAllSlashCommands(): string[] {
         const h: string[] = [];
-        for (let c of this.client.translator.getFullLanguage().music
+        for (const c of this.client.translator.getFullLanguage().music
             .slashCommands) {
             h.push(`\`/${c.name}\`: ${c.description}`);
             if (!c.help) continue;
-            for (let c2 of c.help) h.push(`\u3000\u3000-\u2000${c2}`);
+            for (const c2 of c.help) h.push(`\u3000\u3000-\u2000${c2}`);
         }
-        return h;
+        return h.concat(['']);
     }
 
     private getAllDescriptions(guildId: string): string[] {

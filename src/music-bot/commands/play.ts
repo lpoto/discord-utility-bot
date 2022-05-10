@@ -30,6 +30,15 @@ export class Play extends AbstractCommand {
         return /^!(((p(lay)?)|(add))?((n(ow)?)|(f(ront)?))(\s+))/i;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'play',
+            'rolesConfigName',
+        ]);
+    }
+
     private async next(
         interaction?: ButtonInteraction,
         error?: boolean,

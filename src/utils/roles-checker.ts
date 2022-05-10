@@ -1,10 +1,8 @@
+import { GuildMember, Role } from 'discord.js';
 import {
-    ButtonInteraction,
-    CommandInteraction,
-    GuildMember,
-    Role,
-    SelectMenuInteraction,
-} from 'discord.js';
+    CheckMemberDefaultRolesOptions,
+    CheckMemberRolesForCommandOptions,
+} from '../..';
 import { CommandRolesConfig } from '../common-entities';
 import { CustomClient } from './custom-client';
 
@@ -24,15 +22,10 @@ export class RolesChecker {
     }
 
     public checkMemberDefaultRoles(
-        member: GuildMember,
-        interaction?:
-            | ButtonInteraction
-            | SelectMenuInteraction
-            | CommandInteraction,
-        channelId?: string,
+        options: CheckMemberDefaultRolesOptions,
     ): boolean {
         const valid: boolean =
-            member.roles.cache.find((r: Role) =>
+            options.member.roles.cache.find((r: Role) =>
                 this.requiredDefaultRoles.includes(r.name),
             ) !== undefined;
         if (!valid) {
@@ -43,33 +36,32 @@ export class RolesChecker {
                     this.requiredDefaultRoles.join(', '),
                 ),
                 ephemeral: true,
-                interaction: interaction,
-                channelId: channelId,
+                interaction: options.interaction,
+                channelId: options.channelId,
             });
         }
         return valid;
     }
 
     public async checkMemberRolesForCommand(
-        member: any,
-        command: string,
-        interaction?:
-            | ButtonInteraction
-            | SelectMenuInteraction
-            | CommandInteraction,
-        channelId?: string,
+        options: CheckMemberRolesForCommandOptions,
     ): Promise<boolean> {
         if (
             !this.client.user ||
-            !(member instanceof GuildMember) ||
-            member.permissions.has('ADMINISTRATOR')
+            !(options.member instanceof GuildMember) ||
+            options.member.permissions.has('ADMINISTRATOR')
         )
             return true;
+        this.client.logger.debug(
+            `Checking roles for command '${options.command}'`,
+            `for member '${options.member.id}'`,
+            `in guild '${options.member.guild.id}'`,
+        );
         let crc: CommandRolesConfig | undefined =
             await CommandRolesConfig.findOne({
-                guildId: member.guild.id,
+                guildId: options.member.guild.id,
                 clientId: this.client.user.id,
-                name: command,
+                name: options.command,
             }).catch((e: Error) => {
                 this.client.emitEvent('error', e);
                 return undefined;
@@ -77,29 +69,54 @@ export class RolesChecker {
         if (!crc) return true;
         await crc.filterRoles(this.client);
         crc = await crc.save();
-        const valid: boolean =
-            crc.roleIds.length === 0 ||
-            crc.roleIds.some((r) => {
-                member.roles.cache.has(r);
-            });
+        const memberRoles: string[] = options.member.roles.cache.map(
+            (r) => r.id,
+        );
+        let valid = false;
+        for (const r of crc.roleIds)
+            if (memberRoles.includes(r)) {
+                valid = true;
+                break;
+            }
+        let cId: string | undefined | null = undefined;
+        if (options.channelId) cId = options.channelId;
+        else if (options.message) cId = options.message.channelId;
+        else if (options.interaction) cId = options.interaction.channelId;
+        if (!cId) cId = '';
         if (!valid) {
             this.client.notify({
                 warn: true,
-                interaction: interaction,
-                channelId: channelId,
+                interaction: options.interaction,
+                message: options.message,
+                channelId: options.channelId,
                 ephemeral: true,
                 content: this.client.translate(
                     ['common', 'errors', 'missingRolesAny'],
                     crc.roleIds
                         .map((rId) => {
-                            return member.guild.roles.cache.find(
-                                (r) => r.id === rId,
+                            return options.member.guild.roles.cache.find(
+                                (r: Role) => r.id === rId,
                             )?.name;
                         })
                         .join(', '),
                 ),
+                member: options.member
+                    ? options.member
+                    : options.message?.member,
+                notificationName: 'missingRoles' + cId,
+                notificationMinutesToPersist: 1,
             });
         }
+        if (valid)
+            this.client.logger.debug(
+                `Member '${options.member.id}'`,
+                'has the required roles',
+            );
+        else
+            this.client.logger.debug(
+                `Member '${options.member.id}'`,
+                'does not have the required roles',
+            );
         return valid;
     }
 

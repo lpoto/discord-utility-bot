@@ -1,6 +1,7 @@
 import {
     DiscordGatewayAdapterCreator,
     joinVoiceChannel,
+    VoiceConnectionStatus,
 } from '@discordjs/voice';
 import {
     ButtonInteraction,
@@ -45,6 +46,12 @@ export class OnJoinVoiceRequest extends AbstractMusicEvent {
             vcId = resource.member.voice.channel.id;
             guild = resource.guild;
         } else return;
+
+        if (
+            this.client.getVoiceConnection(guild.id)?.state.status ===
+            VoiceConnectionStatus.Ready
+        )
+            return;
 
         this.client.logger.debug(
             `Joining voice channel '${vcId}' in guild: '${guild.id}'`,

@@ -13,6 +13,15 @@ export class JumpBackward extends AbstractCommand {
         return 600;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'jumpBackward',
+            'rolesConfigName',
+        ]);
+    }
+
     public get description(): string {
         return this.translate([
             'music',

@@ -1,4 +1,4 @@
-import { ButtonInteraction } from 'discord.js';
+import { ButtonInteraction, GuildMember } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
@@ -27,8 +27,14 @@ export class OnButtonClick extends AbstractMusicEvent {
             guildId: interaction.guildId,
             clientId: this.client.user.id,
         }).then((queue) => {
-            if (!queue) return;
+            if (
+                !queue ||
+                !interaction.member ||
+                !(interaction.member instanceof GuildMember)
+            )
+                return;
             this.client.emitEvent('executeCommand', {
+                member: interaction.member,
                 interaction: interaction,
             });
         });

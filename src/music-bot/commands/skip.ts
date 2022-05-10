@@ -1,4 +1,9 @@
-import { ButtonInteraction, Message, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    GuildMember,
+    Message,
+    MessageButton,
+} from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -21,6 +26,15 @@ export class Skip extends AbstractCommand {
         return /^!(s(kip)?(\s+\d+)?)$/i;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'skip',
+            'rolesConfigName',
+        ]);
+    }
+
     public get additionalHelp(): string {
         return this.translate(['music', 'commands', 'skip', 'additionalHelp']);
     }
@@ -38,6 +52,7 @@ export class Skip extends AbstractCommand {
         if (
             !interaction ||
             !interaction.guildId ||
+            !(interaction.member instanceof GuildMember) ||
             (this.audioPlayer && this.audioPlayer.paused)
         )
             return;
@@ -50,19 +65,20 @@ export class Skip extends AbstractCommand {
         else
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: queue.guildId,
+                member: interaction.member,
                 interaction: interaction,
             });
     }
 
     public async executeFromReggex(message: Message): Promise<void> {
+        if (!(message.member instanceof GuildMember)) return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue || !this.audioPlayer || queue.size === 0) return;
 
         if (!this.audioPlayer)
             return this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: queue.guildId,
+                member: message.member,
             });
 
         const l: string[] = message.content.split(/\s+/);

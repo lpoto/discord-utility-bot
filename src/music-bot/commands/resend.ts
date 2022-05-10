@@ -17,6 +17,15 @@ export class Resend extends AbstractCommand {
         return this.translate(['music', 'commands', 'resend', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'resend',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;

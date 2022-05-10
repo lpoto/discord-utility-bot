@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import { ButtonInteraction, GuildMember, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, Song } from '../entities';
@@ -22,6 +22,15 @@ export class previousSong extends AbstractCommand {
         ]);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'previousSong',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection) return null;
         return new MessageButton()
@@ -37,7 +46,12 @@ export class previousSong extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || this.audioPlayer?.paused) return;
+        if (
+            !interaction ||
+            this.audioPlayer?.paused ||
+            !(interaction.member instanceof GuildMember)
+        )
+            return;
         const queue: Queue | undefined = await this.getQueue();
         if (
             !queue ||
@@ -61,8 +75,8 @@ export class previousSong extends AbstractCommand {
         if (!this.audioPlayer)
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: queue.guildId,
                 interaction: interaction,
+                member: interaction.member,
             });
         else this.audioPlayer.trigger('previous', interaction);
     }

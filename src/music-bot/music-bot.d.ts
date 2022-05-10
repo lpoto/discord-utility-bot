@@ -1,5 +1,6 @@
 import { Queue } from '../music-bot/entities';
 import {
+    GuildMember,
     Message,
     MessageButton,
     MessageSelectMenu,
@@ -54,16 +55,22 @@ export class Command {
     public constructor(client: MusicClient, guildId: string);
     public get reggex(): RegExp | null;
     public get description(): string | null;
+    public get checkRolesFor(): string | null;
     public get additionalHelp(): string | null;
     public get name(): string;
     public get interactionTimeout(): number;
     public get alwaysExecute(): boolean;
     public get needsDefer(): boolean;
+    public get joinVoice(): boolean;
+    public get checkMemberPerms(): boolean;
     public button(queue: Queue): MessageButton | null;
     public button2(queue: Queue): MessageButton | null;
     public selectMenu(queue: Queue): MessageSelectMenu | null;
     public execute(
-        interaction?: ButtonInteraction | CommandInteraction,
+        interaction?:
+            | ButtonInteraction
+            | CommandInteraction
+            | SelectMenuInteraction,
     ): Promise<void>;
     public updateQueue(options: UpdateQueueOptions): void;
     public executeFromSelectMenu(
@@ -109,12 +116,14 @@ export interface NewSongOptions {
 }
 
 export interface ExecuteCommandOptions {
+    member?: GuildMember;
+    guildId?: string;
     interaction?:
         | ButtonInteraction
         | SelectMenuInteraction
         | CommandInteraction;
     name?: CommandName;
-    guildId?: string;
+    message?: Message;
 }
 
 export type CustomAudioPlayerTrigger =

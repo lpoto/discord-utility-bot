@@ -106,6 +106,11 @@ export class PermissionChecker {
     ): boolean {
         if (!this.client.user || !member.guild.id) return false;
 
+        this.client.logger.debug(
+            `Validating member '${member.id}' permissions`,
+            `in guild '${member.guild.id}'`,
+        );
+
         if (!member.voice.channel) {
             this.client.notify({
                 warn: true,
@@ -120,6 +125,9 @@ export class PermissionChecker {
                 interaction: interaction,
                 channelId: channelId,
             });
+            this.client.logger.debug(
+                `Member '${member.id}' is missing permissions`,
+            );
             return false;
         }
 
@@ -136,6 +144,9 @@ export class PermissionChecker {
                 interaction: interaction,
                 channelId: channelId,
             });
+            this.client.logger.debug(
+                `Member '${member.id}' is missing permissions`,
+            );
             return false;
         }
 
@@ -153,6 +164,9 @@ export class PermissionChecker {
                 interaction: interaction,
                 channelId: channelId,
             });
+            this.client.logger.debug(
+                `Member '${member.id}' is missing permissions`,
+            );
             return false;
         }
 
@@ -173,6 +187,9 @@ export class PermissionChecker {
                 warn: true,
                 channelId: channelId,
             });
+            this.client.logger.debug(
+                `Member '${member.id}' is missing permissions`,
+            );
             return false;
         }
 
@@ -190,8 +207,14 @@ export class PermissionChecker {
                 channelId: channelId,
                 interaction: interaction,
             });
+            this.client.logger.debug(
+                `Member '${member.id}' is missing permissions`,
+            );
             return false;
         }
+        this.client.logger.debug(
+            `Member '${member.id}' has valid permissions`,
+        );
 
         return true;
     }

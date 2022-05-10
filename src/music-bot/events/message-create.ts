@@ -10,6 +10,7 @@ import fetch from 'node-fetch';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
 import * as Commands from '../commands';
 import { Command } from '../music-bot';
+import { RolesChecker } from '../../utils';
 
 export class OnMessageCreate extends AbstractMusicEvent {
     public constructor(client: MusicClient) {
@@ -31,11 +32,10 @@ export class OnMessageCreate extends AbstractMusicEvent {
                 this.client.translate(['music', 'thread', 'name']) &&
             (message.content || message.attachments.size > 0) &&
             message.channel.ownerId === this.client.user?.id &&
-            this.client.rolesChecker.checkMemberDefaultRoles(
-                message.member,
-                undefined,
-                message.channel.id,
-            ) &&
+            this.client.rolesChecker.checkMemberDefaultRoles({
+                member: message.member,
+                channelId: message.channelId,
+            }) &&
             this.client.permsChecker.validateMemberVoiceFromThread(message)
         ) {
             Queue.findOne({
@@ -44,15 +44,9 @@ export class OnMessageCreate extends AbstractMusicEvent {
             })
                 .then(async (queue) => {
                     if (!queue) return;
-
-                    if (
-                        (message.guildId &&
-                            !this.client.getVoiceConnection(
-                                message.guildId,
-                            )) ||
-                        !message.guild?.me?.voice.channel
-                    )
-                        this.client.emitEvent('joinVoiceRequest', message);
+                    let joined = false;
+                    const rolesChecker: RolesChecker =
+                        this.client.rolesChecker;
 
                     for (const val in Commands) {
                         try {
@@ -62,11 +56,40 @@ export class OnMessageCreate extends AbstractMusicEvent {
                             );
                             if (
                                 !command ||
+                                !message.member ||
                                 !command.reggex ||
                                 !command.reggex.test(message.content)
                             )
                                 continue;
-                            return command.executeFromReggex(message);
+                            if (
+                                await rolesChecker.checkMemberRolesForCommand({
+                                    member: message.member,
+                                    command: this.client.translate([
+                                        'music',
+                                        'exclamationCommand',
+                                        'rolesConfigName',
+                                    ]),
+                                    channelId: message.channelId,
+                                    message: message,
+                                })
+                            )
+                                continue;
+                            if (!joined)
+                                this.client.emitEvent(
+                                    'joinVoiceRequest',
+                                    message,
+                                );
+
+                            setTimeout(
+                                () => {
+                                    command.executeFromReggex(message);
+                                },
+                                joined
+                                    ? command.interactionTimeout
+                                    : command.interactionTimeout + 200,
+                            );
+                            joined = true;
+                            return;
                         } catch (e) {
                             if (e instanceof Error)
                                 this.client.emitEvent('error', e);
@@ -75,6 +98,20 @@ export class OnMessageCreate extends AbstractMusicEvent {
 
                     // get songs from message content and from all text file attachments
                     // multiple songs may be added, each in its own line
+                    if (
+                        !(await rolesChecker.checkMemberRolesForCommand({
+                            member: message.member,
+                            command: this.client.translate([
+                                'music',
+                                'commands',
+                                'play',
+                                'rolesConfigName',
+                            ]),
+                            channelId: message.channelId,
+                            message: message,
+                        }))
+                    )
+                        return;
 
                     let songs: string[] = [];
                     if (message.content) songs = message.content.split('\n');
@@ -92,11 +129,19 @@ export class OnMessageCreate extends AbstractMusicEvent {
                             songs = songs.concat(text.split('\n'));
                         }
                     }
-                    this.client.emitEvent('newSong', {
-                        guildId: queue.guildId,
-                        songNames: songs,
-                        toFront: false,
-                    });
+                    if (!joined)
+                        this.client.emitEvent('joinVoiceRequest', message);
+                    setTimeout(
+                        () => {
+                            this.client.emitEvent('newSong', {
+                                guildId: queue.guildId,
+                                songNames: songs,
+                                toFront: false,
+                            });
+                        },
+                        joined ? 0 : 300,
+                    );
+                    joined = true;
                 })
                 .catch((e) => this.client.emitEvent('error', e));
         }

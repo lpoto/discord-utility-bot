@@ -20,8 +20,10 @@ import {
     PermissionResolvable,
     Permissions,
     TextChannel,
+    ThreadChannel,
 } from 'discord.js';
 import { RolesChecker } from './roles-checker';
+import { Notification } from '../common-entities';
 
 export abstract class CustomClient extends Client {
     private clientReady: boolean;
@@ -153,10 +155,41 @@ export abstract class CustomClient extends Client {
 
     public async notify(options: NotifyOptions): Promise<void> {
         if (
-            (!options.interaction && !options.channelId) ||
+            (!options.interaction && !options.channelId && !options.message) ||
+            !this.user ||
             options.content.length === 0
         )
             return;
+        if (
+            options.notificationName &&
+            options.member &&
+            !options.interaction
+        ) {
+            if (
+                await Notification.findOne({
+                    clientId: this.user.id,
+                    guildId: options.member.guild.id,
+                    userId: options.member.id,
+                    name: options.notificationName,
+                })
+            )
+                return;
+        }
+        let n: Notification | undefined = undefined;
+        if (
+            !options.interaction &&
+            options.notificationName &&
+            options.notificationMinutesToPersist &&
+            options.member
+        ) {
+            n = Notification.create({
+                userId: options.member.id,
+                clientId: this.user.id,
+                guildId: options.member.guild.id,
+                name: options.notificationName,
+                minutesToPersist: options.notificationMinutesToPersist,
+            });
+        }
         const embed: MessageEmbed = new MessageEmbed()
             .setDescription(options.content)
             .setColor(options.warn ? 'RED' : 'GREEN');
@@ -166,23 +199,45 @@ export abstract class CustomClient extends Client {
                     embeds: [embed],
                     ephemeral: options.ephemeral,
                 })
+                .then(() => {
+                    if (n) n.save();
+                })
                 .catch((e: Error) => {
                     this.emitEvent('error', e);
                 });
+        if (options.message)
+            return options.message
+                .reply({
+                    embeds: [embed],
+                })
+                .then(() => {
+                    if (n) n.save();
+                })
+                .catch((e) => {
+                    this.emitEvent('error', e);
+                });
         if (!options.channelId) return;
-        const channel: TextChannel | undefined = await this.channels
-            .fetch(options.channelId)
-            .then((c) => {
-                if (!(c instanceof TextChannel)) return undefined;
-                return c;
-            })
-            .catch((e: Error) => {
-                this.emitEvent('error', e);
-                return undefined;
-            });
+        const channel: TextChannel | ThreadChannel | undefined =
+            await this.channels
+                .fetch(options.channelId)
+                .then((c) => {
+                    if (
+                        !(c instanceof TextChannel) &&
+                        !(c instanceof ThreadChannel)
+                    )
+                        return undefined;
+                    return c;
+                })
+                .catch((e: Error) => {
+                    this.emitEvent('error', e);
+                    return undefined;
+                });
         await channel
             ?.send({
                 embeds: [embed],
+            })
+            .then(() => {
+                if (n) n.save();
             })
             .catch((e: Error) => {
                 this.emitEvent('error', e);
@@ -204,7 +259,7 @@ export abstract class CustomClient extends Client {
     }
 
     public async run(): Promise<void> {
-        this.logger.info(`Registering ${this.getEvents().length} events.`);
+        this.logger.debug(`Registering ${this.getEvents().length} events.`);
         for (const E of this.getEvents()) {
             const e: ClientEvent = new E(this);
 

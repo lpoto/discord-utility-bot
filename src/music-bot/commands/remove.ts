@@ -19,6 +19,15 @@ export class Remove extends AbstractCommand {
         return this.translate(['music', 'commands', 'remove', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'remove',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection || !queue.hasOption(QueueOption.Options.EDITING))
             return null;

@@ -13,6 +13,15 @@ export class Expand extends AbstractCommand {
         return this.translate(['music', 'commands', 'expand', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'expand',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (
             !this.connection ||

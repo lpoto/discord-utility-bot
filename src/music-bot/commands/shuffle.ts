@@ -14,6 +14,15 @@ export class Shuffle extends AbstractCommand {
         return this.translate(['music', 'commands', 'shuffle', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'shuffle',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (
             !this.connection ||

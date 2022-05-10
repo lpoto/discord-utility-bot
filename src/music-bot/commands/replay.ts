@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import { ButtonInteraction, GuildMember, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -17,6 +17,15 @@ export class Replay extends AbstractCommand {
         return this.translate(['music', 'commands', 'replay', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'replay',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection) return null;
         return new MessageButton()
@@ -27,7 +36,11 @@ export class Replay extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (!interaction || (this.audioPlayer && this.audioPlayer.paused))
+        if (
+            !interaction ||
+            (this.audioPlayer && this.audioPlayer.paused) ||
+            !(interaction.member instanceof GuildMember)
+        )
             return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
@@ -38,8 +51,8 @@ export class Replay extends AbstractCommand {
         else
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: queue.guildId,
                 interaction: interaction,
+                member: interaction.member,
             });
     }
 }

@@ -45,11 +45,11 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !options.interaction ||
             !options.interaction.isCommand() ||
             !(options.interaction.channel instanceof TextChannel) ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.interaction.member,
-                'roles',
-                options.interaction,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.interaction.member,
+                command: 'roles',
+                interaction: options.interaction,
+            }))
         )
             return;
         const channel: TextChannel = options.interaction.channel;
@@ -158,11 +158,11 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             return this.addRemoveRole(options);
 
         if (
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.interaction.member,
-                'roles',
-                options.interaction,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.interaction.member,
+                command: 'roles',
+                interaction: options.interaction,
+            }))
         )
             return;
 
@@ -183,12 +183,12 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !options.repliedMessage ||
             !options.repliedMessage.member ||
             !(options.repliedMessage.channel instanceof TextChannel) ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.repliedMessage.member,
-                'roles',
-                undefined,
-                options.repliedMessage.channelId,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.repliedMessage.member,
+                command: 'roles',
+                channelId: options.repliedMessage.channelId,
+                message: options.repliedMessage,
+            }))
         )
             return;
         const content: string = options.repliedMessage.content;
@@ -206,11 +206,11 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
             !options.interaction ||
             !(options.interaction instanceof SelectMenuInteraction) ||
             !options.interaction.guild ||
-            !(await this.client.rolesChecker.checkMemberRolesForCommand(
-                options.interaction.member,
-                'roles',
-                options.interaction,
-            ))
+            !(await this.client.rolesChecker.checkMemberRolesForCommand({
+                member: options.interaction.member,
+                command: 'roles',
+                interaction: options.interaction,
+            }))
         )
             return;
         const values: string[] = options.interaction.values;

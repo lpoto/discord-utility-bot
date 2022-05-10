@@ -13,6 +13,15 @@ export class EditQueue extends AbstractCommand {
         return this.translate(['music', 'commands', 'edit', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'edit',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection) return null;
         return new MessageButton()

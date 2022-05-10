@@ -13,6 +13,15 @@ export class PageBackward extends AbstractCommand {
         return 100;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'pageBackward',
+            'rolesConfigName',
+        ]);
+    }
+
     public get description(): string {
         return this.translate([
             'music',

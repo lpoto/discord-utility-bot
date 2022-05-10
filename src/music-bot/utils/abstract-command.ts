@@ -41,6 +41,10 @@ export abstract class AbstractCommand {
         return null;
     }
 
+    public get checkRolesFor(): string | null {
+        return null;
+    }
+
     public get needsDefer(): boolean {
         return this.alwaysExecute ? false : this.shouldDefer;
     }
@@ -55,6 +59,14 @@ export abstract class AbstractCommand {
 
     public get name(): string {
         return (<any>this).constructor.name;
+    }
+
+    public get joinVoice(): boolean {
+        return true;
+    }
+
+    public get checkMemberPerms(): boolean {
+        return true;
     }
 
     public get audioPlayer(): CustomAudioPlayer | null {

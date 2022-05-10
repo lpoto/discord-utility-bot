@@ -13,6 +13,15 @@ export class Pause extends AbstractCommand {
         return this.translate(['music', 'commands', 'pause', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'pause',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (!this.connection) return null;
         return new MessageButton()

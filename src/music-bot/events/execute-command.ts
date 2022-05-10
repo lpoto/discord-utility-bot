@@ -1,6 +1,6 @@
 import {
     ButtonInteraction,
-    CommandInteraction,
+    GuildMember,
     MessageButton,
     MessageSelectMenu,
     SelectMenuInteraction,
@@ -11,6 +11,7 @@ import * as Commands from '../commands';
 import { Command, CommandName, ExecuteCommandOptions } from '../music-bot';
 import { ActiveCommandsOptions } from '../utils';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
+import { RolesChecker } from '../../utils';
 
 export class OnExecuteCommand extends AbstractMusicEvent {
     public constructor(client: MusicClient) {
@@ -18,44 +19,96 @@ export class OnExecuteCommand extends AbstractMusicEvent {
     }
 
     public async callback(options: ExecuteCommandOptions): Promise<void> {
-        if (options.name && (options.interaction?.guildId || options.guildId))
-            return this.execute(
-                options.name,
-                options.guildId
-                    ? options.guildId
-                    : options.interaction!.guildId!,
-                options.interaction instanceof ButtonInteraction ||
-                    options.interaction instanceof CommandInteraction
-                    ? options.interaction
-                    : undefined,
-            );
+        if (
+            options.name &&
+            (options.interaction?.guildId ||
+                options.guildId ||
+                options.member?.guild.id)
+        )
+            return this.execute(options);
         if (
             options.interaction &&
             options.interaction instanceof SelectMenuInteraction
         )
-            return this.executeMenuSelectFromInteraction(options.interaction);
+            return this.executeMenuSelectFromInteraction(options);
         if (
             options.interaction &&
             options.interaction instanceof ButtonInteraction
         )
-            return this.executeFromInteraction(options.interaction);
+            return this.executeFromInteraction(options);
     }
 
-    private execute(
-        name: CommandName,
-        guildId: string,
-        interaction?: ButtonInteraction | CommandInteraction,
-    ) {
-        const command: Command | null = this.getCommand(name, guildId);
+    private async execute(options: ExecuteCommandOptions) {
+        let guildId: string | undefined | null = undefined;
+        if (options.guildId) guildId = options.guildId;
+        else if (options.member && options.member.guild)
+            guildId = options.member.guild.id;
+        else if (options.interaction) guildId = options.interaction.guildId;
+        if (!guildId || !options.name) return;
+
+        const command: Command | null = this.getCommand(options.name, guildId);
         if (!command) return;
-        command.execute(interaction).catch((e) => {
-            this.client.emitEvent('error', e);
-        });
+        if (command.checkMemberPerms) {
+            if (
+                options.interaction &&
+                !this.client.permsChecker.validateMemberVoice(
+                    options.interaction,
+                )
+            )
+                return;
+
+            if (
+                options.message &&
+                !this.client.permsChecker.validateMemberVoiceFromThread(
+                    options.message,
+                )
+            )
+                return;
+        }
+        let joined = false;
+        let member: GuildMember | undefined | null = undefined;
+        if (options.member) member = options.member;
+        else if (
+            options.interaction &&
+            options.interaction.member instanceof GuildMember
+        )
+            member = options.interaction.member;
+        const rolesChecker: RolesChecker = this.client.rolesChecker;
+        if (
+            command.checkRolesFor &&
+            member &&
+            !(await rolesChecker.checkMemberRolesForCommand({
+                member: member,
+                command: command.checkRolesFor,
+                interaction: options.interaction,
+                channelId: options.interaction?.channelId,
+                message: options.message,
+            }))
+        )
+            return;
+
+        if (!joined && options.interaction && command.joinVoice) {
+            this.client.emitEvent('joinVoiceRequest', options.interaction);
+        } else if (joined && options.message && command.joinVoice) {
+            this.client.emitEvent('joinVoiceRequest', options.message);
+        }
+
+        setTimeout(
+            () => {
+                command.execute(options.interaction).catch((e) => {
+                    this.client.emitEvent('error', e);
+                });
+            },
+            joined ? 0 : 300,
+        );
+        joined = true;
     }
 
     private async executeFromInteraction(
-        interaction: ButtonInteraction,
+        options: ExecuteCommandOptions,
     ): Promise<void> {
+        if (!options.interaction || !options.interaction.isButton()) return;
+        const interaction: ButtonInteraction = options.interaction;
         if (!interaction.guildId || !this.client.user) return;
         const queue: Queue | undefined = await Queue.findOne({
             guildId: interaction.guildId,
@@ -63,6 +116,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
         });
         if (!queue) return;
         const guildId: string = queue.guildId;
+        let joined = false;
 
         for (const val in Commands) {
             try {
@@ -72,34 +126,55 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                 );
                 if (!command) continue;
                 const button: MessageButton | null = command.button2(queue);
-                if (!button) continue;
                 if (
-                    interaction.component &&
-                    button.label &&
-                    interaction.component.label === button.label
-                ) {
-                    const name: CommandName = command.name as CommandName;
-                    if (!command.alwaysExecute) {
-                        if (
-                            this.client.activeCommandsOptions.hasDeferOption(
-                                name,
-                                guildId,
-                            )
-                        ) {
-                            this.client.activeCommandsOptions.addToDeferOption(
-                                name,
-                                guildId,
-                                interaction,
-                            );
-                            return;
-                        }
+                    !button ||
+                    !button.label ||
+                    button.label !== interaction.component.label
+                )
+                    continue;
+                if (
+                    command.checkMemberPerms &&
+                    !this.client.permsChecker.validateMemberVoice(interaction)
+                )
+                    return;
+                const rolesChecker: RolesChecker = this.client.rolesChecker;
+                if (
+                    command.checkRolesFor &&
+                    !(await rolesChecker.checkMemberRolesForCommand({
+                        member: interaction.member,
+                        command: command.checkRolesFor,
+                        interaction: interaction,
+                        channelId: interaction.channelId,
+                    }))
+                )
+                    return;
+                const name: CommandName = command.name as CommandName;
+                if (!command.alwaysExecute) {
+                    if (
+                        this.client.activeCommandsOptions.hasDeferOption(
+                            name,
+                            guildId,
+                        )
+                    ) {
                         this.client.activeCommandsOptions.addToDeferOption(
                             name,
                             guildId,
+                            interaction,
                         );
+                        return;
                     }
+                    this.client.activeCommandsOptions.addToDeferOption(
+                        name,
+                        guildId,
+                    );
+                }
 
-                    const timeout: NodeJS.Timeout = setTimeout(async () => {
+                if (!joined && command.joinVoice) {
+                    this.client.emitEvent('joinVoiceRequest', interaction);
+                }
+
+                const timeout: NodeJS.Timeout = setTimeout(
+                    async () => {
                         return command
                             .execute(interaction)
                             .then(() => {
@@ -113,14 +188,19 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                             })
                             .catch((e) => {
                                 this.client.emitEvent('error', e);
-                                const options: ActiveCommandsOptions =
+                                const opts: ActiveCommandsOptions =
                                     this.client.activeCommandsOptions;
-                                options.deferInteractions(name, guildId, true);
+                                opts.deferInteractions(name, guildId, true);
                             });
-                    }, command.interactionTimeout);
-                    timeout.unref();
-                    return;
-                }
+                    },
+                    joined
+                        ? command.interactionTimeout
+                        : command.interactionTimeout + 150,
+                );
+                timeout.unref();
+
+                joined = true;
+                return;
             } catch (e) {
                 console.error(e);
             }
@@ -128,14 +208,18 @@ export class OnExecuteCommand extends AbstractMusicEvent {
     }
 
     private async executeMenuSelectFromInteraction(
-        interaction: SelectMenuInteraction,
+        options: ExecuteCommandOptions,
     ): Promise<void> {
+        if (!(options.interaction instanceof SelectMenuInteraction)) return;
+        const interaction: SelectMenuInteraction = options.interaction;
+
         if (!interaction.guildId || !this.client.user) return;
         const queue: Queue | undefined = await Queue.findOne({
             guildId: interaction.guildId,
             clientId: this.client.user.id,
         });
         if (!queue) return;
+        let joined = false;
         for (const val in Commands) {
             try {
                 const command: Command | null = this.getCommand(
@@ -147,16 +231,43 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                     command.selectMenu(queue);
                 if (!dropdown) continue;
                 if (
-                    interaction.component &&
-                    dropdown.placeholder &&
-                    interaction.customId.split('||')[0].trim() === val
+                    interaction.component ||
+                    !dropdown.placeholder ||
+                    interaction.customId.split('||')[0].trim() !== val
                 )
-                    return command
-                        .executeFromSelectMenu(interaction)
-                        .catch((e) => {
-                            console.error('Error when executing command');
-                            this.client.emitEvent('error', e);
-                        });
+                    return;
+                if (
+                    command.checkMemberPerms &&
+                    !this.client.permsChecker.validateMemberVoice(interaction)
+                )
+                    return;
+                const rolesChecker: RolesChecker = this.client.rolesChecker;
+                if (
+                    command.checkRolesFor &&
+                    !(await rolesChecker.checkMemberRolesForCommand({
+                        member: interaction.member,
+                        command: command.checkRolesFor,
+                        interaction: interaction,
+                        channelId: interaction.channelId,
+                    }))
+                )
+                    return;
+                if (!joined) {
+                    this.client.emitEvent('joinVoiceRequest', interaction);
+                }
+                setTimeout(
+                    () => {
+                        command
+                            .executeFromSelectMenu(interaction)
+                            .catch((e) => {
+                                console.error('Error when executing command');
+                                this.client.emitEvent('error', e);
+                            });
+                    },
+                    joined ? 0 : 300,
+                );
+                joined = true;
+                return;
             } catch (e) {
                 console.error(e);
             }

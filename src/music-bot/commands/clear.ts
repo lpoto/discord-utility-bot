@@ -24,6 +24,15 @@ export class Clear extends AbstractCommand {
         return this.translate(['music', 'commands', 'clear', 'description']);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'clear',
+            'rolesConfigName',
+        ]);
+    }
+
     public button(queue: Queue): MessageButton | null {
         if (
             !this.connection ||

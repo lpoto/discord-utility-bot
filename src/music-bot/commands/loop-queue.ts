@@ -18,15 +18,22 @@ export class LoopQueue extends AbstractCommand {
         ]);
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'loopQueue',
+            'rolesConfigName',
+        ]);
+    }
+
     public async execute(interaction?: ButtonInteraction): Promise<void> {
         if (!interaction || !interaction.user) return;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
 
         if (queue.hasOption(QueueOption.Options.LOOP_QUEUE)) {
-            queue = await queue.removeOptions([
-                QueueOption.Options.LOOP_QUEUE,
-            ]);
+            queue = queue.removeOptions([QueueOption.Options.LOOP_QUEUE]);
         } else {
             queue = await queue.addOption(QueueOption.Options.LOOP_QUEUE);
         }

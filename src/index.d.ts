@@ -2,6 +2,7 @@ import {
     ButtonInteraction,
     ClientOptions,
     CommandInteraction,
+    GuildMember,
     Interaction,
     Message,
     PartialMessage,
@@ -67,5 +68,29 @@ export interface NotifyOptions {
         | CommandInteraction
         | SelectMenuInteraction;
     channelId?: string;
+    member?: GuildMember | null;
+    message?: Message;
     ephemeral?: boolean;
+    notificationMinutesToPersist?: number;
+    notificationName?: string;
+}
+
+export interface CheckMemberRolesForCommandOptions {
+    member: any;
+    command: string;
+    interaction?:
+        | ButtonInteraction
+        | SelectMenuInteraction
+        | CommandInteraction;
+    channelId?: string;
+    message?: Message;
+}
+
+export interface CheckMemberDefaultRolesOptions {
+    member: GuildMember;
+    interaction?:
+        | ButtonInteraction
+        | SelectMenuInteraction
+        | CommandInteraction;
+    channelId?: string;
 }

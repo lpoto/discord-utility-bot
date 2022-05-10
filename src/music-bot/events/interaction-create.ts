@@ -1,4 +1,3 @@
-import { VoiceConnection } from '@discordjs/voice';
 import {
     CommandInteraction,
     GuildMember,
@@ -37,14 +36,6 @@ export class OnInteractionCreate extends AbstractMusicEvent {
         )
             return;
 
-        if (
-            !this.client.rolesChecker.checkMemberDefaultRoles(
-                interaction.member,
-                interaction,
-            )
-        )
-            return;
-
         if (interaction.isCommand())
             return this.client.emitEvent('slashCommand', interaction);
 
@@ -69,25 +60,6 @@ export class OnInteractionCreate extends AbstractMusicEvent {
                         });
                     return;
                 }
-
-                if (
-                    !interaction.guildId ||
-                    !this.client.permsChecker.validateMemberVoice(interaction)
-                )
-                    return;
-
-                const c: VoiceConnection | null =
-                    this.client.getVoiceConnection(interaction.guildId);
-
-                if (
-                    !c ||
-                    (interaction.guildId &&
-                        !this.client.getVoiceConnection(
-                            interaction.guildId,
-                        )) ||
-                    !interaction.guild?.me?.voice.channel
-                )
-                    this.client.emitEvent('joinVoiceRequest', interaction);
 
                 if (
                     interaction.isButton() &&

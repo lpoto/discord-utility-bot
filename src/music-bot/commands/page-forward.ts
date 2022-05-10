@@ -13,6 +13,15 @@ export class PageForward extends AbstractCommand {
         return 100;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'pageForward',
+            'rolesConfigName',
+        ]);
+    }
+
     public get description(): string {
         return this.translate([
             'music',

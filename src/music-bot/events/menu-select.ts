@@ -1,4 +1,4 @@
-import { SelectMenuInteraction } from 'discord.js';
+import { GuildMember, SelectMenuInteraction } from 'discord.js';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
 import { AbstractMusicEvent } from '../utils/abstract-music-event';
@@ -28,9 +28,10 @@ export class OnMenuSelect extends AbstractMusicEvent {
             guildId: interaction.guildId,
             clientId: this.client.user.id,
         }).then((queue) => {
-            if (!queue) return;
+            if (!queue || !(interaction.member instanceof GuildMember)) return;
             this.client.emitEvent('executeCommand', {
                 interaction: interaction,
+                member: interaction.member,
             });
         });
     }

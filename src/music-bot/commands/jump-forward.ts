@@ -13,6 +13,15 @@ export class JumpForward extends AbstractCommand {
         return 600;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'jumpForward',
+            'rolesConfigName',
+        ]);
+    }
+
     public get reggex(): RegExp {
         return /^!((\+(\+)?)|(forward)|(j((um)?p)?)((\s+)-?\d+)?)$/i;
     }

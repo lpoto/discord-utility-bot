@@ -21,6 +21,15 @@ export class Stop extends AbstractCommand {
         return 300;
     }
 
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'stop',
+            'rolesConfigName',
+        ]);
+    }
+
     public get description(): string {
         return this.translate(['music', 'commands', 'stop', 'description']);
     }

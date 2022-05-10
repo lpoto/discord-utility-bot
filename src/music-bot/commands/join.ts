@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import { ButtonInteraction, GuildMember, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -15,6 +15,15 @@ export class Join extends AbstractCommand {
 
     public get interactionTimeout(): number {
         return 300;
+    }
+
+    public get checkRolesFor(): string {
+        return this.translate([
+            'music',
+            'commands',
+            'join',
+            'rolesConfigName',
+        ]);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -37,6 +46,8 @@ export class Join extends AbstractCommand {
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
+        if (!interaction || !(interaction.member instanceof GuildMember))
+            return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         const audioPlayer: CustomAudioPlayer | null = this.audioPlayer;
@@ -52,7 +63,7 @@ export class Join extends AbstractCommand {
         if (queue.size > 0)
             this.client.emitEvent('executeCommand', {
                 name: 'Play',
-                guildId: this.guildId,
+                member: interaction.member,
                 interaction: interaction,
             });
     }
