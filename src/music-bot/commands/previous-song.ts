@@ -37,20 +37,13 @@ export class previousSong extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'previousSong', 'label']),
             )
-            .setDisabled(
-                (this.audioPlayer !== null && !this.audioPlayer.paused) ||
-                    (!queue.headSong?.previous && !queue.previousSong),
-            )
+            .setDisabled(!queue.headSong?.previous && !queue.previousSong)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            this.audioPlayer?.paused ||
-            !(interaction.member instanceof GuildMember)
-        )
+        if (!interaction || !(interaction.member instanceof GuildMember))
             return;
         const queue: Queue | undefined = await this.getQueue();
         if (

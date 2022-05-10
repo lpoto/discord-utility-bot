@@ -1,4 +1,9 @@
-import { ButtonInteraction, Message, MessageButton } from 'discord.js';
+import {
+    ButtonInteraction,
+    Message,
+    MessageButton,
+    PartialMessage,
+} from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue, QueueOption } from '../entities';
@@ -43,15 +48,24 @@ export class Resend extends AbstractCommand {
             .setCustomId(this.id);
     }
 
-    public async execute(interaction?: ButtonInteraction): Promise<void> {
+    public async execute(
+        interaction?: ButtonInteraction | Message | PartialMessage,
+    ): Promise<void> {
+        let message: Message | PartialMessage | undefined = undefined;
+        let i: ButtonInteraction | undefined = undefined;
         if (
+            interaction instanceof ButtonInteraction &&
+            interaction.message instanceof Message
+        ) {
+            i = interaction;
+            message = interaction.message;
+        } else if (interaction instanceof Message) message = interaction;
+        if (
+            !message ||
             !this.client.user ||
-            interaction === undefined ||
-            !(interaction.message instanceof Message) ||
-            interaction.message.author.id !== this.client.user.id
+            message.author.id !== this.client.user.id
         )
             return;
-        const msg: Message = interaction.message;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         this.client.logger.debug(
@@ -62,14 +76,16 @@ export class Resend extends AbstractCommand {
         queue.channelId = '0'.repeat(18);
         queue = await queue.save();
         this.updateQueue({
-            interaction: interaction,
+            interaction: i,
             queue: queue,
             resend: true,
+            message: message,
         });
         const timeout: NodeJS.Timeout = setTimeout(() => {
-            msg.delete().catch((e) => {
-                this.client.emitEvent('error', e);
-            });
+            if (message)
+                message.delete().catch((e) => {
+                    this.client.emitEvent('error', e);
+                });
         }, 300);
         timeout.unref();
     }

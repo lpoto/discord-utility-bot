@@ -1,4 +1,4 @@
-import { ButtonInteraction, MessageButton } from 'discord.js';
+import { ButtonInteraction, GuildMember, MessageButton } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
 import { Queue } from '../entities';
@@ -10,7 +10,7 @@ export class JumpBackward extends AbstractCommand {
     }
 
     public get interactionTimeout(): number {
-        return 600;
+        return 400;
     }
 
     public get checkRolesFor(): string {
@@ -37,10 +37,7 @@ export class JumpBackward extends AbstractCommand {
             .setLabel(
                 this.translate(['music', 'commands', 'jumpBackward', 'label']),
             )
-            .setDisabled(
-                queue.size === 0 ||
-                    (this.audioPlayer !== null && !this.audioPlayer.paused),
-            )
+            .setDisabled(queue.size === 0)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
@@ -49,7 +46,7 @@ export class JumpBackward extends AbstractCommand {
         if (
             !interaction ||
             !interaction.guildId ||
-            (this.audioPlayer && this.audioPlayer.paused)
+            !(interaction.member instanceof GuildMember)
         )
             return;
         const queue: Queue | undefined = await this.getQueue();
@@ -57,10 +54,17 @@ export class JumpBackward extends AbstractCommand {
 
         // emit jumpBackward debug message to audioPlayer
         // (jumpBackward event handled in play command)
-        if (this.audioPlayer)
+        if (this.audioPlayer) {
             this.audioPlayer.trigger('jumpBackward', interaction);
-        setTimeout(() => {
-            this.updateQueue({ queue: queue, interaction: interaction });
-        }, 200);
+            setTimeout(() => {
+                this.updateQueue({ queue: queue, interaction: interaction });
+            }, 200);
+        } else {
+            this.client.emitEvent('executeCommand', {
+                name: 'Play',
+                interaction: interaction,
+                member: interaction.member,
+            });
+        }
     }
 }

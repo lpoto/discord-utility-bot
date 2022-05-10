@@ -28,15 +28,11 @@ export class OnMessageDelete extends AbstractMusicEvent {
                 this.client.emitEvent('error', e);
                 return undefined;
             });
-            if (message.thread)
-                message.thread.delete().catch((e) => {
-                    this.client.emitEvent('error', e);
-                });
             if (!queue) return;
-            this.client.emitEvent('queueMessageUpdate', {
-                resend: true,
+            this.client.emitEvent('executeCommand', {
+                name: 'Resend',
                 message: message,
-                queue: queue,
+                doNotValidate: true,
             });
         }
     }

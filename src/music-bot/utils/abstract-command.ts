@@ -6,6 +6,7 @@ import {
     Message,
     MessageButton,
     MessageSelectMenu,
+    PartialMessage,
     SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from '../client';
@@ -112,7 +113,11 @@ export abstract class AbstractCommand {
     }
 
     public async execute(
-        interaction?: ButtonInteraction | CommandInteraction,
+        interaction?:
+            | ButtonInteraction
+            | CommandInteraction
+            | Message
+            | PartialMessage,
     ): Promise<void> {
         if (!interaction || !this.client.user) return;
         this.client.logger.debug(interaction.id);

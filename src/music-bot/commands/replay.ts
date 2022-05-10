@@ -30,20 +30,13 @@ export class Replay extends AbstractCommand {
         if (!this.connection) return null;
         return new MessageButton()
             .setLabel(this.translate(['music', 'commands', 'replay', 'label']))
-            .setDisabled(
-                queue.size === 0 ||
-                    (this.audioPlayer !== null && !this.audioPlayer.paused),
-            )
+            .setDisabled(queue.size === 0)
             .setStyle(MessageButtonStyles.SECONDARY)
             .setCustomId(this.id);
     }
 
     public async execute(interaction?: ButtonInteraction): Promise<void> {
-        if (
-            !interaction ||
-            (this.audioPlayer && this.audioPlayer.paused) ||
-            !(interaction.member instanceof GuildMember)
-        )
+        if (!interaction || !(interaction.member instanceof GuildMember))
             return;
         const queue: Queue | undefined = await this.getQueue();
         if (!queue) return;

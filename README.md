@@ -32,6 +32,8 @@ A bot for playing music.
 
 -   Bot requires a `DJ` role. Only users with the same role may use the music commands.
 
+-   `/config` command allows setting which roles are allowed to use a command.
+
 -   For more info on the commands, use `/help` slash command or click on `?` in the queue message in a discord channel.
 
 ### Required permissions

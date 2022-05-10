@@ -3,6 +3,7 @@ import {
     CommandInteraction,
     GuildMember,
     Message,
+    PartialMessage,
     PermissionResolvable,
     SelectMenuInteraction,
     TextBasedChannel,
@@ -99,7 +100,9 @@ export class PermissionChecker {
         return this.validateMember(interaction.member, interaction);
     }
 
-    public validateMemberVoiceFromThread(message: Message): boolean {
+    public validateMemberVoiceFromThread(
+        message: Message | PartialMessage,
+    ): boolean {
         if (!message.guild || !message.member) return false;
         return this.validateMember(
             message.member,

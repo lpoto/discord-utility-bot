@@ -70,7 +70,9 @@ export class Command {
         interaction?:
             | ButtonInteraction
             | CommandInteraction
-            | SelectMenuInteraction,
+            | SelectMenuInteraction
+            | Message
+            | PartialMessage,
     ): Promise<void>;
     public updateQueue(options: UpdateQueueOptions): void;
     public executeFromSelectMenu(
@@ -123,7 +125,8 @@ export interface ExecuteCommandOptions {
         | SelectMenuInteraction
         | CommandInteraction;
     name?: CommandName;
-    message?: Message;
+    doNotValidate?: boolean;
+    message?: Message | PartialMessage;
 }
 
 export type CustomAudioPlayerTrigger =

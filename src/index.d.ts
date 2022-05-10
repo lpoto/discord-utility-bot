@@ -69,7 +69,7 @@ export interface NotifyOptions {
         | SelectMenuInteraction;
     channelId?: string;
     member?: GuildMember | null;
-    message?: Message;
+    message?: Message | PartialMessage;
     ephemeral?: boolean;
     notificationMinutesToPersist?: number;
     notificationName?: string;
@@ -83,7 +83,7 @@ export interface CheckMemberRolesForCommandOptions {
         | SelectMenuInteraction
         | CommandInteraction;
     channelId?: string;
-    message?: Message;
+    message?: Message | PartialMessage;
 }
 
 export interface CheckMemberDefaultRolesOptions {

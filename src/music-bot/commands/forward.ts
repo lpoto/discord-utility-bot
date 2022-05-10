@@ -118,7 +118,7 @@ export class Forward extends AbstractCommand {
         if (queue.headSong) queue.headSong.position = idx;
         await queue.headSong?.save();
 
-        this.client.emitEvent('queueMessageUpdate', {
+        this.updateQueue({
             interaction: interaction,
             queue: queue,
         });

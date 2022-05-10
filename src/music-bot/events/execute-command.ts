@@ -1,8 +1,11 @@
 import {
     ButtonInteraction,
+    CommandInteraction,
     GuildMember,
+    Message,
     MessageButton,
     MessageSelectMenu,
+    PartialMessage,
     SelectMenuInteraction,
 } from 'discord.js';
 import { MusicClient } from '../client';
@@ -23,6 +26,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
             options.name &&
             (options.interaction?.guildId ||
                 options.guildId ||
+                options.message ||
                 options.member?.guild.id)
         )
             return this.execute(options);
@@ -41,6 +45,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
     private async execute(options: ExecuteCommandOptions) {
         let guildId: string | undefined | null = undefined;
         if (options.guildId) guildId = options.guildId;
+        else if (options.message) guildId = options.message.guildId;
         else if (options.member && options.member.guild)
             guildId = options.member.guild.id;
         else if (options.interaction) guildId = options.interaction.guildId;
@@ -51,6 +56,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
         if (command.checkMemberPerms) {
             if (
                 options.interaction &&
+                !options.doNotValidate &&
                 !this.client.permsChecker.validateMemberVoice(
                     options.interaction,
                 )
@@ -59,6 +65,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
 
             if (
                 options.message &&
+                !options.doNotValidate &&
                 !this.client.permsChecker.validateMemberVoiceFromThread(
                     options.message,
                 )
@@ -77,6 +84,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
         if (
             command.checkRolesFor &&
             member &&
+            !options.doNotValidate &&
             !(await rolesChecker.checkMemberRolesForCommand({
                 member: member,
                 command: command.checkRolesFor,
@@ -89,17 +97,31 @@ export class OnExecuteCommand extends AbstractMusicEvent {
 
         if (!joined && options.interaction && command.joinVoice) {
             this.client.emitEvent('joinVoiceRequest', options.interaction);
-        } else if (joined && options.message && command.joinVoice) {
+        } else if (
+            joined &&
+            options.message &&
+            command.joinVoice &&
+            options.message instanceof Message
+        ) {
             this.client.emitEvent('joinVoiceRequest', options.message);
         }
 
         setTimeout(
             () => {
-                command.execute(options.interaction).catch((e) => {
+                let arg:
+                    | ButtonInteraction
+                    | CommandInteraction
+                    | SelectMenuInteraction
+                    | Message
+                    | PartialMessage
+                    | undefined = undefined;
+                if (options.interaction) arg = options.interaction;
+                else if (options.message) arg = options.message;
+                command.execute(arg).catch((e) => {
                     this.client.emitEvent('error', e);
                 });
             },
-            joined ? 0 : 250,
+            joined ? 0 : 500,
         );
         joined = true;
     }
@@ -195,7 +217,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                     },
                     joined
                         ? command.interactionTimeout
-                        : command.interactionTimeout + 150,
+                        : command.interactionTimeout + 350,
                 );
                 timeout.unref();
 
@@ -231,7 +253,7 @@ export class OnExecuteCommand extends AbstractMusicEvent {
                     command.selectMenu(queue);
                 if (!dropdown) continue;
                 if (
-                    interaction.component ||
+                    !interaction.component ||
                     !dropdown.placeholder ||
                     interaction.customId.split('||')[0].trim() !== val
                 )
