@@ -1,16 +1,16 @@
 {
     "name": "bots",
     "repository": "discord",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "bots": {
         "music": {
             "name": "music-bot",
-            "version": "2.0.3",
+            "version": "2.0.4",
             "description": "Bot for playing music."
         },
         "utility": {
             "name": "utility-bot",
-            "version": "1.5.2",
+            "version": "1.5.3",
             "description": "Bot for managing smaller discord servers."
         }
     },
