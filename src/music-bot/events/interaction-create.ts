@@ -28,13 +28,7 @@ export class OnInteractionCreate extends AbstractMusicEvent {
             interaction.applicationId !== this.client.user?.id
         )
             return;
-        if (
-            !this.client.permsChecker.checkClientText(
-                interaction.channel,
-                interaction,
-                interaction.member,
-            )
-        )
+        if (!this.client.permsChecker.checkClientText(interaction.channel))
             return;
 
         if (interaction.isCommand())
@@ -44,37 +38,46 @@ export class OnInteractionCreate extends AbstractMusicEvent {
             guildId: interaction.guildId,
             clientId: this.client.user.id,
         }).then((queue) => {
+            if (!queue) return;
+            let name: string | undefined = undefined;
+            if (interaction.isCommand()) name = 'COMMAND';
+            else if (interaction.isButton()) name = 'BUTTON';
+            else if (interaction.isSelectMenu()) name = 'SELECT';
+            else return;
+            this.client.logger.debug(
+                `Interaction '${name}' one queue message`,
+                `in guild '${interaction.guildId}'`,
+            );
             if (
-                queue &&
-                this.client.checkThreadAndMessage(queue) &&
-                interaction.member &&
-                interaction.member instanceof GuildMember
+                !this.client.checkThreadAndMessage(queue) ||
+                !interaction.member ||
+                !(interaction.member instanceof GuildMember)
+            )
+                return;
+            if (interaction instanceof CommandInteraction) return;
+            if (
+                interaction.message &&
+                interaction.message.id !== queue.messageId
             ) {
-                if (interaction instanceof CommandInteraction) return;
-                if (
-                    interaction.message &&
-                    interaction.message.id !== queue.messageId
-                ) {
-                    if (interaction.message instanceof Message)
-                        interaction.message.delete().catch((e) => {
-                            this.client.emitEvent('error', e);
-                        });
-                    return;
-                }
+                if (interaction.message instanceof Message)
+                    interaction.message.delete().catch((e) => {
+                        this.client.emitEvent('error', e);
+                    });
+                return;
+            }
 
-                if (
-                    interaction.isButton() &&
-                    interaction.component instanceof MessageButton
-                ) {
-                    this.client.emitEvent('buttonClick', interaction);
-                    return;
-                } else if (
-                    interaction.isSelectMenu() &&
-                    interaction.component instanceof MessageSelectMenu
-                ) {
-                    this.client.emitEvent('menuSelect', interaction);
-                    return;
-                }
+            if (
+                interaction.isButton() &&
+                interaction.component instanceof MessageButton
+            ) {
+                this.client.emitEvent('buttonClick', interaction);
+                return;
+            } else if (
+                interaction.isSelectMenu() &&
+                interaction.component instanceof MessageSelectMenu
+            ) {
+                this.client.emitEvent('menuSelect', interaction);
+                return;
             }
         });
     }

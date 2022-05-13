@@ -12,6 +12,7 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     public async callback(message: Message): Promise<void> {
         if (!this.client.user || message.author.id === this.client.user.id)
             return;
+        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         if (message.channel.isThread())
             return this.handleThreadMessage(message);
         if (message.channel.type !== 'GUILD_TEXT') return;
@@ -26,7 +27,6 @@ export class OnMessageCreate extends AbstractUtilityEvent {
             message.channel.ownerId !== this.client.user.id
         )
             return;
-        if (!this.client.permsChecker.checkClientText(message.channel)) return;
         this.client.logger.debug(
             `Thread message ${message.id} in guild ${message.guildId}`,
         );
@@ -59,7 +59,6 @@ export class OnMessageCreate extends AbstractUtilityEvent {
             });
         if (!referencedMsg || referencedMsg.author.id !== this.client.user.id)
             return;
-        if (!this.client.permsChecker.checkClientText(message.channel)) return;
 
         this.client.logger.debug(
             `Reply ${message.id} to message ${referencedMsg.id} in guild ${message.guildId}`,

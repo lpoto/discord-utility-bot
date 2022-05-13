@@ -23,11 +23,7 @@ export class OnSlashCommand extends AbstractMusicEvent {
             interaction.member &&
             this.client.user &&
             interaction.member instanceof GuildMember &&
-            this.client.permsChecker.checkClientText(
-                interaction.channel,
-                interaction,
-                interaction.member,
-            )
+            this.client.permsChecker.checkClientText(interaction.channel)
         ) {
             this.eventQueue.addToQueue(interaction.id, () =>
                 this.execute(interaction),
@@ -47,9 +43,8 @@ export class OnSlashCommand extends AbstractMusicEvent {
             interaction.member instanceof GuildMember
         ) {
             this.client.logger.debug(
-                'Handle slash command: ',
-                interaction.commandName,
-                interaction.id,
+                `Slash command '${interaction.commandName}'`,
+                `in guild '${interaction.guildId}'`,
             );
 
             const commands =

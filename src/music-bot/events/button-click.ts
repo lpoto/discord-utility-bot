@@ -30,9 +30,15 @@ export class OnButtonClick extends AbstractMusicEvent {
             if (
                 !queue ||
                 !interaction.member ||
+                !interaction.component.label ||
                 !(interaction.member instanceof GuildMember)
             )
                 return;
+            this.client.logger.debug(
+                `Button '${interaction.component.label}'`,
+                'on queue message in guild',
+                `'${interaction.guildId}'`,
+            );
             this.client.emitEvent('executeCommand', {
                 member: interaction.member,
                 interaction: interaction,

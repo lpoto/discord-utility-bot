@@ -37,16 +37,7 @@ export class PermissionChecker {
         );
     }
 
-    public checkClientText(
-        channel: TextBasedChannel,
-        interaction?:
-            | ButtonInteraction
-            | CommandInteraction
-            | SelectMenuInteraction,
-        member?: GuildMember | null,
-        message?: Message,
-        dontReply?: boolean,
-    ): boolean {
+    public checkClientText(channel: TextBasedChannel): boolean {
         if (
             !(
                 channel instanceof TextChannel ||
@@ -56,31 +47,10 @@ export class PermissionChecker {
             !channel.guild.me
         )
             return true;
-        if (!member && message) member = message.member;
-        if (
-            !member &&
-            interaction &&
-            interaction.member instanceof GuildMember
-        )
-            member = interaction.member;
-        if (!member) return true;
-        const valid: boolean = this.clientTextPermissions.every(
-            (p) => member && channel.permissionsFor(member).has(p),
+        const m: GuildMember = channel.guild.me;
+        return this.clientTextPermissions.every((p) =>
+            channel.permissionsFor(m).has(p),
         );
-        if (!valid && !dontReply) {
-            this.client.notify({
-                warn: true,
-                interaction: interaction,
-                channelId: channel.id,
-                content: this.client.translate(
-                    ['common', 'errors', 'clientMissingPermissions'],
-                    this.clientTextPermissions.join(', '),
-                ),
-                member: member,
-                message: message,
-            });
-        }
-        return valid;
     }
 
     public validateMemberVoice(

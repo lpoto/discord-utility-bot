@@ -22,11 +22,7 @@ export class OnInteractionCreate extends AbstractUtilityEvent {
             interaction.member &&
             interaction.member instanceof GuildMember &&
             this.client.user &&
-            this.client.permsChecker.checkClientText(
-                interaction.channel,
-                interaction,
-                interaction.member,
-            )
+            this.client.permsChecker.checkClientText(interaction.channel)
         ) {
             this.execute(interaction);
         }

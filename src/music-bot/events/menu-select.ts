@@ -28,7 +28,17 @@ export class OnMenuSelect extends AbstractMusicEvent {
             guildId: interaction.guildId,
             clientId: this.client.user.id,
         }).then((queue) => {
-            if (!queue || !(interaction.member instanceof GuildMember)) return;
+            if (
+                !queue ||
+                !(interaction.member instanceof GuildMember) ||
+                !interaction.component.placeholder
+            )
+                return;
+            this.client.logger.debug(
+                `Select menu '${interaction.component.placeholder}'`,
+                'on queue message in guild',
+                `'${interaction.guildId}'`,
+            );
             this.client.emitEvent('executeCommand', {
                 interaction: interaction,
                 member: interaction.member,

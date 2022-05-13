@@ -3,6 +3,7 @@ import {
     Message,
     MessageButton,
     PartialMessage,
+    ThreadChannel,
 } from 'discord.js';
 import { MessageButtonStyles } from 'discord.js/typings/enums';
 import { MusicClient } from '../client';
@@ -66,6 +67,7 @@ export class Resend extends AbstractCommand {
             message.author.id !== this.client.user.id
         )
             return;
+        const thread: ThreadChannel | null = message.thread;
         let queue: Queue | undefined = await this.getQueue();
         if (!queue) return;
         this.client.logger.debug(
@@ -84,6 +86,10 @@ export class Resend extends AbstractCommand {
         const timeout: NodeJS.Timeout = setTimeout(() => {
             if (message)
                 message.delete().catch((e) => {
+                    this.client.emitEvent('error', e);
+                });
+            if (thread)
+                thread.delete().catch((e) => {
                     this.client.emitEvent('error', e);
                 });
         }, 300);

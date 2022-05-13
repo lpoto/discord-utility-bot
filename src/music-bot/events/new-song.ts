@@ -26,8 +26,18 @@ export class OnNewSong extends AbstractMusicEvent {
         });
         if (!queue) return;
 
+        this.client.logger.debug(
+            `Adding ${options.songNames.length} song/s in`,
+            `guild '${options.guildId}'`,
+        );
+
         // limit songs
-        if (queue.size >= 10000) return;
+        if (queue.size >= 10000) {
+            this.client.logger.debug(
+                `Queue in guild '${options.guildId}' has over 10000 songs`,
+            );
+            return;
+        }
         const songs: string[] = options.songNames.slice(0, 1000);
 
         if (
