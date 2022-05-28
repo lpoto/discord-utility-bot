@@ -138,6 +138,7 @@ export class Play extends AbstractCommand {
             });
             return;
         }
+        try {
 
         const song: Song = queue.headSong;
 
@@ -151,7 +152,6 @@ export class Play extends AbstractCommand {
         if (audioPlayer.paused || audioPlayer.playing) return;
 
         this.client.setAudioPlayer(queue.guildId, audioPlayer);
-        try {
             audioPlayer.subscribeToConnection(connection);
 
             const timer: SongTimer = new SongTimer(
@@ -180,7 +180,9 @@ export class Play extends AbstractCommand {
                 audioPlayer.setNextPlaybackDuration(startTime);
             }
             this.client.logger.debug(
-                `Playing song '${song.shortName}' in guild ${queue.guildId}`,
+                `Playing song '${
+                    song.shortName ? song.shortName : song.name
+                }' in guild ${queue.guildId}`,
                 !startTime ? '' : ` with offset ${startTime}s`,
             );
             audioPlayer.play(song, startTime);
@@ -254,7 +256,7 @@ export class Play extends AbstractCommand {
         } catch (e) {
             if (e instanceof Error) this.client.emitEvent('error', e);
             this.client.setAudioPlayer(queue.guildId, null);
-            return;
+            return this.next(interaction);
         }
     }
 

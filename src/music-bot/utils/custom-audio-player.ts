@@ -205,7 +205,12 @@ export class CustomAudioPlayer {
     public async getResource(
         song: Song,
         startTime?: number,
+        retry: number = 0
     ): Promise<AudioResource | null> {
+        if (retry > 5) {
+            return null;
+        }
+        try {
         let s: number = !startTime ? 0 : startTime;
         if (s >= song.durationSeconds) s = song.durationSeconds - 3;
         if (s < 0) s = 0;
@@ -217,5 +222,8 @@ export class CustomAudioPlayer {
             inputType: this.stream.type,
             inlineVolume: false,
         });
+        } catch (e) {
+            return this.getResource(song, startTime, retry)
+        }
     }
 }
