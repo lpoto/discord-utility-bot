@@ -1,7 +1,7 @@
 # Discord utility bot
 A discord bot written in python, intended for managing smaller discord servers.
 
-[Invite link](https://discord.com/oauth2/authorize?client_id=763366736586080257&scope=bot&permissions=309506149376)
+DEPRECATED
 
 ## features
 
