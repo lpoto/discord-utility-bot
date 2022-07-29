@@ -205,25 +205,25 @@ export class CustomAudioPlayer {
     public async getResource(
         song: Song,
         startTime?: number,
-        retry: number = 0
+        retry: number = 0,
     ): Promise<AudioResource | null> {
         if (retry > 5) {
             return null;
         }
         try {
-        let s: number = !startTime ? 0 : startTime;
-        if (s >= song.durationSeconds) s = song.durationSeconds - 3;
-        if (s < 0) s = 0;
+            let s: number = !startTime ? 0 : startTime;
+            if (s >= song.durationSeconds) s = song.durationSeconds - 3;
+            if (s < 0) s = 0;
 
-        this.stream = await playdl.stream(song.url, {
-            seek: s,
-        });
-        return createAudioResource(this.stream.stream, {
-            inputType: this.stream.type,
-            inlineVolume: false,
-        });
+            this.stream = await playdl.stream(song.url, {
+                seek: s,
+            });
+            return createAudioResource(this.stream.stream, {
+                inputType: this.stream.type,
+                inlineVolume: false,
+            });
         } catch (e) {
-            return this.getResource(song, startTime, retry)
+            return this.getResource(song, startTime, retry);
         }
     }
 }

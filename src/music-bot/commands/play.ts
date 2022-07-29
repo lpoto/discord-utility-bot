@@ -139,19 +139,17 @@ export class Play extends AbstractCommand {
             return;
         }
         try {
+            const song: Song = queue.headSong;
 
-        const song: Song = queue.headSong;
+            /* Remove listeners from old audioPlayer (if exists) and create
+             * a new one. Return if audioPlayer is already playing or paused */
+            let audioPlayer: CustomAudioPlayer | null =
+                this.client.getAudioPlayer(queue.guildId);
+            if (!audioPlayer) audioPlayer = new CustomAudioPlayer();
 
-        /* Remove listeners from old audioPlayer (if exists) and create
-         * a new one. Return if audioPlayer is already playing or paused */
-        let audioPlayer: CustomAudioPlayer | null = this.client.getAudioPlayer(
-            queue.guildId,
-        );
-        if (!audioPlayer) audioPlayer = new CustomAudioPlayer();
+            if (audioPlayer.paused || audioPlayer.playing) return;
 
-        if (audioPlayer.paused || audioPlayer.playing) return;
-
-        this.client.setAudioPlayer(queue.guildId, audioPlayer);
+            this.client.setAudioPlayer(queue.guildId, audioPlayer);
             audioPlayer.subscribeToConnection(connection);
 
             const timer: SongTimer = new SongTimer(

@@ -51,7 +51,7 @@ export class OnReady extends AbstractMusicEvent {
             this.client.translator.getFullLanguage().music.slashCommands,
         );
         this.client.user.setActivity(
-            '/' + this.client.translate(['music', 'slashCommands', 'name']),
+            '/music',
             {
                 type: 'LISTENING',
             },

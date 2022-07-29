@@ -133,8 +133,10 @@ export class SongFinder {
             /((\+)?(\s+)?(lyric(s)?|text|tekst))|(#(\w+)?(\s+)?)+$/gim,
             '',
         );
-        name = name.replace(/(\/\/)(\/+)?/, '-');
-        name = name.replace(/(\|\|)(\|+)?/, '-');
+        name = name.replace(/(\/\/)(\/+)?/g, '-');
+        name = name.replace(/(\|\|)(\|+)?/g, '-');
+        name = name.replace(/\*/g, '\\*');
+        name = name.replace(/_/g, '\\_');
         return name
             .split(/\s+/)
             .map((w) => {
