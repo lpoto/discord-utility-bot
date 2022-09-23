@@ -18,7 +18,7 @@ RUN node-prune
 
 FROM alpine:3.15.2
 
-RUN apk add --no-cache nodejs ffmpeg
+RUN apk add --no-cache nodejs
 RUN addgroup -S node && adduser -S node -G node
 
 USER node

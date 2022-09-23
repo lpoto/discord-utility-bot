@@ -1,10 +1,8 @@
 import { Connection, createConnection } from 'typeorm';
-import { bots } from '../package.json';
+import { version } from '../package.json';
 import { CustomClient, Logger } from './utils';
-import { MusicClient } from './music-bot';
 import { UtilityClient } from './utility-bot';
 import { StartClientOptions } from '../';
-import { MusicEntities } from './music-bot';
 import { UtilityEntities } from './utility-bot';
 import * as CommonEntities from './common-entities';
 import { ErrorHandler } from './utils/error-handler';
@@ -24,9 +22,7 @@ function handleExceptions(logger: Logger): void {
 
 function getEntities(logger: Logger): any[] {
     let entities: any[] = Object.values(CommonEntities);
-    for (const e of [MusicEntities, UtilityEntities]) {
-        entities = entities.concat(Object.values(e));
-    }
+    entities = entities.concat(Object.values(UtilityEntities));
     logger.debug(`Found ${entities.length} entities`);
     return entities;
 }
@@ -50,34 +46,26 @@ createConnection({
     if (!con.isConnected)
         return mainLogger.error('Could not establish database connection.');
     const clients: [typeof CustomClient, StartClientOptions][] = [];
-    for (const bot of [
-        [MusicClient, bots.music.version, 'MUSIC_BOT'],
-        [UtilityClient, bots.utility.version, 'UTILITY_BOT'],
-    ]) {
-        for (let i = 0; i <= 3; i++) {
-            const botName = `${bot[2]}${i > 0 ? i.toString() : ''}`;
-            const token: string | undefined = process.env[`${botName}_TOKEN`];
-            if (!token) continue;
-            mainLogger.debug(
-                `${botName}_TOKEN = ${token.substring(0, 20)}...`,
-            );
-            if (clients.find((c) => c[1].token === token)) {
-                mainLogger.debug(`${botName}_TOKEN is already used`);
-                continue;
-            }
-            clients.push([
-                bot[0] as typeof CustomClient,
-                {
-                    connection: con,
-                    token: token,
-                    version: bot[1] as string,
-                    botName: botName,
-                    logLevel: Logger.getLevel(
-                        process.env[`${botName}_LOG_LEVEL`],
-                    ),
-                },
-            ]);
+    let bot = [UtilityClient, version, 'UTILITY_BOT'];
+    for (let i = 0; i <= 3; i++) {
+        const botName = `${bot[2]}${i > 0 ? i.toString() : ''}`;
+        const token: string | undefined = process.env[`${botName}_TOKEN`];
+        if (!token) continue;
+        mainLogger.debug(`${botName}_TOKEN = ${token.substring(0, 20)}...`);
+        if (clients.find((c) => c[1].token === token)) {
+            mainLogger.debug(`${botName}_TOKEN is already used`);
+            continue;
         }
+        clients.push([
+            bot[0] as typeof CustomClient,
+            {
+                connection: con,
+                token: token,
+                version: bot[1] as string,
+                botName: botName,
+                logLevel: Logger.getLevel(process.env[`${botName}_LOG_LEVEL`]),
+            },
+        ]);
     }
     mainLogger.info(`Starting ${clients.length} client/s`);
     clients.forEach((c) => {

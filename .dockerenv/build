@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -e
 
 USERNAME=$1
@@ -6,6 +8,9 @@ if [[ -z "$USERNAME" ]] ; then
     read -p "Docker-hub username: "  USERNAME
 fi
 echo $USERNAME
+
+# cd to the script's directory
+cd "${0%/*}"
 
 # extract name from package.json
 TAG=$(sed 's/.*"name": "\(.*\)".*/\1/;t;d' ../package.json | head -1)

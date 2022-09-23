@@ -1,23 +1,15 @@
 version: '3.8'
 
 services:
-    # NOTE: you can split bots service into multiple services, if you want to run
-    #       the bots in separate containers
-
-    bots:
+    utility-bot:
         # image: docker_id/docker_hub_repo:tag
         build:
             context: ..
             dockerfile: .dockerenv/Dockerfile
-        container_name: discord-bots
+        container_name: utility-bot
         restart: unless-stopped
         environment:
-            # NOTE: up to 4 bots of a single type may be added (with different tokens)
-
-            MUSIC_BOT_TOKEN: your-music-token
-            #MUSIC_BOT1_TOKEN: your-music-token1
-            #MUSIC_BOT2_TOKEN: your-music-token2
-            #MUSIC_BOT3_TOKEN: your-music-token3
+            # NOTE: up to 4 bot tokens
 
             UTILITY_BOT_TOKEN: your-utility-token
             #UTILITY_BOT1_TOKEN: your-utility-token1
@@ -26,15 +18,10 @@ services:
 
             LOG_LEVEL: DEBUG # INFO, ERROR, WARN
 
-            MUSIC_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
-            #MUSIC_BOT1_LOG_LEVEL: WARN
-            #MUSIC_BOT2_LOG_LEVEL: WARN
-            #MUSIC_BOT3_LOG_LEVEL: WARN
-
-            MUSIC_BOT_LOG_LEVEL: INFO
-            #MUSIC_BOT1_LOG_LEVEL: WARN
-            #MUSIC_BOT2_LOG_LEVEL: WARN
-            #MUSIC_BOT3_LOG_LEVEL: WARN
+            UTILITY_BOT_LOG_LEVEL: INFO # DEBUG, ERROR, WARN
+            #UTILITY_BOT1_LOG_LEVEL: WARN
+            #UTILITY_BOT2_LOG_LEVEL: WARN
+            #UTILITY_BOT3_LOG_LEVEL: WARN
 
             LOGGER_SHOW_TIMESTAMP: true
 
@@ -42,11 +29,11 @@ services:
             # on start in all the servers thay are part of
             REGISTER_SLASH_COMMANDS: true
 
-            # The Following options match the discord-postgres service
+            # The Following options match the postgres service
             POSTGRES_DB: discord_bot
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
-            POSTGRES_HOST: discord-postgres
+            POSTGRES_HOST: postgres
             POSTGRES_PORT: 5432
 
         depends_on:
@@ -54,12 +41,12 @@ services:
                 condition: service_started
 
 
-    discord-postgres:
+    postgres:
         image: postgres:14.1-alpine
-        container_name: discord-postgresdb
+        container_name: postgres
         restart: unless-stopped
         ports:
-            - 6543:5432
+            - 5432:5432
         environment:
             POSTGRES_DB: discord_bot
             POSTGRES_USER: postgres
