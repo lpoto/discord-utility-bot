@@ -1,0 +1,31 @@
+# Publish docker image lpoto/discord_utility_bot:latest
+# to ghcr.io
+# Run this after tests successfully complete on main
+name: Publish Latest Docker image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push_to_registry:
+    name: Push Docker image with tag 'latest' to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: .github/dockerenv/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/discord_utility_bot:latest
