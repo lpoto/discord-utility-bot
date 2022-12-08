@@ -42,15 +42,8 @@ export class OnMessageCreate extends AbstractUtilityEvent {
     }
 
     private async handleReply(message: Message): Promise<void> {
-        if (!message.reference || !this.client.user || !this.client.user)
-            return;
-        if (
-            !this.client.user ||
-            !message.channel.isThread() ||
-            !message.channel?.id ||
-            message.channel.ownerId !== this.client.user.id
-        )
-            return;
+        if (!message.reference || !this.client.user) return;
+        if (!this.client.user || !message.channel.isText()) return;
         const referencedMsg: Message | undefined = await message
             .fetchReference()
             .catch((e) => {

@@ -181,7 +181,6 @@ export class OnHandleRolesMessage extends AbstractUtilityEvent {
     private async reply(options: HandleRolesMessageOptions): Promise<void> {
         if (
             !options.repliedMessage ||
-            !options.repliedMessage.member ||
             !(options.repliedMessage.channel instanceof TextChannel) ||
             !(await this.client.rolesChecker.checkMemberRolesForCommand({
                 member: options.repliedMessage.member,

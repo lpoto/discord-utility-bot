@@ -8,8 +8,6 @@ A discord utility bot created using using [discord.js](https://discord.js.org/#/
 
 A bot for managing smaller discord servers.
 
-**NOTE** Uncommited messages become unresponsive after 24h.
-
 ## Features
 
 -   Hosting polls,
@@ -17,6 +15,8 @@ A bot for managing smaller discord servers.
 -   Configuring which roles may use which commands.
 
 -   For more info, use `/help` slash command in a discord server.
+
+**NOTE** Uncommited messages become unresponsive after 24h.
 
 ### Required permissions
 
